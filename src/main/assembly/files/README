@@ -1,12 +1,11 @@
 Brooklyn Docker
 ================
 
-Entities to allow Brooklyn to deploy and manage Docker containers.
+Entities and sample code to allow Brooklyn to deploy and manage
+Docker containers.
 
-    % mvn clean install assembly:single
+# Getting Started
 
-    % tar zxvf brooklyn-docker-0.7.0-SNAPSHOT-dist.tar.gz
-    % cd brooklyn-docker
     % ./start.sh docker --location aws-ec2:eu-west-1
 
 ----
