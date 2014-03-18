@@ -1,4 +1,4 @@
-package brooklyn.entity.container.docker;
+package docker;
 
 import brooklyn.entity.basic.SoftwareProcessDriver;
 

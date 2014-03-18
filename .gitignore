@@ -1,6 +1,26 @@
-*.class
+.classpath
+.project
+.settings
+eclipsebin
 
-# Package Files #
-*.jar
-*.war
-*.ear
+bin
+gen
+build
+out
+lib
+
+target
+pom.xml.*
+release.properties
+
+.idea/*
+*.iml
+*.ipr
+*.iws
+classes
+
+*.log
+
+obj
+
+.DS_Store

@@ -1,4 +1,4 @@
-package brooklyn.entity.container.docker;
+package docker;
 
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.SoftwareProcessImpl;
@@ -30,7 +30,7 @@ import static java.lang.String.format;
 /**
  * @author Andrea Turli
  */
-public class DockerNodeImpl extends SoftwareProcessImpl implements DockerNode {
+public class DockerNodeImpl extends SoftwareProcessImpl implements docker.DockerNode {
 
     private static final Logger log = LoggerFactory.getLogger(DockerNodeImpl.class);
 
@@ -67,10 +67,10 @@ public class DockerNodeImpl extends SoftwareProcessImpl implements DockerNode {
     }
 
     public String getSocketUid() {
-        String result = getAttribute(DockerNode.SOCKET_UID);
+        String result = getAttribute(docker.DockerNode.SOCKET_UID);
         if (Strings.isBlank(result)) {
             result = Identifiers.makeRandomId(6);
-            setAttribute(DockerNode.SOCKET_UID, result);
+            setAttribute(docker.DockerNode.SOCKET_UID, result);
         }
         return result;
     }

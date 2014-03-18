@@ -1,4 +1,4 @@
-package brooklyn.entity.container.docker;
+package docker;
 
 import brooklyn.catalog.Catalog;
 import brooklyn.config.ConfigKey;
