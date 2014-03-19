@@ -1,9 +1,25 @@
-package docker;
+/*
+ * Copyright 2014 by Cloudsoft Corporation Limited
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package brooklyn.entity.container.docker;
 
-import brooklyn.entity.Entity;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.String.format;
+
 import brooklyn.entity.basic.SoftwareProcessImpl;
 import brooklyn.entity.trait.StartableMethods;
-import brooklyn.event.feed.ssh.SshFeed;
 import brooklyn.location.Location;
 import brooklyn.location.LocationDefinition;
 import brooklyn.location.LocationSpec;
@@ -21,35 +37,19 @@ import brooklyn.util.text.Strings;
 import com.google.common.base.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.Collection;
 import java.util.Map;
-
-import static java.lang.String.format;
 
 /**
  * @author Andrea Turli
  */
-public class DockerNodeImpl extends SoftwareProcessImpl implements docker.DockerNode {
+public class DockerNodeImpl extends SoftwareProcessImpl implements DockerNode {
 
     private static final Logger log = LoggerFactory.getLogger(DockerNodeImpl.class);
 
-    private SshFeed feed;
     private JcloudsLocation machine;
 
     public DockerNodeImpl() {
-    }
-
-    public DockerNodeImpl(Entity parent) {
-        this(MutableMap.of(), parent);
-    }
-
-    public DockerNodeImpl(Map<?, ?> flags) {
-        super(flags, null);
-    }
-
-    public DockerNodeImpl(Map<?, ?> flags, Entity parent) {
-        super(flags, parent);
     }
 
     @Override
@@ -57,20 +57,15 @@ public class DockerNodeImpl extends SoftwareProcessImpl implements docker.Docker
         return DockerDriver.class;
     }
 
-    @Override
-    public DockerDriver getDriver() {
-        return (DockerDriver) super.getDriver();
-    }
-
     public int getPort() {
-        return getAttribute(DOCKER_PORT);
+        return checkNotNull(getAttribute(DOCKER_PORT), "%s must not be null", DOCKER_PORT);
     }
 
     public String getSocketUid() {
-        String result = getAttribute(docker.DockerNode.SOCKET_UID);
+        String result = getAttribute(DockerNode.SOCKET_UID);
         if (Strings.isBlank(result)) {
             result = Identifiers.makeRandomId(6);
-            setAttribute(docker.DockerNode.SOCKET_UID, result);
+            setAttribute(DockerNode.SOCKET_UID, result);
         }
         return result;
     }
@@ -84,7 +79,7 @@ public class DockerNodeImpl extends SoftwareProcessImpl implements docker.Docker
 
     @Override
     protected void disconnectSensors() {
-        if (feed != null) feed.stop();
+        //TODO implementation
         super.disconnectSensors();
     }
 

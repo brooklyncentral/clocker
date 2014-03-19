@@ -1,4 +1,19 @@
-package examples;
+/*
+ * Copyright 2014 by Cloudsoft Corporation Limited
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.cloudsoft.docker.example;
 
 import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.Attributes;
@@ -23,7 +38,10 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 /**
- * This example starts one web app on 8080, waits for a keypress, then stops it.
+ * This example starts a web app on 8080, waits for a keypress, then stops it.
+ *
+ * By default, the example will point to a Docker instance running at 192.168.42.43:4243
+ *
  */
 public class SingleWebServerExample extends AbstractApplication {
 
@@ -50,7 +68,6 @@ public class SingleWebServerExample extends AbstractApplication {
                 .configure(Attributes.HTTP_PORT, PortRanges.fromString("8080+")));
     }
 
-    // Shows how to use ApplicationBuilder without sub-classing, but for CLI usage one should sub-class
     public static void main(String[] argv) throws Exception {
         List<String> args = Lists.newArrayList(argv);
         String port = CommandLineUtil.getCommandLineOption(args, "--port", "8081+");

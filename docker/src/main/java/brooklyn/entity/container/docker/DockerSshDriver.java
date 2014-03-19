@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 by Cloudsoft Corp.
+ * Copyright 2014 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package docker;
+package brooklyn.entity.container.docker;
+
+import static brooklyn.util.ssh.BashCommands.installPackage;
+import static brooklyn.util.ssh.BashCommands.sudo;
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
@@ -22,15 +27,13 @@ import brooklyn.entity.software.OsTasks;
 import brooklyn.location.OsDetails;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.util.collections.MutableMap;
+import brooklyn.util.internal.Repeater;
 import brooklyn.util.net.Networking;
 import com.google.common.collect.ImmutableList;
-
 import java.util.List;
 import java.util.Map;
-
-import static brooklyn.util.ssh.BashCommands.installPackage;
-import static brooklyn.util.ssh.BashCommands.sudo;
-import static java.lang.String.format;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 public class DockerSshDriver extends AbstractSoftwareProcessSshDriver implements DockerDriver {
 
@@ -49,17 +52,17 @@ public class DockerSshDriver extends AbstractSoftwareProcessSshDriver implements
 
     @Override
     public boolean isRunning() {
-        return newScript(MutableMap.of("usePidFile", getPidFile()), CHECK_RUNNING).body.append("true").execute() == 0;
+        newScript(CHECK_RUNNING)
+                .body.append(sudo("service docker status"))
+                .execute();
+        return true;
     }
 
     @Override
     public void stop() {
-        newScript(MutableMap.of("usePidFile", getPidFile()), STOPPING).body.append("true").execute();
-        /*
         newScript(STOPPING)
                 .body.append(sudo("service docker stop"))
                 .execute();
-        */
     }
 
     @Override
@@ -70,6 +73,9 @@ public class DockerSshDriver extends AbstractSoftwareProcessSshDriver implements
         OsDetails osDetails = Entities.submit(entity, OsTasks.getOsDetails(entity)).getUnchecked();
         String osMajorVersion = osDetails.getVersion();
         String osName = osDetails.getName();
+        if(!osDetails.is64bit()) {
+            throw new IllegalStateException("Docker supports only 64bit OS");
+        }
         if(osName.equalsIgnoreCase("ubuntu") && osMajorVersion.equals("12.04")) {
             List<String> commands = ImmutableList.<String> builder().add(installPackage("linux-image-generic-lts-raring"))
                            .add(installPackage("linux-headers-generic-lts-raring"))
@@ -81,14 +87,17 @@ public class DockerSshDriver extends AbstractSoftwareProcessSshDriver implements
                     .execute();
         }
 
-        int retriesRemaining = 10;
-        boolean isSshable;
-        do {
-            isSshable = this.getLocation().isSshable();
-        } while (!isSshable && --retriesRemaining > 0);
-
+        boolean isSshable = Repeater.create()
+                .repeat()
+                .every(1,SECONDS)
+                .until(new Callable<Boolean>() {
+                    public Boolean call() {
+                        return getLocation().isSshable();
+                    }})
+                .limitTimeTo(30, TimeUnit.MINUTES)
+                .run();
         if(!isSshable) {
-            throw new IllegalStateException("The entity is not ssh'able after reboot");
+            throw new IllegalStateException(String.format("The entity %s is not ssh'able after reboot", entity));
         }
 
         List<String> commands = ImmutableList.<String> builder()
@@ -120,7 +129,7 @@ public class DockerSshDriver extends AbstractSoftwareProcessSshDriver implements
 
     @Override
     public void launch() {
-        newScript(MutableMap.of("usePidFile", getPidFile()), LAUNCHING)
+        newScript(LAUNCHING)
                 .body.append(sudo("service docker start"))
                 .execute();
     }

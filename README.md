@@ -1,13 +1,19 @@
 Brooklyn Docker
 ================
 
-Entities to allow Brooklyn to deploy and manage Docker containers.
+You can use Brooklyn to install Docker onto an existing machine, or to install Docker onto a new cloud machine with your favourite cloud provider / cloud API.
 
+To use the Brooklyn docker entity for installing docker on the host machine, there is an example blueprint at:
+   [SingleDockerHostExample](<FIXME LINK TO JAVA FILE>)
+   <ADD LINK TO YAML WHEN READY (BUT DO NOT SLOW DOWN BLOG FOR IT)>
+
+    % cd docker-examples
     % mvn clean install assembly:single
 
-    % tar zxvf brooklyn-docker-0.7.0-SNAPSHOT-dist.tar.gz
-    % cd brooklyn-docker
-    % ./start.sh docker --location aws-ec2:eu-west-1
+    % cd target
+    % tar zxvf brooklyn-docker-examples-0.1.0-SNAPSHOT-dist.tar.gz
+    % cd brooklyn-docker-examples-0.1.0-SNAPSHOT
+    % ./start.sh docker --location <favouriteCloud>
 
 ----
 Copyright 2014 by Cloudsoft Corporation Limited

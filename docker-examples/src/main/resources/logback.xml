@@ -9,10 +9,7 @@
 
     <include resource="logback-main.xml"/>
 
-    <logger name="brooklyn.entity.nosql.cassandra" level="TRACE"/>
     <logger name="io.cloudsoft" level="DEBUG"/>
-    <logger name="io.cloudsoft.ciena.vwan.v2_1" level="DEBUG"/>
-    <logger name="com.cloudsoftcorp" level="DEBUG"/>
     <logger name="brooklyn.util.internal.ssh.sshj" level="TRACE"/>
 
     <!--

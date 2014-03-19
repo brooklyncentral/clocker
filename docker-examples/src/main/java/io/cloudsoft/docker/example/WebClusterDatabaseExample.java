@@ -1,4 +1,23 @@
-package examples;
+/*
+ * Copyright 2014 by Cloudsoft Corporation Limited
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.cloudsoft.docker.example;
+
+import static brooklyn.entity.java.JavaEntityMethods.javaSysProp;
+import static brooklyn.event.basic.DependentConfiguration.attributeWhenReady;
+import static brooklyn.event.basic.DependentConfiguration.formatString;
 
 import brooklyn.enricher.Enrichers;
 import brooklyn.enricher.HttpLatencyDetector;
@@ -28,16 +47,14 @@ import io.cloudsoft.networking.subnet.PortForwarder;
 import io.cloudsoft.networking.subnet.SubnetTier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static brooklyn.entity.java.JavaEntityMethods.javaSysProp;
-import static brooklyn.event.basic.DependentConfiguration.attributeWhenReady;
-import static brooklyn.event.basic.DependentConfiguration.formatString;
-
 /**
  * Launches a 3-tier app with nginx, clustered jboss, and mysql.
+ *
+ * By default, the example will point to a Docker instance running at 192.168.42.43:4243
+ *
  **/
 public class WebClusterDatabaseExample extends AbstractApplication {
 

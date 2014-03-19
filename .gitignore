@@ -19,8 +19,7 @@ release.properties
 *.iws
 classes
 
-*.log
-
+*.log*
 obj
 
 .DS_Store
