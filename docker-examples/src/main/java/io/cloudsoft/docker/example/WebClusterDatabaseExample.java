@@ -18,6 +18,7 @@ package io.cloudsoft.docker.example;
 import static brooklyn.entity.java.JavaEntityMethods.javaSysProp;
 import static brooklyn.event.basic.DependentConfiguration.attributeWhenReady;
 import static brooklyn.event.basic.DependentConfiguration.formatString;
+import static com.google.common.base.Preconditions.checkState;
 
 import brooklyn.enricher.Enrichers;
 import brooklyn.enricher.HttpLatencyDetector;
@@ -34,19 +35,23 @@ import brooklyn.entity.webapp.WebAppServiceConstants;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.Sensors;
 import brooklyn.launcher.BrooklynLauncher;
+import brooklyn.location.Location;
 import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.basic.PortRanges;
+import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.policy.autoscaling.AutoScalerPolicy;
 import brooklyn.util.CommandLineUtil;
 import brooklyn.util.net.Cidr;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import io.cloudsoft.networking.portforwarding.DockerPortForwarder;
 import io.cloudsoft.networking.portforwarding.subnet.SubnetTierDockerImpl;
-import io.cloudsoft.networking.subnet.PortForwarder;
 import io.cloudsoft.networking.subnet.SubnetTier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.net.URI;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -71,15 +76,11 @@ public class WebClusterDatabaseExample extends AbstractApplication {
     public static final AttributeSensor<Integer> APPSERVERS_COUNT = Sensors.newIntegerSensor(
             "appservers.count", "Number of app servers deployed");
 
-    protected static final String DOCKER_HOST_IP = "192.168.42.43";
-    protected static final int DOCKER_HOST_PORT = 4243;
+    private DockerPortForwarder portForwarder;
 
     @Override
     public void init() {
-
-        PortForwardManager portForwardManager = new PortForwardManager();
-        PortForwarder portForwarder = new DockerPortForwarder(this, portForwardManager, DOCKER_HOST_IP,
-                DOCKER_HOST_PORT);
+        portForwarder = new DockerPortForwarder(this, new PortForwardManager());
 
         SubnetTier subnetTier = addChild(EntitySpec.create(SubnetTier.class)
                 .impl(SubnetTierDockerImpl.class)
@@ -121,7 +122,14 @@ public class WebClusterDatabaseExample extends AbstractApplication {
                 .propagating(ImmutableMap.of(DynamicWebAppCluster.GROUP_SIZE, APPSERVERS_COUNT))
                 .from(web)
                 .build());
+    }
 
+    @Override
+    public void start(Collection<? extends Location> locations) {
+        JcloudsLocation loc = (JcloudsLocation) Iterables.getOnlyElement(locations);
+        checkState("docker".equals(loc.getProvider()), "Expected docker rather than provider %s", loc.getProvider());
+        portForwarder.init(URI.create(loc.getEndpoint()));
+        super.start(locations);
     }
 
     public static void main(String[] argv) {

@@ -34,8 +34,8 @@ public class SingleDockerHostExample extends AbstractApplication {
     @Override
     public void init() {
 
-        addChild(EntitySpec.create(DockerNode.class)
-                .configure("docker.port", "4244+"));
+        addChild(EntitySpec.create(DockerNode.class));
+                //.configure("docker.port", "4244+"));
     }
 
     public static void main(String[] argv) throws Exception {

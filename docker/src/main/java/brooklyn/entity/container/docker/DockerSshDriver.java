@@ -20,8 +20,16 @@ import static brooklyn.util.ssh.BashCommands.sudo;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+
+import com.google.common.collect.ImmutableList;
+
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.lifecycle.ScriptHelper;
 import brooklyn.entity.drivers.downloads.DownloadResolver;
 import brooklyn.entity.software.OsTasks;
 import brooklyn.location.OsDetails;
@@ -29,11 +37,6 @@ import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.internal.Repeater;
 import brooklyn.util.net.Networking;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 
 public class DockerSshDriver extends AbstractSoftwareProcessSshDriver implements DockerDriver {
 
@@ -52,17 +55,22 @@ public class DockerSshDriver extends AbstractSoftwareProcessSshDriver implements
 
     @Override
     public boolean isRunning() {
-        newScript(CHECK_RUNNING)
+        ScriptHelper helper = newScript(CHECK_RUNNING)
                 .body.append(sudo("service docker status"))
-                .execute();
-        // TODO implementation
-        return true;
+                .failOnNonZeroResultCode()
+                .gatherOutput();
+        int result = helper.execute();
+        if (result != 0) {
+            throw new IllegalStateException("Error listing classpath files: " + helper.getResultStderr());
+        }
+        return helper.getResultStdout().trim().startsWith("* docker is running");
     }
 
     @Override
     public void stop() {
         newScript(STOPPING)
                 .body.append(sudo("service docker stop"))
+                .failOnNonZeroResultCode()
                 .execute();
     }
 
@@ -83,11 +91,10 @@ public class DockerSshDriver extends AbstractSoftwareProcessSshDriver implements
                            .add(sudo("reboot"))
                            .build();
             newScript(INSTALLING+"kernel")
-                    .failOnNonZeroResultCode()
                     .body.append(commands)
                     .execute();
         }
-
+        log.info("waiting for Docker host {} to be sshable", getLocation());
         boolean isSshable = Repeater.create()
                 .repeat()
                 .every(1,SECONDS)
@@ -100,6 +107,7 @@ public class DockerSshDriver extends AbstractSoftwareProcessSshDriver implements
         if(!isSshable) {
             throw new IllegalStateException(String.format("The entity %s is not ssh'able after reboot", entity));
         }
+        log.info("Docker host {} is now sshable; continuing with setup", getLocation());
 
         List<String> commands = ImmutableList.<String> builder()
                 .add(sudo("apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9"))
@@ -132,6 +140,7 @@ public class DockerSshDriver extends AbstractSoftwareProcessSshDriver implements
     public void launch() {
         newScript(LAUNCHING)
                 .body.append(sudo("service docker start"))
+                .failOnNonZeroResultCode()
                 .execute();
     }
 

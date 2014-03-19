@@ -1,11 +1,17 @@
 Brooklyn Docker
-================
+===============
 
+This project contains Brooklyn entities and examples for [Docker](http://www.docker.io).
+
+### Getting started
+This project requires a Docker instance that Brooklyn will use as a target location when deploying application blueprints. 
+
+We suggest here two ways to deploy Docker: choose one of them!
+
+#### Installing Docker using Brooklyn docker entity
 You can use Brooklyn to install Docker onto an existing machine, or to install Docker onto a new cloud machine with your favourite cloud provider / cloud API.
 
-To use the Brooklyn docker entity for installing docker on the host machine, there is an example blueprint at:
-   [SingleDockerHostExample](<FIXME LINK TO JAVA FILE>)
-   <ADD LINK TO YAML WHEN READY (BUT DO NOT SLOW DOWN BLOG FOR IT)>
+To use the Brooklyn docker entity for installing docker on the host machine, there is an example blueprint at: [SingleDockerHostExample](https://github.com/cloudsoft/brooklyn-docker/blob/project-separation/docker-examples/src/main/java/io/cloudsoft/docker/example/SingleDockerHostExample.java)
 
     % cd docker-examples
     % mvn clean install assembly:single
@@ -14,6 +20,122 @@ To use the Brooklyn docker entity for installing docker on the host machine, the
     % tar zxvf brooklyn-docker-examples-0.1.0-SNAPSHOT-dist.tar.gz
     % cd brooklyn-docker-examples-0.1.0-SNAPSHOT
     % ./start.sh docker --location <favouriteCloud>
+
+Where <favouriteCloud> can be e.g. `jclouds:softlayer`, or a named location or a fixed IP e.g. `byon:(hosts="1.2.3.4")`.
+Those simple steps will give you a running docker instance on your favourite cloud.
+
+For more information on setting up locations, see the "Setting up Locations" section of [Brooklyn Getting Started](http://brooklyncentral.github.io/use/guide/quickstart/index.html), 
+and the "Off-the-shelf Locations section of [Brooklyn Common Usage](http://brooklyncentral.github.io/use/guide/defining-applications/common-usage.html).
+
+#### Installing Docker manually
+
+Follow the [Getting Started](docs.docker.io/en/latest/installation/) guide and enable remote access to the docker API; on the host:
+   `echo 'DOCKER_OPTS="-H tcp://0.0.0.0:4243"' | sudo tee -a /etc/default/docker`
+
+###### Install the docker client (Optional step, for convenience of manually connecting to docker)
+On OS X, see [official guide](http://docs.docker.io/en/latest/installation/mac/) or use homebrew:
+    `brew install docker`
+       
+and point at your docker host:
+    `export DOCKER_HOST=tcp://<host>:4243`
+
+### Create a docker image that is ssh'able
+Now that you have a Docker instance running, we need to create images that contain an ssh server so that brooklyn can reach them.
+
+As before, we suggest a couple of options:
+
+#### Using a Dockerfile:
+
+Create a `Dockerfile` similar to this:
+
+	FROM ubuntu:12.04
+
+	RUN apt-get update
+	RUN apt-get install -y openssh-server
+
+	RUN mkdir /var/run/sshd
+	RUN /usr/sbin/sshd
+
+	RUN echo 'root:password' | chpasswd
+
+	EXPOSE 22
+	CMD ["/usr/sbin/sshd", "-D"]
+
+and from the folder containing the `Dockerfile` run:
+
+    docker build -t <yourName>/ubuntu .
+
+See the [Dockerfile](http://docs.docker.io/en/latest/reference/builder/) for more background.
+
+#### Manually creating an image
+
+The following instructions will help you in running a new container, installing and starting sshd on it, and committing that to create a new image. See [running_ssh_service](http://docs.docker.io/en/latest/examples/running_ssh_service/) for more background.
+
+    ```bash
+	# First import a standard ubuntu image
+	docker pull ubuntu
+
+	# Start a new container
+	docker run -i -t ubuntu:12.04 /bin/bash
+
+	# From inside the container, set up sshd and the initial login credentials
+	apt-get update
+	apt-get install -y openssh-server
+	mkdir /var/run/sshd
+	/usr/sbin/sshd
+	echo 'root:password' | chpasswd
+	exit
+
+	# Then from the host (or remote docker client)
+	# grab the containerId of the customized container
+	docker ps -a
+	CONTAINER_ID=<containerId>
+
+	IMAGE_NAME=<yourName>/ubuntu
+	docker commit $CONTAINER_ID $IMAGE_NAME
+
+#### Here are some simple docker commands to sanity check your setup:
+- `docker images --no-trunc` to list all available images (showing full image ids)
+- `docker run -i -t $IMAGE_NAME /bin/bash` to create a new docker container in interactive mode
+- `docker ps -a` to list all containers; the `-a` says to include stopped images
+- `docker ps -a -q | xargs docker stop | xargs docker rm` to stop and remove all containers
+- `docker run -t -d -p 22 $IMAGE_NAME` to create a container, exposing port 22.
+- `docker ps` to see port-mappings.
+- `ssh -p <mapped-port> root@<hostAddress>` (with password "password", as supplied when creating the image) to confirm
+  the new container is ssh'able (where <mapped-port> is the port mapped to 22 for that container, as shown by `docker ps`.
+
+### Give it a go!
+
+Now you have all the prerequisites satisfied so you can start playing with Brooklyn and Docker.
+
+* Install [brooklyn](http://brooklyncentral.github.io/use/guide/quickstart/index.html), or Cloudsoft's Application Management Platform (AMP) which is powered by Brooklyn.
+* Create a section on your `~/.brooklyn/brooklyn.properties` as follows:
+
+    ```bash
+    # Defines a location named “docker” that can be used as a target when
+    # deploying applications
+    brooklyn.location.named.docker=jclouds:docker:http://<docker-host>:4243
+    # Credentials currently ignored by docker API
+    brooklyn.location.named.docker.identity=notused
+    brooklyn.location.named.docker.credential=notused
+    # Choosing a particular image
+    # from the list returned by `docker images --no-trunc`
+    brooklyn.location.named.docker.imageId=<IMAGE ID>
+    
+    # by default, the ssh credentials used are `root/password`
+    # if your image has a different account uncomment the following:
+    #brooklyn.location.named.docker.loginUser=<user>
+    #brooklyn.location.named.docker.loginUser.password=<password>
+    
+* Add the docker entity, either to the catalog or to the brooklyn classpath
+* Build `brooklyn-docker` repo locally (with `mvn clean install`), then copy `docker/target/brooklyn-docker-0.1.0-SNAPSHOT.jar` and `docker-examples/target/brooklyn-docker-examples-0.1.0-SNAPSHOT.jar` to the `$BROOKLYN_HOME/lib/dropin/`
+* Run `brooklyn launch --app io.cloudsoft.docker.example.SingleWebServerExample --location named:docker`
+  where, "named:docker" is matches the name you used in brooklyn.properties for brooklyn.location.named.docker.
+* View the Brooklyn web-console to see the state of the app - the URL will be written to stdout by the `brooklyn launch`; by default it will be http://localhost:8081
+
+To run a more interesting app that spans multiple Docker containers, try:
+* `brooklyn launch --app io.cloudsoft.docker.example.WebClusterDatabaseExample --location named:docker`
+
 
 ----
 Copyright 2014 by Cloudsoft Corporation Limited

@@ -35,23 +35,9 @@
             <groupId>io.brooklyn</groupId>
             <artifactId>brooklyn-software-base</artifactId>
             <version>${brooklyn.version}</version>
-            <type>test-jar</type>
+            <classifier>tests</classifier>
+            <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <artifactId>maven-assembly-plugin</artifactId>
-                    <configuration>
-                        <descriptors>
-                            <descriptor>src/main/assembly/assembly.xml</descriptor>
-                        </descriptors>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
 
 </project>
