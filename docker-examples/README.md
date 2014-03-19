@@ -82,7 +82,7 @@ See the [Dockerfile](http://docs.docker.io/en/latest/reference/builder/) for mor
 You can use Brooklyn to install Docker onto an existing machine, or to install Docker onto a new cloud machine with your favourite cloud provider / cloud API.
 
 To use the Brooklyn docker entity for installing docker on the host machine, there is an example blueprint at:
-   [SingleDockerHostExample](<FIXME LINK TO JAVA FILE>)
+   [SingleDockerHostExample](https://github.com/cloudsoft/brooklyn-docker/blob/project-separation/docker-examples/src/main/java/io/cloudsoft/docker/example/SingleDockerHostExample.java)
    <ADD LINK TO YAML WHEN READY (BUT DO NOT SLOW DOWN BLOG FOR IT)>
 
 * Install [brooklyn](http://brooklyncentral.github.io/use/guide/quickstart/index.html), or Cloudsoft's Application Management Platform (AMP) which is powered by Brooklyn.
@@ -98,7 +98,7 @@ To use the Brooklyn docker entity for installing docker on the host machine, the
 		</template>
 
 		<classpath>
-			<entry>https://oss.sonatype.org/content/repositories/snapshots/io/cloudsoft/docker/brooklyn-docker/0.1.0-SNAPSHOT/brooklyn-docker-0.1.0-FIXMEWHATTIMESTAMP_OR_HOW_LATEST.jar</entry>
+			<entry>https://oss.sonatype.org/content/repositories/snapshots/io/cloudsoft/docker/brooklyn-docker/0.1.0-SNAPSHOT/brooklyn-docker-0.1.0-SNAPSHOT.jar</entry>
 		</classpath>
 	</catalog>
 

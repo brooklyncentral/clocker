@@ -55,6 +55,7 @@ public class DockerSshDriver extends AbstractSoftwareProcessSshDriver implements
         newScript(CHECK_RUNNING)
                 .body.append(sudo("service docker status"))
                 .execute();
+        // TODO implementation
         return true;
     }
 
