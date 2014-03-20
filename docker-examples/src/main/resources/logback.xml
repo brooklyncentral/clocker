@@ -4,20 +4,14 @@
          (overriding the default provided on the classpath) or any of the files it references;
          see the Logging section of the Brooklyn web site for more information -->
 
-    <property name="logging.basename" scope="context" value="brooklyn" />
+    <property name="logging.basename" scope="context" value="brooklyn-docker" />
     <property name="logging.dir" scope="context" value="./" />
 
     <include resource="logback-main.xml"/>
 
     <logger name="io.cloudsoft" level="DEBUG"/>
-    <logger name="brooklyn.util.internal.ssh.sshj" level="TRACE"/>
 
-    <!--
-        <logger name="brooklyn.event.feed" level="TRACE"/>
-        <logger name="brooklyn.util.task" level="TRACE"/>
-        <logger name="brooklyn.entity.rebind.persister" level="TRACE"/>
-        <logger name="brooklyn.entity.rebind" level="TRACE"/>
-    -->
+<!--
         <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
             <encoder>
                 <pattern>- %msg%n</pattern>
@@ -31,5 +25,5 @@
         <logger name="jclouds.wire" level="debug"/>
         <logger name="jclouds.headers" level="debug"/>
         <logger name="jclouds.ssh" level="debug"/>
-
+-->
 </configuration>
