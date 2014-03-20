@@ -16,14 +16,16 @@
 package io.cloudsoft.docker.example;
 
 import static com.google.common.base.Preconditions.checkState;
-
 import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.StartableApplication;
 import brooklyn.entity.proxying.EntitySpec;
+import brooklyn.entity.webapp.ControlledDynamicWebAppCluster;
 import brooklyn.entity.webapp.JavaWebAppService;
 import brooklyn.entity.webapp.jboss.JBoss7Server;
+import brooklyn.event.AttributeSensor;
+import brooklyn.event.basic.Sensors;
 import brooklyn.launcher.BrooklynLauncher;
 import brooklyn.location.Location;
 import brooklyn.location.access.PortForwardManager;
@@ -31,13 +33,17 @@ import brooklyn.location.basic.PortRanges;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.util.CommandLineUtil;
 import brooklyn.util.net.Cidr;
+
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+
 import io.cloudsoft.networking.portforwarding.DockerPortForwarder;
 import io.cloudsoft.networking.portforwarding.subnet.SubnetTierDockerImpl;
 import io.cloudsoft.networking.subnet.SubnetTier;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.net.URI;
 import java.util.Collection;
 import java.util.List;
@@ -58,6 +64,8 @@ public class SingleWebServerExample extends AbstractApplication implements Start
 
     @Override
     public void init() {
+        AttributeSensor<String> mappedUrlAttribute = Sensors.newStringSensor("url.mapped");
+        
         portForwarder = new DockerPortForwarder(this, new PortForwardManager());
 
         SubnetTier subnetTier = addChild(EntitySpec.create(SubnetTier.class)
@@ -67,7 +75,8 @@ public class SingleWebServerExample extends AbstractApplication implements Start
 
         subnetTier.addChild(EntitySpec.create(JBoss7Server.class)
                 .configure(JavaWebAppService.ROOT_WAR, WAR_PATH)
-                .configure(Attributes.HTTP_PORT, PortRanges.fromString("8080+")));
+                .configure(Attributes.HTTP_PORT, PortRanges.fromString("8080+"))
+                .enricher(subnetTier.uriTransformingEnricher(JBoss7Server.ROOT_URL, mappedUrlAttribute)));
     }
 
     @Override

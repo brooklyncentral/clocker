@@ -19,19 +19,22 @@ import static brooklyn.entity.java.JavaEntityMethods.javaSysProp;
 import static brooklyn.event.basic.DependentConfiguration.attributeWhenReady;
 import static brooklyn.event.basic.DependentConfiguration.formatString;
 import static com.google.common.base.Preconditions.checkState;
-
 import brooklyn.enricher.Enrichers;
 import brooklyn.enricher.HttpLatencyDetector;
 import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.EntityAndAttribute;
 import brooklyn.entity.basic.StartableApplication;
 import brooklyn.entity.database.mysql.MySqlNode;
+import brooklyn.entity.proxy.nginx.NginxConfigFileGenerator;
+import brooklyn.entity.proxy.nginx.NginxController;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.entity.webapp.ControlledDynamicWebAppCluster;
 import brooklyn.entity.webapp.DynamicWebAppCluster;
 import brooklyn.entity.webapp.JavaWebAppService;
 import brooklyn.entity.webapp.WebAppService;
 import brooklyn.entity.webapp.WebAppServiceConstants;
+import brooklyn.entity.webapp.jboss.JBoss7Server;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.Sensors;
 import brooklyn.launcher.BrooklynLauncher;
@@ -42,14 +45,18 @@ import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.policy.autoscaling.AutoScalerPolicy;
 import brooklyn.util.CommandLineUtil;
 import brooklyn.util.net.Cidr;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+
 import io.cloudsoft.networking.portforwarding.DockerPortForwarder;
 import io.cloudsoft.networking.portforwarding.subnet.SubnetTierDockerImpl;
 import io.cloudsoft.networking.subnet.SubnetTier;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.net.URI;
 import java.util.Collection;
 import java.util.List;
@@ -80,6 +87,9 @@ public class WebClusterDatabaseExample extends AbstractApplication {
 
     @Override
     public void init() {
+        AttributeSensor<String> mappedUrlAttribute = Sensors.newStringSensor("url.mapped");
+        AttributeSensor<String> mappedHostAndPortAttribute = Sensors.newStringSensor("hostAndPort.mapped");
+        
         portForwarder = new DockerPortForwarder(this, new PortForwardManager());
 
         SubnetTier subnetTier = addChild(EntitySpec.create(SubnetTier.class)
@@ -88,18 +98,30 @@ public class WebClusterDatabaseExample extends AbstractApplication {
                 .configure(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL));
 
         MySqlNode mysql = subnetTier.addChild(EntitySpec.create(MySqlNode.class)
-                .configure("creationScriptUrl", DB_SETUP_SQL_URL));
+                .configure("creationScriptUrl", DB_SETUP_SQL_URL)
+                .enricher(subnetTier.uriTransformingEnricher(MySqlNode.DATASTORE_URL, mappedUrlAttribute)));
 
         ControlledDynamicWebAppCluster web = subnetTier.addChild(EntitySpec.create(ControlledDynamicWebAppCluster.class)
-                .configure(WebAppService.HTTP_PORT, PortRanges.fromString("8080+"))
-                .configure(JavaWebAppService.ROOT_WAR, WAR_PATH)
-                .configure(javaSysProp("brooklyn.example.db.url"),
-                        formatString("jdbc:%s%s?user=%s\\&password=%s",
-                                attributeWhenReady(mysql, MySqlNode.DATASTORE_URL),
-                                DB_TABLE, DB_USERNAME, DB_PASSWORD)));
+                .configure(ControlledDynamicWebAppCluster.MEMBER_SPEC, EntitySpec.create(JBoss7Server.class)
+                        .configure(WebAppService.HTTP_PORT, PortRanges.fromString("8080+"))
+                        .configure(JavaWebAppService.ROOT_WAR, WAR_PATH)
+                        .configure(javaSysProp("brooklyn.example.db.url"),
+                                formatString("jdbc:%s%s?user=%s\\&password=%s",
+                                        attributeWhenReady(mysql, mappedUrlAttribute),
+                                        DB_TABLE, DB_USERNAME, DB_PASSWORD))
+                        .enricher(subnetTier.hostAndPortTransformingEnricher(JBoss7Server.HTTP_PORT, mappedHostAndPortAttribute))
+                        .enricher(subnetTier.uriTransformingEnricher(NginxController.ROOT_URL, mappedUrlAttribute)))
+                .configure(ControlledDynamicWebAppCluster.CONTROLLER_SPEC, EntitySpec.create(NginxController.class)
+                        .configure(NginxController.HOST_AND_PORT_SENSOR, mappedHostAndPortAttribute)
+                        .enricher(subnetTier.uriTransformingEnricher(NginxController.ROOT_URL, mappedUrlAttribute))));
+
+        web.addEnricher(Enrichers.builder()
+                .propagating(mappedUrlAttribute)
+                .from(web.getController())
+                .build());
 
         web.addEnricher(HttpLatencyDetector.builder().
-                url(ControlledDynamicWebAppCluster.ROOT_URL).
+                url(mappedUrlAttribute).
                 rollup(10, TimeUnit.SECONDS).
                 build());
 
@@ -112,7 +134,7 @@ public class WebClusterDatabaseExample extends AbstractApplication {
 
         // expose some KPI's
         addEnricher(Enrichers.builder()
-                .propagating(WebAppServiceConstants.ROOT_URL,
+                .propagating(mappedUrlAttribute,
                         DynamicWebAppCluster.REQUESTS_PER_SECOND_IN_WINDOW,
                         HttpLatencyDetector.REQUEST_LATENCY_IN_SECONDS_IN_WINDOW)
                 .from(web)
