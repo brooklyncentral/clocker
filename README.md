@@ -107,7 +107,8 @@ Now you have all the prerequisites satisfied so you can start playing with Brook
     # if your image has a different account uncomment the following:
     #brooklyn.location.named.docker.loginUser=<user>
     #brooklyn.location.named.docker.loginUser.password=<password>
-    
+
+To run a simple web app app on a single Docker container, try:
 * Checkout `brooklyn-docker` repo locally (with `git checkout https://github.com/cloudsoft/brooklyn-docker.git`)
 
     ```bash
@@ -116,14 +117,14 @@ Now you have all the prerequisites satisfied so you can start playing with Brook
     cd target
     tar zxvf brooklyn-docker-examples-0.1.0-SNAPSHOT-dist.tar.gz
     cd brooklyn-docker-examples-0.1.0-SNAPSHOT
-    ./start.sh launch --app io.cloudsoft.docker.example.SingleWebServerExample --location named:docker
+    ./start.sh launch --single --location named:docker
     ```
     where, "named:docker" matches the name you used in `brooklyn.properties` for `brooklyn.location.named.docker`.
 
 * View the Brooklyn web-console to see the state of the app - the URL will be written to stdout by the `brooklyn launch`; by default it will be `http://localhost:8081`
 
 To run a more interesting app that spans multiple Docker containers, try:
-* `./start.sh launch --app io.cloudsoft.docker.example.WebClusterDatabaseExample --location named:docker`
+* `./start.sh launch --cluster --location named:docker`
 
 
 ----
