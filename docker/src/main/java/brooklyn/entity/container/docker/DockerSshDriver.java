@@ -63,7 +63,7 @@ public class DockerSshDriver extends AbstractSoftwareProcessSshDriver implements
         if (result != 0) {
             throw new IllegalStateException("Error listing classpath files: " + helper.getResultStderr());
         }
-        return helper.getResultStdout().trim().startsWith("* docker is running");
+        return helper.getResultStdout().contains("running");
     }
 
     @Override
