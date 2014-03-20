@@ -43,33 +43,6 @@ and point at your docker host:
 ### Create a docker image that is ssh'able
 Now that you have a Docker instance running, we need to create images that contain an ssh server so that brooklyn can reach them.
 
-As before, we suggest a couple of options:
-
-#### Using a Dockerfile:
-
-Create a `Dockerfile` similar to this:
-
-	FROM ubuntu:12.04
-
-	RUN apt-get update
-	RUN apt-get install -y openssh-server
-
-	RUN mkdir /var/run/sshd
-	RUN /usr/sbin/sshd
-
-	RUN echo 'root:password' | chpasswd
-
-	EXPOSE 22
-	CMD ["/usr/sbin/sshd", "-D"]
-
-and from the folder containing the `Dockerfile` run:
-
-    docker build -t <yourName>/ubuntu .
-
-See the [Dockerfile](http://docs.docker.io/en/latest/reference/builder/) for more background.
-
-#### Manually creating an image
-
 The following instructions will help you in running a new container, installing and starting sshd on it, and committing that to create a new image. See [running_ssh_service](http://docs.docker.io/en/latest/examples/running_ssh_service/) for more background.
 
     
