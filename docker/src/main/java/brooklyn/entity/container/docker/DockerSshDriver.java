@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 by Cloudsoft Corp.
+ * Copyright 2014 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,22 +15,28 @@
  */
 package brooklyn.entity.container.docker;
 
+import static brooklyn.util.ssh.BashCommands.installPackage;
+import static brooklyn.util.ssh.BashCommands.sudo;
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+
+import com.google.common.collect.ImmutableList;
+
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.lifecycle.ScriptHelper;
 import brooklyn.entity.drivers.downloads.DownloadResolver;
 import brooklyn.entity.software.OsTasks;
 import brooklyn.location.OsDetails;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.util.collections.MutableMap;
+import brooklyn.util.internal.Repeater;
 import brooklyn.util.net.Networking;
-import com.google.common.collect.ImmutableList;
-
-import java.util.List;
-import java.util.Map;
-
-import static brooklyn.util.ssh.BashCommands.installPackage;
-import static brooklyn.util.ssh.BashCommands.sudo;
-import static java.lang.String.format;
 
 public class DockerSshDriver extends AbstractSoftwareProcessSshDriver implements DockerDriver {
 
@@ -49,17 +55,23 @@ public class DockerSshDriver extends AbstractSoftwareProcessSshDriver implements
 
     @Override
     public boolean isRunning() {
-        return newScript(MutableMap.of("usePidFile", getPidFile()), CHECK_RUNNING).body.append("true").execute() == 0;
+        ScriptHelper helper = newScript(CHECK_RUNNING)
+                .body.append(sudo("service docker status"))
+                .failOnNonZeroResultCode()
+                .gatherOutput();
+        int result = helper.execute();
+        if (result != 0) {
+            throw new IllegalStateException("Error listing classpath files: " + helper.getResultStderr());
+        }
+        return helper.getResultStdout().trim().startsWith("* docker is running");
     }
 
     @Override
     public void stop() {
-        newScript(MutableMap.of("usePidFile", getPidFile()), STOPPING).body.append("true").execute();
-        /*
         newScript(STOPPING)
                 .body.append(sudo("service docker stop"))
+                .failOnNonZeroResultCode()
                 .execute();
-        */
     }
 
     @Override
@@ -70,26 +82,32 @@ public class DockerSshDriver extends AbstractSoftwareProcessSshDriver implements
         OsDetails osDetails = Entities.submit(entity, OsTasks.getOsDetails(entity)).getUnchecked();
         String osMajorVersion = osDetails.getVersion();
         String osName = osDetails.getName();
+        if(!osDetails.is64bit()) {
+            throw new IllegalStateException("Docker supports only 64bit OS");
+        }
         if(osName.equalsIgnoreCase("ubuntu") && osMajorVersion.equals("12.04")) {
             List<String> commands = ImmutableList.<String> builder().add(installPackage("linux-image-generic-lts-raring"))
                            .add(installPackage("linux-headers-generic-lts-raring"))
                            .add(sudo("reboot"))
                            .build();
             newScript(INSTALLING+"kernel")
-                    .failOnNonZeroResultCode()
                     .body.append(commands)
                     .execute();
         }
-
-        int retriesRemaining = 10;
-        boolean isSshable;
-        do {
-            isSshable = this.getLocation().isSshable();
-        } while (!isSshable && --retriesRemaining > 0);
-
+        log.info("waiting for Docker host {} to be sshable", getLocation());
+        boolean isSshable = Repeater.create()
+                .repeat()
+                .every(1,SECONDS)
+                .until(new Callable<Boolean>() {
+                    public Boolean call() {
+                        return getLocation().isSshable();
+                    }})
+                .limitTimeTo(30, TimeUnit.MINUTES)
+                .run();
         if(!isSshable) {
-            throw new IllegalStateException("The entity is not ssh'able after reboot");
+            throw new IllegalStateException(String.format("The entity %s is not ssh'able after reboot", entity));
         }
+        log.info("Docker host {} is now sshable; continuing with setup", getLocation());
 
         List<String> commands = ImmutableList.<String> builder()
                 .add(sudo("apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9"))
@@ -120,8 +138,9 @@ public class DockerSshDriver extends AbstractSoftwareProcessSshDriver implements
 
     @Override
     public void launch() {
-        newScript(MutableMap.of("usePidFile", getPidFile()), LAUNCHING)
+        newScript(LAUNCHING)
                 .body.append(sudo("service docker start"))
+                .failOnNonZeroResultCode()
                 .execute();
     }
 

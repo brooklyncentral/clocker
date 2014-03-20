@@ -18,23 +18,54 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <modules>
+        <module>docker-examples</module>
+        <module>docker</module>
+    </modules>
 
-    <groupId>io.brooklyn</groupId>
-    <artifactId>brooklyn-docker</artifactId>
-    <version>0.7.0-SNAPSHOT</version>
-    <packaging>jar</packaging>
-    <name>Brooklyn Docker Deployment and Management</name>
+    <parent>
+        <groupId>org.sonatype.oss</groupId>
+        <artifactId>oss-parent</artifactId>
+        <version>7</version>
+    </parent>
+
+    <groupId>io.cloudsoft.docker</groupId>
+    <artifactId>brooklyn-docker-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>Brooklyn Docker Deployment and Management (Parent)</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-
         <includedTestGroups />
         <excludedTestGroups>Integration,Live,WIP</excludedTestGroups>
-
+        <!-- Compilation -->
+        <java.version>1.6</java.version>
+        <!-- Test Dependencies -->
         <testng.version>6.8</testng.version>
         <brooklyn.version>0.7.0-SNAPSHOT</brooklyn.version>
+        <brooklyn.networking.version>0.2.0-SNAPSHOT</brooklyn.networking.version>
     </properties>
+
+    <scm>
+        <url>https://github.com/cloudsoft/brooklyn-docker</url>
+        <connection>scm:git:https://github.com/cloudsoft/brooklyn-docker.git</connection>
+        <developerConnection>scm:git:git@github.com:cloudsoft/brooklyn-docker.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/cloudsoft/brooklyn-docker/issues</url>
+    </issueManagement>
+
+    <licenses>
+        <license>
+            <name>Apache 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
 
     <dependencies>
         <dependency>
@@ -42,6 +73,7 @@
             <artifactId>brooklyn-all</artifactId>
             <version>${brooklyn.version}</version>
         </dependency>
+
         <dependency>
             <groupId>io.brooklyn</groupId>
             <artifactId>brooklyn-logback-xml</artifactId>
@@ -98,6 +130,15 @@
         <pluginManagement>
             <plugins>
                 <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.0</version>
+                    <configuration>
+                        <source>${java.version}</source>
+                        <target>${java.version}</target>
+                    </configuration>
+                </plugin>
+                <plugin>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>2.3.2</version>
                 </plugin>
@@ -145,38 +186,12 @@
                 </configuration>
             </plugin>
             <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <configuration>
-                    <descriptors>
-                        <descriptor>src/main/assembly/assembly.xml</descriptor>
-                    </descriptors>
-                </configuration>
-            </plugin>
-            <plugin>
                 <artifactId>maven-release-plugin</artifactId>
                 <configuration>
                     <mavenExecutorId>forked-path</mavenExecutorId>
                     <useReleaseProfile>false</useReleaseProfile>
                     <arguments>-Dbrooklyn.deployTo=sonatype</arguments>
                 </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>build-examples-jar</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <finalName>${project.artifactId}</finalName>
-                            <classifier>examples</classifier>
-                            <includes>
-                                <include>com/example/**</include>
-                            </includes>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
