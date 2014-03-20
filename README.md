@@ -11,7 +11,7 @@ We suggest here two ways to deploy Docker: choose one of them!
 #### Installing Docker using Brooklyn docker entity
 You can use Brooklyn to install Docker onto an existing machine, or to install Docker onto a new cloud machine with your favourite cloud provider / cloud API.
 
-To use the Brooklyn docker entity for installing docker on the host machine, there is an example blueprint at: [SingleDockerHostExample](https://github.com/cloudsoft/brooklyn-docker/blob/project-separation/docker-examples/src/main/java/io/cloudsoft/docker/example/SingleDockerHostExample.java)
+To use the Brooklyn docker entity for installing docker on the host machine, there is an example blueprint at: [SingleDockerHostExample](https://github.com/cloudsoft/brooklyn-docker/blob/master/docker-examples/src/main/java/io/cloudsoft/docker/example/SingleDockerHostExample.java)
 
     % cd docker-examples
     % mvn clean install assembly:single
@@ -21,7 +21,8 @@ To use the Brooklyn docker entity for installing docker on the host machine, the
     % cd brooklyn-docker-examples-0.1.0-SNAPSHOT
     % ./start.sh docker --location <favouriteCloud>
 
-Where <favouriteCloud> can be e.g. `jclouds:softlayer`, or a named location or a fixed IP e.g. `byon:(hosts="1.2.3.4")`.
+Where `<favouriteCloud>` can be e.g. `jclouds:softlayer`, or a named location or a fixed IP e.g. `byon:(hosts="1.2.3
+.4")`.
 Those simple steps will give you a running docker instance on your favourite cloud.
 
 For more information on setting up locations, see the "Setting up Locations" section of [Brooklyn Getting Started](http://brooklyncentral.github.io/use/guide/quickstart/index.html), 
@@ -29,7 +30,7 @@ and the "Off-the-shelf Locations section of [Brooklyn Common Usage](http://brook
 
 #### Installing Docker manually
 
-Follow the [Getting Started](docs.docker.io/en/latest/installation/) guide and enable remote access to the docker API; on the host:
+Follow the [Getting Started](http://docs.docker.io/en/latest/installation/) guide and enable remote access to the docker API; on the host:
    `echo 'DOCKER_OPTS="-H tcp://0.0.0.0:4243"' | sudo tee -a /etc/default/docker`
 
 ###### Install the docker client (Optional step, for convenience of manually connecting to docker)
@@ -71,7 +72,7 @@ See the [Dockerfile](http://docs.docker.io/en/latest/reference/builder/) for mor
 
 The following instructions will help you in running a new container, installing and starting sshd on it, and committing that to create a new image. See [running_ssh_service](http://docs.docker.io/en/latest/examples/running_ssh_service/) for more background.
 
-    ```bash
+    
 	# First import a standard ubuntu image
 	docker pull ubuntu
 
@@ -128,10 +129,11 @@ Now you have all the prerequisites satisfied so you can start playing with Brook
     #brooklyn.location.named.docker.loginUser.password=<password>
     
 * Add the docker entity, either to the catalog or to the brooklyn classpath
-* Build `brooklyn-docker` repo locally (with `mvn clean install`), then copy `docker/target/brooklyn-docker-0.1.0-SNAPSHOT.jar` and `docker-examples/target/brooklyn-docker-examples-0.1.0-SNAPSHOT.jar` to the `$BROOKLYN_HOME/lib/dropin/`
+* Build `brooklyn-docker` repo locally (with `mvn clean install`)
+* Copy `docker/target/brooklyn-docker-0.1.0-SNAPSHOT.jar` and `docker-examples/target/brooklyn-docker-examples-0.1.0-SNAPSHOT.jar` to the `$BROOKLYN_HOME/lib/dropin/`
 * Run `brooklyn launch --app io.cloudsoft.docker.example.SingleWebServerExample --location named:docker`
-  where, "named:docker" is matches the name you used in brooklyn.properties for brooklyn.location.named.docker.
-* View the Brooklyn web-console to see the state of the app - the URL will be written to stdout by the `brooklyn launch`; by default it will be http://localhost:8081
+  where, "named:docker" matches the name you used in `brooklyn.properties` for `brooklyn.location.named.docker`.
+* View the Brooklyn web-console to see the state of the app - the URL will be written to stdout by the `brooklyn launch`; by default it will be `http://localhost:8081`
 
 To run a more interesting app that spans multiple Docker containers, try:
 * `brooklyn launch --app io.cloudsoft.docker.example.WebClusterDatabaseExample --location named:docker`
