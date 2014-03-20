@@ -21,14 +21,13 @@ To use the Brooklyn docker entity for installing docker on the host machine, the
     % cd brooklyn-docker-examples-0.1.0-SNAPSHOT
     % ./start.sh docker --location <favouriteCloud>
 
-Where `<favouriteCloud>` can be e.g. `jclouds:softlayer`, or a named location or a fixed IP e.g. `byon:(hosts="1.2.3
-.4")`.
+Where `<favouriteCloud>` can be e.g. `jclouds:softlayer`, or a named location or a fixed IP e.g. `byon:(hosts="1.2.3.4")`.
 Those simple steps will give you a running docker instance on your favourite cloud.
 
-**N.B.**: Please be sure that docker host allows incoming connection on port `4243` (docker daemon) and on the a range `49000..49900` used by docker to map containers' ports on the host ports.
+**N.B.**: Please be sure that docker host allows incoming connection on TCP port `4243` (docker daemon) and on the range `49000..49900` used by docker to map containers' ports on the host's ports.
 
 For more information on setting up locations, see the "Setting up Locations" section of [Brooklyn Getting Started](http://brooklyncentral.github.io/use/guide/quickstart/index.html), 
-and the "Off-the-shelf Locations section of [Brooklyn Common Usage](http://brooklyncentral.github.io/use/guide/defining-applications/common-usage.html).
+and the "Off-the-shelf Locations" section of [Brooklyn Common Usage](http://brooklyncentral.github.io/use/guide/defining-applications/common-usage.html).
 
 #### Installing Docker manually
 
@@ -70,12 +69,12 @@ The following instructions will help you in running a new container, installing 
 	IMAGE_NAME=<yourName>/ubuntu
 	IMAGE_ID=$(docker commit $CONTAINER_ID $IMAGE_NAME)
 	
-#### Here some docker commands to confirm the IMAGE_ID is ssh'able:
+#### Docker commands to confirm the IMAGE_ID is ssh'able:
         CONTAINER_ID=$(docker run -t -d -p 22 $IMAGE_NAME /usr/sbin/sshd -D)
         PORT=$(docker port $CONTAINER_ID 22|cut -d: -f2)
         ssh -p $PORT root@<host>
 
-#### Here are some useful docker commands to sanity check your setup:
+#### Useful docker commands to sanity check your setup:
 - `docker images --no-trunc` to list all available images (showing full image ids)
 - `docker run -i -t $IMAGE_NAME /bin/bash` to create a new docker container in interactive mode
 - `docker ps -a` to list all containers; the `-a` says to include stopped images
@@ -89,7 +88,6 @@ The following instructions will help you in running a new container, installing 
 
 Now you have all the prerequisites satisfied so you can start playing with Brooklyn and Docker.
 
-* Install [brooklyn](http://brooklyncentral.github.io/use/guide/quickstart/index.html), or Cloudsoft's Application Management Platform (AMP) which is powered by Brooklyn.
 * Create a section on your `~/.brooklyn/brooklyn.properties` as follows:
 
     ```bash
@@ -117,14 +115,14 @@ To run a simple web app app on a single Docker container, try:
     cd target
     tar zxvf brooklyn-docker-examples-0.1.0-SNAPSHOT-dist.tar.gz
     cd brooklyn-docker-examples-0.1.0-SNAPSHOT
-    ./start.sh launch --single --location named:docker
+    ./start.sh launch --app io.cloudsoft.docker.example.SingleWebServerExample --location named:docker
     ```
     where, "named:docker" matches the name you used in `brooklyn.properties` for `brooklyn.location.named.docker`.
 
 * View the Brooklyn web-console to see the state of the app - the URL will be written to stdout by the `brooklyn launch`; by default it will be `http://localhost:8081`
 
 To run a more interesting app that spans multiple Docker containers, try:
-* `./start.sh launch --cluster --location named:docker`
+* `./start.sh launch --app io.cloudsoft.docker.example.WebClusterDatabaseExample --location named:docker`
 
 
 ----
