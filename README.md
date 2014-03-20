@@ -129,8 +129,8 @@ Now you have all the prerequisites satisfied so you can start playing with Brook
     #brooklyn.location.named.docker.loginUser.password=<password>
     
 * Add the docker entity, either to the catalog or to the brooklyn classpath
-* Build `brooklyn-docker` repo locally (with `mvn clean install`)
-* Copy `docker/target/brooklyn-docker-0.1.0-SNAPSHOT.jar` and `docker-examples/target/brooklyn-docker-examples-0.1.0-SNAPSHOT.jar` to the `$BROOKLYN_HOME/lib/dropin/`
+  * Build `brooklyn-docker` repo locally (with `mvn clean install`)
+  * Copy `docker/target/brooklyn-docker-0.1.0-SNAPSHOT.jar` and `docker-examples/target/brooklyn-docker-examples-0.1.0-SNAPSHOT.jar` to the `$BROOKLYN_HOME/lib/dropin/`
 * Run `brooklyn launch --app io.cloudsoft.docker.example.SingleWebServerExample --location named:docker`
   where, "named:docker" matches the name you used in `brooklyn.properties` for `brooklyn.location.named.docker`.
 * View the Brooklyn web-console to see the state of the app - the URL will be written to stdout by the `brooklyn launch`; by default it will be `http://localhost:8081`
