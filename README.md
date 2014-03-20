@@ -66,7 +66,7 @@ The following instructions will help you in running a new container, installing 
 	CONTAINER_ID=<containerId>
 
 	IMAGE_NAME=<yourName>/ubuntu
-	docker commit $CONTAINER_ID $IMAGE_NAME
+	IMAGE_ID=$(docker commit $CONTAINER_ID $IMAGE_NAME)
 
 #### Here are some simple docker commands to sanity check your setup:
 - `docker images --no-trunc` to list all available images (showing full image ids)
