@@ -6,9 +6,9 @@ This project contains Brooklyn entities and examples for [Docker](http://www.doc
 ### Getting started
 This project requires a Docker instance that Brooklyn will use as a target location when deploying application blueprints. 
 
-We suggest here two ways to deploy Docker: choose one of them!
+We suggest two ways to deploy Docker: choose one of them!
 
-#### Installing Docker using Brooklyn docker entity
+#### Option 1: Installing Docker using Brooklyn docker entity
 You can use Brooklyn to install Docker onto an existing machine, or to install Docker onto a new cloud machine with your favourite cloud provider / cloud API.
 
 To use the Brooklyn docker entity for installing docker on the host machine, there is an example blueprint at: [SingleDockerHostExample](https://github.com/cloudsoft/brooklyn-docker/blob/master/docker-examples/src/main/java/io/cloudsoft/docker/example/SingleDockerHostExample.java)
@@ -29,7 +29,7 @@ Those simple steps will give you a running docker instance on your favourite clo
 For more information on setting up locations, see the "Setting up Locations" section of [Brooklyn Getting Started](http://brooklyncentral.github.io/use/guide/quickstart/index.html), 
 and the "Off-the-shelf Locations" section of [Brooklyn Common Usage](http://brooklyncentral.github.io/use/guide/defining-applications/common-usage.html).
 
-#### Installing Docker manually
+#### Option 2: Installing Docker manually
 
 Follow the [Getting Started](http://docs.docker.io/en/latest/installation/) guide and enable remote access to the docker API; on the host:
    `echo 'DOCKER_OPTS="-H tcp://0.0.0.0:4243"' | sudo tee -a /etc/default/docker`
@@ -44,7 +44,7 @@ and point at your docker host:
 ### Create a docker image that is ssh'able
 Now that you have a Docker instance running, we need to create images that contain an ssh server so that brooklyn can reach them.
 
-The following instructions will help you in running a new container, installing and starting sshd on it, and committing that to create a new image. See [running_ssh_service](http://docs.docker.io/en/latest/examples/running_ssh_service/) for more background.
+The following instructions will help you in running a new container, installing and starting sshd on it, and committing that to create a new image. See [SSH Daemon Service](http://docs.docker.io/en/latest/examples/running_ssh_service/) for more background.
 
     
 	# First import a standard ubuntu image
@@ -82,7 +82,7 @@ The following instructions will help you in running a new container, installing 
 - `docker run -t -d -p 22 $IMAGE_NAME` to create a container, exposing port 22.
 - `docker ps` to see port-mappings.
 - `ssh -p <mapped-port> root@<hostAddress>` (with password "password", as supplied when creating the image) to confirm
-  the new container is ssh'able (where <mapped-port> is the port mapped to 22 for that container, as shown by `docker ps`.
+  the new container is ssh'able (where `<mapped-port>` is the port mapped to 22 for that container, as shown by `docker ps`.
 
 ### Give it a go!
 
