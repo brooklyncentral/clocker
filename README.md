@@ -110,8 +110,9 @@ To run a simple web app app on a single Docker container, try:
 * Checkout `brooklyn-docker` repo locally (with `git checkout https://github.com/cloudsoft/brooklyn-docker.git`)
 
     ```bash
+    mvn clean install
     cd docker-examples
-    mvn clean install assembly:single
+    mvn assembly:single
     cd target
     tar zxvf brooklyn-docker-examples-0.1.0-SNAPSHOT-dist.tar.gz
     cd brooklyn-docker-examples-0.1.0-SNAPSHOT
