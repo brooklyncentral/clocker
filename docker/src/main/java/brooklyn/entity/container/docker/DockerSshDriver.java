@@ -31,7 +31,6 @@ import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.lifecycle.ScriptHelper;
 import brooklyn.entity.drivers.downloads.DownloadResolver;
-import brooklyn.entity.software.OsTasks;
 import brooklyn.location.OsDetails;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.util.collections.MutableMap;
@@ -79,7 +78,7 @@ public class DockerSshDriver extends AbstractSoftwareProcessSshDriver implements
         DownloadResolver resolver = Entities.newDownloader(this);
         setExpandedInstallDir(getInstallDir()+"/"+resolver.getUnpackedDirectoryName(format("docker-%s", getVersion())));
 
-        OsDetails osDetails = Entities.submit(entity, OsTasks.getOsDetails(entity)).getUnchecked();
+        OsDetails osDetails = getMachine().getMachineDetails().getOsDetails();
         String osMajorVersion = osDetails.getVersion();
         String osName = osDetails.getName();
         if(!osDetails.is64bit()) {
