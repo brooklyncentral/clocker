@@ -18,6 +18,12 @@ package brooklyn.entity.container.docker;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.format;
 
+import java.util.Collection;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import brooklyn.entity.basic.SoftwareProcessImpl;
 import brooklyn.entity.trait.StartableMethods;
 import brooklyn.location.Location;
@@ -31,14 +37,10 @@ import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.management.LocationManager;
 import brooklyn.util.collections.MutableMap;
+import brooklyn.util.guava.Maybe;
 import brooklyn.util.task.DynamicTasks;
 import brooklyn.util.text.Identifiers;
 import brooklyn.util.text.Strings;
-import com.google.common.base.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.util.Collection;
-import java.util.Map;
 
 /**
  * @author Andrea Turli
@@ -87,7 +89,7 @@ public class DockerNodeImpl extends SoftwareProcessImpl implements DockerNode {
     public void doStart(Collection<? extends Location> locations) {
         super.doStart(locations);
 
-        Optional<SshMachineLocation> found = Machines.findUniqueSshMachineLocation(getLocations());
+        Maybe<SshMachineLocation> found = Machines.findUniqueSshMachineLocation(getLocations());
         JcloudsSshMachineLocation sshMachineLocation = (JcloudsSshMachineLocation) found.get();
         Map<String, ?> flags = MutableMap.<String, Object>builder()
                 .putAll(getConfig(LOCATION_FLAGS))
