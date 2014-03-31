@@ -19,7 +19,7 @@ To use the Brooklyn docker entity for installing docker on the host machine, the
     % cd target
     % tar zxvf brooklyn-docker-examples-0.1.0-SNAPSHOT-dist.tar.gz
     % cd brooklyn-docker-examples-0.1.0-SNAPSHOT
-    % ./start.sh docker --location <favouriteCloud>
+    % ./start.sh launch --docker --location <target>
 
 Where `<favouriteCloud>` can be e.g. `jclouds:softlayer`, or a named location or a fixed IP e.g. `byon:(hosts="1.2.3.4")`.
 Those simple steps will give you a running docker instance on your favourite cloud.
