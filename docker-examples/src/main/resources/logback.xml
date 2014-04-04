@@ -9,7 +9,7 @@
 
     <include resource="logback-main.xml"/>
 
-    <logger name="io.cloudsoft" level="DEBUG"/>
+    <logger name="io.cloudsoft" level="INFO"/>
 
 <!--
         <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
