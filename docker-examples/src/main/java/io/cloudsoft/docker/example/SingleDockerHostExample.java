@@ -15,17 +15,20 @@
  */
 package io.cloudsoft.docker.example;
 
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Lists;
+
 import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.StartableApplication;
-import brooklyn.entity.container.docker.DockerNode;
+import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.launcher.BrooklynLauncher;
 import brooklyn.util.CommandLineUtil;
-import com.google.common.collect.Lists;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.util.List;
 
 public class SingleDockerHostExample extends AbstractApplication {
 
@@ -34,7 +37,7 @@ public class SingleDockerHostExample extends AbstractApplication {
     @Override
     public void init() {
 
-        addChild(EntitySpec.create(DockerNode.class));
+        addChild(EntitySpec.create(DockerHost.class));
                 //.configure("docker.port", "4244+"));
     }
 

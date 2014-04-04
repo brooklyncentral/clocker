@@ -37,9 +37,9 @@ import brooklyn.util.collections.MutableMap;
 import brooklyn.util.internal.Repeater;
 import brooklyn.util.net.Networking;
 
-public class DockerSshDriver extends AbstractSoftwareProcessSshDriver implements DockerDriver {
+public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implements DockerHostDriver {
 
-    public DockerSshDriver(DockerNodeImpl entity, SshMachineLocation machine) {
+    public DockerHostSshDriver(DockerHostImpl entity, SshMachineLocation machine) {
         super(entity, machine);
     }
 
@@ -49,7 +49,7 @@ public class DockerSshDriver extends AbstractSoftwareProcessSshDriver implements
 
     @Override
     public Integer getDockerPort() {
-        return getEntity().getAttribute(DockerNode.DOCKER_PORT);
+        return getEntity().getAttribute(DockerHost.DOCKER_PORT);
     }
 
     @Override
@@ -81,9 +81,11 @@ public class DockerSshDriver extends AbstractSoftwareProcessSshDriver implements
         OsDetails osDetails = getMachine().getMachineDetails().getOsDetails();
         String osMajorVersion = osDetails.getVersion();
         String osName = osDetails.getName();
+        /*
         if(!osDetails.is64bit()) {
             throw new IllegalStateException("Docker supports only 64bit OS");
         }
+        */
         if(osName.equalsIgnoreCase("ubuntu") && osMajorVersion.equals("12.04")) {
             List<String> commands = ImmutableList.<String> builder().add(installPackage("linux-image-generic-lts-raring"))
                            .add(installPackage("linux-headers-generic-lts-raring"))
