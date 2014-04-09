@@ -12,7 +12,8 @@ We suggest two ways to deploy Docker: choose one of them!
 You can use Brooklyn to install Docker onto an existing machine, or to install Docker onto a new cloud machine with your favourite cloud provider / cloud API.
 
 To use the Brooklyn docker entity for installing docker on the host machine, there is an example blueprint at: [SingleDockerHostExample](https://github.com/cloudsoft/brooklyn-docker/blob/master/docker-examples/src/main/java/io/cloudsoft/docker/example/SingleDockerHostExample.java)
-
+    
+    % mvn clean install
     % cd docker-examples
     % mvn clean install assembly:single
 
