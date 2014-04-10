@@ -16,12 +16,22 @@
 package io.cloudsoft.docker.example;
 
 import static com.google.common.base.Preconditions.checkState;
+
+import java.net.URI;
+import java.util.Collection;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+
 import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.StartableApplication;
 import brooklyn.entity.proxying.EntitySpec;
-import brooklyn.entity.webapp.ControlledDynamicWebAppCluster;
 import brooklyn.entity.webapp.JavaWebAppService;
 import brooklyn.entity.webapp.jboss.JBoss7Server;
 import brooklyn.event.AttributeSensor;
@@ -33,20 +43,9 @@ import brooklyn.location.basic.PortRanges;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.util.CommandLineUtil;
 import brooklyn.util.net.Cidr;
-
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-
 import io.cloudsoft.networking.portforwarding.DockerPortForwarder;
 import io.cloudsoft.networking.portforwarding.subnet.SubnetTierDockerImpl;
 import io.cloudsoft.networking.subnet.SubnetTier;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.URI;
-import java.util.Collection;
-import java.util.List;
 
 /**
  * This example starts a web app on 8080, waits for a keypress, then stops it.
@@ -81,9 +80,12 @@ public class SingleWebServerExample extends AbstractApplication implements Start
 
     @Override
     public void start(Collection<? extends Location> locations) {
-        JcloudsLocation loc = (JcloudsLocation) Iterables.getOnlyElement(locations);
-        checkState("docker".equals(loc.getProvider()), "Expected docker rather than provider %s", loc.getProvider());
-        portForwarder.init(URI.create(loc.getEndpoint()));
+        Location location = Iterables.getOnlyElement(locations);
+        if (location instanceof JcloudsLocation) {
+            JcloudsLocation loc = (JcloudsLocation) location;
+            checkState("docker".equals(loc.getProvider()), "Expected docker rather than provider %s", loc.getProvider());
+            portForwarder.init(URI.create(loc.getEndpoint()));
+        }
         super.start(locations);
     }
 

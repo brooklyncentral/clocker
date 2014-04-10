@@ -176,7 +176,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineLocat
 
     @Override
     public DockerInfrastructure getDockerInfrastructure() {
-        return null;
+        return ((DockerHostLocation) getParent()).getDockerInfrastructure();
     }
 
 
