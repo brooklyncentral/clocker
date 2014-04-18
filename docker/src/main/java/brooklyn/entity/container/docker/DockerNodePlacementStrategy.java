@@ -1,0 +1,130 @@
+package brooklyn.entity.container.docker;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Collections2;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
+
+import brooklyn.entity.Entity;
+import brooklyn.entity.group.zoneaware.BalancingNodePlacementStrategy;
+import brooklyn.entity.trait.Identifiable;
+import brooklyn.location.Location;
+import brooklyn.location.docker.DockerHostLocation;
+
+/**
+ * Placement strategy that adds more Docker hosts if existing locations run out of capacity.
+ *
+ * @see BalancingNodePlacementStrategy
+ */
+public class DockerNodePlacementStrategy extends BalancingNodePlacementStrategy {
+    private static final Logger LOG = LoggerFactory.getLogger(DockerNodePlacementStrategy.class);
+
+    public static final Function<Identifiable, String> identity() { return identity; }
+
+    private static final Function<Identifiable, String> identity = new Function<Identifiable, String>() {
+        @Override
+        public String apply(@Nullable Identifiable input) {
+            return input.getClass().getSimpleName() + ":" + input.getId();
+        }
+    };
+
+    @Override
+    public List<Location> locationsForAdditions(Multimap<Location, Entity> currentMembers, Collection<? extends Location> locs, int numToAdd) {
+        if (locs.isEmpty() && numToAdd > 0) {
+            throw new IllegalArgumentException("No locations supplied, when requesting locations for "+numToAdd+" nodes");
+        }
+
+        List<DockerHostLocation> available = Lists.newArrayList(Iterables.filter(locs, DockerHostLocation.class));
+        int remaining = numToAdd;
+        for (DockerHostLocation machine : available) {
+            int maxSize = machine.getOwner().getConfig(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
+            int currentSize = machine.getOwner().getCurrentSize();
+            remaining -= (maxSize - currentSize);
+        }
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Requested {}/{}, Available Docker hosts: {}",
+                    new Object[] { numToAdd, remaining, Iterables.toString(Iterables.transform(locs, identity())) });
+        }
+
+        if (remaining > 0) {
+            // FIXME what happens if there are no Docker hosts available?
+            DockerHostLocation machine = Iterables.get(available, 0);
+
+            // Grow the Docker host cluster; based on max number of Docker containers
+            int maxSize = machine.getMaxSize();
+            int delta = (remaining / maxSize) + (remaining % maxSize > 0 ? 1 : 0);
+            Collection<Entity> added = machine.getDockerInfrastructure().getVirtualMachineCluster().grow(delta);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Added {} Docker hosts: {}", delta, Iterables.toString(Iterables.transform(added,
+                        identity())));
+            }
+
+            // Add the newly created locations for each Docker host
+            // TODO wait until all Docker hosts have started up?
+            Collection<DockerHostLocation> dockerHosts = Collections2.transform(added, new Function<Entity, DockerHostLocation>() {
+                @Override
+                public DockerHostLocation apply(@Nullable Entity input) {
+                    return ((DockerHost) input).getDynamicLocation();
+                }
+            });
+            available.addAll(dockerHosts);
+        }
+
+        // Logic from parent, with enhancements and types
+        List<Location> result = Lists.newArrayList();
+        Map<DockerHostLocation, Integer> sizes = toAvailableLocationSizes(available);
+        for (int i = 0; i < numToAdd; i++) {
+            DockerHostLocation smallest = null;
+            int minSize = 0;
+            for (DockerHostLocation loc : sizes.keySet()) {
+                int size = sizes.get(loc);
+                if (smallest == null || size < minSize) {
+                    smallest = loc;
+                    minSize = size;
+                }
+            }
+            Preconditions.checkState(smallest != null, "smallest was null; locs=%s", sizes.keySet());
+            result.add(smallest);
+
+            // Update population in locations, removing if maximum reached
+            int maxSize = smallest.getMaxSize();
+            int currentSize = sizes.get(smallest) + 1;
+            if (currentSize < maxSize) {
+                sizes.put(smallest, currentSize);
+            } else {
+                sizes.remove(smallest);
+            }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Placement for {} nodes: {}", numToAdd, Iterables.toString(Iterables.transform(result, identity())));
+        }
+        return result;
+    }
+
+    protected Map<DockerHostLocation, Integer> toAvailableLocationSizes(Iterable<DockerHostLocation> locs) {
+        Map<DockerHostLocation, Integer> result = Maps.newLinkedHashMap();
+        for (DockerHostLocation loc : locs) {
+            result.put(loc, loc.getCurrentSize());
+        }
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "Docker aware NodePlacementStrategy";
+    }
+
+}

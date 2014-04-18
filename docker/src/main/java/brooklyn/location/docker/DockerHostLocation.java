@@ -85,7 +85,8 @@ public class DockerHostLocation extends AbstractLocation implements MachineLocat
         Integer maxSize = dockerHost.getConfig(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
         Integer currentSize = dockerHost.getAttribute(DockerAttributes.DOCKER_CONTAINER_COUNT);
         if (LOG.isDebugEnabled()) {
-            LOG.debug("JVM {}: {} containers, max {}", new Object[] { dockerHost.getDockerHostName(), currentSize, maxSize });
+            LOG.debug("Docker host {}: {} containers, max {}", new Object[] { dockerHost.getDockerHostName(),
+                    currentSize, maxSize });
         }
 
         // also try to satisfy the affinty rules etc.
@@ -97,7 +98,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineLocat
         DynamicCluster cluster = dockerHost.getDockerContainerCluster();
         Optional<Entity> added = cluster.growByOne(machine, flags);
         if (!added.isPresent()) {
-            throw new NoMachinesAvailableException(String.format("Failed to create containers reached in %s", dockerHost.getDockerHostName()));
+            throw new NoMachinesAvailableException(String.format("Failed to create containers. Limit reached at %s", dockerHost.getDockerHostName()));
         }
         DockerContainer dockerContainer = (DockerContainer) added.get();
         DockerContainerLocation location = dockerContainer.getDynamicLocation();

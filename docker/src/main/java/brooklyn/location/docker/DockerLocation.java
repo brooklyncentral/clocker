@@ -35,6 +35,7 @@ import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
+import brooklyn.entity.container.docker.DockerNodePlacementStrategy;
 import brooklyn.entity.group.DynamicCluster.NodePlacementStrategy;
 import brooklyn.location.Location;
 import brooklyn.location.MachineLocation;
@@ -43,7 +44,6 @@ import brooklyn.location.NoMachinesAvailableException;
 import brooklyn.location.basic.AbstractLocation;
 import brooklyn.location.basic.Machines;
 import brooklyn.location.basic.SshMachineLocation;
-import brooklyn.location.cloud.AvailabilityZoneExtension;
 import brooklyn.location.dynamic.DynamicLocation;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.guava.Maybe;
@@ -87,7 +87,10 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
     @Override
     public void init() {
         super.init();
-        addExtension(AvailabilityZoneExtension.class, new DockerHostExtension(getManagementContext(), this));
+        if (strategy == null) {
+            strategy = new DockerNodePlacementStrategy();
+        }
+        addExtension(DockerHostExtension.class, new DockerHostExtension(getManagementContext(), this));
     }
 
     @Override
@@ -123,13 +126,13 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
             }
             */
 
-            // Use the docker strategy to add a single JVM
+            // Use the docker strategy to add a single Docker host
             List<Location> dockerHosts = getExtension(DockerHostExtension.class).doGetAllSubLocations();
             List<Location> added = strategy.locationsForAdditions(null, dockerHosts, 1);
             DockerHostLocation machine = (DockerHostLocation) Iterables.getOnlyElement(added);
             DockerHost dockerHost = machine.getOwner();
 
-            // Now wait until the JVM has started up
+            // Now wait until the Docker host has started up
             Entities.waitForServiceUp(dockerHost, dockerHost.getConfig(DockerHost.START_TIMEOUT), TimeUnit.SECONDS);
 
             // Obtain a new Docker container location, save and return it
