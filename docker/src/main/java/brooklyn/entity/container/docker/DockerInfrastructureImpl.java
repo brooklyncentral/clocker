@@ -73,7 +73,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 .displayName("Docker Hosts"));
 
         fabric = addChild(EntitySpec.create(DynamicGroup.class)
-                .configure(DynamicGroup.ENTITY_FILTER, Predicates.instanceOf(DockerHost.class))
+                .configure(DynamicGroup.ENTITY_FILTER, Predicates.instanceOf(DockerContainer.class))
                 .displayName("All Docker Containers"));
 
         if (Entities.isManaged(this)) {
