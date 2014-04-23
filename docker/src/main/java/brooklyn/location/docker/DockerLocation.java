@@ -94,6 +94,10 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
         addExtension(DockerHostExtension.class, new DockerHostExtension(getManagementContext(), this));
     }
 
+    public MachineProvisioningLocation<SshMachineLocation> getProvisioner() {
+        return provisioner;
+    }
+
     @Override
     public void configure(Map properties) {
         if (mutex == null) {
