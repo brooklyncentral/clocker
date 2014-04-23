@@ -40,6 +40,7 @@ import brooklyn.launcher.BrooklynLauncher;
 import brooklyn.location.Location;
 import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.basic.PortRanges;
+import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.util.CommandLineUtil;
 import brooklyn.util.net.Cidr;
@@ -81,8 +82,8 @@ public class SingleWebServerExample extends AbstractApplication implements Start
     @Override
     public void start(Collection<? extends Location> locations) {
         Location location = Iterables.getOnlyElement(locations);
-        if (location instanceof JcloudsLocation) {
-            JcloudsLocation loc = (JcloudsLocation) location;
+        if (location instanceof DockerLocation) {
+            JcloudsLocation loc = (JcloudsLocation) ((DockerLocation) location).getProvisioner();
             checkState("docker".equals(loc.getProvider()), "Expected docker rather than provider %s", loc.getProvider());
             portForwarder.init(URI.create(loc.getEndpoint()));
         }

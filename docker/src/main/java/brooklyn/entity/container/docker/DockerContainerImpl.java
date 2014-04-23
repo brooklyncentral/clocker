@@ -144,7 +144,7 @@ public class DockerContainerImpl extends SoftwareProcessImpl implements DockerCo
                 .parent(host)
                 .configure(flags)
                 .configure(DynamicLocation.OWNER, this)
-                .configure("host", host.getMachine()) // The underlying SshMachineLocation
+                .configure("machine", host.getMachine()) // The underlying SshMachineLocation
                 .configure("address", host.getAddress()) // FIXME
                 .configure("port", getAttribute(DockerHost.DOCKER_PORT))
                 .configure(host.getMachine().getAllConfig(true))

@@ -43,6 +43,7 @@ import brooklyn.location.basic.AbstractLocation;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.cloud.AvailabilityZoneExtension;
 import brooklyn.location.dynamic.DynamicLocation;
+import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.flags.SetFromFlag;
 
@@ -54,6 +55,9 @@ public class DockerHostLocation extends AbstractLocation implements MachineLocat
 
     @SetFromFlag("machine")
     private SshMachineLocation machine;
+
+    @SetFromFlag("jcloudsLocation")
+    private JcloudsLocation jcloudsLocation;
 
     @SetFromFlag("owner")
     private DockerHost dockerHost;
@@ -96,13 +100,13 @@ public class DockerHostLocation extends AbstractLocation implements MachineLocat
 
         // increase size of Docker container cluster
         DynamicCluster cluster = dockerHost.getDockerContainerCluster();
-        Optional<Entity> added = cluster.growByOne(machine, flags);
+        //Optional<Entity> added = cluster.growByOne(machine, flags);
+        Optional<Entity> added = cluster.growByOne(jcloudsLocation, flags);
         if (!added.isPresent()) {
             throw new NoMachinesAvailableException(String.format("Failed to create containers. Limit reached at %s", dockerHost.getDockerHostName()));
         }
         DockerContainer dockerContainer = (DockerContainer) added.get();
-        DockerContainerLocation location = dockerContainer.getDynamicLocation();
-        return location;
+        return dockerContainer.getDynamicLocation();
     }
 
     @Override
