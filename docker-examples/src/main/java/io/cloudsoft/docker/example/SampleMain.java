@@ -56,26 +56,21 @@ public class SampleMain extends Main {
     }
 
     @Command(name = "launch", description = "Starts a brooklyn server, and optionally an application. "
-            + "Use --docker to deploy a Docker entity on the cloud.\n"
-            + "Use --single or --cluster to launch one-node and clustered variants of the sample web application.")
+            + "Use --single or --infrastructure to launch one-node or clustered variants Docker.")
     public static class LaunchCommand extends Main.LaunchCommand {
 
         // add these options to the LaunchCommand as shortcuts for our favourite applications
-        @Option(name = { "--docker" }, description = "Deploy a single docker server instance")
-        public boolean docker;
-
-        @Option(name = { "--single" }, description = "Launch a single web-server instance")
+        @Option(name = { "--single" }, description = "Deploy a single docker server instance")
         public boolean single;
 
-        @Option(name = { "--cluster" }, description = "Launch a web-server cluster")
-        public boolean cluster;
+        @Option(name = { "--infrastructure" }, description = "Launch a basic Docker infrastructure")
+        public boolean infrastructure;
 
         @Override
         public Void call() throws Exception {
             // process our CLI arguments
-            if (docker) setAppToLaunch(SingleDockerHostExample.class.getCanonicalName() );
-            if (single) setAppToLaunch(SingleWebServerExample.class.getCanonicalName() );
-            if (cluster) setAppToLaunch(WebClusterDatabaseExample.class.getCanonicalName() );
+            if (single) setAppToLaunch(SingleDockerHostExample.class.getCanonicalName() );
+            if (infrastructure) setAppToLaunch(BasicInfrastructure.class.getCanonicalName() );
 
             // now process the standard launch arguments
             return super.call();
@@ -92,9 +87,8 @@ public class SampleMain extends Main {
         @Override
         public ToStringHelper string() {
             return super.string()
-                    .add("docker", docker)
                     .add("single", single)
-                    .add("cluster", cluster);
+                    .add("infrastructure", infrastructure);
         }
     }
 }
