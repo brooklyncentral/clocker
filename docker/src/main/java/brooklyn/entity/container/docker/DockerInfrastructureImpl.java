@@ -97,7 +97,6 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         buckets = addChild(EntitySpec.create(DynamicMultiGroup.class)
                 .configure(DynamicMultiGroup.ENTITY_FILTER, sameInfrastructure)
                 .configure(DynamicMultiGroup.RESCAN_INTERVAL, 15L)
-                .configure(DynamicMultiGroup.BUCKET_SPEC, EntitySpec.create(WaratekApplicationGroup.class))
                 .configure(DynamicMultiGroup.BUCKET_FUNCTION, new Function<Entity, String>() {
                         @Override
                         public String apply(@Nullable Entity input) {
