@@ -129,7 +129,7 @@ public class DockerHostLiveTest {
         
         DockerHost dockerHost = (DockerHost) Iterables.getOnlyElement(dockerInfrastructure.getDockerHostList());
         DockerLocation infraLoc = dockerInfrastructure.getDynamicLocation();
-        assertMembersEqualEventually(dockerInfrastructure.getDockerCluster(), ImmutableSet.of(dockerHost));
+        assertMembersEqualEventually(dockerInfrastructure.getDockerHostCluster(), ImmutableSet.of(dockerHost));
 
         DockerHostLocation hostLoc = (DockerHostLocation) infraLoc.obtain();
         DockerContainerLocation containerLoc = hostLoc.obtain();
