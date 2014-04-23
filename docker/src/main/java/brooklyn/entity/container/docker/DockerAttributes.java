@@ -26,9 +26,6 @@ public interface DockerAttributes {
      * Aggregate sensor attributes accumulated from the Docker container clusters.
      */
 
-    AttributeSensor<Long> TOTAL_HEAP_MEMORY = Sensors.newLongSensor("docker.heapMemory.total", "Total aggregated heap memory usage");
-    AttributeSensor<Double> HEAP_MEMORY_DELTA_PER_SECOND_LAST = Sensors.newDoubleSensor("docker.heapMemoryDelta.last", "Change in heap memory usage per second");
-    AttributeSensor<Double> HEAP_MEMORY_DELTA_PER_SECOND_IN_WINDOW = Sensors.newDoubleSensor("docker.heapMemoryDelta.windowed", "Average change in heap memory usage over 30s");
     AttributeSensor<Double> AVERAGE_CPU_USAGE = Sensors.newDoubleSensor("docker.cpuUsage.average", "Average CPU usage across the cluster");
 
     /*
@@ -36,6 +33,5 @@ public interface DockerAttributes {
      */
 
     AttributeSensor<Integer> DOCKER_HOST_COUNT = Sensors.newIntegerSensor("docker.hostCount", "Number of Docker hosts");
-    AttributeSensor<Integer> DOCKER_CONTAINER_COUNT = Sensors.newIntegerSensor("docker.containerCount",
-            "Number of Docker containers");
+    AttributeSensor<Integer> DOCKER_CONTAINER_COUNT = Sensors.newIntegerSensor("docker.containerCount", "Number of Docker containers");
 }

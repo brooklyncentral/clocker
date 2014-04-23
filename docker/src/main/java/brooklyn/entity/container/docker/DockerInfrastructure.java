@@ -69,7 +69,7 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
 
     List<Entity> getDockerHostList();
 
-    DynamicCluster getVirtualMachineCluster();
+    DynamicCluster getDockerHostCluster();
 
     List<Entity> getDockerContainerList();
 

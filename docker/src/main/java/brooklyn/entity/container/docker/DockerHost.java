@@ -57,14 +57,17 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
     @SetFromFlag("highAvailabilty")
     ConfigKey<Boolean> HA_POLICY_ENABLE = ConfigKeys.newBooleanConfigKey("docker.policy.ha.enable",
             "Enable high-availability and resilience/restart policies", false);
+
     @SetFromFlag("dockerPort")
     PortAttributeSensorAndConfigKey DOCKER_PORT = new PortAttributeSensorAndConfigKey("docker.port",
             "Docker port", "4243+");
+
     @SetFromFlag("containerSpec")
     BasicAttributeSensorAndConfigKey<EntitySpec> DOCKER_CONTAINER_SPEC = new
             BasicAttributeSensorAndConfigKey<EntitySpec>(
             EntitySpec.class, "docker.container.spec", "Specification to use when creating child Docker container",
             EntitySpec.create(DockerContainer.class));
+
     @SetFromFlag("infrastructure")
     ConfigKey<DockerInfrastructure> DOCKER_INFRASTRUCTURE = ConfigKeys.newConfigKey(DockerInfrastructure.class,
             "docker.infrastructure", "The parent Docker infrastructure");
@@ -79,5 +82,7 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
     DynamicCluster getDockerContainerCluster();
 
     List<Entity> getDockerContainerList();
+
+    DockerInfrastructure getInfrastructure();
 
 }

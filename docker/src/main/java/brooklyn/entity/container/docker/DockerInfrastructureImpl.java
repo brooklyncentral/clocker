@@ -19,14 +19,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Joiner;
-import com.google.common.base.Predicates;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 
 import brooklyn.enricher.Enrichers;
 import brooklyn.entity.Entity;
@@ -37,16 +33,25 @@ import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.basic.SoftwareProcess.ChildStartableMode;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
-import brooklyn.entity.java.UsesJmx;
-import brooklyn.entity.java.UsesJmx.JmxAgentModes;
+import brooklyn.entity.group.DynamicMultiGroup;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.location.Location;
 import brooklyn.location.LocationDefinition;
 import brooklyn.location.basic.BasicLocationDefinition;
+import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.DockerResolver;
 import brooklyn.management.LocationManager;
 import brooklyn.util.collections.MutableMap;
+
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 
 public class DockerInfrastructureImpl extends BasicStartableImpl implements DockerInfrastructure {
 
@@ -54,16 +59,29 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
     private DynamicCluster dockerHosts;
     private DynamicGroup fabric;
+    private DynamicMultiGroup buckets;
     private DockerLocation docker;
 
+    private Predicate<Entity> sameInfrastructure = new Predicate<Entity>() {
+        @Override
+        public boolean apply(@Nullable Entity input) {
+            // Check if entity is deployed to a WaratekContainerLocation
+            Optional<Location> lookup = Iterables.tryFind(input.getLocations(), Predicates.instanceOf(DockerContainerLocation.class));
+            if (lookup.isPresent()) {
+                DockerContainerLocation container = (DockerContainerLocation) lookup.get();
+                // Only containers that are part of this infrastructure
+                return getId().equals(container.getDockerHost().getInfrastructure().getId());
+            } else {
+                return false;
+            }
+        }
+    };
 
     @Override
     public void init() {
         int initialSize = getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE);
-        EntitySpec dockerHostSpec = EntitySpec.create(getConfig(DOCKER_HOST_SPEC))
+        EntitySpec<?> dockerHostSpec = EntitySpec.create(getConfig(DOCKER_HOST_SPEC))
                 .configure(DockerHost.DOCKER_INFRASTRUCTURE, this)
-                .configure(UsesJmx.USE_JMX, Boolean.TRUE)
-                .configure(UsesJmx.JMX_AGENT_MODE, JmxAgentModes.JMX_RMI_CUSTOM_AGENT)
                 .configure(SoftwareProcess.CHILDREN_STARTABLE_MODE, ChildStartableMode.BACKGROUND_LATE);
 
         dockerHosts = addChild(EntitySpec.create(DynamicCluster.class)
@@ -76,23 +94,23 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 .configure(DynamicGroup.ENTITY_FILTER, Predicates.instanceOf(DockerContainer.class))
                 .displayName("All Docker Containers"));
 
+        buckets = addChild(EntitySpec.create(DynamicMultiGroup.class)
+                .configure(DynamicMultiGroup.ENTITY_FILTER, sameInfrastructure)
+                .configure(DynamicMultiGroup.RESCAN_INTERVAL, 15L)
+                .configure(DynamicMultiGroup.BUCKET_SPEC, EntitySpec.create(WaratekApplicationGroup.class))
+                .configure(DynamicMultiGroup.BUCKET_FUNCTION, new Function<Entity, String>() {
+                        @Override
+                        public String apply(@Nullable Entity input) {
+                            return input.getApplication().getDisplayName();
+                        }
+                    })
+                .displayName("Waratek Java Applications"));
+
         if (Entities.isManaged(this)) {
             Entities.manage(dockerHosts);
             Entities.manage(fabric);
         }
 
-        dockerHosts.addEnricher(Enrichers.builder()
-                .aggregating(DockerAttributes.TOTAL_HEAP_MEMORY)
-                .computingSum()
-                .fromMembers()
-                .publishing(DockerAttributes.TOTAL_HEAP_MEMORY)
-                .build());
-        dockerHosts.addEnricher(Enrichers.builder()
-                .aggregating(DockerAttributes.HEAP_MEMORY_DELTA_PER_SECOND_IN_WINDOW)
-                .computingSum()
-                .fromMembers()
-                .publishing(DockerAttributes.HEAP_MEMORY_DELTA_PER_SECOND_IN_WINDOW)
-                .build());
         dockerHosts.addEnricher(Enrichers.builder()
                 .aggregating(DockerAttributes.AVERAGE_CPU_USAGE)
                 .computingAverage()
@@ -107,7 +125,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 .build());
 
         addEnricher(Enrichers.builder()
-                .propagating(DockerAttributes.TOTAL_HEAP_MEMORY, DOCKER_CONTAINER_COUNT, DockerAttributes.AVERAGE_CPU_USAGE, DockerAttributes.HEAP_MEMORY_DELTA_PER_SECOND_IN_WINDOW)
+                .propagating(DOCKER_CONTAINER_COUNT, DockerAttributes.AVERAGE_CPU_USAGE)
                 .from(dockerHosts)
                 .build());
         addEnricher(Enrichers.builder()
@@ -126,7 +144,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
     }
 
     @Override
-    public DynamicCluster getVirtualMachineCluster() { return dockerHosts; }
+    public DynamicCluster getDockerHostCluster() { return dockerHosts; }
 
     @Override
     public List<Entity> getDockerContainerList() {

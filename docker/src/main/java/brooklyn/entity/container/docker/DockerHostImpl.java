@@ -99,18 +99,6 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
         if (Entities.isManaged(this)) Entities.manage(containers);
 
         containers.addEnricher(Enrichers.builder()
-                .aggregating(DockerAttributes.HEAP_MEMORY_DELTA_PER_SECOND_IN_WINDOW)
-                .computingSum()
-                .fromMembers()
-                .publishing(DockerAttributes.HEAP_MEMORY_DELTA_PER_SECOND_IN_WINDOW)
-                .build());
-        containers.addEnricher(Enrichers.builder()
-                .aggregating(UsesJavaMXBeans.USED_HEAP_MEMORY)
-                .computingSum()
-                .fromMembers()
-                .publishing(DockerAttributes.TOTAL_HEAP_MEMORY)
-                .build());
-        containers.addEnricher(Enrichers.builder()
                 .aggregating(DockerAttributes.CPU_USAGE)
                 .computingAverage()
                 .fromMembers()
@@ -122,7 +110,7 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
                 .from(containers)
                 .build());
         addEnricher(Enrichers.builder()
-                .propagating(DockerAttributes.TOTAL_HEAP_MEMORY, DockerAttributes.AVERAGE_CPU_USAGE, DockerAttributes.HEAP_MEMORY_DELTA_PER_SECOND_IN_WINDOW)
+                .propagating(DockerAttributes.AVERAGE_CPU_USAGE)
                 .from(containers)
                 .build());
     }
@@ -139,13 +127,12 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     @Override
     protected void connectSensors() {
         super.connectSensors();
-        //TODO implementation
-        setAttribute(SERVICE_UP, true);
+        connectServiceUpIsRunning();
     }
 
     @Override
     protected void disconnectSensors() {
-        //TODO implementation
+        disconnectServiceUpIsRunning();
         super.disconnectSensors();
     }
 
@@ -189,10 +176,17 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     @Override
     protected Map<String, Object> obtainProvisioningFlags(MachineProvisioningLocation location) {
         Map flags = super.obtainProvisioningFlags(location);
-        PortableTemplateBuilder portableTemplateBuilder = new PortableTemplateBuilder();
-        flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(),
-                portableTemplateBuilder.osFamily(OsFamily.UBUNTU).osVersionMatches("12.04").os64Bit(true).minRam(2048));
+        flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), new PortableTemplateBuilder()
+                .osFamily(OsFamily.UBUNTU)
+                .osVersionMatches("12.04")
+                .os64Bit(true)
+                .minRam(2048));
         return flags;
+    }
+
+    @Override
+    public DockerInfrastructure getInfrastructure() {
+        return getConfig(DOCKER_INFRASTRUCTURE);
     }
 
     @Override

@@ -24,17 +24,11 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
-
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
+import brooklyn.entity.container.docker.DockerNodePlacementStrategy;
 import brooklyn.entity.group.DynamicCluster.NodePlacementStrategy;
 import brooklyn.location.Location;
 import brooklyn.location.MachineLocation;
@@ -47,6 +41,13 @@ import brooklyn.location.cloud.AvailabilityZoneExtension;
 import brooklyn.location.dynamic.DynamicLocation;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.guava.Maybe;
+
+import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 
 public class DockerLocation extends AbstractLocation implements DockerVirtualLocation,
         MachineProvisioningLocation<MachineLocation>,
@@ -87,6 +88,9 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
     @Override
     public void init() {
         super.init();
+        if (strategy == null) {
+            strategy = new DockerNodePlacementStrategy();
+        }
         addExtension(AvailabilityZoneExtension.class, new DockerHostExtension(getManagementContext(), this));
     }
 
@@ -105,31 +109,13 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
     @Override
     public MachineLocation obtain(Map<?,?> flags) throws NoMachinesAvailableException {
         synchronized (mutex) {
-            /*
-            // Check context for entitiy implementing UsesJava interface
-            Object context = flags.get(LocationConfigKeys.CALLER_CONTEXT.getName());
-            if (context instanceof Entity) {
-                List<Class<?>> implementations = Reflections.getAllInterfaces(context.getClass());
-                boolean usesJava = Iterables.any(implementations, Predicates.<Class>equalTo(UsesJava.class));
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Context {}: UsesJava {}", context.toString(), Boolean.toString(usesJava));
-                }
-                if (!usesJava) {
-                    // Return an SshMachineLocation from the provisioner
-                    SshMachineLocation machine = provisioner.obtain(flags);
-                    obtained.add(machine);
-                    return machine;
-                }
-            }
-            */
-
-            // Use the docker strategy to add a single JVM
-            List<Location> dockerHosts = getExtension(DockerHostExtension.class).doGetAllSubLocations();
+            // Use the docker strategy to add a new host
+            List<Location> dockerHosts = getExtension(AvailabilityZoneExtension.class).getAllSubLocations();
             List<Location> added = strategy.locationsForAdditions(null, dockerHosts, 1);
             DockerHostLocation machine = (DockerHostLocation) Iterables.getOnlyElement(added);
             DockerHost dockerHost = machine.getOwner();
 
-            // Now wait until the JVM has started up
+            // Now wait until the host has started up
             Entities.waitForServiceUp(dockerHost, dockerHost.getConfig(DockerHost.START_TIMEOUT), TimeUnit.SECONDS);
 
             // Obtain a new Docker container location, save and return it
