@@ -26,9 +26,8 @@ import com.google.common.collect.Maps;
 
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
-import brooklyn.location.basic.SshMachineLocation;
-import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.location.dynamic.DynamicLocation;
+import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.util.flags.SetFromFlag;
 
 public class DockerContainerLocation extends JcloudsSshMachineLocation implements DynamicLocation<DockerContainer, DockerContainerLocation> {
@@ -36,7 +35,7 @@ public class DockerContainerLocation extends JcloudsSshMachineLocation implement
     private static final Logger LOG = LoggerFactory.getLogger(DockerContainerLocation.class);
 
     @SetFromFlag("machine")
-    private SshMachineLocation machine;
+    private JcloudsSshMachineLocation machine;
 
     @SetFromFlag("owner")
     private DockerContainer dockerContainer;

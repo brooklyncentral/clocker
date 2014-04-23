@@ -231,4 +231,5 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
             setAttribute(DYNAMIC_LOCATION,  null);
         }
     }
+
 }

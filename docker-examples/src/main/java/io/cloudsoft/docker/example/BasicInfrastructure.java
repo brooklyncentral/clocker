@@ -34,7 +34,7 @@ public class BasicInfrastructure extends AbstractApplication {
 
     @CatalogConfig(label="Docker Host Cluster Minimum Size", priority=1)
     public static final ConfigKey<Integer> DOCKER_HOST_CLUSTER_MIN_SIZE = ConfigKeys.newConfigKeyWithDefault
-            (DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 2);
+            (DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 1);
 
     @CatalogConfig(label="Enable HA Policies", priority=1)
     public static final ConfigKey<Boolean> HA_POLICY_ENABLE = DockerHost.HA_POLICY_ENABLE;
