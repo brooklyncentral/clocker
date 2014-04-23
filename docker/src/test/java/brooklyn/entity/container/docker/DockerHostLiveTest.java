@@ -21,11 +21,15 @@ import static org.testng.Assert.assertTrue;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Set;
 
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 
 import brooklyn.entity.Entity;
 import brooklyn.entity.Group;
@@ -36,7 +40,6 @@ import brooklyn.launcher.BrooklynLauncher;
 import brooklyn.location.Location;
 import brooklyn.location.LocationDefinition;
 import brooklyn.location.LocationSpec;
-import brooklyn.location.MachineLocation;
 import brooklyn.location.basic.FixedListMachineProvisioningLocation;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.docker.DockerContainerLocation;
@@ -45,11 +48,6 @@ import brooklyn.location.docker.DockerLocation;
 import brooklyn.management.ManagementContext;
 import brooklyn.test.Asserts;
 import brooklyn.test.entity.TestApplication;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 
 /**
  * Brooklyn managed basic Docker infrastructure.
@@ -71,9 +69,9 @@ public class DockerHostLiveTest {
         
         machine = managementContext.getLocationManager().createLocation(LocationSpec.create(SshMachineLocation.class)
                 .configure("user", "andrea")
-                .configure("address", "1.2.3.4"));
+                .configure("address", "198.11.193.61"));
         machinePool = managementContext.getLocationManager().createLocation(LocationSpec.create(FixedListMachineProvisioningLocation.class)
-                .configure("machines", ImmutableList.of(machine));
+                .configure("machines", ImmutableList.of(machine)));
         
         app = ApplicationBuilder.newManagedApp(TestApplication.class, managementContext);
     }
@@ -89,7 +87,8 @@ public class DockerHostLiveTest {
         DockerInfrastructure dockerInfrastructure = app.createAndManageChild(EntitySpec.create(DockerInfrastructure.class)
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 1)
                 .configure(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS, true)
-                .configure(DockerInfrastructure.LOCATION_NAME_PREFIX, "dynamicdockertest"));
+                .configure(DockerInfrastructure.LOCATION_NAME_PREFIX, "dynamicdockertest")
+                .displayName("Docker Infrastructure"));
         dockerInfrastructure.start(ImmutableList.of(machinePool));
         
         List<Entity> dockerHosts = dockerInfrastructure.getDockerHostList();
@@ -98,11 +97,11 @@ public class DockerHostLiveTest {
         LocationDefinition infraLocDef = findLocationMatchingName("dynamicdockertest.*");
         Location infraLoc = managementContext.getLocationRegistry().resolve(infraLocDef);
         assertTrue(infraLoc instanceof DockerLocation, "loc="+infraLoc);
-        
-        LocationDefinition hostLocDef = findLocationMatchingName(infraLoc.getId() + "-" + dockerHost.getDockerHostName()+".*");
+
+        LocationDefinition hostLocDef = findLocationMatchingName(dockerInfrastructure.getDynamicLocation().getId() + "-" + dockerHost
+                .getDockerHostName() + ".*");
         Location hostLoc = managementContext.getLocationRegistry().resolve(hostLocDef);
-        assertTrue(infraLoc instanceof DockerLocation, "loc="+infraLoc);
-        assertTrue(hostLoc instanceof DockerHostLocation, "loc="+hostLoc);
+        assertTrue(hostLoc instanceof DockerHostLocation, "loc=" + hostLoc);
     }
 
     @Test(groups="Integration")
@@ -123,25 +122,37 @@ public class DockerHostLiveTest {
 
     @Test(groups="Integration")
     public void testObtainContainerFromInfrastructure() throws Exception {
+
         DockerInfrastructure dockerInfrastructure = app.createAndManageChild(EntitySpec.create(DockerInfrastructure.class)
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 1));
         dockerInfrastructure.start(ImmutableList.of(machinePool));
         
         DockerHost dockerHost = (DockerHost) Iterables.getOnlyElement(dockerInfrastructure.getDockerHostList());
         DockerLocation infraLoc = dockerInfrastructure.getDynamicLocation();
+        assertMembersEqualEventually(dockerInfrastructure.getDockerCluster(), ImmutableSet.of(dockerHost));
 
-        MachineLocation containerLoc = infraLoc.obtain();
+        DockerHostLocation hostLoc = (DockerHostLocation) infraLoc.obtain();
+        DockerContainerLocation containerLoc = hostLoc.obtain();
+
+        DockerContainer container = (DockerContainer) Iterables.getOnlyElement(dockerHost.getDockerContainerList());
+        assertMembersEqualEventually(dockerInfrastructure.getContainerFabric(), ImmutableSet.of(container));
+
+        infraLoc.release(hostLoc);
+
+        assertMembersEqualEventually(dockerInfrastructure.getContainerFabric(), ImmutableSet.<Entity>of());
+        /*
         DockerContainer container = (DockerContainer) Iterables.getOnlyElement(dockerHost.getDockerContainerList());
         assertMembersEqualEventually(dockerInfrastructure.getContainerFabric(), ImmutableSet.of(container));
         
-        infraLoc.release(containerLoc);
+        infraLoc.release(hostLoc);
         assertMembersEqualEventually(dockerInfrastructure.getContainerFabric(), ImmutableSet.<Entity>of());
+        */
     }
 
-    private void assertMembersEqualEventually(final Group group, final Set<? extends Entity> containers) {
+    private void assertMembersEqualEventually(final Group group, final Iterable<? extends Entity> entities) {
         Asserts.succeedsEventually(new Runnable() {
             public void run() {
-                Asserts.assertEqualsIgnoringOrder(group.getMembers(), containers);
+                Asserts.assertEqualsIgnoringOrder(group.getMembers(), entities);
             }});
     }
     

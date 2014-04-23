@@ -39,7 +39,7 @@ public class DockerHostExtension extends AbstractAvailabilityZoneExtension {
     @Override
     protected List<Location> doGetAllSubLocations() {
         List<Location> result = Lists.newArrayList();
-        for (Entity entity : location.getDockerContainerList()) {
+        for (Entity entity : location.getDockerHostList()) {
             DockerHost host = (DockerHost) entity;
             DockerHostLocation machine = host.getDynamicLocation();
             result.add(machine);

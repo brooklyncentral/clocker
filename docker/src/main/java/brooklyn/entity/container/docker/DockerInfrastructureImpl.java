@@ -126,7 +126,9 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
     }
 
     @Override
-    public DynamicCluster getVirtualMachineCluster() { return dockerHosts; }
+    public DynamicCluster getDockerCluster() {
+        return dockerHosts;
+    }
 
     @Override
     public List<Entity> getDockerContainerList() {
@@ -213,4 +215,5 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
             setAttribute(DYNAMIC_LOCATION,  null);
         }
     }
+
 }

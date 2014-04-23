@@ -128,7 +128,7 @@ public class DockerResolver implements EnableableLocationResolver {
             if (dockerHostId == null) {
                 name.append("Infrastructure ").append(infrastructureId);
             } else {
-                name.append("Docker Host ").append(dockerHostId);
+                name.append("Host ").append(dockerHostId);
             }
         }
         final String displayName =  name.toString();

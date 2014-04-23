@@ -154,8 +154,6 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
         return "Docker Host";
     }
 
-
-
     @Override
     public Integer resize(@EffectorParam(name = "desiredSize", description = "The new size of the cluster") Integer desiredSize) {
         Integer maxSize = getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
@@ -208,9 +206,8 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
         DockerInfrastructure infrastructure = getConfig(DOCKER_INFRASTRUCTURE);
         DockerLocation docker = infrastructure.getDynamicLocation();
         String locationName = docker.getId() + "-" + getDockerHostName();
-
         String locationSpec = String.format(DockerResolver.DOCKER_HOST_MACHINE_SPEC, infrastructure.getId(),
-                getId()) + String.format(":(name=\"%s\")", locationName);
+                    getId()) + String.format(":(name=\"%s\")", locationName);
         setAttribute(LOCATION_SPEC, locationSpec);
         LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
         Location location = getManagementContext().getLocationRegistry().resolve(definition);
@@ -236,7 +233,7 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
         Map<String, ?> flags = MutableMap.<String, Object>builder()
                 .putAll(getConfig(LOCATION_FLAGS))
                 .put("machine", found.get())
-                .build();
+                .put("jcloudsLocation", getManagementContext().getLocationRegistry().resolve("jclouds:docker:http://127.0.0.1:4243")).build();
         host = createLocation(flags);
         log.info("New Docker host location {} created", host);
     }
