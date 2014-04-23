@@ -108,6 +108,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         if (Entities.isManaged(this)) {
             Entities.manage(dockerHosts);
             Entities.manage(fabric);
+            Entities.manage(buckets);
         }
 
         dockerHosts.addEnricher(Enrichers.builder()

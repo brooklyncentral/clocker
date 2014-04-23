@@ -73,7 +73,7 @@ public class DockerHostLiveTest {
                 .configure("user", "andrea")
                 .configure("address", "1.2.3.4"));
         machinePool = managementContext.getLocationManager().createLocation(LocationSpec.create(FixedListMachineProvisioningLocation.class)
-                .configure("machines", ImmutableList.of(machine));
+                .configure("machines", ImmutableList.of(machine)));
         
         app = ApplicationBuilder.newManagedApp(TestApplication.class, managementContext);
     }
