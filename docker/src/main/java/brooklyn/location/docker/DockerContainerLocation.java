@@ -27,11 +27,11 @@ import com.google.common.collect.Maps;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.location.basic.SshMachineLocation;
+import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.location.dynamic.DynamicLocation;
 import brooklyn.util.flags.SetFromFlag;
 
-public class DockerContainerLocation extends SshMachineLocation implements DynamicLocation<DockerContainer,
-        DockerContainerLocation> {
+public class DockerContainerLocation extends JcloudsSshMachineLocation implements DynamicLocation<DockerContainer, DockerContainerLocation> {
 
     private static final Logger LOG = LoggerFactory.getLogger(DockerContainerLocation.class);
 
@@ -41,6 +41,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Dynam
     @SetFromFlag("owner")
     private DockerContainer dockerContainer;
 
+    /*
     public DockerContainerLocation() {
         this(Maps.newLinkedHashMap());
     }
@@ -52,6 +53,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Dynam
             init();
         }
     }
+    */
 
     @Override
     public DockerContainer getOwner() {

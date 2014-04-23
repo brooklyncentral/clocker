@@ -104,7 +104,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                             return input.getApplication().getDisplayName();
                         }
                     })
-                .displayName("Waratek Java Applications"));
+                .displayName("Docker Applications"));
 
         if (Entities.isManaged(this)) {
             Entities.manage(dockerHosts);

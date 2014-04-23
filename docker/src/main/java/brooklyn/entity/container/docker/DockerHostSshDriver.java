@@ -73,6 +73,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .execute();
     }
 
+    // TODO consider re-using `curl get.docker.io | bash` to install docker on the platform supported
     @Override
     public void install() {
         DownloadResolver resolver = Entities.newDownloader(this);

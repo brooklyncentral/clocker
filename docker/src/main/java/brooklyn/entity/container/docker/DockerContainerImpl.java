@@ -15,6 +15,8 @@
  */
 package brooklyn.entity.container.docker;
 
+import static java.lang.String.format;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,7 +43,7 @@ public class DockerContainerImpl extends SoftwareProcessImpl implements DockerCo
     public void init() {
         log.info("Starting Docker container id {}", getId());
 
-        String dockerContainerName = String.format(getConfig(DockerContainer.DOCKER_CONTAINER_NAME_FORMAT), getId(),
+        String dockerContainerName = format(getConfig(DockerContainer.DOCKER_CONTAINER_NAME_FORMAT), getId(),
                 counter.incrementAndGet());
         setDisplayName(dockerContainerName);
         setAttribute(DOCKER_CONTAINER_NAME, dockerContainerName);
@@ -130,8 +132,11 @@ public class DockerContainerImpl extends SoftwareProcessImpl implements DockerCo
         return (DockerContainerLocation) getAttribute(DYNAMIC_LOCATION);
     }
 
+    /**
+     * Create a new {@link brooklyn.location.jclouds.JcloudsLocation} wrapping the machine we are starting in.
+     */
     @Override
-    public DockerContainerLocation createLocation(Map<String, ?> flags) {
+    public DockerContainerLocation createLocation(Map flags) {
         DockerHost dockerHost = getConfig(DOCKER_HOST);
         DockerHostLocation host = dockerHost.getDynamicLocation();
         String locationName = host.getId() + "-" + getId();
@@ -141,6 +146,7 @@ public class DockerContainerImpl extends SoftwareProcessImpl implements DockerCo
                 .configure(DynamicLocation.OWNER, this)
                 .configure("host", host.getMachine()) // The underlying SshMachineLocation
                 .configure("address", host.getAddress()) // FIXME
+                .configure("port", getAttribute(DockerHost.DOCKER_PORT))
                 .configure(host.getMachine().getAllConfig(true))
                 .displayName(getDockerContainerName())
                 .id(locationName);

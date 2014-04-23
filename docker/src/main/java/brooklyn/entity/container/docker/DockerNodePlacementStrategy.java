@@ -39,7 +39,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 
 /**
- * Placement strategy that adds more JVMs if existing locations run out of capacity.
+ * Placement strategy that adds more Docker hosts if existing locations run out of capacity.
  *
  * @see BalancingNodePlacementStrategy
  */
@@ -62,7 +62,7 @@ public class DockerNodePlacementStrategy extends BalancingNodePlacementStrategy 
             throw new IllegalArgumentException("No locations supplied, when requesting locations for "+numToAdd+" nodes");
         }
 
-        List<DockerHostLocation> available = Lists.newArrayList(Iterables.filter(locs,  DockerHostLocation.class));
+        List<DockerHostLocation> available = Lists.newArrayList(Iterables.filter(locs, DockerHostLocation.class));
         int remaining = numToAdd;
         for (DockerHostLocation machine : available) {
             int maxSize = machine.getOwner().getConfig(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
@@ -70,31 +70,32 @@ public class DockerNodePlacementStrategy extends BalancingNodePlacementStrategy 
             remaining -= (maxSize - currentSize);
         }
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Requested {}/{}, Available JVMs: {}",
+            LOG.debug("Requested {}/{}, Available Docker hosts: {}",
                     new Object[] { numToAdd, remaining, Iterables.toString(Iterables.transform(locs, identity())) });
         }
 
         if (remaining > 0) {
-            // FIXME what happens if there are no JVMs available?
+            // FIXME what happens if there are no Docker hosts available?
             DockerHostLocation machine = Iterables.get(available, 0);
 
-            // Grow the JVM cluster; based on max number of JVCs
+            // Grow the Docker host cluster; based on max number of Docker containers
             int maxSize = machine.getMaxSize();
             int delta = (remaining / maxSize) + (remaining % maxSize > 0 ? 1 : 0);
             Collection<Entity> added = machine.getDockerInfrastructure().getVirtualMachineCluster().grow(delta);
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Added {} JVMs: {}", delta, Iterables.toString(Iterables.transform(added, identity())));
+                LOG.debug("Added {} Docker hosts: {}", delta, Iterables.toString(Iterables.transform(added,
+                        identity())));
             }
 
-            // Add the newly created locations for each JVM
-            // TODO wait until all JVMs have started up?
-            Collection<DockerHostLocation> jvms = Collections2.transform(added, new Function<Entity, DockerHostLocation>() {
+            // Add the newly created locations for each Docker host
+            // TODO wait until all Docker hosts have started up?
+            Collection<DockerHostLocation> dockerHosts = Collections2.transform(added, new Function<Entity, DockerHostLocation>() {
                 @Override
                 public DockerHostLocation apply(@Nullable Entity input) {
                     return ((DockerHost) input).getDynamicLocation();
                 }
             });
-            available.addAll(jvms);
+            available.addAll(dockerHosts);
         }
 
         // Logic from parent, with enhancements and types
@@ -139,7 +140,7 @@ public class DockerNodePlacementStrategy extends BalancingNodePlacementStrategy 
 
     @Override
     public String toString() {
-        return "Waratek aware NodePlacementStrategy";
+        return "Docker aware NodePlacementStrategy";
     }
 
 }
