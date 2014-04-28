@@ -16,6 +16,7 @@
 package brooklyn.entity.container.docker;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.String.format;
 
 import java.util.Collection;
 import java.util.List;
@@ -36,7 +37,6 @@ import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.SoftwareProcessImpl;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
-import brooklyn.entity.java.UsesJavaMXBeans;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.location.Location;
 import brooklyn.location.LocationDefinition;
@@ -75,7 +75,7 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     public void init() {
         log.info("Starting Docker host id {}", getId());
 
-        String dockerHostName = String.format(getConfig(DockerHost.HOST_NAME_FORMAT), getId(), counter.incrementAndGet());
+        String dockerHostName = format(getConfig(DockerHost.HOST_NAME_FORMAT), getId(), counter.incrementAndGet());
         setDisplayName(dockerHostName);
         setAttribute(HOST_NAME, dockerHostName);
 
@@ -200,8 +200,8 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
         DockerInfrastructure infrastructure = getConfig(DOCKER_INFRASTRUCTURE);
         DockerLocation docker = infrastructure.getDynamicLocation();
         String locationName = docker.getId() + "-" + getDockerHostName();
-        String locationSpec = String.format(DockerResolver.DOCKER_HOST_MACHINE_SPEC, infrastructure.getId(),
-                    getId()) + String.format(":(name=\"%s\")", locationName);
+        String locationSpec = format(DockerResolver.DOCKER_HOST_MACHINE_SPEC, infrastructure.getId(),
+                getId()) + format(":(name=\"%s\")", locationName);
         setAttribute(LOCATION_SPEC, locationSpec);
         LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
         Location location = getManagementContext().getLocationRegistry().resolve(definition);
@@ -227,7 +227,11 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
         Map<String, ?> flags = MutableMap.<String, Object>builder()
                 .putAll(getConfig(LOCATION_FLAGS))
                 .put("machine", found.get())
-                .put("jcloudsLocation", getManagementContext().getLocationRegistry().resolve("jclouds:docker:http://127.0.0.1:4243")).build();
+                .put("jcloudsLocation", getManagementContext().getLocationRegistry().resolve(
+                        format("jclouds:docker:http://%s:%s",
+                                found.get().getSshHostAndPort().getHostText(),
+                                this.getPort())))
+                .build();
         host = createLocation(flags);
         log.info("New Docker host location {} created", host);
     }
