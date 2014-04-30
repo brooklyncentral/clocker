@@ -15,7 +15,6 @@
  */
 package brooklyn.location.docker;
 
-import java.net.InetAddress;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -34,12 +33,8 @@ import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.group.DynamicCluster;
-import brooklyn.location.MachineDetails;
-import brooklyn.location.MachineLocation;
 import brooklyn.location.MachineProvisioningLocation;
 import brooklyn.location.NoMachinesAvailableException;
-import brooklyn.location.OsDetails;
-import brooklyn.location.basic.AbstractLocation;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.cloud.AvailabilityZoneExtension;
 import brooklyn.location.dynamic.DynamicLocation;
@@ -47,7 +42,7 @@ import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.flags.SetFromFlag;
 
-public class DockerHostLocation extends AbstractLocation implements MachineLocation,
+public class DockerHostLocation extends SshMachineLocation implements
         MachineProvisioningLocation<DockerContainerLocation>, DockerVirtualLocation,
         DynamicLocation<DockerHost, DockerHostLocation> {
 
@@ -126,27 +121,16 @@ public class DockerHostLocation extends AbstractLocation implements MachineLocat
     }
 
     @Override
-    public InetAddress getAddress() {
-        return machine.getAddress();
-    }
-
-    @Override
-    public OsDetails getOsDetails() {
-        return machine.getOsDetails();
-    }
-
-    @Override
-    public MachineDetails getMachineDetails() {
-        return null;
-    }
-
-    @Override
     public DockerHost getOwner() {
         return dockerHost;
     }
 
     public SshMachineLocation getMachine() {
         return machine;
+    }
+
+    public JcloudsLocation getJcloudsLocation() {
+        return jcloudsLocation;
     }
 
     public int getCurrentSize() {

@@ -32,6 +32,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.cloudsoft.networking</groupId>
+            <artifactId>brooklyn-networking-portforwarding</artifactId>
+            <version>${brooklyn.networking.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.brooklyn</groupId>
             <artifactId>brooklyn-software-base</artifactId>
             <version>${brooklyn.version}</version>

@@ -19,10 +19,16 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Entities;
@@ -39,16 +45,8 @@ import brooklyn.location.basic.Machines;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.cloud.AvailabilityZoneExtension;
 import brooklyn.location.dynamic.DynamicLocation;
-import brooklyn.util.collections.MutableMap;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.guava.Maybe;
-
-import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
 
 public class DockerLocation extends AbstractLocation implements DockerVirtualLocation,
         MachineProvisioningLocation<MachineLocation>,
@@ -121,19 +119,20 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
             DockerHost dockerHost = machine.getOwner();
 
             // Now wait until the host has started up
-            Entities.waitForServiceUp(dockerHost, dockerHost.getConfig(DockerHost.START_TIMEOUT));
+            Entities.waitForServiceUp(dockerHost);
             // Obtain a new Docker container location, save and return it
-            DockerHostLocation location = dockerHost.getDynamicLocation();
-            DockerContainerLocation container = location.obtain(MutableMap.of("imageId", "e26387043472295e639b3e2be465e6bf5c2026ee5a0e15e63d980ba9a2f45c1a"));
+            DockerHostLocation dockerHostLocation = dockerHost.getDynamicLocation();
+
+            //DockerContainerLocation container = location.obtain(flags);
+
             Maybe<SshMachineLocation> deployed = Machines.findUniqueSshMachineLocation(dockerHost.getLocations());
             if (deployed.isPresent()) {
                 if (LOG.isDebugEnabled()) {
-                    LOG.debug("Storing container mapping: {}-{}", deployed.get(), container.getId());
+                    LOG.debug("Storing container mapping: {}-{}", deployed.get(), machine.getId());
                 }
-                machines.put(deployed.get(), container.getId());
-                containers.put(container.getId(), deployed.get());
+                machines.put(machine.getMachine(), dockerHost.getId());
             }
-            return location;
+            return dockerHostLocation;
         }
     }
 
@@ -159,6 +158,26 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
                         }
                     } else {
                         throw new IllegalArgumentException("Request to release "+machineLocation+", but no SSH machine found");
+                    }
+                } else if (machineLocation instanceof DockerHostLocation) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Request to release host {}", machineLocation);
+                    }
+                    DockerHostLocation dockerHostLocation = (DockerHostLocation) machineLocation;
+                    for (Entity container : dockerHostLocation.getDockerContainerList()) {
+                        String id = dockerHostLocation.getId() + "-" + container.getId();
+                        SshMachineLocation ssh = containers.remove(id);
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("Request to release container mapping {}-{}", ssh, id);
+                        }
+                        if (ssh != null) {
+                            machines.remove(ssh, id);
+                            if (machines.get(ssh).isEmpty()) {
+                                provisioner.release(ssh);
+                            }
+                        } else {
+                            throw new IllegalArgumentException("Request to release "+machineLocation+", but no SSH machine found");
+                        }
                     }
                 } else if (machineLocation instanceof SshMachineLocation) {
                     if (LOG.isDebugEnabled()) {

@@ -64,6 +64,10 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
             EntitySpec.class, "docker.host.spec", "Specification to use when creating child Docker Hosts",
             EntitySpec.create(DockerHost.class));
 
+    @SetFromFlag("containerId")
+    ConfigKey<String> DOCKER_CONTAINER_ID = ConfigKeys.newStringConfigKey("docker.containerId", "Specification to use when creating child Docker Hosts");
+
+
     AttributeSensor<Integer> DOCKER_HOST_COUNT = DockerAttributes.DOCKER_HOST_COUNT;
     AttributeSensor<Integer> DOCKER_CONTAINER_COUNT = DockerAttributes.DOCKER_CONTAINER_COUNT;
 

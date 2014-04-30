@@ -66,9 +66,15 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     private static final AtomicInteger counter = new AtomicInteger(0);
 
     private DynamicCluster containers;
+
     private DockerHostLocation host;
 
     public DockerHostImpl() {
+    }
+
+    @Override
+    public DockerHostDriver getDriver() {
+        return (DockerHostDriver) super.getDriver();
     }
 
     @Override
@@ -118,6 +124,11 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     @Override
     public Class<?> getDriverInterface() {
         return DockerHostDriver.class;
+    }
+
+    @Override
+    public DockerHostLocation getDockerHost() {
+        return host;
     }
 
     public int getPort() {
@@ -188,6 +199,11 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     }
 
     @Override
+    public void createSshableImage(String dockerFile, String folder) {
+       getDriver().executeScriptAsync(dockerFile, folder).block();
+    }
+
+    @Override
     public DockerHostLocation getDynamicLocation() {
         return (DockerHostLocation) getAttribute(DYNAMIC_LOCATION);
     }
@@ -197,10 +213,11 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
      */
     @Override
     public DockerHostLocation createLocation(Map<String, ?> flags) {
+        String locationSpec, locationName;
         DockerInfrastructure infrastructure = getConfig(DOCKER_INFRASTRUCTURE);
         DockerLocation docker = infrastructure.getDynamicLocation();
-        String locationName = docker.getId() + "-" + getDockerHostName();
-        String locationSpec = format(DockerResolver.DOCKER_HOST_MACHINE_SPEC, infrastructure.getId(),
+        locationName = docker.getId() + "-" + getDockerHostName();
+        locationSpec = format(DockerResolver.DOCKER_HOST_MACHINE_SPEC, infrastructure.getId(),
                 getId()) + format(":(name=\"%s\")", locationName);
         setAttribute(LOCATION_SPEC, locationSpec);
         LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
@@ -230,7 +247,8 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
                 .put("jcloudsLocation", getManagementContext().getLocationRegistry().resolve(
                         format("jclouds:docker:http://%s:%s",
                                 found.get().getSshHostAndPort().getHostText(),
-                                this.getPort())))
+                                this.getPort())
+                ))
                 .build();
         host = createLocation(flags);
         log.info("New Docker host location {} created", host);

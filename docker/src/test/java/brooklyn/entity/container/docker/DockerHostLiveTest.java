@@ -27,7 +27,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
@@ -54,6 +53,8 @@ import brooklyn.test.entity.TestApplication;
  */
 public class DockerHostLiveTest {
 
+    public static final String USER = "andrea";
+    public static final String ADDRESS = "37.58.96.163";
     private BrooklynLauncher launcher;
     private ManagementContext managementContext;
     private SshMachineLocation machine;
@@ -68,8 +69,8 @@ public class DockerHostLiveTest {
                 .start();
         
         machine = managementContext.getLocationManager().createLocation(LocationSpec.create(SshMachineLocation.class)
-                .configure("user", "andrea")
-                .configure("address", "198.11.193.61"));
+                .configure("user", USER)
+                .configure("address", ADDRESS));
         machinePool = managementContext.getLocationManager().createLocation(LocationSpec.create(FixedListMachineProvisioningLocation.class)
                 .configure("machines", ImmutableList.of(machine)));
         
@@ -105,11 +106,11 @@ public class DockerHostLiveTest {
     }
 
     @Test(groups="Integration")
-    public void testObtainContainerFromHost() throws Exception {
+    public void testObtainContainerFromInfrastructure() throws Exception {
         DockerInfrastructure dockerInfrastructure = app.createAndManageChild(EntitySpec.create(DockerInfrastructure.class)
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 1));
         dockerInfrastructure.start(ImmutableList.of(machinePool));
-        
+
         DockerHost dockerHost = (DockerHost) Iterables.getOnlyElement(dockerInfrastructure.getDockerHostList());
         DockerHostLocation hostLoc = dockerHost.getDynamicLocation();
 
@@ -118,35 +119,7 @@ public class DockerHostLiveTest {
         assertNotNull(container);
         hostLoc.release(containerLoc);
         assertTrue(dockerHost.getDockerContainerList().isEmpty(), "containers="+dockerHost.getDockerContainerList());
-    }
-
-    @Test(groups="Integration")
-    public void testObtainContainerFromInfrastructure() throws Exception {
-
-        DockerInfrastructure dockerInfrastructure = app.createAndManageChild(EntitySpec.create(DockerInfrastructure.class)
-                .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 1));
-        dockerInfrastructure.start(ImmutableList.of(machinePool));
-        
-        DockerHost dockerHost = (DockerHost) Iterables.getOnlyElement(dockerInfrastructure.getDockerHostList());
-        DockerLocation infraLoc = dockerInfrastructure.getDynamicLocation();
-        assertMembersEqualEventually(dockerInfrastructure.getDockerHostCluster(), ImmutableSet.of(dockerHost));
-
-        DockerHostLocation hostLoc = (DockerHostLocation) infraLoc.obtain();
-        DockerContainerLocation containerLoc = hostLoc.obtain();
-
-        DockerContainer container = (DockerContainer) Iterables.getOnlyElement(dockerHost.getDockerContainerList());
-        assertMembersEqualEventually(dockerInfrastructure.getContainerFabric(), ImmutableSet.of(container));
-
-        infraLoc.release(hostLoc);
-
-        assertMembersEqualEventually(dockerInfrastructure.getContainerFabric(), ImmutableSet.<Entity>of());
-        /*
-        DockerContainer container = (DockerContainer) Iterables.getOnlyElement(dockerHost.getDockerContainerList());
-        assertMembersEqualEventually(dockerInfrastructure.getContainerFabric(), ImmutableSet.of(container));
-        
-        infraLoc.release(hostLoc);
-        assertMembersEqualEventually(dockerInfrastructure.getContainerFabric(), ImmutableSet.<Entity>of());
-        */
+        //assertMembersEqualEventually(dockerInfrastructure.getContainerFabric(), ImmutableSet.<Entity>of());
     }
 
     private void assertMembersEqualEventually(final Group group, final Iterable<? extends Entity> entities) {

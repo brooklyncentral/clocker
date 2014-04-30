@@ -17,28 +17,24 @@ package io.cloudsoft.docker.example;
 
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.collect.Lists;
 
 import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.StartableApplication;
-import brooklyn.entity.container.docker.DockerHost;
+import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.launcher.BrooklynLauncher;
+import brooklyn.location.dynamic.LocationOwner;
 import brooklyn.util.CommandLineUtil;
 
 public class SingleDockerHostExample extends AbstractApplication {
 
-    public static final Logger LOG = LoggerFactory.getLogger(SingleDockerHostExample.class);
-
     @Override
     public void init() {
-
-        addChild(EntitySpec.create(DockerHost.class));
-                //.configure("docker.port", "4244+"));
+        addChild(EntitySpec.create(DockerInfrastructure.class)
+                .configure(LocationOwner.LOCATION_NAME, "SingleDockerHostExample")
+                .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 1));
     }
 
     public static void main(String[] argv) throws Exception {

@@ -26,6 +26,7 @@ import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.Sensors;
 import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.location.dynamic.LocationOwner;
+import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.util.flags.SetFromFlag;
 
 @ImplementedBy(DockerContainerImpl.class)
@@ -40,6 +41,9 @@ public interface DockerContainer extends SoftwareProcess, HasShortName, Location
     @SetFromFlag("dockerHost")
     ConfigKey<DockerHost> DOCKER_HOST = ConfigKeys.newConfigKey(DockerHost.class, "docker.host",
             "The parent Docker host");
+
+    @SetFromFlag("imageNameRegex")
+    ConfigKey<String> DOCKER_IMAGE_NAME_REGEX = JcloudsLocationConfig.IMAGE_NAME_REGEX;
 
     ConfigKey<String> DOCKER_CONTAINER_NAME_FORMAT = ConfigKeys.newStringConfigKey("docker.container.nameFormat",
             "Format for generating Docker container names", DEFAULT_DOCKER_CONTAINER_NAME_FORMAT);

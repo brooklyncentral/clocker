@@ -37,6 +37,7 @@ import brooklyn.enricher.HttpLatencyDetector;
 import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.StartableApplication;
+import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.database.mysql.MySqlNode;
 import brooklyn.entity.proxy.nginx.NginxController;
 import brooklyn.entity.proxying.EntitySpec;
@@ -149,7 +150,8 @@ public class WebClusterDatabaseExample extends AbstractApplication {
         Location location = Iterables.getOnlyElement(locations);
         JcloudsLocation loc;
         if (location instanceof DockerLocation) {
-            loc = (JcloudsLocation) ((DockerLocation) location).getProvisioner();
+            DockerHost dockerHost = (DockerHost) ((DockerLocation) location).getDockerHostList().get(0);
+            loc = dockerHost.getDockerHost().getJcloudsLocation();
         } else if (location instanceof JcloudsLocation) {
             loc = (JcloudsLocation) location;
         } else {
@@ -158,6 +160,7 @@ public class WebClusterDatabaseExample extends AbstractApplication {
         checkState("docker".equals(loc.getProvider()), "Expected docker rather than provider %s", loc.getProvider());
         portForwarder.init(URI.create(loc.getEndpoint()));
         super.start(locations);
+        //super.start(ImmutableList.of(loc));
     }
 
     public static void main(String[] argv) {

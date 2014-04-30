@@ -16,6 +16,7 @@
 package brooklyn.entity.container.docker;
 
 import brooklyn.entity.basic.SoftwareProcessDriver;
+import brooklyn.util.task.system.ProcessTaskWrapper;
 
 /**
  *
@@ -24,7 +25,7 @@ import brooklyn.entity.basic.SoftwareProcessDriver;
  * @author Andrea Turli
  */
 public interface DockerHostDriver extends SoftwareProcessDriver {
+    Integer getDockerPort();
 
-   Integer getDockerPort();
-
+    ProcessTaskWrapper<Integer> executeScriptAsync(String dockerFile, String folder);
 }

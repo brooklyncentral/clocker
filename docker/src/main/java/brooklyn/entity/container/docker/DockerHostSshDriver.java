@@ -30,18 +30,25 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.Uninterruptibles;
 
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.lifecycle.ScriptHelper;
 import brooklyn.entity.drivers.downloads.DownloadResolver;
+import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.location.OsDetails;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.internal.Repeater;
 import brooklyn.util.net.Networking;
+import brooklyn.util.ssh.BashCommands;
+import brooklyn.util.task.DynamicTasks;
+import brooklyn.util.task.system.ProcessTaskWrapper;
 
 public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implements DockerHostDriver {
+
+    public static final String DOCKERFILE = "Dockerfile";
 
     public DockerHostSshDriver(DockerHostImpl entity, SshMachineLocation machine) {
         super(entity, machine);
@@ -56,6 +63,16 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         return getEntity().getAttribute(DockerHost.DOCKER_PORT);
     }
 
+    @Override
+    public ProcessTaskWrapper<Integer> executeScriptAsync(String dockerfile, String name) {
+        String buildCommand = sudo(format("docker build -rm -t brooklyn/%s - < %s/%s/%s", name, getRunDir(), name,
+                DOCKERFILE));
+        DynamicTasks.queue(SshEffectorTasks.ssh(format("mkdir -p %s/%s", getRunDir(), name))
+                                           .summary(format("creating folder `%s/%s`", getRunDir(), name))).block();
+        copyResource(dockerfile, format("%s/%s", name, DOCKERFILE));
+        return DynamicTasks.queue(SshEffectorTasks.ssh(buildCommand).summary(format("executing `%s`", buildCommand)));
+    }
+
     public String getEpelRelease() {
         return getEntity().getConfig(DockerHost.EPEL_RELEASE);
     }
@@ -66,8 +83,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .body.append(sudo("service docker status"))
                 .failOnNonZeroResultCode()
                 .gatherOutput();
-
-        log.info("waiting for Docker {} to be ready", getLocation());
+        Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
         return Repeater.create()
                 .repeat()
                 .every(1,SECONDS)
@@ -140,10 +156,14 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     private String useYum(String osMajorVersion, String arch, String epelRelease) {
         String osMajor = osMajorVersion.substring(0, osMajorVersion.indexOf('.'));
-        return chainGroup(
+        String group = chainGroup(
                 INSTALL_WGET,
-                sudo(format("rpm -Uvh http://download.fedoraproject.org/pub/epel/%s/%s/epel-release-%s.noarch.rpm",
-                        osMajor, arch, epelRelease)));
+                sudo(BashCommands.alternatives(sudo("rpm -qa | grep epel-release"),
+                        sudo(format("rpm -Uvh http://download.fedoraproject.org/pub/epel/%s/%s/epel-release-%s.noarch.rpm",
+                                osMajor, arch, epelRelease))
+                ))
+        );
+        return group;
     }
 
     private String useApt() {
@@ -160,8 +180,8 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         Networking.checkPortsValid(getPortMap());
         List<String> commands = ImmutableList.<String> builder()
                 .add(sudo("service docker stop"))
-                .add(ifExecutableElse0("apt-get", format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%s\"' | sudo tee -a /etc/default/docker", getDockerPort())))
-                .add(ifExecutableElse0("yum", format("echo 'other_args=\"-H tcp://0.0.0.0:%s\"' | sudo tee /etc/sysconfig/docker", getDockerPort())))
+                .add(ifExecutableElse0("apt-get", format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%s -H unix:///var/run/docker.sock\"' | sudo tee -a /etc/default/docker", getDockerPort())))
+                .add(ifExecutableElse0("yum", format("echo 'other_args=\"-H tcp://0.0.0.0:%s -H unix:///var/run/docker.sock\"' | sudo tee /etc/sysconfig/docker", getDockerPort())))
                 .build();
 
         newScript(CUSTOMIZING)
