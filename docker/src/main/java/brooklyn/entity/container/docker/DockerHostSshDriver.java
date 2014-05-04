@@ -15,6 +15,9 @@
  */
 package brooklyn.entity.container.docker;
 
+import static brooklyn.util.ssh.BashCommands.INSTALL_WGET;
+import static brooklyn.util.ssh.BashCommands.chainGroup;
+import static brooklyn.util.ssh.BashCommands.ifExecutableElse0;
 import static brooklyn.util.ssh.BashCommands.installPackage;
 import static brooklyn.util.ssh.BashCommands.sudo;
 import static java.lang.String.format;
@@ -26,6 +29,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
@@ -52,17 +56,29 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         return getEntity().getAttribute(DockerHost.DOCKER_PORT);
     }
 
+    public String getEpelRelease() {
+        return getEntity().getConfig(DockerHost.EPEL_RELEASE);
+    }
+
     @Override
     public boolean isRunning() {
-        ScriptHelper helper = newScript(CHECK_RUNNING)
+        final ScriptHelper helper = newScript(CHECK_RUNNING)
                 .body.append(sudo("service docker status"))
                 .failOnNonZeroResultCode()
                 .gatherOutput();
-        int result = helper.execute();
-        if (result != 0) {
-            throw new IllegalStateException("Error listing classpath files: " + helper.getResultStderr());
-        }
-        return helper.getResultStdout().contains("running");
+
+        log.info("waiting for Docker {} to be ready", getLocation());
+        return Repeater.create()
+                .repeat()
+                .every(1,SECONDS)
+                .until(new Callable<Boolean>() {
+                    public Boolean call() {
+                        helper.execute();
+                        return helper.getResultStdout().contains("running");
+                    }})
+                .limitTimeTo(1, TimeUnit.MINUTES)
+                .rethrowExceptionImmediately()
+                .run();
     }
 
     @Override
@@ -82,11 +98,10 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         OsDetails osDetails = getMachine().getMachineDetails().getOsDetails();
         String osMajorVersion = osDetails.getVersion();
         String osName = osDetails.getName();
-        /*
+        String arch = osDetails.getArch();
         if(!osDetails.is64bit()) {
             throw new IllegalStateException("Docker supports only 64bit OS");
         }
-        */
         if(osName.equalsIgnoreCase("ubuntu") && osMajorVersion.equals("12.04")) {
             List<String> commands = ImmutableList.<String> builder().add(installPackage("linux-image-generic-lts-raring"))
                            .add(installPackage("linux-headers-generic-lts-raring"))
@@ -112,9 +127,9 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         log.info("Docker host {} is now sshable; continuing with setup", getLocation());
 
         List<String> commands = ImmutableList.<String> builder()
-                .add(sudo("apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9"))
-                .add("echo \"deb http://get.docker.io/ubuntu docker main\" | sudo tee -a /etc/apt/sources.list.d/docker.list")
-                .add(installPackage("lxc-docker"))
+                .add(ifExecutableElse0("yum", useYum(osMajorVersion, arch, getEpelRelease())))
+                .add(ifExecutableElse0("apt-get", useApt()))
+                .add(installPackage(ImmutableMap.of("yum", "docker-io", "apt", "lxc-docker"), null))
                 .build();
 
         newScript(INSTALLING)
@@ -123,13 +138,30 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .execute();        
     }
 
+    private String useYum(String osMajorVersion, String arch, String epelRelease) {
+        String osMajor = osMajorVersion.substring(0, osMajorVersion.indexOf('.'));
+        return chainGroup(
+                INSTALL_WGET,
+                sudo(format("rpm -Uvh http://download.fedoraproject.org/pub/epel/%s/%s/epel-release-%s.noarch.rpm",
+                        osMajor, arch, epelRelease)));
+    }
+
+    private String useApt() {
+        return chainGroup(
+                INSTALL_WGET,
+                sudo("apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9"),
+                "echo \"deb http://get.docker.io/ubuntu docker main\" | sudo tee -a /etc/apt/sources.list.d/docker.list"
+        );
+    }
+
     @Override
     public void customize() {
         log.debug("Customizing {}", entity);
         Networking.checkPortsValid(getPortMap());
         List<String> commands = ImmutableList.<String> builder()
                 .add(sudo("service docker stop"))
-                .add(format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%s\"' | sudo tee -a /etc/default/docker", getDockerPort()))
+                .add(ifExecutableElse0("apt-get", format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%s\"' | sudo tee -a /etc/default/docker", getDockerPort())))
+                .add(ifExecutableElse0("yum", format("echo 'other_args=\"-H tcp://0.0.0.0:%s\"' | sudo tee /etc/sysconfig/docker", getDockerPort())))
                 .build();
 
         newScript(CUSTOMIZING)

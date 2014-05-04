@@ -18,6 +18,7 @@ package brooklyn.entity.container.docker;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import brooklyn.entity.AbstractSoftlayerLiveTest;
 import brooklyn.entity.proxying.EntitySpec;
@@ -40,9 +41,9 @@ public class DockerSoftLayerLiveTest extends AbstractSoftlayerLiveTest {
     public void test_Default() throws Exception {
     }
 
-    @Override
-    @Test(enabled=false)
-    public void test_Centos_6_0() throws Exception {
+    @Test
+    public void test_RHEL_6_5() throws Exception {
+        runTest(ImmutableMap.<String,Object>of("imageId", "REDHAT_6_64"));
     }
 
 }

@@ -19,21 +19,31 @@ import static brooklyn.entity.java.JavaEntityMethods.javaSysProp;
 import static brooklyn.event.basic.DependentConfiguration.attributeWhenReady;
 import static brooklyn.event.basic.DependentConfiguration.formatString;
 import static com.google.common.base.Preconditions.checkState;
+
+import java.net.URI;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+
 import brooklyn.enricher.Enrichers;
 import brooklyn.enricher.HttpLatencyDetector;
 import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.Entities;
-import brooklyn.entity.basic.EntityAndAttribute;
 import brooklyn.entity.basic.StartableApplication;
 import brooklyn.entity.database.mysql.MySqlNode;
-import brooklyn.entity.proxy.nginx.NginxConfigFileGenerator;
 import brooklyn.entity.proxy.nginx.NginxController;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.entity.webapp.ControlledDynamicWebAppCluster;
 import brooklyn.entity.webapp.DynamicWebAppCluster;
 import brooklyn.entity.webapp.JavaWebAppService;
 import brooklyn.entity.webapp.WebAppService;
-import brooklyn.entity.webapp.WebAppServiceConstants;
 import brooklyn.entity.webapp.jboss.JBoss7Server;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.Sensors;
@@ -41,26 +51,14 @@ import brooklyn.launcher.BrooklynLauncher;
 import brooklyn.location.Location;
 import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.basic.PortRanges;
+import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.policy.autoscaling.AutoScalerPolicy;
 import brooklyn.util.CommandLineUtil;
 import brooklyn.util.net.Cidr;
-
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-
 import io.cloudsoft.networking.portforwarding.DockerPortForwarder;
-import io.cloudsoft.networking.portforwarding.subnet.SubnetTierDockerImpl;
 import io.cloudsoft.networking.subnet.SubnetTier;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.URI;
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import io.cloudsoft.networking.subnet.SubnetTierImpl;
 
 /**
  * Launches a 3-tier app with nginx, clustered jboss, and mysql.
@@ -90,10 +88,10 @@ public class WebClusterDatabaseExample extends AbstractApplication {
         AttributeSensor<String> mappedUrlAttribute = Sensors.newStringSensor("url.mapped");
         AttributeSensor<String> mappedHostAndPortAttribute = Sensors.newStringSensor("hostAndPort.mapped");
         
-        portForwarder = new DockerPortForwarder(this, new PortForwardManager());
+        portForwarder = new DockerPortForwarder(new PortForwardManager());
 
         SubnetTier subnetTier = addChild(EntitySpec.create(SubnetTier.class)
-                .impl(SubnetTierDockerImpl.class)
+                .impl(SubnetTierImpl.class)
                 .configure(SubnetTier.PORT_FORWARDER, portForwarder)
                 .configure(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL));
 
@@ -148,7 +146,15 @@ public class WebClusterDatabaseExample extends AbstractApplication {
 
     @Override
     public void start(Collection<? extends Location> locations) {
-        JcloudsLocation loc = (JcloudsLocation) Iterables.getOnlyElement(locations);
+        Location location = Iterables.getOnlyElement(locations);
+        JcloudsLocation loc;
+        if (location instanceof DockerLocation) {
+            loc = (JcloudsLocation) ((DockerLocation) location).getProvisioner();
+        } else if (location instanceof JcloudsLocation) {
+            loc = (JcloudsLocation) location;
+        } else {
+            throw new IllegalStateException("Expected jcloudsLocation or DockerLocation");
+        }
         checkState("docker".equals(loc.getProvider()), "Expected docker rather than provider %s", loc.getProvider());
         portForwarder.init(URI.create(loc.getEndpoint()));
         super.start(locations);

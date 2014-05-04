@@ -75,6 +75,9 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
     ConfigKey<String> HOST_NAME_FORMAT = ConfigKeys.newStringConfigKey("docker.host.nameFormat",
             "Format for generating Docker host names", DEFAULT_DOCKER_HOST_NAME_FORMAT);
 
+    ConfigKey<? extends String> EPEL_RELEASE = ConfigKeys.newStringConfigKey("docker.host.epel.release",
+            "EPEL release for yum based OS", "6-8");
+
     AttributeSensor<String> HOST_NAME = Sensors.newStringSensor("docker.host.name", "The name of the Docker host");
 
     String getDockerHostName();
