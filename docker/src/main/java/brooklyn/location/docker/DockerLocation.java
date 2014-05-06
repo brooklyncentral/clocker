@@ -121,7 +121,7 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
             DockerHost dockerHost = machine.getOwner();
 
             // Now wait until the host has started up
-            Entities.waitForServiceUp(dockerHost, dockerHost.getConfig(DockerHost.START_TIMEOUT), TimeUnit.SECONDS);
+            Entities.waitForServiceUp(dockerHost, dockerHost.getConfig(DockerHost.START_TIMEOUT));
             // Obtain a new Docker container location, save and return it
             DockerHostLocation location = dockerHost.getDynamicLocation();
             DockerContainerLocation container = location.obtain(MutableMap.of("imageId", "e26387043472295e639b3e2be465e6bf5c2026ee5a0e15e63d980ba9a2f45c1a"));

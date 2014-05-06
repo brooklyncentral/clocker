@@ -101,7 +101,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineLocat
         // increase size of Docker container cluster
         DynamicCluster cluster = dockerHost.getDockerContainerCluster();
         //Optional<Entity> added = cluster.growByOne(machine, flags);
-        Optional<Entity> added = cluster.growByOne(jcloudsLocation, flags);
+        Optional<Entity> added = cluster.addInSingleLocation(jcloudsLocation, flags);
         if (!added.isPresent()) {
             throw new NoMachinesAvailableException(String.format("Failed to create containers. Limit reached at %s", dockerHost.getDockerHostName()));
         }
