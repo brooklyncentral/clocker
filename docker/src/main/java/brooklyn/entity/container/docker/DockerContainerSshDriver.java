@@ -13,7 +13,7 @@ public class DockerContainerSshDriver extends AbstractSoftwareProcessSshDriver i
 
         // Wait until the Docker Host has started up
         DockerHost dockerHost = getEntity().getConfig(DockerContainer.DOCKER_HOST);
-        Entities.waitForServiceUp(dockerHost, dockerHost.getConfig(DockerHost.START_TIMEOUT), TimeUnit.SECONDS);
+        Entities.waitForServiceUp(dockerHost, dockerHost.getConfig(DockerHost.START_TIMEOUT));
     }
 
     public String getDockerContainerName() { return getEntity().getAttribute(DockerContainer.DOCKER_CONTAINER_NAME); }

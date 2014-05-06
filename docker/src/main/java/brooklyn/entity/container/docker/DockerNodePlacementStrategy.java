@@ -81,7 +81,7 @@ public class DockerNodePlacementStrategy extends BalancingNodePlacementStrategy 
             // Grow the Docker host cluster; based on max number of Docker containers
             int maxSize = machine.getMaxSize();
             int delta = (remaining / maxSize) + (remaining % maxSize > 0 ? 1 : 0);
-            Collection<Entity> added = machine.getDockerInfrastructure().getDockerHostCluster().grow(delta);
+            Collection<Entity> added = machine.getDockerInfrastructure().getDockerHostCluster().resizeByDelta(delta);
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Added {} Docker hosts: {}", delta, Iterables.toString(Iterables.transform(added,
                         identity())));
