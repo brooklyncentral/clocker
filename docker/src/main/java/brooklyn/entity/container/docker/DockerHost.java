@@ -33,9 +33,9 @@ import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.BasicAttributeSensorAndConfigKey;
 import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
-import brooklyn.location.Location;
 import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.dynamic.LocationOwner;
+import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.util.flags.SetFromFlag;
 
 /**
@@ -83,7 +83,7 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
 
     AttributeSensor<String> HOST_NAME = Sensors.newStringSensor("docker.host.name", "The name of the Docker host");
 
-    Location getDockerContainerProvisioningLocation();
+    JcloudsLocation getJcloudsLocation();
 
     String getDockerHostName();
 

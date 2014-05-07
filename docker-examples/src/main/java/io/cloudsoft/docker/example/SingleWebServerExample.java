@@ -51,9 +51,8 @@ import io.cloudsoft.networking.subnet.SubnetTierImpl;
 
 /**
  * This example starts a web app on 8080, waits for a keypress, then stops it.
- *
+ * <p>
  * By default, the example will point to a Docker instance running at 192.168.42.43:4243
- *
  */
 public class SingleWebServerExample extends AbstractApplication implements StartableApplication {
 
@@ -83,14 +82,15 @@ public class SingleWebServerExample extends AbstractApplication implements Start
     @Override
     public void start(Collection<? extends Location> locations) {
         Location location = Iterables.getOnlyElement(locations);
+        // FIXME this should be done in the DockerLocation during obtain
         JcloudsLocation loc;
         if (location instanceof DockerLocation) {
             DockerHost dockerHost = (DockerHost) ((DockerLocation) location).getDockerHostList().get(0);
-            loc = dockerHost.getDockerHost().getJcloudsLocation();
+            loc = dockerHost.getJcloudsLocation();
         } else if (location instanceof JcloudsLocation) {
             loc = (JcloudsLocation) location;
         } else {
-            throw new IllegalStateException("Expected jcloudsLocation or DockerLocation rather than %s");
+            throw new IllegalStateException("Expected JcloudsLocation or DockerLocation rather than %s");
         }
         checkState("docker".equals(loc.getProvider()), "Expected docker rather than provider %s", loc.getProvider());
         portForwarder.init(URI.create(loc.getEndpoint()));

@@ -70,7 +70,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
             if (lookup.isPresent()) {
                 DockerContainerLocation container = (DockerContainerLocation) lookup.get();
                 // Only containers that are part of this infrastructure
-                return getId().equals(container.getDockerHost().getInfrastructure().getId());
+                return getId().equals(container.getOwner().getDockerHost().getInfrastructure().getId());
             } else {
                 return false;
             }

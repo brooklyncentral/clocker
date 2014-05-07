@@ -148,14 +148,15 @@ public class WebClusterDatabaseExample extends AbstractApplication {
     @Override
     public void start(Collection<? extends Location> locations) {
         Location location = Iterables.getOnlyElement(locations);
+        // FIXME this should be done in the DockerLocation during obtain
         JcloudsLocation loc;
         if (location instanceof DockerLocation) {
             DockerHost dockerHost = (DockerHost) ((DockerLocation) location).getDockerHostList().get(0);
-            loc = dockerHost.getDockerHost().getJcloudsLocation();
+            loc = dockerHost.getJcloudsLocation();
         } else if (location instanceof JcloudsLocation) {
             loc = (JcloudsLocation) location;
         } else {
-            throw new IllegalStateException("Expected jcloudsLocation or DockerLocation");
+            throw new IllegalStateException("Expected JcloudsLocation or DockerLocation");
         }
         checkState("docker".equals(loc.getProvider()), "Expected docker rather than provider %s", loc.getProvider());
         portForwarder.init(URI.create(loc.getEndpoint()));

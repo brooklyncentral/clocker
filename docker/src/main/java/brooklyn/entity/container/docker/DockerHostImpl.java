@@ -27,9 +27,6 @@ import org.jclouds.compute.domain.OsFamily;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-
 import brooklyn.enricher.Enrichers;
 import brooklyn.entity.Entity;
 import brooklyn.entity.annotation.EffectorParam;
@@ -47,6 +44,7 @@ import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.DockerResolver;
+import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.location.jclouds.templates.PortableTemplateBuilder;
 import brooklyn.management.LocationManager;
@@ -57,6 +55,9 @@ import brooklyn.policy.ha.ServiceRestarter;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.guava.Maybe;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+
 /**
  * @author Andrea Turli
  */
@@ -66,7 +67,7 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     private static final AtomicInteger counter = new AtomicInteger(0);
 
     private DynamicCluster containers;
-    private Location containerProvisioningLocation;
+    private JcloudsLocation jcloudsLocation;
 
     public DockerHostImpl() {
     }
@@ -203,7 +204,7 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     }
 
     /**
-     * Create a new {@link brooklyn.location.docker.DockerHostLocation} wrapping the machine we are starting in.
+     * Create a new {@link DockerHostLocation} wrapping the machine we are starting in.
      */
     @Override
     public DockerHostLocation createLocation(Map<String, ?> flags) {
@@ -234,8 +235,8 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     }
 
     @Override
-    public Location getDockerContainerProvisioningLocation() {
-        return containerProvisioningLocation;
+    public JcloudsLocation getJcloudsLocation() {
+        return jcloudsLocation;
     }
 
 
@@ -246,12 +247,12 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
         Maybe<SshMachineLocation> found = Machines.findUniqueSshMachineLocation(getLocations());
         String dockerLocationSpec = String.format("jclouds:docker:http://%s:%s",
                 found.get().getSshHostAndPort().getHostText(), getPort());
-        containerProvisioningLocation = getManagementContext().getLocationRegistry().resolve(dockerLocationSpec);
+        jcloudsLocation = (JcloudsLocation) getManagementContext().getLocationRegistry().resolve(dockerLocationSpec);
 
         Map<String, ?> flags = MutableMap.<String, Object>builder()
                 .putAll(getConfig(LOCATION_FLAGS))
                 .put("machine", found.get())
-                .put("jcloudsLocation", containerProvisioningLocation)
+                .put("jcloudsLocation", jcloudsLocation)
                 .build();
 
         createLocation(flags);

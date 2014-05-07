@@ -34,6 +34,7 @@ import brooklyn.location.NoMachinesAvailableException;
 import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.dynamic.DynamicLocation;
+import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.management.LocationManager;
 import brooklyn.util.collections.MutableMap;
@@ -150,11 +151,11 @@ public class DockerContainerImpl extends SoftwareProcessImpl implements DockerCo
     }
 
     /**
-     * Create a new {@link brooklyn.location.jclouds.JcloudsLocation} wrapping the machine we are starting in.
+     * Create a new {@link DockerContainerLocation} wrapping a machine from the host's {@link JcloudsLocation}.
      */
     @Override
     public DockerContainerLocation createLocation(Map flags) {
-        DockerHost dockerHost = getConfig(DOCKER_HOST);
+        DockerHost dockerHost = getDockerHost();
         DockerHostLocation host = dockerHost.getDynamicLocation();
         String locationName = host.getId() + "-" + getId();
 
@@ -167,9 +168,9 @@ public class DockerContainerImpl extends SoftwareProcessImpl implements DockerCo
                     .parent(host)
                     .configure(flags)
                     .configure(DynamicLocation.OWNER, this)
-                    .configure("port", getAttribute(DockerHost.DOCKER_PORT))
                     .configure("machine", container) // the underlying JcloudsLocation
                     .configure(container.getAllConfig(true))
+                    .configure("port", getAttribute(DockerHost.DOCKER_PORT))
                     .displayName(getDockerContainerName())
                     .id(locationName);
             DockerContainerLocation location = getManagementContext().getLocationManager().createLocation(spec);
