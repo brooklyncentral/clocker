@@ -23,13 +23,6 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
-
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.container.docker.DockerHost;
@@ -41,12 +34,21 @@ import brooklyn.location.MachineLocation;
 import brooklyn.location.MachineProvisioningLocation;
 import brooklyn.location.NoMachinesAvailableException;
 import brooklyn.location.basic.AbstractLocation;
+import brooklyn.location.basic.LocationConfigKeys;
 import brooklyn.location.basic.Machines;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.cloud.AvailabilityZoneExtension;
 import brooklyn.location.dynamic.DynamicLocation;
+import brooklyn.util.collections.MutableMap;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.guava.Maybe;
+
+import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 
 public class DockerLocation extends AbstractLocation implements DockerVirtualLocation,
         MachineProvisioningLocation<MachineLocation>,
@@ -112,6 +114,13 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
     @Override
     public MachineLocation obtain(Map<?,?> flags) throws NoMachinesAvailableException {
         synchronized (mutex) {
+            // Check context for entity being deployed
+            Object context = flags.get(LocationConfigKeys.CALLER_CONTEXT.getName());
+            if (!(context instanceof Entity)) {
+                throw new IllegalStateException("Invalid location context: " + context);
+            }
+            Entity entity = (Entity) context;
+
             // Use the docker strategy to add a new host
             List<Location> dockerHosts = getExtension(AvailabilityZoneExtension.class).getAllSubLocations();
             List<Location> added = strategy.locationsForAdditions(null, dockerHosts, 1);
@@ -120,19 +129,19 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
 
             // Now wait until the host has started up
             Entities.waitForServiceUp(dockerHost);
-            // Obtain a new Docker container location, save and return it
-            DockerHostLocation dockerHostLocation = dockerHost.getDynamicLocation();
 
-            //DockerContainerLocation container = location.obtain(flags);
+            // Obtain a new Docker container location, save and return it
+            DockerContainerLocation container = machine.obtain(MutableMap.of("entity", entity));
 
             Maybe<SshMachineLocation> deployed = Machines.findUniqueSshMachineLocation(dockerHost.getLocations());
             if (deployed.isPresent()) {
                 if (LOG.isDebugEnabled()) {
-                    LOG.debug("Storing container mapping: {}-{}", deployed.get(), machine.getId());
+                    LOG.debug("Storing container mapping {} to {}", deployed.get(), machine.getId());
                 }
                 machines.put(machine.getMachine(), dockerHost.getId());
+                containers.put(container.getId(), deployed.get());
             }
-            return dockerHostLocation;
+            return container;
         }
     }
 
@@ -142,59 +151,37 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
     }
 
     @Override
-    public void release(MachineLocation machineLocation) {
+    public void release(MachineLocation machine) {
         if (provisioner != null) {
             synchronized (mutex) {
-                if (machineLocation instanceof DockerContainerLocation) {
-                    String id = machineLocation.getId();
-                    SshMachineLocation ssh = containers.remove(id);
+                String id = machine.getId();
+                SshMachineLocation ssh = containers.remove(id);
+                if (ssh != null) {
                     if (LOG.isDebugEnabled()) {
-                        LOG.debug("Request to release container mapping {}-{}", ssh, id);
+                        LOG.debug("Request to remove container mapping {} to {}", ssh, id);
                     }
-                    if (ssh != null) {
-                        machines.remove(ssh, id);
+                    if (machines.remove(ssh, id)) {
                         if (machines.get(ssh).isEmpty()) {
-                            provisioner.release(ssh);
-                        }
-                    } else {
-                        throw new IllegalArgumentException("Request to release "+machineLocation+", but no SSH machine found");
-                    }
-                } else if (machineLocation instanceof DockerHostLocation) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("Request to release host {}", machineLocation);
-                    }
-                    DockerHostLocation dockerHostLocation = (DockerHostLocation) machineLocation;
-                    for (Entity container : dockerHostLocation.getDockerContainerList()) {
-                        String id = dockerHostLocation.getId() + "-" + container.getId();
-                        SshMachineLocation ssh = containers.remove(id);
-                        if (LOG.isDebugEnabled()) {
-                            LOG.debug("Request to release container mapping {}-{}", ssh, id);
-                        }
-                        if (ssh != null) {
-                            machines.remove(ssh, id);
-                            if (machines.get(ssh).isEmpty()) {
-                                provisioner.release(ssh);
+                            if (LOG.isDebugEnabled()) {
+                                LOG.debug("Empty Docker host at {}", ssh);
                             }
-                        } else {
-                            throw new IllegalArgumentException("Request to release "+machineLocation+", but no SSH machine found");
                         }
-                    }
-                } else if (machineLocation instanceof SshMachineLocation) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("Request to release SSH machineLocation {}", machineLocation);
-                    }
-                    if (obtained.contains(machineLocation)) {
-                        provisioner.release((SshMachineLocation) machineLocation);
-                        obtained.remove(machineLocation);
                     } else {
-                        throw new IllegalArgumentException("Request to release "+machineLocation+", but this machineLocation is not currently allocated");
+                        throw new IllegalArgumentException("Request to release "+machine+", but container mapping not found");
                     }
                 } else {
-                    throw new IllegalArgumentException("Request to release "+machineLocation+", but location type is not supported");
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Request to release machine {}", machine);
+                    }
+                    if (obtained.remove(machine)) {
+                        provisioner.release((SshMachineLocation) machine);
+                    } else {
+                        throw new IllegalArgumentException("Request to release "+machine+", but this machine is not currently allocated");
+                    }
                 }
             }
         } else {
-            throw new IllegalStateException("No provisioner available to release "+machineLocation);
+            throw new IllegalStateException("No provisioner available to release "+machine);
         }
     }
 
@@ -218,6 +205,8 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
     @Override
     public ToStringHelper string() {
         return super.string()
+                .omitNullValues()
+                .add("provisioner", provisioner)
                 .add("infrastructure", infrastructure)
                 .add("strategy", strategy);
     }

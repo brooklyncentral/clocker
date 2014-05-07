@@ -16,6 +16,7 @@
 package brooklyn.entity.container.docker;
 
 import brooklyn.config.ConfigKey;
+import brooklyn.entity.Entity;
 import brooklyn.entity.annotation.Effector;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.MethodEffector;
@@ -32,10 +33,6 @@ import brooklyn.util.flags.SetFromFlag;
 @ImplementedBy(DockerContainerImpl.class)
 public interface DockerContainer extends SoftwareProcess, HasShortName, LocationOwner<DockerContainerLocation, DockerContainer> {
 
-    String STATUS_RUNNING = "Running";
-    String STATUS_SHUT_OFF = "Shut Off";
-    String STATUS_PAUSED = "Paused";
-
     String DEFAULT_DOCKER_CONTAINER_NAME_FORMAT = "docker-container-brooklyn-%1$s";
 
     @SetFromFlag("dockerHost")
@@ -48,8 +45,9 @@ public interface DockerContainer extends SoftwareProcess, HasShortName, Location
     ConfigKey<String> DOCKER_CONTAINER_NAME_FORMAT = ConfigKeys.newStringConfigKey("docker.container.nameFormat",
             "Format for generating Docker container names", DEFAULT_DOCKER_CONTAINER_NAME_FORMAT);
 
-    AttributeSensor<String> DOCKER_CONTAINER_NAME = Sensors.newStringSensor("docker.container.name",
-            "The name of the Docker container");
+    AttributeSensor<String> DOCKER_CONTAINER_NAME = Sensors.newStringSensor("docker.container.name", "The name of the Docker container");
+
+    AttributeSensor<Entity> ENTITY = Sensors.newSensor(Entity.class, "docker.container.entity", "The entity running in this Docker container");
 
     MethodEffector<Void> SHUT_DOWN = new MethodEffector<Void>(DockerContainer.class, "shutDown");
     MethodEffector<Void> PAUSE = new MethodEffector<Void>(DockerContainer.class, "pause");
@@ -74,6 +72,9 @@ public interface DockerContainer extends SoftwareProcess, HasShortName, Location
     void resume();
 
     String getDockerContainerName();
+
+    Entity getRunningEntity();
+    void setRunningEntity(Entity entity);
 
     DockerHost getDockerHost();
 

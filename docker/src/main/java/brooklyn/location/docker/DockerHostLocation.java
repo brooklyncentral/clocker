@@ -22,11 +22,6 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.base.Optional;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-
 import brooklyn.entity.Entity;
 import brooklyn.entity.container.docker.DockerAttributes;
 import brooklyn.entity.container.docker.DockerContainer;
@@ -35,14 +30,19 @@ import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.location.MachineProvisioningLocation;
 import brooklyn.location.NoMachinesAvailableException;
+import brooklyn.location.basic.AbstractLocation;
 import brooklyn.location.basic.SshMachineLocation;
-import brooklyn.location.cloud.AvailabilityZoneExtension;
 import brooklyn.location.dynamic.DynamicLocation;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.flags.SetFromFlag;
 
-public class DockerHostLocation extends SshMachineLocation implements
+import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.base.Optional;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+
+public class DockerHostLocation extends AbstractLocation implements
         MachineProvisioningLocation<DockerContainerLocation>, DockerVirtualLocation,
         DynamicLocation<DockerHost, DockerHostLocation> {
 
@@ -69,12 +69,6 @@ public class DockerHostLocation extends SshMachineLocation implements
         }
     }
 
-    @Override
-    public void init() {
-        super.init();
-        addExtension(AvailabilityZoneExtension.class, new DockerContainerExtension(getManagementContext(), this));
-    }
-
     public DockerContainerLocation obtain() throws NoMachinesAvailableException {
         return obtain(Maps.<String,Object>newLinkedHashMap());
     }
@@ -83,23 +77,24 @@ public class DockerHostLocation extends SshMachineLocation implements
     public DockerContainerLocation obtain(Map<?,?> flags) throws NoMachinesAvailableException {
         Integer maxSize = dockerHost.getConfig(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
         Integer currentSize = dockerHost.getAttribute(DockerAttributes.DOCKER_CONTAINER_COUNT);
+        Entity entity = (Entity) flags.get("entity");
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Docker host {}: {} containers, max {}", new Object[] { dockerHost.getDockerHostName(),
-                    currentSize, maxSize });
+            LOG.debug("Docker host {}: {} containers, max {}", new Object[] { dockerHost.getDockerHostName(), currentSize, maxSize });
         }
 
         // also try to satisfy the affinty rules etc.
+
         if (currentSize != null && currentSize >= maxSize) {
             throw new NoMachinesAvailableException(String.format("Limit of %d containers reached at %s", maxSize, dockerHost.getDockerHostName()));
         }
 
         // increase size of Docker container cluster
         DynamicCluster cluster = dockerHost.getDockerContainerCluster();
-        //Optional<Entity> added = cluster.growByOne(machine, flags);
-        Optional<Entity> added = cluster.addInSingleLocation(jcloudsLocation, flags);
+        Optional<Entity> added = cluster.addInSingleLocation(this, MutableMap.builder().putAll(flags).put("entity", entity).build());
         if (!added.isPresent()) {
             throw new NoMachinesAvailableException(String.format("Failed to create containers. Limit reached at %s", dockerHost.getDockerHostName()));
         }
+
         DockerContainer dockerContainer = (DockerContainer) added.get();
         return dockerContainer.getDynamicLocation();
     }
@@ -150,6 +145,7 @@ public class DockerHostLocation extends SshMachineLocation implements
     public ToStringHelper string() {
         return super.string()
                 .add("machine", machine)
+                .add("jcloudsLocation", jcloudsLocation)
                 .add("dockerHost", dockerHost);
     }
 

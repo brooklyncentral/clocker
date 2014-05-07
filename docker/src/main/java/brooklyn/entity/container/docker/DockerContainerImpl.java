@@ -24,27 +24,31 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.entity.Entity;
+import brooklyn.entity.basic.Lifecycle;
+import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.basic.SoftwareProcessImpl;
 import brooklyn.location.Location;
 import brooklyn.location.LocationSpec;
+import brooklyn.location.NoMachinesAvailableException;
 import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.dynamic.DynamicLocation;
+import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.management.LocationManager;
 import brooklyn.util.collections.MutableMap;
+import brooklyn.util.exceptions.Exceptions;
 
 public class DockerContainerImpl extends SoftwareProcessImpl implements DockerContainer {
 
     private static final Logger log = LoggerFactory.getLogger(DockerContainerImpl.class);
     private static final AtomicInteger counter = new AtomicInteger(0);
-    private DockerContainerLocation container;
 
     @Override
     public void init() {
         log.info("Starting Docker container id {}", getId());
 
-        String dockerContainerName = format(getConfig(DockerContainer.DOCKER_CONTAINER_NAME_FORMAT), getId(),
-                counter.incrementAndGet());
+        String dockerContainerName = format(getConfig(DockerContainer.DOCKER_CONTAINER_NAME_FORMAT), getId(), counter.incrementAndGet());
         setDisplayName(dockerContainerName);
         setAttribute(DOCKER_CONTAINER_NAME, dockerContainerName);
     }
@@ -56,15 +60,19 @@ public class DockerContainerImpl extends SoftwareProcessImpl implements DockerCo
         Map<String, ?> flags = MutableMap.<String, Object>builder()
                 .putAll(getConfig(LOCATION_FLAGS))
                 .build();
-        container = createLocation(flags);
-        log.info("New Docker container location {} created", container);
+
+        createLocation(flags);
     }
 
     @Override
     public void doStop() {
+        disconnectSensors();
         deleteLocation();
 
-        super.doStop();
+        setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.STOPPING);
+        getDriver().stop();
+        setAttribute(SoftwareProcess.SERVICE_UP, false);
+        setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.STOPPED);
     }
 
     @Override
@@ -75,6 +83,15 @@ public class DockerContainerImpl extends SoftwareProcessImpl implements DockerCo
             mgr.unmanage(location);
             setAttribute(DYNAMIC_LOCATION,  null);
         }
+    }
+
+    @Override
+    public Entity getRunningEntity() {
+        return getAttribute(ENTITY);
+    }
+
+    public void setRunningEntity(Entity entity) {
+        setAttribute(ENTITY, entity);
     }
 
     @Override
@@ -140,27 +157,36 @@ public class DockerContainerImpl extends SoftwareProcessImpl implements DockerCo
         DockerHost dockerHost = getConfig(DOCKER_HOST);
         DockerHostLocation host = dockerHost.getDynamicLocation();
         String locationName = host.getId() + "-" + getId();
-        LocationSpec<DockerContainerLocation> spec = LocationSpec.create(DockerContainerLocation.class)
-                .parent(host)
-                .configure(flags)
-                .configure(DynamicLocation.OWNER, this)
-                .configure("machine", host.getMachine()) // The underlying SshMachineLocation
-                .configure("address", host.getAddress()) // FIXME
-                .configure("port", getAttribute(DockerHost.DOCKER_PORT))
-                .configure(host.getMachine().getAllConfig(true))
-                .displayName(getDockerContainerName())
-                .id(locationName);
-        DockerContainerLocation location = getManagementContext().getLocationManager().createLocation(spec);
-        setAttribute(DYNAMIC_LOCATION, location);
-        setAttribute(LOCATION_NAME, location.getId());
 
-        return location;
+        try {
+            // Create a new container using jclouds Docker driver
+            JcloudsSshMachineLocation container = host.getJcloudsLocation().obtain(flags);
+
+            // Create our wrapper location around the container
+            LocationSpec<DockerContainerLocation> spec = LocationSpec.create(DockerContainerLocation.class)
+                    .parent(host)
+                    .configure(flags)
+                    .configure(DynamicLocation.OWNER, this)
+                    .configure("port", getAttribute(DockerHost.DOCKER_PORT))
+                    .configure("machine", container) // the underlying JcloudsLocation
+                    .configure(container.getAllConfig(true))
+                    .displayName(getDockerContainerName())
+                    .id(locationName);
+            DockerContainerLocation location = getManagementContext().getLocationManager().createLocation(spec);
+            setAttribute(DYNAMIC_LOCATION, location);
+            setAttribute(LOCATION_NAME, location.getId());
+
+            log.info("New Docker container location {} created", location);
+            return location;
+        } catch (NoMachinesAvailableException e) {
+            throw Exceptions.propagate(e);
+        }
+
     }
 
     @Override
     public boolean isLocationAvailable() {
-        // TODO implementation
-        return container != null;
+        return getDynamicLocation() != null;
     }
 
 }

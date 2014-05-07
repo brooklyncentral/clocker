@@ -20,16 +20,20 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Objects.ToStringHelper;
-
+import brooklyn.entity.Entity;
 import brooklyn.entity.container.docker.DockerContainer;
-import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.dynamic.DynamicLocation;
-import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.util.flags.SetFromFlag;
 
-public class DockerContainerLocation extends JcloudsSshMachineLocation implements DynamicLocation<DockerContainer, DockerContainerLocation> {
+import com.google.common.base.Objects.ToStringHelper;
+
+/**
+ * A {@link Location} that wraps a Docker container.
+ * <p>
+ * The underlying container is presented as an {@link SshMachineLocation} obtained using the jclouds Docker driver.
+ */
+public class DockerContainerLocation extends SshMachineLocation implements DynamicLocation<DockerContainer, DockerContainerLocation> {
 
     private static final Logger LOG = LoggerFactory.getLogger(DockerContainerLocation.class);
 
@@ -39,33 +43,32 @@ public class DockerContainerLocation extends JcloudsSshMachineLocation implement
     @SetFromFlag("owner")
     private DockerContainer dockerContainer;
 
-    /*
-    public DockerContainerLocation() {
-        this(Maps.newLinkedHashMap());
+    @SetFromFlag("entity")
+    private Entity entity;
+
+    @Override
+    public void init() {
+        super.init();
+        setEntity(entity);
     }
 
-    public DockerContainerLocation(Map properties) {
-        super(properties);
-
-        if (isLegacyConstruction()) {
-            init();
-        }
+    public void setEntity(Entity entity) {
+        dockerContainer.setRunningEntity(entity);
     }
-    */
+
+    public Entity getEntity() {
+        return dockerContainer.getRunningEntity();
+    }
 
     @Override
     public DockerContainer getOwner() {
         return dockerContainer;
     }
 
-    public DockerHost getDockerHost() {
-        return dockerContainer.getDockerHost();
-    }
-
     @Override
     public void close() throws IOException {
-        // TODO close down resources used by this container only
-        LOG.info("Close called on Docker container location (ignored): {}", this);
+        machine.close();
+        LOG.info("Close called on Docker container location: {}", this);
     }
 
     @Override

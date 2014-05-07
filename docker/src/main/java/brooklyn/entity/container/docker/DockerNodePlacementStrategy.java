@@ -70,7 +70,7 @@ public class DockerNodePlacementStrategy extends BalancingNodePlacementStrategy 
             remaining -= (maxSize - currentSize);
         }
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Requested {}/{}, Available Docker hosts: {}",
+            LOG.debug("Requested {}, Need {} more from new Docker hosts, current hosts {}",
                     new Object[] { numToAdd, remaining, Iterables.toString(Iterables.transform(locs, identity())) });
         }
 
@@ -83,8 +83,7 @@ public class DockerNodePlacementStrategy extends BalancingNodePlacementStrategy 
             int delta = (remaining / maxSize) + (remaining % maxSize > 0 ? 1 : 0);
             Collection<Entity> added = machine.getDockerInfrastructure().getDockerHostCluster().resizeByDelta(delta);
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Added {} Docker hosts: {}", delta, Iterables.toString(Iterables.transform(added,
-                        identity())));
+                LOG.debug("Added {} Docker hosts: {}", delta, Iterables.toString(Iterables.transform(added, identity())));
             }
 
             // Add the newly created locations for each Docker host

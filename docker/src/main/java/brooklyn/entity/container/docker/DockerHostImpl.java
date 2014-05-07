@@ -66,8 +66,7 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     private static final AtomicInteger counter = new AtomicInteger(0);
 
     private DynamicCluster containers;
-
-    private DockerHostLocation host;
+    private Location containerProvisioningLocation;
 
     public DockerHostImpl() {
     }
@@ -124,11 +123,6 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     @Override
     public Class<?> getDriverInterface() {
         return DockerHostDriver.class;
-    }
-
-    @Override
-    public DockerHostLocation getDockerHost() {
-        return host;
     }
 
     public int getPort() {
@@ -217,41 +211,50 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
         DockerInfrastructure infrastructure = getConfig(DOCKER_INFRASTRUCTURE);
         DockerLocation docker = infrastructure.getDynamicLocation();
         locationName = docker.getId() + "-" + getDockerHostName();
-        locationSpec = format(DockerResolver.DOCKER_HOST_MACHINE_SPEC, infrastructure.getId(),
-                getId()) + format(":(name=\"%s\")", locationName);
+
+        locationSpec = format(DockerResolver.DOCKER_HOST_MACHINE_SPEC, infrastructure.getId(), getId()) + format(":(name=\"%s\")", locationName);
         setAttribute(LOCATION_SPEC, locationSpec);
         LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
         Location location = getManagementContext().getLocationRegistry().resolve(definition);
+        getManagementContext().getLocationManager().manage(location);
+
         setAttribute(DYNAMIC_LOCATION, location);
         setAttribute(LOCATION_NAME, location.getId());
         if (getConfig(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS)) {
             getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
         }
+
+        log.info("New Docker host location {} created", location);
         return (DockerHostLocation) location;
     }
 
     @Override
     public boolean isLocationAvailable() {
-        // TODO implementation
-        return host != null;
+        return getDynamicLocation() != null;
     }
+
+    @Override
+    public Location getDockerContainerProvisioningLocation() {
+        return containerProvisioningLocation;
+    }
+
 
     @Override
     public void doStart(Collection<? extends Location> locations) {
         super.doStart(locations);
 
         Maybe<SshMachineLocation> found = Machines.findUniqueSshMachineLocation(getLocations());
+        String dockerLocationSpec = String.format("jclouds:docker:http://%s:%s",
+                found.get().getSshHostAndPort().getHostText(), getPort());
+        containerProvisioningLocation = getManagementContext().getLocationRegistry().resolve(dockerLocationSpec);
+
         Map<String, ?> flags = MutableMap.<String, Object>builder()
                 .putAll(getConfig(LOCATION_FLAGS))
                 .put("machine", found.get())
-                .put("jcloudsLocation", getManagementContext().getLocationRegistry().resolve(
-                        format("jclouds:docker:http://%s:%s",
-                                found.get().getSshHostAndPort().getHostText(),
-                                this.getPort())
-                ))
+                .put("jcloudsLocation", containerProvisioningLocation)
                 .build();
-        host = createLocation(flags);
-        log.info("New Docker host location {} created", host);
+
+        createLocation(flags);
     }
 
     @Override
@@ -263,11 +266,18 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
 
     @Override
     public void deleteLocation() {
-        LocationManager mgr = getManagementContext().getLocationManager();
         DockerHostLocation host = getDynamicLocation();
-        if (host != null && mgr.isManaged(host)) {
-            mgr.unmanage(host);
-            setAttribute(DYNAMIC_LOCATION,  null);
+
+        if (host != null) {
+            LocationManager mgr = getManagementContext().getLocationManager();
+            if (mgr.isManaged(host)) {
+                mgr.unmanage(host);
+            }
+            if (getConfig(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS)) {
+                getManagementContext().getLocationRegistry().removeDefinedLocation(host.getId());
+            }
         }
+        setAttribute(DYNAMIC_LOCATION,  null);
+        setAttribute(LOCATION_NAME,  null);
     }
 }
