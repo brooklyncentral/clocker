@@ -38,9 +38,11 @@ import brooklyn.entity.annotation.EffectorParam;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.basic.SoftwareProcessImpl;
+import brooklyn.entity.effector.Effectors;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.proxying.EntitySpec;
+import brooklyn.entity.trait.Startable;
 import brooklyn.entity.trait.StartableMethods;
 import brooklyn.location.Location;
 import brooklyn.location.LocationDefinition;
@@ -276,8 +278,7 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
                 .impl(SubnetTierImpl.class)
                 .configure(SubnetTier.PORT_FORWARDER, portForwarder)
                 .configure(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL));
-
-        StartableMethods.start((EntityLocal) subnetTier, getLocations());
+        subnetTier.start(getLocations());
 
         Map<String, ?> flags = MutableMap.<String, Object>builder()
                 .putAll(getConfig(LOCATION_FLAGS))

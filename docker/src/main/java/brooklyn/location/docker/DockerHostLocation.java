@@ -35,7 +35,6 @@ import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.java.UsesJmx;
 import brooklyn.entity.webapp.WebAppServiceConstants;
-import brooklyn.entity.webapp.jboss.JBoss7Server;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.Sensor;
 import brooklyn.event.basic.Sensors;
@@ -105,6 +104,7 @@ public class DockerHostLocation extends AbstractLocation implements
         }
 
         // Configure the entity
+        LOG.info("Configuring entity {} via subnet {}", entity, dockerHost.getSubnetTier());
         ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.PORT_FORWARDING_MANAGER, dockerHost.getSubnetTier().getAttribute(SubnetTier.SUBNET_SERVICE_PORT_FORWARDS));
         ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.PORT_FORWARDER, portForwarder);
         ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL);
