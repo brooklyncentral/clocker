@@ -17,7 +17,12 @@ package brooklyn.entity.container.docker;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.format;
+import io.cloudsoft.networking.portforwarding.DockerPortForwarder;
+import io.cloudsoft.networking.subnet.PortForwarder;
+import io.cloudsoft.networking.subnet.SubnetTier;
+import io.cloudsoft.networking.subnet.SubnetTierImpl;
 
+import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -31,13 +36,16 @@ import brooklyn.enricher.Enrichers;
 import brooklyn.entity.Entity;
 import brooklyn.entity.annotation.EffectorParam;
 import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.basic.SoftwareProcessImpl;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.proxying.EntitySpec;
+import brooklyn.entity.trait.StartableMethods;
 import brooklyn.location.Location;
 import brooklyn.location.LocationDefinition;
 import brooklyn.location.MachineProvisioningLocation;
+import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.basic.BasicLocationDefinition;
 import brooklyn.location.basic.Machines;
 import brooklyn.location.basic.SshMachineLocation;
@@ -54,6 +62,7 @@ import brooklyn.policy.ha.ServiceReplacer;
 import brooklyn.policy.ha.ServiceRestarter;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.guava.Maybe;
+import brooklyn.util.net.Cidr;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -68,6 +77,8 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
 
     private DynamicCluster containers;
     private JcloudsLocation jcloudsLocation;
+    private DockerPortForwarder portForwarder;
+    private SubnetTier subnetTier;
 
     public DockerHostImpl() {
     }
@@ -239,6 +250,15 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
         return jcloudsLocation;
     }
 
+    @Override
+    public PortForwarder getPortForwarder() {
+        return portForwarder;
+    }
+
+    @Override
+    public SubnetTier getSubnetTier() {
+        return subnetTier;
+    }
 
     @Override
     public void doStart(Collection<? extends Location> locations) {
@@ -249,10 +269,21 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
                 found.get().getSshHostAndPort().getHostText(), getPort());
         jcloudsLocation = (JcloudsLocation) getManagementContext().getLocationRegistry().resolve(dockerLocationSpec);
 
+        portForwarder = new DockerPortForwarder(new PortForwardManager());
+        portForwarder.init(URI.create(jcloudsLocation.getEndpoint()));
+
+        subnetTier = addChild(EntitySpec.create(SubnetTier.class)
+                .impl(SubnetTierImpl.class)
+                .configure(SubnetTier.PORT_FORWARDER, portForwarder)
+                .configure(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL));
+
+        StartableMethods.start((EntityLocal) subnetTier, getLocations());
+
         Map<String, ?> flags = MutableMap.<String, Object>builder()
                 .putAll(getConfig(LOCATION_FLAGS))
                 .put("machine", found.get())
                 .put("jcloudsLocation", jcloudsLocation)
+                .put("portForwarder", portForwarder)
                 .build();
 
         createLocation(flags);

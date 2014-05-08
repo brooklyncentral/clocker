@@ -79,6 +79,7 @@ public class SampleMain extends Main {
         @Override
         protected void populateCatalog(BrooklynCatalog catalog) {
             super.populateCatalog(catalog);
+            catalog.addItem(BasicInfrastructure.class);
             catalog.addItem(SingleDockerHostExample.class);
             catalog.addItem(SingleWebServerExample.class);
             catalog.addItem(WebClusterDatabaseExample.class);

@@ -65,8 +65,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     @Override
     public ProcessTaskWrapper<Integer> executeScriptAsync(String dockerfile, String name) {
-        String buildCommand = sudo(format("docker build -rm -t brooklyn/%s - < %s/%s/%s", name, getRunDir(), name,
-                DOCKERFILE));
+        String buildCommand = sudo(format("docker build -rm -t brooklyn/%s - < %s/%s/%s", name, getRunDir(), name, DOCKERFILE));
         DynamicTasks.queue(SshEffectorTasks.ssh(format("mkdir -p %s/%s", getRunDir(), name))
                                            .summary(format("creating folder `%s/%s`", getRunDir(), name))).block();
         copyResource(dockerfile, format("%s/%s", name, DOCKERFILE));

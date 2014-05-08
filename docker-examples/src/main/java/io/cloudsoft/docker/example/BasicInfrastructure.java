@@ -32,9 +32,12 @@ import brooklyn.entity.proxying.EntitySpec;
         iconUrl="classpath://docker-top-logo.png")
 public class BasicInfrastructure extends AbstractApplication {
 
+    @CatalogConfig(label="Location Name", priority=1)
+    public static final ConfigKey<String> LOCATION_NAME = ConfigKeys.newConfigKeyWithDefault(
+            DockerInfrastructure.LOCATION_NAME.getConfigKey(), "docker-infrastructure");
+
     @CatalogConfig(label="Docker Host Cluster Minimum Size", priority=1)
-    public static final ConfigKey<Integer> DOCKER_HOST_CLUSTER_MIN_SIZE = ConfigKeys.newConfigKeyWithDefault
-            (DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 1);
+    public static final ConfigKey<Integer> DOCKER_HOST_CLUSTER_MIN_SIZE = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 1);
 
     @CatalogConfig(label="Enable HA Policies", priority=1)
     public static final ConfigKey<Boolean> HA_POLICY_ENABLE = DockerHost.HA_POLICY_ENABLE;
@@ -48,6 +51,7 @@ public class BasicInfrastructure extends AbstractApplication {
         addChild(EntitySpec.create(DockerInfrastructure.class)
                 .configure(DockerInfrastructure.SECURITY_GROUP, "universal") // AWS EC2 All TCP and UDP ports from 0.0.0.0/0
                 .configure(DockerInfrastructure.OPEN_IPTABLES, true)
+                .configure(DockerInfrastructure.LOCATION_NAME, getConfig(LOCATION_NAME))
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE))
                 .configure(DockerInfrastructure.DOCKER_HOST_SPEC, dockerHostSpec)
                 .displayName("Docker Infrastructure"));

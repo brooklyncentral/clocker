@@ -167,7 +167,7 @@ public class WebClusterDatabaseExample extends AbstractApplication {
     public static void main(String[] argv) {
         List<String> args = Lists.newArrayList(argv);
         String port =  CommandLineUtil.getCommandLineOption(args, "--port", "8081+");
-        String location = CommandLineUtil.getCommandLineOption(args, "--location", "localhost");
+        String location = CommandLineUtil.getCommandLineOption(args, "--location", "SingleDockerHostExample");
 
         BrooklynLauncher launcher = BrooklynLauncher.newInstance()
                 .application(EntitySpec.create(StartableApplication.class, WebClusterDatabaseExample.class).displayName("Brooklyn WebApp Cluster with Database example"))

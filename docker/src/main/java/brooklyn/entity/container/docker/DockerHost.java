@@ -15,6 +15,9 @@
  */
 package brooklyn.entity.container.docker;
 
+import io.cloudsoft.networking.subnet.PortForwarder;
+import io.cloudsoft.networking.subnet.SubnetTier;
+
 import java.util.List;
 
 import brooklyn.catalog.Catalog;
@@ -84,6 +87,8 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
     AttributeSensor<String> HOST_NAME = Sensors.newStringSensor("docker.host.name", "The name of the Docker host");
 
     JcloudsLocation getJcloudsLocation();
+    PortForwarder getPortForwarder();
+    SubnetTier getSubnetTier();
 
     String getDockerHostName();
 

@@ -43,8 +43,7 @@ public class SingleDockerHostExample extends AbstractApplication {
         String location = CommandLineUtil.getCommandLineOption(args, "--location", "localhost");
 
         BrooklynLauncher launcher = BrooklynLauncher.newInstance()
-                .application(EntitySpec.create(StartableApplication.class, SingleDockerHostExample.class)
-                        .displayName("Brooklyn Single Docker Host Example"))
+                .application(EntitySpec.create(StartableApplication.class, SingleDockerHostExample.class).displayName("Brooklyn Single Docker Host Example"))
                 .webconsolePort(port)
                 .location(location)
                 .start();
