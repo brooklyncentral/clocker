@@ -57,15 +57,14 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
     private static final Logger log = LoggerFactory.getLogger(DockerInfrastructureImpl.class);
 
-    private DynamicCluster dockerHosts;
+    private DynamicCluster hosts;
     private DynamicGroup fabric;
     private DynamicMultiGroup buckets;
-    private DockerLocation docker;
 
     private Predicate<Entity> sameInfrastructure = new Predicate<Entity>() {
         @Override
         public boolean apply(@Nullable Entity input) {
-            // Check if entity is deployed to a WaratekContainerLocation
+            // Check if entity is deployed to a DockerContainerLocation
             Optional<Location> lookup = Iterables.tryFind(input.getLocations(), Predicates.instanceOf(DockerContainerLocation.class));
             if (lookup.isPresent()) {
                 DockerContainerLocation container = (DockerContainerLocation) lookup.get();
@@ -84,7 +83,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 .configure(DockerHost.DOCKER_INFRASTRUCTURE, this)
                 .configure(SoftwareProcess.CHILDREN_STARTABLE_MODE, ChildStartableMode.BACKGROUND_LATE);
 
-        dockerHosts = addChild(EntitySpec.create(DynamicCluster.class)
+        hosts = addChild(EntitySpec.create(DynamicCluster.class)
                 .configure(Cluster.INITIAL_SIZE, initialSize)
                 .configure(DynamicCluster.QUARANTINE_FAILED_ENTITIES, true)
                 .configure(DynamicCluster.MEMBER_SPEC, dockerHostSpec)
@@ -106,18 +105,18 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 .displayName("Docker Applications"));
 
         if (Entities.isManaged(this)) {
-            Entities.manage(dockerHosts);
+            Entities.manage(hosts);
             Entities.manage(fabric);
             Entities.manage(buckets);
         }
 
-        dockerHosts.addEnricher(Enrichers.builder()
+        hosts.addEnricher(Enrichers.builder()
                 .aggregating(DockerAttributes.AVERAGE_CPU_USAGE)
                 .computingAverage()
                 .fromMembers()
                 .publishing(DockerAttributes.AVERAGE_CPU_USAGE)
                 .build());
-        dockerHosts.addEnricher(Enrichers.builder()
+        hosts.addEnricher(Enrichers.builder()
                 .aggregating(DOCKER_CONTAINER_COUNT)
                 .computingSum()
                 .fromMembers()
@@ -126,25 +125,25 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
         addEnricher(Enrichers.builder()
                 .propagating(DOCKER_CONTAINER_COUNT, DockerAttributes.AVERAGE_CPU_USAGE)
-                .from(dockerHosts)
+                .from(hosts)
                 .build());
         addEnricher(Enrichers.builder()
                 .propagating(ImmutableMap.of(DynamicCluster.GROUP_SIZE, DOCKER_HOST_COUNT))
-                .from(dockerHosts)
+                .from(hosts)
                 .build());
     }
 
     @Override
     public List<Entity> getDockerHostList() {
-        if (dockerHosts == null) {
+        if (hosts == null) {
             return ImmutableList.of();
         } else {
-            return ImmutableList.copyOf(dockerHosts.getMembers());
+            return ImmutableList.copyOf(hosts.getMembers());
         }
     }
 
     @Override
-    public DynamicCluster getDockerHostCluster() { return dockerHosts; }
+    public DynamicCluster getDockerHostCluster() { return hosts; }
 
     @Override
     public List<Entity> getDockerContainerList() {
@@ -162,12 +161,12 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
     @Override
     public Integer resize(Integer desiredSize) {
-        return dockerHosts.resize(desiredSize);
+        return hosts.resize(desiredSize);
     }
 
     @Override
     public Integer getCurrentSize() {
-        return dockerHosts.getCurrentSize();
+        return hosts.getCurrentSize();
     }
 
     @Override

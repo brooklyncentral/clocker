@@ -33,9 +33,11 @@ import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.entity.trait.HasShortName;
 import brooklyn.entity.trait.Resizable;
 import brooklyn.event.AttributeSensor;
+import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.BasicAttributeSensorAndConfigKey;
 import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
+import brooklyn.location.basic.PortRanges;
 import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.dynamic.LocationOwner;
 import brooklyn.location.jclouds.JcloudsLocation;
@@ -54,6 +56,7 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
 
     @SetFromFlag("version")
     ConfigKey<String> SUGGESTED_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "0.8");
+
     BasicAttributeSensorAndConfigKey<String> DOWNLOAD_URL = new BasicAttributeSensorAndConfigKey<String>(
             SoftwareProcess.DOWNLOAD_URL, "https://get.docker.io/builds/Linux/x86_64/docker-latest");
 
@@ -66,11 +69,10 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
 
     @SetFromFlag("dockerPort")
     PortAttributeSensorAndConfigKey DOCKER_PORT = new PortAttributeSensorAndConfigKey("docker.port",
-            "Docker port", "4243+");
+            "Docker port", PortRanges.fromString("4243+"));
 
     @SetFromFlag("containerSpec")
-    BasicAttributeSensorAndConfigKey<EntitySpec> DOCKER_CONTAINER_SPEC = new
-            BasicAttributeSensorAndConfigKey<EntitySpec>(
+    AttributeSensorAndConfigKey<EntitySpec, EntitySpec> DOCKER_CONTAINER_SPEC = ConfigKeys.newSensorAndConfigKey(
             EntitySpec.class, "docker.container.spec", "Specification to use when creating child Docker container",
             EntitySpec.create(DockerContainer.class));
 
@@ -98,7 +100,7 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
 
     DockerInfrastructure getInfrastructure();
 
-    @Effector(description="Create an SSH'able image")
+    @Effector(description="Create an SSHable image")
     void createSshableImage(
             @EffectorParam(name="dockerFile", description="URI of file to copy, e.g. file://.., http://.., classpath://..") String dockerFile,
             @EffectorParam(name="folder", description="Destination folder relative to runDir") String folder);

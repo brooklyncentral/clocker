@@ -36,8 +36,7 @@ public interface DockerContainer extends SoftwareProcess, HasShortName, Location
     String DEFAULT_DOCKER_CONTAINER_NAME_FORMAT = "docker-container-brooklyn-%1$s";
 
     @SetFromFlag("dockerHost")
-    ConfigKey<DockerHost> DOCKER_HOST = ConfigKeys.newConfigKey(DockerHost.class, "docker.host",
-            "The parent Docker host");
+    ConfigKey<DockerHost> DOCKER_HOST = ConfigKeys.newConfigKey(DockerHost.class, "docker.host", "The parent Docker host");
 
     @SetFromFlag("imageNameRegex")
     ConfigKey<String> DOCKER_IMAGE_NAME_REGEX = JcloudsLocationConfig.IMAGE_NAME_REGEX;

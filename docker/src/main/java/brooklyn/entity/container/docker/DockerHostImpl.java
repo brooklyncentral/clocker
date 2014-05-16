@@ -310,7 +310,7 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
                 getManagementContext().getLocationRegistry().removeDefinedLocation(host.getId());
             }
         }
-        setAttribute(DYNAMIC_LOCATION,  null);
-        setAttribute(LOCATION_NAME,  null);
+        setAttribute(DYNAMIC_LOCATION, null);
+        setAttribute(LOCATION_NAME, null);
     }
 }
