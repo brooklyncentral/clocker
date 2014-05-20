@@ -65,6 +65,10 @@ public class DockerContainerLocation extends SshMachineLocation implements Dynam
         return dockerContainer;
     }
 
+    public SshMachineLocation getMachine() {
+        return machine;
+    }
+
     @Override
     public void close() throws IOException {
         machine.close();

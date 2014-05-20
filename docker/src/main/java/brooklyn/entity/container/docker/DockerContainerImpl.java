@@ -17,16 +17,21 @@ package brooklyn.entity.container.docker;
 
 import static java.lang.String.format;
 
+import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import brooklyn.entity.Entity;
+import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.basic.SoftwareProcess;
-import brooklyn.entity.basic.SoftwareProcessImpl;
+import brooklyn.event.feed.function.FunctionFeed;
+import brooklyn.event.feed.function.FunctionPollConfig;
+import brooklyn.location.Location;
 import brooklyn.location.LocationSpec;
 import brooklyn.location.NoMachinesAvailableException;
 import brooklyn.location.docker.DockerContainerLocation;
@@ -37,14 +42,17 @@ import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.management.LocationManager;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.exceptions.Exceptions;
+import brooklyn.util.time.Duration;
 
 /**
  * A single Docker container.
  */
-public class DockerContainerImpl extends SoftwareProcessImpl implements DockerContainer {
+public class DockerContainerImpl extends BasicStartableImpl implements DockerContainer {
 
     private static final Logger LOG = LoggerFactory.getLogger(DockerContainerImpl.class);
     private static final AtomicInteger COUNTER = new AtomicInteger(0);
+
+    private transient FunctionFeed sensorFeed;
 
     @Override
     public void init() {
@@ -55,16 +63,22 @@ public class DockerContainerImpl extends SoftwareProcessImpl implements DockerCo
         setAttribute(DOCKER_CONTAINER_NAME, dockerContainerName);
     }
 
-    @Override
     protected void connectSensors() {
-        super.connectSensors();
-        connectServiceUpIsRunning();
+        sensorFeed = FunctionFeed.builder()
+                .entity(this)
+                .period(Duration.TEN_SECONDS)
+                .poll(new FunctionPollConfig<Boolean, Boolean>(SERVICE_UP)
+                        .callable(new Callable<Boolean>() {
+                                @Override
+                                public Boolean call() throws Exception {
+                                    return getDynamicLocation().isSshable();
+                                }
+                        }))
+                .build();
     }
 
-    @Override
     public void disconnectSensors() {
-        disconnectServiceUpIsRunning();
-        super.disconnectSensors();
+        if (sensorFeed !=  null) sensorFeed.stop();
     }
 
     @Override
@@ -84,11 +98,6 @@ public class DockerContainerImpl extends SoftwareProcessImpl implements DockerCo
     @Override
     public DockerHost getDockerHost() {
         return getConfig(DOCKER_HOST);
-    }
-
-    @Override
-    public Class getDriverInterface() {
-        return DockerContainerDriver.class;
     }
 
     @Override
@@ -174,20 +183,33 @@ public class DockerContainerImpl extends SoftwareProcessImpl implements DockerCo
     }
 
     @Override
-    protected void preStart() {
+    public void start(Collection<? extends Location> locations) {
+        setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.STARTING);
+        setAttribute(SoftwareProcess.SERVICE_UP, Boolean.FALSE);
+
         Map<String, ?> flags = MutableMap.<String, Object>builder()
                 .putAll(getConfig(LOCATION_FLAGS))
                 .build();
         createLocation(flags);
+
+        setAttribute(SSH_MACHINE_LOCATION, getDynamicLocation().getMachine());
+
+        connectSensors();
+
+        super.start(locations);
+
+        setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.RUNNING);
     }
 
     @Override
-    public void doStop() {
+    public void stop() {
         setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.STOPPING);
 
-        getDriver().stop();
+        super.stop();
 
         disconnectSensors();
+
+        setAttribute(SSH_MACHINE_LOCATION, null);
 
         deleteLocation();
 

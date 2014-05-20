@@ -18,20 +18,23 @@ package brooklyn.entity.container.docker;
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
 import brooklyn.entity.annotation.Effector;
+import brooklyn.entity.basic.BasicStartable;
 import brooklyn.entity.basic.ConfigKeys;
+import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.basic.MethodEffector;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.entity.trait.HasShortName;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.Sensors;
+import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.location.dynamic.LocationOwner;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.util.flags.SetFromFlag;
 
 @ImplementedBy(DockerContainerImpl.class)
-public interface DockerContainer extends SoftwareProcess, HasShortName, LocationOwner<DockerContainerLocation, DockerContainer> {
+public interface DockerContainer extends BasicStartable, HasShortName, LocationOwner<DockerContainerLocation, DockerContainer> {
 
     String DEFAULT_DOCKER_CONTAINER_NAME_FORMAT = "docker-container-brooklyn-%1$s";
 
@@ -45,6 +48,10 @@ public interface DockerContainer extends SoftwareProcess, HasShortName, Location
             "Format for generating Docker container names", DEFAULT_DOCKER_CONTAINER_NAME_FORMAT);
 
     AttributeSensor<String> DOCKER_CONTAINER_NAME = Sensors.newStringSensor("docker.container.name", "The name of the Docker container");
+
+    AttributeSensor<Lifecycle> SERVICE_STATE = SoftwareProcess.SERVICE_STATE;
+
+    AttributeSensor<SshMachineLocation> SSH_MACHINE_LOCATION = Sensors.newSensor(SshMachineLocation.class, "docker.container.ssh", "The SSHable machine");
 
     AttributeSensor<Entity> ENTITY = Sensors.newSensor(Entity.class, "docker.container.entity", "The entity running in this Docker container");
 
