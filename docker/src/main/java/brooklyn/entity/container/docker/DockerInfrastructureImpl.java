@@ -24,15 +24,6 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Function;
-import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
-
 import brooklyn.enricher.Enrichers;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.BasicStartableImpl;
@@ -52,6 +43,15 @@ import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.DockerResolver;
 import brooklyn.management.LocationManager;
 import brooklyn.util.collections.MutableMap;
+
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 
 public class DockerInfrastructureImpl extends BasicStartableImpl implements DockerInfrastructure {
 
@@ -155,9 +155,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
     }
 
     @Override
-    public DynamicGroup getContainerFabric() {
-        return fabric;
-    }
+    public DynamicGroup getContainerFabric() { return fabric; }
 
     @Override
     public Integer resize(Integer desiredSize) {
@@ -171,7 +169,12 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
     @Override
     public DockerLocation getDynamicLocation() {
-        return docker;
+        return (DockerLocation) getAttribute(DYNAMIC_LOCATION);
+    }
+
+    @Override
+    public boolean isLocationAvailable() {
+        return getDynamicLocation() != null;
     }
 
     @Override
@@ -182,8 +185,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
             String suffix = getConfig(LOCATION_NAME_SUFFIX);
             locationName = Joiner.on("-").skipNulls().join(prefix, getId(), suffix);
         }
-        String locationSpec = String.format(DockerResolver.DOCKER_INFRASTRUCTURE_SPEC,
-                getId()) + String.format(":(name=\"%s\")", locationName);
+        String locationSpec = String.format(DockerResolver.DOCKER_INFRASTRUCTURE_SPEC, getId()) + String.format(":(name=\"%s\")", locationName);
         setAttribute(LOCATION_SPEC, locationSpec);
         LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
         Location location = getManagementContext().getLocationRegistry().resolve(definition);
@@ -192,16 +194,31 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         setAttribute(LOCATION_NAME, location.getId());
         getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
 
+        log.info("New Docker location {} created", location);
         return (DockerLocation) location;
     }
 
     @Override
-    public boolean isLocationAvailable() {
-        return docker != null;
+    public void deleteLocation() {
+        DockerLocation host = getDynamicLocation();
+
+        if (host != null) {
+            LocationManager mgr = getManagementContext().getLocationManager();
+            if (mgr.isManaged(host)) {
+                mgr.unmanage(host);
+            }
+        }
+
+        setAttribute(DYNAMIC_LOCATION, null);
+        setAttribute(LOCATION_NAME, null);
     }
 
     @Override
     public void start(Collection<? extends Location> locations) {
+        setAttribute(SERVICE_UP, Boolean.FALSE);
+
+        super.start(locations);
+
         Location provisioner = Iterables.getOnlyElement(locations);
         log.info("Creating new DockerLocation wrapping {}", provisioner);
 
@@ -209,28 +226,20 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 .putAll(getConfig(LOCATION_FLAGS))
                 .put("provisioner", provisioner)
                 .build();
-        docker = createLocation(flags);
-        log.info("New Docker location {} created", docker);
+        createLocation(flags);
 
-        super.start(locations);
+        setAttribute(SERVICE_UP, Boolean.TRUE);
     }
 
     /**
      * De-register our {@link DockerLocation} and its children.
      */
     public void stop() {
-        super.stop();
+        setAttribute(SERVICE_UP, Boolean.FALSE);
 
         deleteLocation();
-    }
 
-    @Override
-    public void deleteLocation() {
-        LocationManager mgr = getManagementContext().getLocationManager();
-        if (docker != null && mgr.isManaged(docker)) {
-            mgr.unmanage(docker);
-            setAttribute(DYNAMIC_LOCATION,  null);
-        }
+        super.stop();
     }
 
 }

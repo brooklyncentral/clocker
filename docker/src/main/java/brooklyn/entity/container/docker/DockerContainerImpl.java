@@ -40,6 +40,9 @@ import brooklyn.management.LocationManager;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.exceptions.Exceptions;
 
+/**
+ * A single Docker container.
+ */
 public class DockerContainerImpl extends SoftwareProcessImpl implements DockerContainer {
 
     private static final Logger log = LoggerFactory.getLogger(DockerContainerImpl.class);
@@ -55,35 +58,15 @@ public class DockerContainerImpl extends SoftwareProcessImpl implements DockerCo
     }
 
     @Override
-    public void doStart(Collection<? extends Location> locations) {
-        super.doStart(locations);
-
-        Map<String, ?> flags = MutableMap.<String, Object>builder()
-                .putAll(getConfig(LOCATION_FLAGS))
-                .build();
-
-        createLocation(flags);
+    protected void connectSensors() {
+        super.connectSensors();
+        connectServiceUpIsRunning();
     }
 
     @Override
-    public void doStop() {
-        disconnectSensors();
-        deleteLocation();
-
-        setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.STOPPING);
-        getDriver().stop();
-        setAttribute(SoftwareProcess.SERVICE_UP, false);
-        setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.STOPPED);
-    }
-
-    @Override
-    public void deleteLocation() {
-        LocationManager mgr = getManagementContext().getLocationManager();
-        DockerContainerLocation location = getDynamicLocation();
-        if (location != null && mgr.isManaged(location)) {
-            mgr.unmanage(location);
-            setAttribute(DYNAMIC_LOCATION,  null);
-        }
+    public void disconnectSensors() {
+        disconnectServiceUpIsRunning();
+        super.disconnectSensors();
     }
 
     @Override
@@ -106,15 +89,23 @@ public class DockerContainerImpl extends SoftwareProcessImpl implements DockerCo
     }
 
     @Override
-    protected void connectSensors() {
-        super.connectSensors();
-        connectServiceUpIsRunning();
+    public Class getDriverInterface() {
+        return DockerContainerDriver.class;
     }
 
     @Override
-    public void disconnectSensors() {
-        disconnectServiceUpIsRunning();
-        super.disconnectSensors();
+    public String getShortName() {
+        return "Docker container";
+    }
+
+    @Override
+    public DockerContainerLocation getDynamicLocation() {
+        return (DockerContainerLocation) getAttribute(DYNAMIC_LOCATION);
+    }
+
+    @Override
+    public boolean isLocationAvailable() {
+        return getDynamicLocation() != null;
     }
 
     @Override
@@ -133,21 +124,6 @@ public class DockerContainerImpl extends SoftwareProcessImpl implements DockerCo
     public void resume() {
         String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
         log.info("Resume {}", dockerContainerName);
-    }
-
-    @Override
-    public Class getDriverInterface() {
-        return DockerContainerDriver.class;
-    }
-
-    @Override
-    public String getShortName() {
-        return "Docker container";
-    }
-
-    @Override
-    public DockerContainerLocation getDynamicLocation() {
-        return (DockerContainerLocation) getAttribute(DYNAMIC_LOCATION);
     }
 
     /**
@@ -182,12 +158,42 @@ public class DockerContainerImpl extends SoftwareProcessImpl implements DockerCo
         } catch (NoMachinesAvailableException e) {
             throw Exceptions.propagate(e);
         }
-
     }
 
     @Override
-    public boolean isLocationAvailable() {
-        return getDynamicLocation() != null;
+    public void deleteLocation() {
+        DockerContainerLocation location = getDynamicLocation();
+
+        if (location != null) {
+            LocationManager mgr = getManagementContext().getLocationManager();
+            if (mgr.isManaged(location)) {
+                mgr.unmanage(location);
+            }
+        }
+
+        setAttribute(DYNAMIC_LOCATION, null);
+        setAttribute(LOCATION_NAME, null);
+    }
+
+    @Override
+    public void doStart(Collection<? extends Location> locations) {
+        super.doStart(locations);
+
+        Map<String, ?> flags = MutableMap.<String, Object>builder()
+                .putAll(getConfig(LOCATION_FLAGS))
+                .build();
+        createLocation(flags);
+    }
+
+    @Override
+    public void doStop() {
+        disconnectSensors();
+        deleteLocation();
+
+        setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.STOPPING);
+        getDriver().stop();
+        setAttribute(SoftwareProcess.SERVICE_UP, false);
+        setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.STOPPED);
     }
 
 }

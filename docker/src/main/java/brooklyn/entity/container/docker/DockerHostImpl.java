@@ -15,8 +15,6 @@
  */
 package brooklyn.entity.container.docker;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static java.lang.String.format;
 import io.cloudsoft.networking.portforwarding.DockerPortForwarder;
 import io.cloudsoft.networking.subnet.PortForwarder;
 import io.cloudsoft.networking.subnet.SubnetTier;
@@ -34,16 +32,11 @@ import org.slf4j.LoggerFactory;
 
 import brooklyn.enricher.Enrichers;
 import brooklyn.entity.Entity;
-import brooklyn.entity.annotation.EffectorParam;
 import brooklyn.entity.basic.Entities;
-import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.basic.SoftwareProcessImpl;
-import brooklyn.entity.effector.Effectors;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.proxying.EntitySpec;
-import brooklyn.entity.trait.Startable;
-import brooklyn.entity.trait.StartableMethods;
 import brooklyn.location.Location;
 import brooklyn.location.LocationDefinition;
 import brooklyn.location.MachineProvisioningLocation;
@@ -70,7 +63,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 /**
- * @author Andrea Turli
+ * The host running the Docker service.
  */
 public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
 
@@ -82,19 +75,11 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     private DockerPortForwarder portForwarder;
     private SubnetTier subnetTier;
 
-    public DockerHostImpl() {
-    }
-
-    @Override
-    public DockerHostDriver getDriver() {
-        return (DockerHostDriver) super.getDriver();
-    }
-
     @Override
     public void init() {
         log.info("Starting Docker host id {}", getId());
 
-        String dockerHostName = format(getConfig(DockerHost.HOST_NAME_FORMAT), getId(), counter.incrementAndGet());
+        String dockerHostName = String.format(getConfig(DockerHost.HOST_NAME_FORMAT), getId(), counter.incrementAndGet());
         setDisplayName(dockerHostName);
         setAttribute(HOST_NAME, dockerHostName);
 
@@ -115,6 +100,7 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
             containers.addPolicy(PolicySpec.create(ServiceReplacer.class)
                     .configure(ServiceReplacer.FAILURE_SENSOR_TO_MONITOR, ServiceRestarter.ENTITY_RESTART_FAILED));
         }
+
         if (Entities.isManaged(this)) Entities.manage(containers);
 
         containers.addEnricher(Enrichers.builder()
@@ -133,15 +119,6 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
                 .from(containers)
                 .build());
     }
-    
-    @Override
-    public Class<?> getDriverInterface() {
-        return DockerHostDriver.class;
-    }
-
-    public int getPort() {
-        return checkNotNull(getAttribute(DOCKER_PORT), "%s must not be null", DOCKER_PORT);
-    }
 
     @Override
     protected void connectSensors() {
@@ -156,12 +133,18 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     }
 
     @Override
-    public String getShortName() {
-        return "Docker Host";
+    protected Map<String, Object> obtainProvisioningFlags(MachineProvisioningLocation location) {
+        Map flags = super.obtainProvisioningFlags(location);
+        flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), new PortableTemplateBuilder()
+                .osFamily(OsFamily.UBUNTU)
+                .osVersionMatches("12.04")
+                .os64Bit(true)
+                .minRam(2048));
+        return flags;
     }
 
     @Override
-    public Integer resize(@EffectorParam(name = "desiredSize", description = "The new size of the cluster") Integer desiredSize) {
+    public Integer resize(Integer desiredSize) {
         Integer maxSize = getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
         if (desiredSize > maxSize) {
             return getDockerContainerCluster().resize(maxSize);
@@ -171,8 +154,27 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     }
 
     @Override
+    public String getShortName() {
+        return "Docker Host";
+    }
+
+    @Override
     public Integer getCurrentSize() {
         return getDockerContainerCluster().getCurrentSize();
+    }
+
+    @Override
+    public Class<?> getDriverInterface() {
+        return DockerHostDriver.class;
+    }
+
+    @Override
+    public DockerHostDriver getDriver() {
+        return (DockerHostDriver) super.getDriver();
+    }
+
+    public int getPort() {
+        return getAttribute(DOCKER_PORT);
     }
 
     @Override
@@ -181,24 +183,8 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     }
 
     @Override
-    public DynamicCluster getDockerContainerCluster() {
-        return containers;
-    }
-
-    @Override
     public List<Entity> getDockerContainerList() {
         return ImmutableList.copyOf(containers.getMembers());
-    }
-
-    @Override
-    protected Map<String, Object> obtainProvisioningFlags(MachineProvisioningLocation location) {
-        Map flags = super.obtainProvisioningFlags(location);
-        flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), new PortableTemplateBuilder()
-                .osFamily(OsFamily.UBUNTU)
-                .osVersionMatches("12.04")
-                .os64Bit(true)
-                .minRam(2048));
-        return flags;
     }
 
     @Override
@@ -216,6 +202,23 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
         return (DockerHostLocation) getAttribute(DYNAMIC_LOCATION);
     }
 
+    @Override
+    public boolean isLocationAvailable() {
+        return getDynamicLocation() != null;
+    }
+
+    @Override
+    public DynamicCluster getDockerContainerCluster() { return containers; }
+
+    @Override
+    public JcloudsLocation getJcloudsLocation() { return jcloudsLocation; }
+
+    @Override
+    public PortForwarder getPortForwarder() { return portForwarder; }
+
+    @Override
+    public SubnetTier getSubnetTier() { return subnetTier; }
+
     /**
      * Create a new {@link DockerHostLocation} wrapping the machine we are starting in.
      */
@@ -226,7 +229,7 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
         DockerLocation docker = infrastructure.getDynamicLocation();
         locationName = docker.getId() + "-" + getDockerHostName();
 
-        locationSpec = format(DockerResolver.DOCKER_HOST_MACHINE_SPEC, infrastructure.getId(), getId()) + format(":(name=\"%s\")", locationName);
+        locationSpec = String.format(DockerResolver.DOCKER_HOST_MACHINE_SPEC, infrastructure.getId(), getId()) + String.format(":(name=\"%s\")", locationName);
         setAttribute(LOCATION_SPEC, locationSpec);
         LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
         Location location = getManagementContext().getLocationRegistry().resolve(definition);
@@ -243,23 +246,21 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     }
 
     @Override
-    public boolean isLocationAvailable() {
-        return getDynamicLocation() != null;
-    }
+    public void deleteLocation() {
+        DockerHostLocation location = getDynamicLocation();
 
-    @Override
-    public JcloudsLocation getJcloudsLocation() {
-        return jcloudsLocation;
-    }
+        if (location != null) {
+            LocationManager mgr = getManagementContext().getLocationManager();
+            if (mgr.isManaged(location)) {
+                mgr.unmanage(location);
+            }
+            if (getConfig(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS)) {
+                getManagementContext().getLocationRegistry().removeDefinedLocation(location.getId());
+            }
+        }
 
-    @Override
-    public PortForwarder getPortForwarder() {
-        return portForwarder;
-    }
-
-    @Override
-    public SubnetTier getSubnetTier() {
-        return subnetTier;
+        setAttribute(DYNAMIC_LOCATION, null);
+        setAttribute(LOCATION_NAME, null);
     }
 
     @Override
@@ -278,7 +279,7 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
                 .impl(SubnetTierImpl.class)
                 .configure(SubnetTier.PORT_FORWARDER, portForwarder)
                 .configure(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL));
-        subnetTier.start(getLocations());
+        subnetTier.start(ImmutableList.of(found.get()));
 
         Map<String, ?> flags = MutableMap.<String, Object>builder()
                 .putAll(getConfig(LOCATION_FLAGS))
@@ -286,7 +287,6 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
                 .put("jcloudsLocation", jcloudsLocation)
                 .put("portForwarder", portForwarder)
                 .build();
-
         createLocation(flags);
     }
 
@@ -297,20 +297,4 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
         super.doStop();
     }
 
-    @Override
-    public void deleteLocation() {
-        DockerHostLocation host = getDynamicLocation();
-
-        if (host != null) {
-            LocationManager mgr = getManagementContext().getLocationManager();
-            if (mgr.isManaged(host)) {
-                mgr.unmanage(host);
-            }
-            if (getConfig(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS)) {
-                getManagementContext().getLocationRegistry().removeDefinedLocation(host.getId());
-            }
-        }
-        setAttribute(DYNAMIC_LOCATION, null);
-        setAttribute(LOCATION_NAME, null);
-    }
 }
