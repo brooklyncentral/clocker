@@ -15,11 +15,7 @@
  */
 package brooklyn.entity.container.docker;
 
-import static brooklyn.util.ssh.BashCommands.INSTALL_WGET;
-import static brooklyn.util.ssh.BashCommands.chainGroup;
-import static brooklyn.util.ssh.BashCommands.ifExecutableElse0;
-import static brooklyn.util.ssh.BashCommands.installPackage;
-import static brooklyn.util.ssh.BashCommands.sudo;
+import static brooklyn.util.ssh.BashCommands.*;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -27,10 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.util.concurrent.Uninterruptibles;
 
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
@@ -40,11 +32,17 @@ import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.location.OsDetails;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.util.collections.MutableMap;
-import brooklyn.util.internal.Repeater;
 import brooklyn.util.net.Networking;
+import brooklyn.util.os.Os;
+import brooklyn.util.repeat.Repeater;
 import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.task.DynamicTasks;
 import brooklyn.util.task.system.ProcessTaskWrapper;
+import brooklyn.util.time.Duration;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.Uninterruptibles;
 
 public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implements DockerHostDriver {
 
@@ -65,11 +63,10 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     @Override
     public ProcessTaskWrapper<Integer> executeScriptAsync(String dockerfile, String name) {
-        String buildCommand = sudo(format("docker build -rm -t brooklyn/%s - < %s/%s/%s", name, getRunDir(), name, DOCKERFILE));
-        DynamicTasks.queue(SshEffectorTasks.ssh(format("mkdir -p %s/%s", getRunDir(), name))
-                                           .summary(format("creating folder `%s/%s`", getRunDir(), name))).block();
-        copyResource(dockerfile, format("%s/%s", name, DOCKERFILE));
-        return DynamicTasks.queue(SshEffectorTasks.ssh(buildCommand).summary(format("executing `%s`", buildCommand)));
+        DynamicTasks.queue(SshEffectorTasks.ssh(format("mkdir -p %s", Os.mergePaths(getRunDir(), name))).summary("creating folder for " + name)).block();
+        copyResource(dockerfile, Os.mergePaths(name, DOCKERFILE));
+        String buildCommand = sudo(format("docker build -rm -t %s - < %s", Os.mergePaths("brooklyn", name), Os.mergePaths(getRunDir(), name, DOCKERFILE)));
+        return DynamicTasks.queue(SshEffectorTasks.ssh(buildCommand).summary("executing build command for " + name));
     }
 
     public String getEpelRelease() {
@@ -84,14 +81,13 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .gatherOutput();
         Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
         return Repeater.create()
-                .repeat()
-                .every(1,SECONDS)
+                .every(Duration.ONE_SECOND)
                 .until(new Callable<Boolean>() {
                     public Boolean call() {
                         helper.execute();
                         return helper.getResultStdout().contains("running");
                     }})
-                .limitTimeTo(1, TimeUnit.MINUTES)
+                .limitTimeTo(Duration.ONE_MINUTE)
                 .rethrowExceptionImmediately()
                 .run();
     }
@@ -128,13 +124,12 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         }
         log.info("waiting for Docker host {} to be sshable", getLocation());
         boolean isSshable = Repeater.create()
-                .repeat()
-                .every(1,SECONDS)
+                .every(Duration.ONE_SECOND)
                 .until(new Callable<Boolean>() {
                     public Boolean call() {
                         return getLocation().isSshable();
                     }})
-                .limitTimeTo(30, TimeUnit.MINUTES)
+                .limitTimeTo(Duration.minutes(15))
                 .run();
         if(!isSshable) {
             throw new IllegalStateException(String.format("The entity %s is not ssh'able after reboot", entity));

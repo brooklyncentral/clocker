@@ -36,9 +36,10 @@ import brooklyn.location.dynamic.LocationOwner;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.util.flags.SetFromFlag;
 
+@Catalog(name="DockerInfrastructure",
+        description="Docker Infrastructure.",
+        iconUrl = "classpath:///docker-top-logo.png")
 @ImplementedBy(DockerInfrastructureImpl.class)
-@Catalog(name="DockerInfrastructure", description="Docker Infrastructure.", iconUrl = "classpath:///docker-top-logo.png")
-
 public interface DockerInfrastructure extends BasicStartable, Resizable, LocationOwner<DockerLocation, DockerInfrastructure> {
 
     @SetFromFlag("securityGroup")

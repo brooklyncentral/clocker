@@ -21,7 +21,6 @@ import io.cloudsoft.networking.subnet.SubnetTier;
 import io.cloudsoft.networking.subnet.SubnetTierImpl;
 
 import java.net.URI;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -224,12 +223,11 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
      */
     @Override
     public DockerHostLocation createLocation(Map<String, ?> flags) {
-        String locationSpec, locationName;
         DockerInfrastructure infrastructure = getConfig(DOCKER_INFRASTRUCTURE);
         DockerLocation docker = infrastructure.getDynamicLocation();
-        locationName = docker.getId() + "-" + getDockerHostName();
+        String locationName = docker.getId() + "-" + getDockerHostName();
 
-        locationSpec = String.format(DockerResolver.DOCKER_HOST_MACHINE_SPEC, infrastructure.getId(), getId()) + String.format(":(name=\"%s\")", locationName);
+        String locationSpec = String.format(DockerResolver.DOCKER_HOST_MACHINE_SPEC, infrastructure.getId(), getId()) + String.format(":(name=\"%s\")", locationName);
         setAttribute(LOCATION_SPEC, locationSpec);
         LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
         Location location = getManagementContext().getLocationRegistry().resolve(definition);
@@ -264,9 +262,7 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     }
 
     @Override
-    public void doStart(Collection<? extends Location> locations) {
-        super.doStart(locations);
-
+    protected void preStart() {
         Maybe<SshMachineLocation> found = Machines.findUniqueSshMachineLocation(getLocations());
         String dockerLocationSpec = String.format("jclouds:docker:http://%s:%s",
                 found.get().getSshHostAndPort().getHostText(), getPort());
@@ -292,9 +288,9 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
 
     @Override
     public void doStop() {
-        deleteLocation();
-
         super.doStop();
+
+        deleteLocation();
     }
 
 }

@@ -217,8 +217,6 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
     public void start(Collection<? extends Location> locations) {
         setAttribute(SERVICE_UP, Boolean.FALSE);
 
-        super.start(locations);
-
         Location provisioner = Iterables.getOnlyElement(locations);
         log.info("Creating new DockerLocation wrapping {}", provisioner);
 
@@ -227,6 +225,8 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 .put("provisioner", provisioner)
                 .build();
         createLocation(flags);
+
+        super.start(locations);
 
         setAttribute(SERVICE_UP, Boolean.TRUE);
     }
@@ -237,9 +237,9 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
     public void stop() {
         setAttribute(SERVICE_UP, Boolean.FALSE);
 
-        deleteLocation();
-
         super.stop();
+
+        deleteLocation();
     }
 
 }

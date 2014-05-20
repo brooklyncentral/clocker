@@ -17,7 +17,6 @@ package brooklyn.entity.container.docker;
 
 import static java.lang.String.format;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -28,7 +27,6 @@ import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.basic.SoftwareProcessImpl;
-import brooklyn.location.Location;
 import brooklyn.location.LocationSpec;
 import brooklyn.location.NoMachinesAvailableException;
 import brooklyn.location.docker.DockerContainerLocation;
@@ -176,9 +174,7 @@ public class DockerContainerImpl extends SoftwareProcessImpl implements DockerCo
     }
 
     @Override
-    public void doStart(Collection<? extends Location> locations) {
-        super.doStart(locations);
-
+    protected void preStart() {
         Map<String, ?> flags = MutableMap.<String, Object>builder()
                 .putAll(getConfig(LOCATION_FLAGS))
                 .build();
@@ -187,12 +183,15 @@ public class DockerContainerImpl extends SoftwareProcessImpl implements DockerCo
 
     @Override
     public void doStop() {
+        setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.STOPPING);
+
+        getDriver().stop();
+
         disconnectSensors();
+
         deleteLocation();
 
-        setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.STOPPING);
-        getDriver().stop();
-        setAttribute(SoftwareProcess.SERVICE_UP, false);
+        setAttribute(SoftwareProcess.SERVICE_UP, Boolean.FALSE);
         setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.STOPPED);
     }
 
