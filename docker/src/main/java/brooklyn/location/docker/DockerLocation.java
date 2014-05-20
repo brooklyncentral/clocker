@@ -51,10 +51,9 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 public class DockerLocation extends AbstractLocation implements DockerVirtualLocation,
-        MachineProvisioningLocation<MachineLocation>,
-        DynamicLocation<DockerInfrastructure, DockerLocation> {
+        MachineProvisioningLocation<MachineLocation>, DynamicLocation<DockerInfrastructure, DockerLocation> {
 
-	private static final Logger LOG = LoggerFactory.getLogger(DockerLocation.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DockerLocation.class);
 
     @SetFromFlag("mutex")
     private Object mutex;
@@ -116,7 +115,7 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
         synchronized (mutex) {
             // Check context for entity being deployed
             Object context = flags.get(LocationConfigKeys.CALLER_CONTEXT.getName());
-            if (!(context instanceof Entity)) {
+            if (context != null && !(context instanceof Entity)) {
                 throw new IllegalStateException("Invalid location context: " + context);
             }
             Entity entity = (Entity) context;
@@ -131,6 +130,9 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
             Entities.waitForServiceUp(dockerHost);
 
             // Obtain a new Docker container location, save and return it
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Obtain a new container from {} for {}", machine, entity);
+            }
             DockerContainerLocation container = machine.obtain(MutableMap.of("entity", entity));
 
             Maybe<SshMachineLocation> deployed = Machines.findUniqueSshMachineLocation(dockerHost.getLocations());

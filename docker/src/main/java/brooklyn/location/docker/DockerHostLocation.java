@@ -47,6 +47,7 @@ import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
+import brooklyn.util.text.Strings;
 
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Optional;
@@ -97,8 +98,6 @@ public class DockerHostLocation extends AbstractLocation implements
             LOG.debug("Docker host {}: {} containers, max {}", new Object[] { dockerHost.getDockerHostName(), currentSize, maxSize });
         }
 
-        // also try to satisfy the affinty rules etc.
-
         if (currentSize != null && currentSize >= maxSize) {
             throw new NoMachinesAvailableException(String.format("Limit of %d containers reached at %s", maxSize, dockerHost.getDockerHostName()));
         }
@@ -110,9 +109,26 @@ public class DockerHostLocation extends AbstractLocation implements
         ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL);
         configureEnrichers((AbstractEntity) entity);
 
+        // Add the entity Dockerfile if configured
+        String dockerfile = entity.getConfig(DockerInfrastructure.DOCKERFILE_URL);
+        String imageId = entity.getConfig(DockerInfrastructure.DOCKER_CONTAINER_ID);
+        if (Strings.isNonBlank(dockerfile)) {
+            if (imageId != null) {
+                LOG.warn("Ignoring container imageId {} as dockerfile URL is set: {}", imageId, dockerfile);
+                imageId = null;
+            }
+            dockerHost.createSshableImage(dockerfile, entity.getId());
+        }
+
         // increase size of Docker container cluster
+        LOG.info("Increase size of Docker container cluster at {}", machine);
+        Map<Object, Object> containerFlags = MutableMap.builder()
+                .putAll(flags)
+                .put("entity", entity)
+                .putIfNotNull("imageId", imageId)
+                .build();
         DynamicCluster cluster = dockerHost.getDockerContainerCluster();
-        Optional<Entity> added = cluster.addInSingleLocation(this, MutableMap.builder().putAll(flags).put("entity", entity).build());
+        Optional<Entity> added = cluster.addInSingleLocation(machine, containerFlags);
         if (!added.isPresent()) {
             throw new NoMachinesAvailableException(String.format("Failed to create containers. Limit reached at %s", dockerHost.getDockerHostName()));
         }

@@ -159,6 +159,9 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
     @Override
     public Integer resize(Integer desiredSize) {
+        if (log.isDebugEnabled()) {
+            log.debug("Resize Docker infrastructure to {} at {}", new Object[] { desiredSize, getLocations() });
+        }
         return hosts.resize(desiredSize);
     }
 

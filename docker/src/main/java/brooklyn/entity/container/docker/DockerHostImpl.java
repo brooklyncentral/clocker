@@ -145,6 +145,9 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     @Override
     public Integer resize(Integer desiredSize) {
         Integer maxSize = getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
+        if (log.isDebugEnabled()) {
+            log.debug("Resize Docker host to {} (max {}) at {}", new Object[] { desiredSize, maxSize, getLocations() });
+        }
         if (desiredSize > maxSize) {
             return getDockerContainerCluster().resize(maxSize);
         } else {
@@ -266,7 +269,8 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
         Maybe<SshMachineLocation> found = Machines.findUniqueSshMachineLocation(getLocations());
         String dockerLocationSpec = String.format("jclouds:docker:http://%s:%s",
                 found.get().getSshHostAndPort().getHostText(), getPort());
-        jcloudsLocation = (JcloudsLocation) getManagementContext().getLocationRegistry().resolve(dockerLocationSpec);
+        jcloudsLocation = (JcloudsLocation) getManagementContext().getLocationRegistry()
+                .resolve(dockerLocationSpec, MutableMap.of("identity", "docker", "credential", "docker"));
 
         portForwarder = new DockerPortForwarder(new PortForwardManager());
         portForwarder.init(URI.create(jcloudsLocation.getEndpoint()));
@@ -284,6 +288,12 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
                 .put("portForwarder", portForwarder)
                 .build();
         createLocation(flags);
+    }
+
+    @Override
+    public void postStart() {
+        String dockerfileUrl = getConfig(DockerInfrastructure.DOCKERFILE_URL);
+        createSshableImage(dockerfileUrl, "default");
     }
 
     @Override

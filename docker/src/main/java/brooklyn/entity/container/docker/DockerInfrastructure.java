@@ -65,8 +65,12 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
             EntitySpec.class, "docker.host.spec", "Specification to use when creating child Docker Hosts",
             EntitySpec.create(DockerHost.class));
 
+    @SetFromFlag("dockerfileUrl")
+    ConfigKey<String> DOCKERFILE_URL = ConfigKeys.newStringConfigKey("docker.dockerfileUrl", "URL of a DockerFile to use",
+            "classpath://brooklyn.entity.container.docker.ubuntu.Dockerfile");
+
     @SetFromFlag("containerId")
-    ConfigKey<String> DOCKER_CONTAINER_ID = ConfigKeys.newStringConfigKey("docker.containerId", "Specification to use when creating child Docker Hosts");
+    ConfigKey<String> DOCKER_CONTAINER_ID = ConfigKeys.newStringConfigKey("docker.containerId", "The ID of a Docker image to use for a container");
 
     AttributeSensor<DynamicCluster> DOCKER_HOST_CLUSTER = Sensors.newSensor(DynamicCluster.class, "docker.hosts", "Docker host cluster");
     AttributeSensor<DynamicGroup> DOCKER_CONTAINER_FABRIC = Sensors.newSensor(DynamicGroup.class, "docker.fabric", "Docker container fabric");
