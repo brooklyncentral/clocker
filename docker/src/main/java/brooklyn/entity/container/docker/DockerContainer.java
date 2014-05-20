@@ -36,8 +36,6 @@ import brooklyn.util.flags.SetFromFlag;
 @ImplementedBy(DockerContainerImpl.class)
 public interface DockerContainer extends BasicStartable, HasShortName, LocationOwner<DockerContainerLocation, DockerContainer> {
 
-    String DEFAULT_DOCKER_CONTAINER_NAME_FORMAT = "docker-container-brooklyn-%1$s";
-
     @SetFromFlag("dockerHost")
     ConfigKey<DockerHost> DOCKER_HOST = ConfigKeys.newConfigKey(DockerHost.class, "docker.host", "The parent Docker host");
 
@@ -45,7 +43,7 @@ public interface DockerContainer extends BasicStartable, HasShortName, LocationO
     ConfigKey<String> DOCKER_IMAGE_NAME_REGEX = JcloudsLocationConfig.IMAGE_NAME_REGEX;
 
     ConfigKey<String> DOCKER_CONTAINER_NAME_FORMAT = ConfigKeys.newStringConfigKey("docker.container.nameFormat",
-            "Format for generating Docker container names", DEFAULT_DOCKER_CONTAINER_NAME_FORMAT);
+            "Format for generating Docker container names", DockerAttributes.DEFAULT_DOCKER_CONTAINER_NAME_FORMAT);
 
     AttributeSensor<String> DOCKER_CONTAINER_NAME = Sensors.newStringSensor("docker.container.name", "The name of the Docker container");
 

@@ -52,8 +52,6 @@ import brooklyn.util.flags.SetFromFlag;
 @ImplementedBy(DockerHostImpl.class)
 public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, LocationOwner<DockerHostLocation, DockerHost> {
 
-    String DEFAULT_DOCKER_HOST_NAME_FORMAT = "docker-host-brooklyn-%1$s";
-
     @SetFromFlag("version")
     ConfigKey<String> SUGGESTED_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "0.8");
 
@@ -81,7 +79,7 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
             "docker.infrastructure", "The parent Docker infrastructure");
 
     ConfigKey<String> HOST_NAME_FORMAT = ConfigKeys.newStringConfigKey("docker.host.nameFormat",
-            "Format for generating Docker host names", DEFAULT_DOCKER_HOST_NAME_FORMAT);
+            "Format for generating Docker host names", DockerAttributes.DEFAULT_DOCKER_HOST_NAME_FORMAT);
 
     ConfigKey<? extends String> EPEL_RELEASE = ConfigKeys.newStringConfigKey("docker.host.epel.release",
             "EPEL release for yum based OS", "6-8");
@@ -101,7 +99,7 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
     DockerInfrastructure getInfrastructure();
 
     @Effector(description="Create an SSHable image")
-    void createSshableImage(
+    boolean createSshableImage(
             @EffectorParam(name="dockerFile", description="URI of file to copy, e.g. file://.., http://.., classpath://..") String dockerFile,
             @EffectorParam(name="folder", description="Destination folder relative to runDir") String folder);
 }

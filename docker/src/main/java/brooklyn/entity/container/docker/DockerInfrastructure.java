@@ -66,11 +66,10 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
             EntitySpec.create(DockerHost.class));
 
     @SetFromFlag("dockerfileUrl")
-    ConfigKey<String> DOCKERFILE_URL = ConfigKeys.newStringConfigKey("docker.dockerfile.url", "URL of a DockerFile to use",
-            "classpath://brooklyn/entity/container/docker/ubuntu/Dockerfile");
+    ConfigKey<String> DOCKERFILE_URL = ConfigKeys.newConfigKeyWithDefault(DockerAttributes.DOCKERFILE_URL, DockerAttributes.UBUNTU_DOCKERFILE);
 
     @SetFromFlag("containerId")
-    ConfigKey<String> DOCKER_CONTAINER_ID = ConfigKeys.newStringConfigKey("docker.containerId", "The ID of a Docker image to use for a container");
+    ConfigKey<String> DOCKER_CONTAINER_ID = DockerAttributes.DOCKER_CONTAINER_ID;
 
     AttributeSensor<DynamicCluster> DOCKER_HOST_CLUSTER = Sensors.newSensor(DynamicCluster.class, "docker.hosts", "Docker host cluster");
     AttributeSensor<DynamicGroup> DOCKER_CONTAINER_FABRIC = Sensors.newSensor(DynamicGroup.class, "docker.fabric", "Docker container fabric");

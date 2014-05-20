@@ -50,6 +50,7 @@ import brooklyn.util.net.Cidr;
 import brooklyn.util.text.Strings;
 
 import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -110,14 +111,17 @@ public class DockerHostLocation extends AbstractLocation implements
         configureEnrichers((AbstractEntity) entity);
 
         // Add the entity Dockerfile if configured
-        String dockerfile = entity.getConfig(DockerInfrastructure.DOCKERFILE_URL);
-        String imageId = entity.getConfig(DockerInfrastructure.DOCKER_CONTAINER_ID);
+        String dockerfile = entity.getConfig(DockerAttributes.DOCKERFILE_URL);
+        String imageId = entity.getConfig(DockerAttributes.DOCKER_CONTAINER_ID);
         if (Strings.isNonBlank(dockerfile)) {
             if (imageId != null) {
                 LOG.warn("Ignoring container imageId {} as dockerfile URL is set: {}", imageId, dockerfile);
                 imageId = null;
             }
-            dockerHost.createSshableImage(dockerfile, entity.getId());
+            String entityType = DockerAttributes.DOCKERFILE_INVALID_CHARACTERS.trimAndCollapseFrom(entity.getClass().getName(), '-');
+            if (!dockerHost.createSshableImage(dockerfile, entityType)) {
+                throw new IllegalStateException("Failed to create Dockerfile for " + entity);
+            }
         }
 
         // increase size of Docker container cluster

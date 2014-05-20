@@ -50,6 +50,7 @@ import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.location.jclouds.templates.PortableTemplateBuilder;
 import brooklyn.management.LocationManager;
+import brooklyn.management.Task;
 import brooklyn.policy.PolicySpec;
 import brooklyn.policy.ha.ServiceFailureDetector;
 import brooklyn.policy.ha.ServiceReplacer;
@@ -57,6 +58,7 @@ import brooklyn.policy.ha.ServiceRestarter;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Cidr;
+import brooklyn.util.time.Duration;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -195,8 +197,13 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     }
 
     @Override
-    public void createSshableImage(String dockerFile, String folder) {
-       getDriver().executeScriptAsync(dockerFile, folder).block();
+    public boolean createSshableImage(String dockerFile, String folder) {
+       Task<Integer> task = getDriver().executeScriptAsync(dockerFile, folder);
+       if (task.blockUntilEnded(Duration.FIVE_MINUTES)) {
+           return task.getUnchecked() == 0;
+       } else {
+           return false;
+       }
     }
 
     @Override
@@ -293,7 +300,9 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     @Override
     public void postStart() {
         String dockerfileUrl = getConfig(DockerInfrastructure.DOCKERFILE_URL);
-        createSshableImage(dockerfileUrl, "default");
+        if (!createSshableImage(dockerfileUrl, "default")) {
+            throw new IllegalStateException("Failed to create default Dockerfile");
+        }
     }
 
     @Override
