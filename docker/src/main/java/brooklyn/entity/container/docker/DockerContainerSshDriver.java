@@ -1,10 +1,15 @@
 package brooklyn.entity.container.docker;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
 import brooklyn.location.basic.SshMachineLocation;
 
 public class DockerContainerSshDriver extends AbstractSoftwareProcessSshDriver implements DockerContainerDriver {
+
+    private static final Logger LOG = LoggerFactory.getLogger(DockerContainerSshDriver.class);
 
     public DockerContainerSshDriver(DockerContainerImpl entity, SshMachineLocation machine) {
         super(entity, machine);
@@ -19,28 +24,28 @@ public class DockerContainerSshDriver extends AbstractSoftwareProcessSshDriver i
     @Override
     public void install() {
         String containerName = getDockerContainerName();
-        if (log.isDebugEnabled()) log.debug("Setup {}", containerName);
+        if (LOG.isDebugEnabled()) LOG.debug("Setup {}", containerName);
 
     }
 
     @Override
     public void customize() {
         String containerName = getDockerContainerName();
-        if (log.isDebugEnabled()) log.debug("Creating {}", containerName);
+        if (LOG.isDebugEnabled()) LOG.debug("Creating {}", containerName);
 
     }
 
     @Override
     public void launch() {
         String containerName = getDockerContainerName();
-        if (log.isDebugEnabled()) log.debug("Starting {}", containerName);
+        if (LOG.isDebugEnabled()) LOG.debug("Starting {}", containerName);
 
     }
 
     @Override
     public boolean isRunning() {
         String containerName = getDockerContainerName();
-        if (log.isTraceEnabled()) log.trace("Checking {}", containerName);
+        if (LOG.isTraceEnabled()) LOG.trace("Checking {}", containerName);
 
         // TODO
         return true;
@@ -49,7 +54,7 @@ public class DockerContainerSshDriver extends AbstractSoftwareProcessSshDriver i
     @Override
     public void stop() {
         String containerName = getDockerContainerName();
-        if (log.isDebugEnabled()) log.debug("Stopping {}", containerName);
+        if (LOG.isDebugEnabled()) LOG.debug("Stopping {}", containerName);
 
     }
 

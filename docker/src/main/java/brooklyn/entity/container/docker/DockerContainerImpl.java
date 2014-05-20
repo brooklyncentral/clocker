@@ -43,14 +43,14 @@ import brooklyn.util.exceptions.Exceptions;
  */
 public class DockerContainerImpl extends SoftwareProcessImpl implements DockerContainer {
 
-    private static final Logger log = LoggerFactory.getLogger(DockerContainerImpl.class);
-    private static final AtomicInteger counter = new AtomicInteger(0);
+    private static final Logger LOG = LoggerFactory.getLogger(DockerContainerImpl.class);
+    private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
     @Override
     public void init() {
-        log.info("Starting Docker container id {}", getId());
+        LOG.info("Starting Docker container id {}", getId());
 
-        String dockerContainerName = format(getConfig(DockerContainer.DOCKER_CONTAINER_NAME_FORMAT), getId(), counter.incrementAndGet());
+        String dockerContainerName = format(getConfig(DockerContainer.DOCKER_CONTAINER_NAME_FORMAT), getId(), COUNTER.incrementAndGet());
         setDisplayName(dockerContainerName);
         setAttribute(DOCKER_CONTAINER_NAME, dockerContainerName);
     }
@@ -109,19 +109,19 @@ public class DockerContainerImpl extends SoftwareProcessImpl implements DockerCo
     @Override
     public void shutDown() {
         String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
-        log.info("Shut-Down {}", dockerContainerName);
+        LOG.info("Shut-Down {}", dockerContainerName);
     }
 
     @Override
     public void pause() {
         String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
-        log.info("Pausing {}", dockerContainerName);
+        LOG.info("Pausing {}", dockerContainerName);
     }
 
     @Override
     public void resume() {
         String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
-        log.info("Resume {}", dockerContainerName);
+        LOG.info("Resume {}", dockerContainerName);
     }
 
     /**
@@ -151,7 +151,7 @@ public class DockerContainerImpl extends SoftwareProcessImpl implements DockerCo
             setAttribute(DYNAMIC_LOCATION, location);
             setAttribute(LOCATION_NAME, location.getId());
 
-            log.info("New Docker container location {} created", location);
+            LOG.info("New Docker container location {} created", location);
             return location;
         } catch (NoMachinesAvailableException e) {
             throw Exceptions.propagate(e);

@@ -55,7 +55,7 @@ import com.google.common.collect.Iterables;
 
 public class DockerInfrastructureImpl extends BasicStartableImpl implements DockerInfrastructure {
 
-    private static final Logger log = LoggerFactory.getLogger(DockerInfrastructureImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DockerInfrastructureImpl.class);
 
     private DynamicCluster hosts;
     private DynamicGroup fabric;
@@ -159,8 +159,8 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
     @Override
     public Integer resize(Integer desiredSize) {
-        if (log.isDebugEnabled()) {
-            log.debug("Resize Docker infrastructure to {} at {}", new Object[] { desiredSize, getLocations() });
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Resize Docker infrastructure to {} at {}", new Object[] { desiredSize, getLocations() });
         }
         return hosts.resize(desiredSize);
     }
@@ -197,7 +197,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         setAttribute(LOCATION_NAME, location.getId());
         getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
 
-        log.info("New Docker location {} created", location);
+        LOG.info("New Docker location {} created", location);
         return (DockerLocation) location;
     }
 
@@ -221,7 +221,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         setAttribute(SERVICE_UP, Boolean.FALSE);
 
         Location provisioner = Iterables.getOnlyElement(locations);
-        log.info("Creating new DockerLocation wrapping {}", provisioner);
+        LOG.info("Creating new DockerLocation wrapping {}", provisioner);
 
         Map<String, ?> flags = MutableMap.<String, Object>builder()
                 .putAll(getConfig(LOCATION_FLAGS))

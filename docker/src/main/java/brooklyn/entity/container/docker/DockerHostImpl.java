@@ -66,8 +66,8 @@ import com.google.common.collect.ImmutableMap;
  */
 public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
 
-    private static final Logger log = LoggerFactory.getLogger(DockerHostImpl.class);
-    private static final AtomicInteger counter = new AtomicInteger(0);
+    private static final Logger LOG = LoggerFactory.getLogger(DockerHostImpl.class);
+    private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
     private DynamicCluster containers;
     private JcloudsLocation jcloudsLocation;
@@ -76,9 +76,9 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
 
     @Override
     public void init() {
-        log.info("Starting Docker host id {}", getId());
+        LOG.info("Starting Docker host id {}", getId());
 
-        String dockerHostName = String.format(getConfig(DockerHost.HOST_NAME_FORMAT), getId(), counter.incrementAndGet());
+        String dockerHostName = String.format(getConfig(DockerHost.HOST_NAME_FORMAT), getId(), COUNTER.incrementAndGet());
         setDisplayName(dockerHostName);
         setAttribute(HOST_NAME, dockerHostName);
 
@@ -145,8 +145,8 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     @Override
     public Integer resize(Integer desiredSize) {
         Integer maxSize = getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
-        if (log.isDebugEnabled()) {
-            log.debug("Resize Docker host to {} (max {}) at {}", new Object[] { desiredSize, maxSize, getLocations() });
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Resize Docker host to {} (max {}) at {}", new Object[] { desiredSize, maxSize, getLocations() });
         }
         if (desiredSize > maxSize) {
             return getDockerContainerCluster().resize(maxSize);
@@ -242,7 +242,7 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
             getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
         }
 
-        log.info("New Docker host location {} created", location);
+        LOG.info("New Docker host location {} created", location);
         return (DockerHostLocation) location;
     }
 

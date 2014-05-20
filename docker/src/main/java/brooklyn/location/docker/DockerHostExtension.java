@@ -17,15 +17,15 @@ package brooklyn.location.docker;
 
 import java.util.List;
 
-import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Lists;
-
 import brooklyn.entity.Entity;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.location.Location;
 import brooklyn.location.cloud.AbstractAvailabilityZoneExtension;
 import brooklyn.management.ManagementContext;
+
+import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Lists;
 
 public class DockerHostExtension extends AbstractAvailabilityZoneExtension {
 
