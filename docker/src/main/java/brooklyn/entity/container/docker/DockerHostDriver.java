@@ -16,7 +16,6 @@
 package brooklyn.entity.container.docker;
 
 import brooklyn.entity.basic.SoftwareProcessDriver;
-import brooklyn.management.Task;
 
 /**
  * The {@link brooklyn.entity.basic.SoftwareProcessDriver} for Docker.
@@ -25,6 +24,6 @@ public interface DockerHostDriver extends SoftwareProcessDriver {
 
     Integer getDockerPort();
 
-    Task<String> buildImage(String dockerFile, String folder);
+    String buildImage(String dockerFile, String folder);
 
 }

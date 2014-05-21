@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
@@ -30,14 +31,15 @@ import brooklyn.entity.drivers.downloads.DownloadResolver;
 import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.location.OsDetails;
 import brooklyn.location.basic.SshMachineLocation;
-import brooklyn.management.Task;
 import brooklyn.util.collections.MutableMap;
+import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.net.Networking;
 import brooklyn.util.os.Os;
 import brooklyn.util.repeat.Repeater;
 import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.task.DynamicTasks;
 import brooklyn.util.task.ssh.SshTasks;
+import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 
 import com.google.common.collect.ImmutableList;
@@ -62,11 +64,24 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     @Override
-    public Task<String> buildImage(String dockerfile, String name) {
-        DynamicTasks.queueIfPossible(SshEffectorTasks.ssh(format("mkdir -p %s", Os.mergePaths(getRunDir(), name))).machine(getMachine()).summary("creating folder for " + name)).orSubmitAndBlock();
-        copyResource(dockerfile, Os.mergePaths(name, DOCKERFILE));
-        String buildCommand = sudo(format("docker build -rm -t %s - < %s", Os.mergePaths("brooklyn", name), Os.mergePaths(getRunDir(), name, DOCKERFILE)));
-        return DynamicTasks.queueIfPossible(SshEffectorTasks.ssh(buildCommand).machine(getMachine()).summary("executing build command for " + name).returning(SshTasks.returningStdoutLoggingInfo(logSsh, true))).orSubmitAsync().asTask();
+    public String buildImage(String dockerFile, String name) {
+        DynamicTasks.queueIfPossible(SshEffectorTasks.ssh(format("mkdir -p %s", Os.mergePaths(getRunDir(), name)))).orSubmitAndBlock();
+        copyResource(dockerFile, Os.mergePaths(name, DOCKERFILE));
+        String build = sudo(format("docker build -rm -t %s - < %s", Os.mergePaths("brooklyn", name), Os.mergePaths(getRunDir(), name, DOCKERFILE)));
+        try {
+            String stdout = DynamicTasks.queueIfPossible(SshEffectorTasks.ssh(build).summary("docker build " + name).returning(SshTasks.returningStdoutLoggingInfo(logSsh, true)))
+                    .orSubmitAndBlock().asTask()
+                    .get(Duration.minutes(10));
+            String imageId = Strings.getFirstWordAfter(stdout, "Successfully built");
+            String inspect = sudo(format("docker inspect --format={{.id}} %s", imageId));
+            return DynamicTasks.queueIfPossible(SshEffectorTasks.ssh(inspect).summary("docker inspect " + imageId).returning(SshTasks.returningStdoutLoggingInfo(logSsh, true)))
+                    .orSubmitAndBlock().asTask()
+                    .get();
+        } catch (TimeoutException te) {
+            throw new IllegalStateException("Timed out building image");
+        } catch (Exception e) {
+            throw Exceptions.propagate(e);
+        }
     }
 
     public String getEpelRelease() {

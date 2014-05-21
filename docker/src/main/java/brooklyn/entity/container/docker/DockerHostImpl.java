@@ -50,7 +50,6 @@ import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.location.jclouds.templates.PortableTemplateBuilder;
 import brooklyn.management.LocationManager;
-import brooklyn.management.Task;
 import brooklyn.policy.PolicySpec;
 import brooklyn.policy.ha.ServiceFailureDetector;
 import brooklyn.policy.ha.ServiceReplacer;
@@ -59,7 +58,6 @@ import brooklyn.util.collections.MutableMap;
 import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.text.Strings;
-import brooklyn.util.time.Duration;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -202,16 +200,10 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     }
 
     @Override
-    public String createSshableImage(String dockerFile, String folder) {
-       Task<String> task = getDriver().buildImage(dockerFile, folder);
-       if (task.blockUntilEnded(Duration.minutes(10))) {
-           String stdout = task.getUnchecked();
-           String imageId = Strings.getFirstWordAfter(stdout, "Successfully built");
-           LOG.info("Successfully created image {} ({})", imageId, folder);
-           return imageId;
-       } else {
-           throw new IllegalStateException("Timed out building image");
-       }
+    public String createSshableImage(String dockerFile, String name) {
+       String imageId = getDriver().buildImage(dockerFile, name);
+       LOG.info("Successfully created image {} (brooklyn/{})", imageId, name);
+       return imageId;
     }
 
     @Override

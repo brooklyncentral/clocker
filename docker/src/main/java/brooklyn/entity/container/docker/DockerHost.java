@@ -100,8 +100,8 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
 
     DockerInfrastructure getInfrastructure();
 
-    @Effector(description="Create an SSHable image")
+    @Effector(description="Create an SSHable image and returns the image ID")
     String createSshableImage(
-            @EffectorParam(name="dockerFile", description="URI of file to copy, e.g. file://.., http://.., classpath://..") String dockerFile,
-            @EffectorParam(name="folder", description="Destination folder relative to runDir") String folder);
+            @EffectorParam(name="dockerFile", description="URL of Dockerfile to copy") String dockerFile,
+            @EffectorParam(name="folder", description="Repository name") String name);
 }

@@ -191,7 +191,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
         Map<String, ?> flags = MutableMap.<String, Object>builder()
                 .putAll(getConfig(LOCATION_FLAGS))
-                .put(JcloudsLocationConfig.IMAGE_NAME_REGEX.getName(), getConfig(DOCKER_IMAGE_ID) + ".*")
+                .put(JcloudsLocationConfig.IMAGE_ID.getName(), getConfig(DOCKER_IMAGE_ID))
                 .build();
         createLocation(flags);
 
