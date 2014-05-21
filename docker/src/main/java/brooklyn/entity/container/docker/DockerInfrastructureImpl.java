@@ -18,6 +18,7 @@ package brooklyn.entity.container.docker;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
 
@@ -55,11 +56,17 @@ import com.google.common.collect.Iterables;
 
 public class DockerInfrastructureImpl extends BasicStartableImpl implements DockerInfrastructure {
 
+    static {
+        DockerAttributes.init();
+    }
+
     private static final Logger LOG = LoggerFactory.getLogger(DockerInfrastructureImpl.class);
 
     private DynamicCluster hosts;
     private DynamicGroup fabric;
     private DynamicMultiGroup buckets;
+
+    private transient AtomicBoolean started = new AtomicBoolean(false);
 
     private Predicate<Entity> sameInfrastructure = new Predicate<Entity>() {
         @Override
@@ -221,31 +228,36 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
     @Override
     public void start(Collection<? extends Location> locations) {
-        setAttribute(SERVICE_UP, Boolean.FALSE);
+        if (started.compareAndSet(false, true)) {
+            // TODO support multiple locations
+            setAttribute(SERVICE_UP, Boolean.FALSE);
 
-        Location provisioner = Iterables.getOnlyElement(locations);
-        LOG.info("Creating new DockerLocation wrapping {}", provisioner);
+            Location provisioner = Iterables.getOnlyElement(locations);
+            LOG.info("Creating new DockerLocation wrapping {}", provisioner);
 
-        Map<String, ?> flags = MutableMap.<String, Object>builder()
-                .putAll(getConfig(LOCATION_FLAGS))
-                .put("provisioner", provisioner)
-                .build();
-        createLocation(flags);
+            Map<String, ?> flags = MutableMap.<String, Object>builder()
+                    .putAll(getConfig(LOCATION_FLAGS))
+                    .put("provisioner", provisioner)
+                    .build();
+            createLocation(flags);
 
-        super.start(locations);
+            super.start(locations);
 
-        setAttribute(SERVICE_UP, Boolean.TRUE);
+            setAttribute(SERVICE_UP, Boolean.TRUE);
+        }
     }
 
     /**
      * De-register our {@link DockerLocation} and its children.
      */
     public void stop() {
-        setAttribute(SERVICE_UP, Boolean.FALSE);
+        if (started.compareAndSet(true, false)) {
+            setAttribute(SERVICE_UP, Boolean.FALSE);
 
-        super.stop();
+            super.stop();
 
-        deleteLocation();
+            deleteLocation();
+        }
     }
 
 }
