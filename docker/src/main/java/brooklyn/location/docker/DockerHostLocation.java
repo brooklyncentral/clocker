@@ -123,12 +123,19 @@ public class DockerHostLocation extends AbstractLocation implements
             imageId = getOwner().getAttribute(DockerHost.DOCKER_IMAGE_ID);
         }
 
+        // Look up hardware ID
+        String hardwareId = entity.getConfig(DockerAttributes.DOCKER_HARDWARE_ID);
+        if (Strings.isEmpty(hardwareId)) {
+            hardwareId = getOwner().getConfig(DockerAttributes.DOCKER_HARDWARE_ID);
+        }
+
         // increase size of Docker container cluster
         LOG.info("Increase size of Docker container cluster at {}", machine);
         Map<Object, Object> containerFlags = MutableMap.builder()
                 .putAll(flags)
                 .put("entity", entity)
-                .put("imageId", imageId)
+                .putIfNotNull("imageId", imageId)
+                .putIfNotNull("hardwareId", hardwareId)
                 .build();
         DynamicCluster cluster = dockerHost.getDockerContainerCluster();
         Optional<Entity> added = cluster.addInSingleLocation(machine, containerFlags);

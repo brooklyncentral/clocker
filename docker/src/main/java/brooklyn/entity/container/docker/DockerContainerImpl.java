@@ -19,12 +19,14 @@ import static java.lang.String.format;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.Lifecycle;
@@ -34,6 +36,8 @@ import brooklyn.event.feed.function.FunctionPollConfig;
 import brooklyn.location.Location;
 import brooklyn.location.LocationSpec;
 import brooklyn.location.NoMachinesAvailableException;
+import brooklyn.location.PortRange;
+import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.dynamic.DynamicLocation;
@@ -42,8 +46,13 @@ import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.management.LocationManager;
 import brooklyn.util.collections.MutableMap;
+import brooklyn.util.collections.MutableSet;
 import brooklyn.util.exceptions.Exceptions;
+import brooklyn.util.internal.ssh.SshTool;
+import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.time.Duration;
+
+import com.google.common.collect.ImmutableList;
 
 /**
  * A single Docker container.
@@ -98,6 +107,16 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     }
 
     @Override
+    public String getContainerId() {
+        return getAttribute(CONTAINER_ID);
+    }
+
+    @Override
+    public SshMachineLocation getMachine() {
+        return getAttribute(SSH_MACHINE_LOCATION);
+    }
+
+    @Override
     public DockerHost getDockerHost() {
         return getConfig(DOCKER_HOST);
     }
@@ -121,6 +140,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     public void shutDown() {
         String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
         LOG.info("Shut-Down {}", dockerContainerName);
+        getDockerHost().getDynamicLocation().getMachine()
+                .execScript("shutdown", ImmutableList.of(BashCommands.sudo("docker shutdown " + getContainerId())));
     }
 
     @Override
@@ -147,6 +168,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         try {
             // Create a new container using jclouds Docker driver
             JcloudsSshMachineLocation container = host.getJcloudsLocation().obtain(flags);
+            setAttribute(CONTAINER_ID, container.getId()); // FIXME we want the Docker container ID
 
             // Create our wrapper location around the container
             LocationSpec<DockerContainerLocation> spec = LocationSpec.create(DockerContainerLocation.class)
@@ -155,7 +177,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                     .configure(DynamicLocation.OWNER, this)
                     .configure("machine", container) // the underlying JcloudsLocation
                     .configure(container.getAllConfig(true))
-                    .configure("port", getAttribute(DockerHost.DOCKER_PORT))
+                    .configure(SshTool.PROP_PASSWORD, "password") // TODO configure this externally
                     .displayName(getDockerContainerName())
                     .id(locationName);
             DockerContainerLocation location = getManagementContext().getLocationManager().createLocation(spec);
@@ -184,6 +206,19 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         setAttribute(LOCATION_NAME, null);
     }
 
+    /** @return the ports required for a specific entity */
+    protected Collection<Integer> getRequiredOpenPorts(Entity entity) {
+        Set<Integer> ports = MutableSet.of(22);
+        for (ConfigKey<?> k: entity.getEntityType().getConfigKeys()) {
+            if (PortRange.class.isAssignableFrom(k.getType())) {
+                PortRange p = (PortRange) entity.getConfig(k);
+                if (p != null && !p.isEmpty()) ports.add(p.iterator().next());
+            }
+        }
+        LOG.debug("getRequiredOpenPorts detected default {} for {}", ports, entity);
+        return ports;
+    }
+
     @Override
     public void start(Collection<? extends Location> locations) {
         setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.STARTING);
@@ -192,9 +227,14 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         Map<String, ?> flags = MutableMap.<String, Object>builder()
                 .putAll(getConfig(LOCATION_FLAGS))
                 .put(JcloudsLocationConfig.IMAGE_ID.getName(), getConfig(DOCKER_IMAGE_ID))
+                .put(JcloudsLocationConfig.HARDWARE_ID.getName(), getConfig(DOCKER_HARDWARE_ID))
                 .put("loginUser", "root") // FIXME add ConfigKey for these two flags
                 .put("loginUser.password", "password")
                 .put("dontCreateUser", "true")
+                .put("inboundPorts", getRequiredOpenPorts(getRunningEntity()))
+                .put("tags", ImmutableList.of(getRunningEntity().getId() + "-privateTarget"))
+                .put("user", "root") // FIXME which property is correct
+                .put("password", "password")
                 .build();
         createLocation(flags);
 

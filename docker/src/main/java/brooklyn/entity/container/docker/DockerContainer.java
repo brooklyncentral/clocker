@@ -50,6 +50,9 @@ public interface DockerContainer extends BasicStartable, HasShortName, LocationO
     @SetFromFlag("imageId")
     ConfigKey<String> DOCKER_IMAGE_ID = DockerAttributes.DOCKER_IMAGE_ID.getConfigKey();
 
+    @SetFromFlag("hardwareId")
+    ConfigKey<String> DOCKER_HARDWARE_ID = DockerAttributes.DOCKER_HARDWARE_ID.getConfigKey();
+
     @SetFromFlag("entity")
     AttributeSensorAndConfigKey<Entity, Entity> ENTITY = ConfigKeys.newSensorAndConfigKey(Entity.class, "docker.container.entity", "The entity running in this Docker container");
 
@@ -57,6 +60,8 @@ public interface DockerContainer extends BasicStartable, HasShortName, LocationO
             "Format for generating Docker container names", DockerAttributes.DEFAULT_DOCKER_CONTAINER_NAME_FORMAT);
 
     AttributeSensor<String> DOCKER_CONTAINER_NAME = Sensors.newStringSensor("docker.container.name", "The name of the Docker container");
+
+    AttributeSensor<String> CONTAINER_ID = Sensors.newStringSensor("docker.container.id", "The Docker container ID");
 
     AttributeSensor<Lifecycle> SERVICE_STATE = SoftwareProcess.SERVICE_STATE;
 
@@ -86,9 +91,14 @@ public interface DockerContainer extends BasicStartable, HasShortName, LocationO
 
     String getDockerContainerName();
 
+    String getContainerId();
+
     Entity getRunningEntity();
+
     void setRunningEntity(Entity entity);
 
     DockerHost getDockerHost();
+
+    SshMachineLocation getMachine();
 
 }
