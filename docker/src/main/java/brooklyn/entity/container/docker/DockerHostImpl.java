@@ -141,6 +141,10 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
                 .osVersionMatches("12.04")
                 .os64Bit(true)
                 .minRam(2048));
+        String securityGroup = getConfig(DockerInfrastructure.SECURITY_GROUP);
+        if (securityGroup != null) {
+            flags.put("securityGroups", securityGroup);
+        }
         return flags;
     }
 

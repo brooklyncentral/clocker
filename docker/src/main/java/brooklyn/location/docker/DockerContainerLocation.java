@@ -16,17 +16,26 @@
 package brooklyn.location.docker;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import brooklyn.entity.Entity;
 import brooklyn.entity.container.docker.DockerContainer;
+import brooklyn.entity.container.docker.DockerInfrastructure;
+import brooklyn.location.Location;
+import brooklyn.location.PortRange;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.dynamic.DynamicLocation;
 import brooklyn.util.flags.SetFromFlag;
+import brooklyn.util.net.Protocol;
+import brooklyn.util.ssh.IptablesCommands;
+import brooklyn.util.ssh.IptablesCommands.Chain;
+import brooklyn.util.ssh.IptablesCommands.Policy;
 
 import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.collect.ImmutableList;
 
 /**
  * A {@link Location} that wraps a Docker container.
@@ -67,6 +76,49 @@ public class DockerContainerLocation extends SshMachineLocation implements Dynam
 
     public SshMachineLocation getMachine() {
         return machine;
+    }
+    /*
+     * Delegate port operations to machine. Note that firewall configuration is
+     * fixed after initial provisioning, so updates use iptables to open ports.
+     */
+
+    private void addIptablesRule(Integer port) {
+        if (getOwner().getDockerHost().getInfrastructure().getConfig(DockerInfrastructure.OPEN_IPTABLES)) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Using iptables to add access for TCP/{} to {}", port, machine);
+            }
+            List<String> commands = ImmutableList.of(
+                    IptablesCommands.insertIptablesRule(Chain.INPUT, Protocol.TCP, port, Policy.ACCEPT),
+                    IptablesCommands.saveIptablesRules(),
+                    IptablesCommands.listIptablesRule());
+            int result = machine.execCommands(String.format("Open iptables TCP/%d", port), commands);
+            if (result != 0) {
+                String msg = String.format("Error running iptables update for TCP/{} on {}", port, machine);
+                LOG.error(msg);
+                throw new RuntimeException(msg);
+            }
+        }
+    }
+
+    @Override
+    public boolean obtainSpecificPort(int portNumber) {
+        boolean result = machine.obtainSpecificPort(portNumber);
+        if (result) {
+            addIptablesRule(portNumber);
+        }
+        return result;
+    }
+
+    @Override
+    public int obtainPort(PortRange range) {
+        int portNumber = machine.obtainPort(range);
+        addIptablesRule(portNumber);
+        return portNumber;
+    }
+
+    @Override
+    public void releasePort(int portNumber) {
+        machine.releasePort(portNumber);
     }
 
     @Override

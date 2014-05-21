@@ -44,7 +44,7 @@ public class BasicInfrastructure extends AbstractApplication {
 
     @Override
     public void init() {
-        EntitySpec dockerHostSpec = EntitySpec.create(DockerHost.class)
+        EntitySpec dockerSpec = EntitySpec.create(DockerHost.class)
                 .configure(DockerHost.HA_POLICY_ENABLE, getConfig(HA_POLICY_ENABLE))
                 .configure(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_SIZE, 4);
 
@@ -53,7 +53,7 @@ public class BasicInfrastructure extends AbstractApplication {
                 .configure(DockerInfrastructure.OPEN_IPTABLES, true)
                 .configure(DockerInfrastructure.LOCATION_NAME, getConfig(LOCATION_NAME))
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE))
-                .configure(DockerInfrastructure.DOCKER_HOST_SPEC, dockerHostSpec)
+                .configure(DockerInfrastructure.DOCKER_HOST_SPEC, dockerSpec)
                 .displayName("Docker Infrastructure"));
     }
 
