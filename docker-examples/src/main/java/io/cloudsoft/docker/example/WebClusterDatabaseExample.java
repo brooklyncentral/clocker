@@ -18,26 +18,17 @@ package io.cloudsoft.docker.example;
 import static brooklyn.entity.java.JavaEntityMethods.javaSysProp;
 import static brooklyn.event.basic.DependentConfiguration.attributeWhenReady;
 import static brooklyn.event.basic.DependentConfiguration.formatString;
-import static com.google.common.base.Preconditions.checkState;
 
-import java.net.URI;
-import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-
 import brooklyn.enricher.Enrichers;
 import brooklyn.enricher.HttpLatencyDetector;
 import brooklyn.entity.basic.AbstractApplication;
-import brooklyn.entity.basic.Entities;
-import brooklyn.entity.basic.StartableApplication;
-import brooklyn.entity.container.docker.DockerHost;
+import brooklyn.entity.basic.Attributes;
+import brooklyn.entity.database.DatastoreMixins;
 import brooklyn.entity.database.mysql.MySqlNode;
 import brooklyn.entity.proxy.nginx.NginxController;
 import brooklyn.entity.proxying.EntitySpec;
@@ -48,79 +39,54 @@ import brooklyn.entity.webapp.WebAppService;
 import brooklyn.entity.webapp.jboss.JBoss7Server;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.Sensors;
-import brooklyn.launcher.BrooklynLauncher;
-import brooklyn.location.Location;
-import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.basic.PortRanges;
-import brooklyn.location.docker.DockerLocation;
-import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.policy.autoscaling.AutoScalerPolicy;
-import brooklyn.util.CommandLineUtil;
-import brooklyn.util.net.Cidr;
-import io.cloudsoft.networking.portforwarding.DockerPortForwarder;
-import io.cloudsoft.networking.subnet.SubnetTier;
-import io.cloudsoft.networking.subnet.SubnetTierImpl;
+
+import com.google.common.collect.ImmutableMap;
 
 /**
  * Launches a 3-tier app with nginx, clustered jboss, and mysql.
- *
- * By default, the example will point to a Docker instance running at 192.168.42.43:4243
- *
- **/
+ */
 public class WebClusterDatabaseExample extends AbstractApplication {
 
     public static final Logger LOG = LoggerFactory.getLogger(WebClusterDatabaseExample.class);
 
-    public static final String WAR_PATH = "classpath://hello-world-sql-webapp.war";
-
-    public static final String DB_SETUP_SQL_URL = "classpath://visitors-creation-script.sql";
+    public static final String WAR_PATH = "https://s3-eu-west-1.amazonaws.com/brooklyn-waratek/hello-world-sql.war";
+    public static final String DB_SETUP_SQL_URL = "https://s3-eu-west-1.amazonaws.com/brooklyn-waratek/visitors-creation-script.sql";
 
     public static final String DB_TABLE = "visitors";
     public static final String DB_USERNAME = "brooklyn";
     public static final String DB_PASSWORD = "br00k11n";
 
-    public static final AttributeSensor<Integer> APPSERVERS_COUNT = Sensors.newIntegerSensor(
-            "appservers.count", "Number of app servers deployed");
-
-    private DockerPortForwarder portForwarder;
+    public static final AttributeSensor<Integer> APPSERVERS_COUNT = Sensors.newIntegerSensor("appservers.count", "Number of app servers deployed");
 
     @Override
     public void init() {
-        AttributeSensor<String> mappedUrlAttribute = Sensors.newStringSensor("url.mapped");
-        AttributeSensor<String> mappedHostAndPortAttribute = Sensors.newStringSensor("hostAndPort.mapped");
-        
-        portForwarder = new DockerPortForwarder(new PortForwardManager());
+        AttributeSensor<String> mappedWebUrl = Sensors.newSensorWithPrefix("mapped.", WebAppService.ROOT_URL);
+        AttributeSensor<String> mappedDatastoreUrl = Sensors.newSensorWithPrefix("mapped.", DatastoreMixins.DATASTORE_URL);
+        AttributeSensor<String> mappedHostAndPortAttribute = Sensors.newStringSensor("mapped." + Attributes.HTTP_PORT.getName(), "Docker HTTP port mapping");
 
-        SubnetTier subnetTier = addChild(EntitySpec.create(SubnetTier.class)
-                .impl(SubnetTierImpl.class)
-                .configure(SubnetTier.PORT_FORWARDER, portForwarder)
-                .configure(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL));
+        MySqlNode mysql = addChild(EntitySpec.create(MySqlNode.class)
+                .configure("creationScriptUrl", DB_SETUP_SQL_URL));
 
-        MySqlNode mysql = subnetTier.addChild(EntitySpec.create(MySqlNode.class)
-                .configure("creationScriptUrl", DB_SETUP_SQL_URL)
-                .enricher(subnetTier.uriTransformingEnricher(MySqlNode.DATASTORE_URL, mappedUrlAttribute)));
-
-        ControlledDynamicWebAppCluster web = subnetTier.addChild(EntitySpec.create(ControlledDynamicWebAppCluster.class)
+        ControlledDynamicWebAppCluster web = addChild(EntitySpec.create(ControlledDynamicWebAppCluster.class)
                 .configure(ControlledDynamicWebAppCluster.MEMBER_SPEC, EntitySpec.create(JBoss7Server.class)
                         .configure(WebAppService.HTTP_PORT, PortRanges.fromString("8080+"))
                         .configure(JavaWebAppService.ROOT_WAR, WAR_PATH)
                         .configure(javaSysProp("brooklyn.example.db.url"),
                                 formatString("jdbc:%s%s?user=%s\\&password=%s",
-                                        attributeWhenReady(mysql, mappedUrlAttribute),
-                                        DB_TABLE, DB_USERNAME, DB_PASSWORD))
-                        .enricher(subnetTier.hostAndPortTransformingEnricher(JBoss7Server.HTTP_PORT, mappedHostAndPortAttribute))
-                        .enricher(subnetTier.uriTransformingEnricher(NginxController.ROOT_URL, mappedUrlAttribute)))
+                                        attributeWhenReady(mysql, mappedDatastoreUrl),
+                                        DB_TABLE, DB_USERNAME, DB_PASSWORD)))
                 .configure(ControlledDynamicWebAppCluster.CONTROLLER_SPEC, EntitySpec.create(NginxController.class)
-                        .configure(NginxController.HOST_AND_PORT_SENSOR, mappedHostAndPortAttribute)
-                        .enricher(subnetTier.uriTransformingEnricher(NginxController.ROOT_URL, mappedUrlAttribute))));
+                        .configure(NginxController.HOST_AND_PORT_SENSOR, mappedHostAndPortAttribute)));
 
         web.addEnricher(Enrichers.builder()
-                .propagating(mappedUrlAttribute)
+                .propagating(mappedWebUrl)
                 .from(web.getController())
                 .build());
 
         web.addEnricher(HttpLatencyDetector.builder().
-                url(mappedUrlAttribute).
+                url(mappedWebUrl).
                 rollup(10, TimeUnit.SECONDS).
                 build());
 
@@ -133,7 +99,7 @@ public class WebClusterDatabaseExample extends AbstractApplication {
 
         // expose some KPI's
         addEnricher(Enrichers.builder()
-                .propagating(mappedUrlAttribute,
+                .propagating(mappedWebUrl,
                         DynamicWebAppCluster.REQUESTS_PER_SECOND_IN_WINDOW,
                         HttpLatencyDetector.REQUEST_LATENCY_IN_SECONDS_IN_WINDOW)
                 .from(web)
@@ -143,38 +109,5 @@ public class WebClusterDatabaseExample extends AbstractApplication {
                 .propagating(ImmutableMap.of(DynamicWebAppCluster.GROUP_SIZE, APPSERVERS_COUNT))
                 .from(web)
                 .build());
-    }
-
-    @Override
-    public void start(Collection<? extends Location> locations) {
-        Location location = Iterables.getOnlyElement(locations);
-        // FIXME this should be done in the DockerLocation during obtain
-        JcloudsLocation loc;
-        if (location instanceof DockerLocation) {
-            DockerHost dockerHost = (DockerHost) ((DockerLocation) location).getDockerHostList().get(0);
-            loc = dockerHost.getJcloudsLocation();
-        } else if (location instanceof JcloudsLocation) {
-            loc = (JcloudsLocation) location;
-        } else {
-            throw new IllegalStateException("Expected JcloudsLocation or DockerLocation");
-        }
-        checkState("docker".equals(loc.getProvider()), "Expected docker rather than provider %s", loc.getProvider());
-        portForwarder.init(URI.create(loc.getEndpoint()));
-        super.start(locations);
-        //super.start(ImmutableList.of(loc));
-    }
-
-    public static void main(String[] argv) {
-        List<String> args = Lists.newArrayList(argv);
-        String port =  CommandLineUtil.getCommandLineOption(args, "--port", "8081+");
-        String location = CommandLineUtil.getCommandLineOption(args, "--location", "SingleDockerHostExample");
-
-        BrooklynLauncher launcher = BrooklynLauncher.newInstance()
-                .application(EntitySpec.create(StartableApplication.class, WebClusterDatabaseExample.class).displayName("Brooklyn WebApp Cluster with Database example"))
-                .webconsolePort(port)
-                .location(location)
-                .start();
-
-        Entities.dumpInfo(launcher.getApplications());
     }
 }

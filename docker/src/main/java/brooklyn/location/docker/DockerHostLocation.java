@@ -32,6 +32,7 @@ import brooklyn.entity.container.docker.DockerAttributes;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
+import brooklyn.entity.database.DatastoreMixins;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.java.UsesJmx;
 import brooklyn.entity.webapp.WebAppServiceConstants;
@@ -141,7 +142,7 @@ public class DockerHostLocation extends AbstractLocation implements
 
     private void configureEnrichers(AbstractEntity entity) {
         for (Sensor<?> sensor : entity.getEntityType().getSensors()) {
-            if (sensor.getName().equals(WebAppServiceConstants.ROOT_URL.getName())) {
+            if (ImmutableSet.<String>of(WebAppServiceConstants.ROOT_URL.getName(), DatastoreMixins.DATASTORE_URL.getName()).contains(sensor.getName())) {
                 AttributeSensor<String> original = Sensors.newStringSensor(sensor.getName());
                 AttributeSensor<String> target = Sensors.newSensorWithPrefix("mapped.", original);
                 entity.addEnricher(dockerHost.getSubnetTier().uriTransformingEnricher(original, target));
