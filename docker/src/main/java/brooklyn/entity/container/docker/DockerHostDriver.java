@@ -18,12 +18,22 @@ package brooklyn.entity.container.docker;
 import brooklyn.entity.basic.SoftwareProcessDriver;
 
 /**
- * The {@link brooklyn.entity.basic.SoftwareProcessDriver} for Docker.
+ * The {@link SoftwareProcessDriver driver} for Docker.
  */
 public interface DockerHostDriver extends SoftwareProcessDriver {
 
     Integer getDockerPort();
 
-    String buildImage(String dockerFile, String folder);
+    /**
+     * Build a Docker image from the given Dockerfile.
+     * <p>
+     * Copies the Dockerfile to the host in the {@code name} folder, and
+     * uses {@code brooklyn/name} for the repository. The returned ID is
+     * required to start a container using the jclouds API.
+     *
+     * @return the 64 character Image ID
+     * @see DockerHost#createSshableImage(String, String)
+     */
+    String buildImage(String dockerFile, String name);
 
 }

@@ -180,7 +180,8 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
         return (DockerHostDriver) super.getDriver();
     }
 
-    public int getPort() {
+    @Override
+    public Integer getDockerPort() {
         return getAttribute(DOCKER_PORT);
     }
 
@@ -199,6 +200,7 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
         return getConfig(DOCKER_INFRASTRUCTURE);
     }
 
+    /** {@inheritDoc} */
     @Override
     public String createSshableImage(String dockerFile, String name) {
        String imageId = getDriver().buildImage(dockerFile, name);
@@ -275,7 +277,7 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     protected void preStart() {
         Maybe<SshMachineLocation> found = Machines.findUniqueSshMachineLocation(getLocations());
         String dockerLocationSpec = String.format("jclouds:docker:http://%s:%s",
-                found.get().getSshHostAndPort().getHostText(), getPort());
+                found.get().getSshHostAndPort().getHostText(), getDockerPort());
         jcloudsLocation = (JcloudsLocation) getManagementContext().getLocationRegistry()
                 .resolve(dockerLocationSpec, MutableMap.of("identity", "docker", "credential", "docker"));
 

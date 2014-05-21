@@ -36,8 +36,11 @@ import brooklyn.location.dynamic.LocationOwner;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.util.flags.SetFromFlag;
 
-@Catalog(name="DockerInfrastructure",
-        description="Docker Infrastructure.",
+/**
+ * A collection of machines running Docker.
+ */
+@Catalog(name = "Docker Infrastructure",
+        description = "Docker is an open-source engine to easily create lightweight, portable, self-sufficient containers from any application.",
         iconUrl = "classpath:///docker-top-logo.png")
 @ImplementedBy(DockerInfrastructureImpl.class)
 public interface DockerInfrastructure extends BasicStartable, Resizable, LocationOwner<DockerLocation, DockerInfrastructure> {

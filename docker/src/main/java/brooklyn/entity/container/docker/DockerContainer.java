@@ -31,8 +31,16 @@ import brooklyn.event.basic.Sensors;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.location.dynamic.LocationOwner;
+import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.util.flags.SetFromFlag;
 
+/**
+ * A Docker container.
+ * <p>
+ * This entity controls the {@link DockerContainerLocation} location, and creates
+ * and the {@link JcloudsSshMachineLocation} that entities communicate with when
+ * deployed to the {@link DockerInfrastructure}.
+ */
 @ImplementedBy(DockerContainerImpl.class)
 public interface DockerContainer extends BasicStartable, HasShortName, LocationOwner<DockerContainerLocation, DockerContainer> {
 

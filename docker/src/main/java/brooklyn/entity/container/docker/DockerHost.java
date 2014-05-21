@@ -20,7 +20,6 @@ import io.cloudsoft.networking.subnet.SubnetTier;
 
 import java.util.List;
 
-import brooklyn.catalog.Catalog;
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
 import brooklyn.entity.annotation.Effector;
@@ -44,11 +43,12 @@ import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.util.flags.SetFromFlag;
 
 /**
- * @author Andrea Turli
+ * A single machine running Docker.
+ * <p>
+ * This entity controls the {@link DockerHostLocation} location, and creates
+ * and wraps a {@link JcloudsLocatiopn} representing the API for the Docker
+ * service on this machine.
  */
-@Catalog(name = "Docker Node", description = "Docker is an open-source engine to easily create lightweight, portable, " +
-        "self-sufficient containers from any application.",
-        iconUrl = "classpath:///docker-top-logo.png")
 @ImplementedBy(DockerHostImpl.class)
 public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, LocationOwner<DockerHostLocation, DockerHost> {
 
@@ -88,8 +88,12 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
 
     AttributeSensor<String> HOST_NAME = Sensors.newStringSensor("docker.host.name", "The name of the Docker host");
 
+    Integer getDockerPort();
+
     JcloudsLocation getJcloudsLocation();
+
     PortForwarder getPortForwarder();
+
     SubnetTier getSubnetTier();
 
     String getDockerHostName();
@@ -100,8 +104,16 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
 
     DockerInfrastructure getInfrastructure();
 
+    /**
+     * Create an SSHable image and returns the image ID.
+     *
+     * @param dockerFile URL of Dockerfile to copy
+     * @param name Repository name
+     * @see DockerHostDriver#buildImage(String, String)
+     */
     @Effector(description="Create an SSHable image and returns the image ID")
     String createSshableImage(
             @EffectorParam(name="dockerFile", description="URL of Dockerfile to copy") String dockerFile,
             @EffectorParam(name="folder", description="Repository name") String name);
+
 }

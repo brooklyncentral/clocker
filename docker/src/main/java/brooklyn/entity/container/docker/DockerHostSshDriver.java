@@ -19,6 +19,7 @@ import static brooklyn.util.ssh.BashCommands.*;
 import static java.lang.String.format;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -42,6 +43,7 @@ import brooklyn.util.task.ssh.SshTasks;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 
+import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Uninterruptibles;
@@ -63,24 +65,45 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         return getEntity().getAttribute(DockerHost.DOCKER_PORT);
     }
 
+    /** {@inheritDoc} */
     @Override
     public String buildImage(String dockerFile, String name) {
         DynamicTasks.queueIfPossible(SshEffectorTasks.ssh(format("mkdir -p %s", Os.mergePaths(getRunDir(), name)))).orSubmitAndBlock();
         copyResource(dockerFile, Os.mergePaths(name, DOCKERFILE));
-        String build = sudo(format("docker build -rm -t %s - < %s", Os.mergePaths("brooklyn", name), Os.mergePaths(getRunDir(), name, DOCKERFILE)));
+
+        // Build an image from the Dockerfile
+        String stdout; // Result of docker build command
         try {
-            String stdout = DynamicTasks.queueIfPossible(SshEffectorTasks.ssh(build).summary("docker build " + name).returning(SshTasks.returningStdoutLoggingInfo(logSsh, true)))
+            String build = sudo(format("docker build -rm -t %s - < %s", Os.mergePaths("brooklyn", name), Os.mergePaths(getRunDir(), name, DOCKERFILE)));
+            SshEffectorTasks.SshEffectorTaskFactory<String> task = SshEffectorTasks.ssh(build)
+                    .summary("docker build " + name)
+                    .returning(SshTasks.returningStdoutLoggingInfo(logSsh, true));
+            stdout = DynamicTasks.queueIfPossible(task)
                     .orSubmitAndBlock().asTask()
                     .get(Duration.minutes(10));
-            String imageId = Strings.getFirstWordAfter(stdout, "Successfully built");
-            String inspect = sudo(format("docker inspect --format={{.id}} %s", imageId));
-            return DynamicTasks.queueIfPossible(SshEffectorTasks.ssh(inspect).summary("docker inspect " + imageId).returning(SshTasks.returningStdoutLoggingInfo(logSsh, true)))
-                    .orSubmitAndBlock().asTask()
-                    .get();
         } catch (TimeoutException te) {
             throw new IllegalStateException("Timed out building image");
         } catch (Exception e) {
             throw Exceptions.propagate(e);
+        }
+
+        String prefix = Strings.getFirstWordAfter(stdout, "Successfully built");
+
+        // Inspect the Docker image with this prefix
+        String inspect = sudo(format("docker inspect --format={{.id}} %s", prefix));
+        SshEffectorTasks.SshEffectorTaskFactory<String> task = SshEffectorTasks.ssh(inspect)
+                .summary("docker inspect " + prefix)
+                .returning(SshTasks.returningStdoutLoggingInfo(logSsh, true));
+        String imageId = DynamicTasks.queueIfPossible(task)
+                .orSubmitAndBlock().asTask()
+                .getUnchecked();
+
+        // Parse and return the Image ID
+        imageId = Strings.trim(imageId).toLowerCase(Locale.ENGLISH);
+        if (imageId.length() == 64 && CharMatcher.anyOf("0123456789abcdef").matchesAllOf(imageId)) {
+            return imageId;
+        } else {
+            throw new IllegalStateException("Invalid image ID returned: " + imageId);
         }
     }
 
