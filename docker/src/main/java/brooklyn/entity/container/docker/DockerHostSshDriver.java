@@ -37,6 +37,7 @@ import brooklyn.util.os.Os;
 import brooklyn.util.repeat.Repeater;
 import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.task.DynamicTasks;
+import brooklyn.util.task.ssh.SshTasks;
 import brooklyn.util.time.Duration;
 
 import com.google.common.collect.ImmutableList;
@@ -61,11 +62,11 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     @Override
-    public Task<Integer> executeScriptAsync(String dockerfile, String name) {
+    public Task<String> buildImage(String dockerfile, String name) {
         DynamicTasks.queueIfPossible(SshEffectorTasks.ssh(format("mkdir -p %s", Os.mergePaths(getRunDir(), name))).machine(getMachine()).summary("creating folder for " + name)).orSubmitAndBlock();
         copyResource(dockerfile, Os.mergePaths(name, DOCKERFILE));
         String buildCommand = sudo(format("docker build -rm -t %s - < %s", Os.mergePaths("brooklyn", name), Os.mergePaths(getRunDir(), name, DOCKERFILE)));
-        return DynamicTasks.queueIfPossible(SshEffectorTasks.ssh(buildCommand).machine(getMachine()).summary("executing build command for " + name)).orSubmitAsync().asTask();
+        return DynamicTasks.queueIfPossible(SshEffectorTasks.ssh(buildCommand).machine(getMachine()).summary("executing build command for " + name).returning(SshTasks.returningStdoutLoggingInfo(logSsh, true))).orSubmitAsync().asTask();
     }
 
     public String getEpelRelease() {

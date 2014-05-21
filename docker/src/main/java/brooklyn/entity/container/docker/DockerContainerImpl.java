@@ -38,6 +38,7 @@ import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.dynamic.DynamicLocation;
 import brooklyn.location.jclouds.JcloudsLocation;
+import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.management.LocationManager;
 import brooklyn.util.collections.MutableMap;
@@ -61,6 +62,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         String dockerContainerName = format(getConfig(DockerContainer.DOCKER_CONTAINER_NAME_FORMAT), getId(), COUNTER.incrementAndGet());
         setDisplayName(dockerContainerName);
         setAttribute(DOCKER_CONTAINER_NAME, dockerContainerName);
+        setRunningEntity(getConfig(ENTITY));
     }
 
     protected void connectSensors() {
@@ -189,6 +191,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
         Map<String, ?> flags = MutableMap.<String, Object>builder()
                 .putAll(getConfig(LOCATION_FLAGS))
+                .put(JcloudsLocationConfig.IMAGE_NAME_REGEX.getName(), getConfig(DOCKER_IMAGE_ID) + ".*")
                 .build();
         createLocation(flags);
 

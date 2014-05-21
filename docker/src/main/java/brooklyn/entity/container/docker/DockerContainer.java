@@ -26,11 +26,11 @@ import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.entity.trait.HasShortName;
 import brooklyn.event.AttributeSensor;
+import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.location.dynamic.LocationOwner;
-import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.util.flags.SetFromFlag;
 
 @ImplementedBy(DockerContainerImpl.class)
@@ -39,8 +39,11 @@ public interface DockerContainer extends BasicStartable, HasShortName, LocationO
     @SetFromFlag("dockerHost")
     ConfigKey<DockerHost> DOCKER_HOST = ConfigKeys.newConfigKey(DockerHost.class, "docker.host", "The parent Docker host");
 
-    @SetFromFlag("imageNameRegex")
-    ConfigKey<String> DOCKER_IMAGE_NAME_REGEX = JcloudsLocationConfig.IMAGE_NAME_REGEX;
+    @SetFromFlag("imageId")
+    ConfigKey<String> DOCKER_IMAGE_ID = DockerAttributes.DOCKER_IMAGE_ID.getConfigKey();
+
+    @SetFromFlag("entity")
+    AttributeSensorAndConfigKey<Entity, Entity> ENTITY = ConfigKeys.newSensorAndConfigKey(Entity.class, "docker.container.entity", "The entity running in this Docker container");
 
     ConfigKey<String> DOCKER_CONTAINER_NAME_FORMAT = ConfigKeys.newStringConfigKey("docker.container.nameFormat",
             "Format for generating Docker container names", DockerAttributes.DEFAULT_DOCKER_CONTAINER_NAME_FORMAT);
@@ -50,8 +53,6 @@ public interface DockerContainer extends BasicStartable, HasShortName, LocationO
     AttributeSensor<Lifecycle> SERVICE_STATE = SoftwareProcess.SERVICE_STATE;
 
     AttributeSensor<SshMachineLocation> SSH_MACHINE_LOCATION = Sensors.newSensor(SshMachineLocation.class, "docker.container.ssh", "The SSHable machine");
-
-    AttributeSensor<Entity> ENTITY = Sensors.newSensor(Entity.class, "docker.container.entity", "The entity running in this Docker container");
 
     MethodEffector<Void> SHUT_DOWN = new MethodEffector<Void>(DockerContainer.class, "shutDown");
     MethodEffector<Void> PAUSE = new MethodEffector<Void>(DockerContainer.class, "pause");

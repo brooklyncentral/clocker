@@ -21,7 +21,6 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.entity.Entity;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.location.Location;
@@ -52,21 +51,9 @@ public class DockerContainerLocation extends SshMachineLocation implements Dynam
     @SetFromFlag("owner")
     private DockerContainer dockerContainer;
 
-    @SetFromFlag("entity")
-    private Entity entity;
-
     @Override
     public void init() {
         super.init();
-        setEntity(entity);
-    }
-
-    public void setEntity(Entity entity) {
-        dockerContainer.setRunningEntity(entity);
-    }
-
-    public Entity getEntity() {
-        return dockerContainer.getRunningEntity();
     }
 
     @Override

@@ -84,6 +84,8 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
     ConfigKey<? extends String> EPEL_RELEASE = ConfigKeys.newStringConfigKey("docker.host.epel.release",
             "EPEL release for yum based OS", "6-8");
 
+    AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_ID = DockerAttributes.DOCKER_IMAGE_ID;
+
     AttributeSensor<String> HOST_NAME = Sensors.newStringSensor("docker.host.name", "The name of the Docker host");
 
     JcloudsLocation getJcloudsLocation();
@@ -99,7 +101,7 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
     DockerInfrastructure getInfrastructure();
 
     @Effector(description="Create an SSHable image")
-    boolean createSshableImage(
+    String createSshableImage(
             @EffectorParam(name="dockerFile", description="URI of file to copy, e.g. file://.., http://.., classpath://..") String dockerFile,
             @EffectorParam(name="folder", description="Destination folder relative to runDir") String folder);
 }

@@ -58,6 +58,7 @@ import brooklyn.policy.ha.ServiceRestarter;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Cidr;
+import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 
 import com.google.common.collect.ImmutableList;
@@ -201,12 +202,15 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     }
 
     @Override
-    public boolean createSshableImage(String dockerFile, String folder) {
-       Task<Integer> task = getDriver().executeScriptAsync(dockerFile, folder);
-       if (task.blockUntilEnded(Duration.FIVE_MINUTES)) {
-           return task.getUnchecked() == 0;
+    public String createSshableImage(String dockerFile, String folder) {
+       Task<String> task = getDriver().buildImage(dockerFile, folder);
+       if (task.blockUntilEnded(Duration.minutes(10))) {
+           String stdout = task.getUnchecked();
+           String imageId = Strings.getFirstWordAfter(stdout, "Successfully built");
+           LOG.info("Successfully created image {} ({})", imageId, folder);
+           return imageId;
        } else {
-           return false;
+           throw new IllegalStateException("Timed out building image");
        }
     }
 
@@ -303,10 +307,14 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
 
     @Override
     public void postStart() {
-        String dockerfileUrl = getConfig(DockerInfrastructure.DOCKERFILE_URL);
-        if (!createSshableImage(dockerfileUrl, "default")) {
-            throw new IllegalStateException("Failed to create default Dockerfile");
+        String imageId = getConfig(DOCKER_IMAGE_ID);
+
+        if (Strings.isBlank(imageId)) {
+            String dockerfileUrl = getConfig(DockerInfrastructure.DOCKERFILE_URL);
+            imageId = createSshableImage(dockerfileUrl, "default");
         }
+
+        setAttribute(DOCKER_IMAGE_ID, imageId);
     }
 
     @Override

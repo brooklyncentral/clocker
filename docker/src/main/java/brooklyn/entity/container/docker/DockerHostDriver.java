@@ -25,6 +25,6 @@ public interface DockerHostDriver extends SoftwareProcessDriver {
 
     Integer getDockerPort();
 
-    Task<Integer> executeScriptAsync(String dockerFile, String folder);
+    Task<String> buildImage(String dockerFile, String folder);
 
 }

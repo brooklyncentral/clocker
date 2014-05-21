@@ -15,12 +15,13 @@
  */
 package brooklyn.entity.container.docker;
 
-import com.google.common.base.CharMatcher;
-
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.event.AttributeSensor;
+import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
+
+import com.google.common.base.CharMatcher;
 
 public class DockerAttributes {
 
@@ -45,7 +46,7 @@ public class DockerAttributes {
     public static final CharMatcher DOCKERFILE_INVALID_CHARACTERS = DOCKERFILE_CHARACTERS.negate();
 
     public static final ConfigKey<String> DOCKERFILE_URL = ConfigKeys.newStringConfigKey("docker.dockerfile.url", "URL of a DockerFile to use");
-    public static final ConfigKey<String> DOCKER_CONTAINER_ID = ConfigKeys.newStringConfigKey("docker.containerId", "The ID of a Docker image to use for a container");
+    public static final AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_ID = ConfigKeys.newSensorAndConfigKey(String.class, "docker.imageId", "The ID of a Docker image to use for a container");
 
     /*
      * Aggregate sensor attributes accumulated from the Docker container clusters.

@@ -50,7 +50,6 @@ import brooklyn.util.net.Cidr;
 import brooklyn.util.text.Strings;
 
 import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.base.CharMatcher;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -112,16 +111,15 @@ public class DockerHostLocation extends AbstractLocation implements
 
         // Add the entity Dockerfile if configured
         String dockerfile = entity.getConfig(DockerAttributes.DOCKERFILE_URL);
-        String imageId = entity.getConfig(DockerAttributes.DOCKER_CONTAINER_ID);
+        String imageId = entity.getConfig(DockerAttributes.DOCKER_IMAGE_ID);
         if (Strings.isNonBlank(dockerfile)) {
             if (imageId != null) {
                 LOG.warn("Ignoring container imageId {} as dockerfile URL is set: {}", imageId, dockerfile);
-                imageId = null;
             }
             String entityType = DockerAttributes.DOCKERFILE_INVALID_CHARACTERS.trimAndCollapseFrom(entity.getClass().getName(), '-');
-            if (!dockerHost.createSshableImage(dockerfile, entityType)) {
-                throw new IllegalStateException("Failed to create Dockerfile for " + entity);
-            }
+            imageId = dockerHost.createSshableImage(dockerfile, entityType);
+        } else if (Strings.isBlank(imageId)) {
+            imageId = getOwner().getAttribute(DockerHost.DOCKER_IMAGE_ID);
         }
 
         // increase size of Docker container cluster
@@ -129,7 +127,7 @@ public class DockerHostLocation extends AbstractLocation implements
         Map<Object, Object> containerFlags = MutableMap.builder()
                 .putAll(flags)
                 .put("entity", entity)
-                .putIfNotNull("imageId", imageId)
+                .put("imageId", imageId)
                 .build();
         DynamicCluster cluster = dockerHost.getDockerContainerCluster();
         Optional<Entity> added = cluster.addInSingleLocation(machine, containerFlags);
