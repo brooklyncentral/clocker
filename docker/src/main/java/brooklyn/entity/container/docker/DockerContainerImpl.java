@@ -192,6 +192,9 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         Map<String, ?> flags = MutableMap.<String, Object>builder()
                 .putAll(getConfig(LOCATION_FLAGS))
                 .put(JcloudsLocationConfig.IMAGE_ID.getName(), getConfig(DOCKER_IMAGE_ID))
+                .put("loginUser", "root") // FIXME add ConfigKey for these two flags
+                .put("loginUser.password", "password")
+                .put("dontCreateUser", "true")
                 .build();
         createLocation(flags);
 
