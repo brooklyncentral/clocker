@@ -71,16 +71,18 @@ public class DockerContainerLocation extends SshMachineLocation implements Dynam
      */
 
     private void addIptablesRule(Integer port) {
-        if (getOwner().getDockerHost().getInfrastructure().getConfig(DockerInfrastructure.OPEN_IPTABLES)) {
+        if (getOwner().getConfig(DockerInfrastructure.OPEN_IPTABLES)) {
+            SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Using iptables to add access for TCP/{} to {}", port, machine);
+                LOG.debug("Using iptables to add access for TCP/{} to {}", port, host);
             }
             List<String> commands = ImmutableList.of(
                     IptablesCommands.insertIptablesRule(Chain.INPUT, Protocol.TCP, port, Policy.ACCEPT),
+                    IptablesCommands.cleanUpIptablesRules(),
                     IptablesCommands.saveIptablesRules());
-            int result = machine.execCommands(String.format("Open iptables TCP/%d", port), commands);
+            int result = host.execCommands(String.format("Open iptables TCP/%d", port), commands);
             if (result != 0) {
-                String msg = String.format("Error running iptables update for TCP/{} on {}", port, machine);
+                String msg = String.format("Error running iptables update for TCP/%d on %s", port, host);
                 LOG.error(msg);
                 throw new RuntimeException(msg);
             }
@@ -89,7 +91,8 @@ public class DockerContainerLocation extends SshMachineLocation implements Dynam
 
     @Override
     public boolean obtainSpecificPort(int portNumber) {
-        boolean result = machine.obtainSpecificPort(portNumber);
+        SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
+        boolean result = host.obtainSpecificPort(portNumber);
         if (result) {
             addIptablesRule(portNumber);
         }
@@ -98,14 +101,16 @@ public class DockerContainerLocation extends SshMachineLocation implements Dynam
 
     @Override
     public int obtainPort(PortRange range) {
-        int portNumber = machine.obtainPort(range);
+        SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
+        int portNumber = host.obtainPort(range);
         addIptablesRule(portNumber);
         return portNumber;
     }
 
     @Override
     public void releasePort(int portNumber) {
-        machine.releasePort(portNumber);
+        SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
+        host.releasePort(portNumber);
     }
 
     @Override
