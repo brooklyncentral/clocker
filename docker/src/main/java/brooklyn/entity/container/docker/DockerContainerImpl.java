@@ -37,6 +37,7 @@ import brooklyn.location.Location;
 import brooklyn.location.LocationSpec;
 import brooklyn.location.NoMachinesAvailableException;
 import brooklyn.location.PortRange;
+import brooklyn.location.basic.LocationConfigKeys;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.location.docker.DockerHostLocation;
@@ -228,13 +229,13 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 .putAll(getConfig(LOCATION_FLAGS))
                 .put(JcloudsLocationConfig.IMAGE_ID.getName(), getConfig(DOCKER_IMAGE_ID))
                 .put(JcloudsLocationConfig.HARDWARE_ID.getName(), getConfig(DOCKER_HARDWARE_ID))
-                .put("loginUser", "root") // FIXME add ConfigKey for these two flags
-                .put("loginUser.password", "password")
-                .put("dontCreateUser", "true")
-                .put("inboundPorts", getRequiredOpenPorts(getRunningEntity()))
-                .put("tags", ImmutableList.of(getRunningEntity().getId() + "-privateTarget"))
-                .put("user", "root") // FIXME which property is correct
-                .put("password", "password")
+                .put(LocationConfigKeys.USER.getName(), "root")
+                .put(LocationConfigKeys.PASSWORD.getName(), "password")
+                .put(LocationConfigKeys.PRIVATE_KEY_DATA.getName(), null)
+                .put(LocationConfigKeys.PRIVATE_KEY_FILE.getName(), null)
+//                .put(JcloudsLocationConfig.DONT_CREATE_USER.getName(), true)
+                .put(JcloudsLocationConfig.INBOUND_PORTS.getName(), getRequiredOpenPorts(getRunningEntity()))
+                .put(JcloudsLocationConfig.STRING_TAGS.getName(), ImmutableList.of(getRunningEntity().getId() + "-privateTarget"))
                 .build();
         createLocation(flags);
 

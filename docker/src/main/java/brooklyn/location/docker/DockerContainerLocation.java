@@ -64,6 +64,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Dynam
     public SshMachineLocation getMachine() {
         return machine;
     }
+
     /*
      * Delegate port operations to machine. Note that firewall configuration is
      * fixed after initial provisioning, so updates use iptables to open ports.
@@ -76,8 +77,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Dynam
             }
             List<String> commands = ImmutableList.of(
                     IptablesCommands.insertIptablesRule(Chain.INPUT, Protocol.TCP, port, Policy.ACCEPT),
-                    IptablesCommands.saveIptablesRules(),
-                    IptablesCommands.listIptablesRule());
+                    IptablesCommands.saveIptablesRules());
             int result = machine.execCommands(String.format("Open iptables TCP/%d", port), commands);
             if (result != 0) {
                 String msg = String.format("Error running iptables update for TCP/{} on {}", port, machine);
