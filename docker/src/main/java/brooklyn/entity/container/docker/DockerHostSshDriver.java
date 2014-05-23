@@ -69,10 +69,11 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     @Override
     public String buildImage(String dockerFile, String name) {
         DynamicTasks.queueIfPossible(SshEffectorTasks.ssh(format("mkdir -p %s", Os.mergePaths(getRunDir(), name)))).orSubmitAndBlock();
-        copyResource(dockerFile, Os.mergePaths(name, DOCKERFILE));
+
+        copyTemplate(dockerFile, Os.mergePaths(name, DOCKERFILE));
 
         // Build an image from the Dockerfile
-        String build = format("build -rm -t %s - < %s", Os.mergePaths("brooklyn", name), Os.mergePaths(getRunDir(), name, DOCKERFILE));
+        String build = format("build --rm -t %s - < %s", Os.mergePaths("brooklyn", name), Os.mergePaths(getRunDir(), name, DOCKERFILE));
         String stdout = dockerCommand(build);
         String prefix = Strings.getFirstWordAfter(stdout, "Successfully built");
 
@@ -149,7 +150,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         String osMajorVersion = osDetails.getVersion();
         String osName = osDetails.getName();
         String arch = osDetails.getArch();
-        if(!osDetails.is64bit()) {
+        if (!osDetails.is64bit()) {
             throw new IllegalStateException("Docker supports only 64bit OS");
         }
         if(osName.equalsIgnoreCase("ubuntu") && osMajorVersion.equals("12.04")) {
@@ -218,7 +219,8 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .build();
 
         newScript(CUSTOMIZING)
-                .body.append(commands).execute();
+                .body.append(commands)
+                .execute();
     }
 
     public String getPidFile() { return "/var/run/docker.pid"; }
