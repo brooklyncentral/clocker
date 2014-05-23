@@ -34,6 +34,7 @@ import brooklyn.util.ssh.IptablesCommands.Chain;
 import brooklyn.util.ssh.IptablesCommands.Policy;
 
 import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 
 /**
@@ -89,12 +90,26 @@ public class DockerContainerLocation extends SshMachineLocation implements Dynam
         }
     }
 
+    public int getMappedPort(int portNumber) {
+        String portMap = getOwner().getDockerHost()
+                .runDockerCommand("inspect -f {{.NetworkSettings.Ports}} " + getOwner().getContainerId());
+        int i = portMap.indexOf(portNumber + "/tcp:[");
+        if (i == -1) throw new IllegalStateException();
+        int j = portMap.substring(i).indexOf("HostPort:");
+        int k = portMap.substring(i + j).indexOf("]]");
+        String hostPort = portMap.substring(i + j + "HostPort:".length(), i + j + k);
+        return Integer.valueOf(hostPort);
+    }
+
     @Override
     public boolean obtainSpecificPort(int portNumber) {
         SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
         boolean result = host.obtainSpecificPort(portNumber);
         if (result) {
-            addIptablesRule(portNumber);
+            int targetPort = getMappedPort(portNumber);
+            getOwner().getDockerHost().getPortForwarder()
+                    .openPortForwarding(machine, portNumber, Optional.of(targetPort), Protocol.TCP, null);
+            addIptablesRule(targetPort);
         }
         return result;
     }
@@ -103,7 +118,10 @@ public class DockerContainerLocation extends SshMachineLocation implements Dynam
     public int obtainPort(PortRange range) {
         SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
         int portNumber = host.obtainPort(range);
-        addIptablesRule(portNumber);
+        int targetPort = getMappedPort(portNumber);
+        getOwner().getDockerHost().getPortForwarder()
+                .openPortForwarding(machine, portNumber, Optional.of(targetPort), Protocol.TCP, null);
+        addIptablesRule(targetPort);
         return portNumber;
     }
 

@@ -86,6 +86,14 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                                     return getDynamicLocation().isSshable();
                                 }
                         }))
+                .poll(new FunctionPollConfig<Boolean, Boolean>(CONTAINER_RUNNING)
+                        .callable(new Callable<Boolean>() {
+                                @Override
+                                public Boolean call() throws Exception {
+                                    String running = getDockerHost().runDockerCommand("inspect -f {{.State.Running}} " + getContainerId());
+                                    return Boolean.parseBoolean(running);
+                                }
+                        }))
                 .build();
     }
 
@@ -141,20 +149,21 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     public void shutDown() {
         String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
         LOG.info("Shut-Down {}", dockerContainerName);
-        getDockerHost().getDynamicLocation().getMachine()
-                .execScript("shutdown", ImmutableList.of(BashCommands.sudo("docker shutdown " + getContainerId())));
+        getDockerHost().runDockerCommand("kill " + getContainerId());
     }
 
     @Override
     public void pause() {
         String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
         LOG.info("Pausing {}", dockerContainerName);
+        getDockerHost().runDockerCommand("stop " + getContainerId());
     }
 
     @Override
     public void resume() {
         String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
         LOG.info("Resume {}", dockerContainerName);
+        getDockerHost().runDockerCommand("start" + getContainerId());
     }
 
     /**
@@ -169,7 +178,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         try {
             // Create a new container using jclouds Docker driver
             JcloudsSshMachineLocation container = host.getJcloudsLocation().obtain(flags);
-            setAttribute(CONTAINER_ID, container.getId()); // FIXME we want the Docker container ID
+            setAttribute(CONTAINER_ID, container.getNode().getId());
 
             // Create our wrapper location around the container
             LocationSpec<DockerContainerLocation> spec = LocationSpec.create(DockerContainerLocation.class)

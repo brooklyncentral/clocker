@@ -118,4 +118,14 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
             @EffectorParam(name="dockerFile", description="URL of Dockerfile to copy") String dockerFile,
             @EffectorParam(name="folder", description="Repository name") String name);
 
+
+    /**
+     * Execute a Docker command and return the output.
+     *
+     * @param command Docker command
+     */
+    @Effector(description="Execute a Docker command and return the output")
+    String runDockerCommand(
+            @EffectorParam(name="command", description="Docker command") String command);
+
 }

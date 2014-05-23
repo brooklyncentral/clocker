@@ -72,31 +72,13 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         copyResource(dockerFile, Os.mergePaths(name, DOCKERFILE));
 
         // Build an image from the Dockerfile
-        String stdout; // Result of docker build command
-        try {
-            String build = sudo(format("docker build -rm -t %s - < %s", Os.mergePaths("brooklyn", name), Os.mergePaths(getRunDir(), name, DOCKERFILE)));
-            SshEffectorTasks.SshEffectorTaskFactory<String> task = SshEffectorTasks.ssh(build)
-                    .summary("docker build " + name)
-                    .returning(SshTasks.returningStdoutLoggingInfo(logSsh, true));
-            stdout = DynamicTasks.queueIfPossible(task)
-                    .orSubmitAndBlock().asTask()
-                    .get(Duration.minutes(10));
-        } catch (TimeoutException te) {
-            throw new IllegalStateException("Timed out building image");
-        } catch (Exception e) {
-            throw Exceptions.propagate(e);
-        }
-
+        String build = format("build -rm -t %s - < %s", Os.mergePaths("brooklyn", name), Os.mergePaths(getRunDir(), name, DOCKERFILE));
+        String stdout = dockerCommand(build);
         String prefix = Strings.getFirstWordAfter(stdout, "Successfully built");
 
         // Inspect the Docker image with this prefix
-        String inspect = sudo(format("docker inspect --format={{.id}} %s", prefix));
-        SshEffectorTasks.SshEffectorTaskFactory<String> task = SshEffectorTasks.ssh(inspect)
-                .summary("docker inspect " + prefix)
-                .returning(SshTasks.returningStdoutLoggingInfo(logSsh, true));
-        String imageId = DynamicTasks.queueIfPossible(task)
-                .orSubmitAndBlock().asTask()
-                .getUnchecked();
+        String inspect = format("inspect --format={{.id}} %s", prefix);
+        String imageId = dockerCommand(inspect);
 
         // Parse and return the Image ID
         imageId = Strings.trim(imageId).toLowerCase(Locale.ENGLISH);
@@ -104,6 +86,25 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
             return imageId;
         } else {
             throw new IllegalStateException("Invalid image ID returned: " + imageId);
+        }
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public String dockerCommand(String command) {
+        try {
+            SshEffectorTasks.SshEffectorTaskFactory<String> task = SshEffectorTasks.ssh(sudo("docker " + command))
+                    .summary("docker " + Strings.getFirstWord(command))
+                    .returning(SshTasks.returningStdoutLoggingInfo(logSsh, true));
+            String stdout = DynamicTasks.queueIfPossible(task)
+                    .orSubmitAndBlock().asTask()
+                    .get(Duration.minutes(10));
+            return stdout;
+        } catch (TimeoutException te) {
+            throw new IllegalStateException("Timed out running Docker " + Strings.getFirstWord(command));
+        } catch (Exception e) {
+            throw Exceptions.propagate(e);
         }
     }
 

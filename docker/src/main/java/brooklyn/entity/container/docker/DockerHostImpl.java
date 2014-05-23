@@ -208,6 +208,14 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
        return imageId;
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public String runDockerCommand(String command) {
+       String stdout = getDriver().dockerCommand(command);
+       LOG.info("Successfully executed Docker {}", Strings.getFirstWord(command));
+       return stdout;
+    }
+
     @Override
     public DockerHostLocation getDynamicLocation() {
         return (DockerHostLocation) getAttribute(DYNAMIC_LOCATION);

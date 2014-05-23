@@ -36,8 +36,10 @@ import brooklyn.entity.database.DatastoreMixins;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.java.UsesJmx;
 import brooklyn.entity.webapp.WebAppServiceConstants;
+import brooklyn.entity.webapp.jboss.JBoss7Server;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.Sensor;
+import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.location.MachineProvisioningLocation;
 import brooklyn.location.NoMachinesAvailableException;
@@ -155,7 +157,8 @@ public class DockerHostLocation extends AbstractLocation implements
                 entity.addEnricher(dockerHost.getSubnetTier().uriTransformingEnricher(original, target));
             } if (ImmutableSet.<String>of(Attributes.HTTP_PORT.getName(), Attributes.HTTPS_PORT.getName(), Attributes.AMQP_PORT.getName(),
                     Attributes.DNS_PORT.getName(), Attributes.SSH_PORT.getName(), Attributes.SMTP_PORT.getName(), UsesJmx.JMX_PORT.getName(),
-                    UsesJmx.RMI_REGISTRY_PORT.getName()).contains(sensor.getName())) {
+                    UsesJmx.RMI_REGISTRY_PORT.getName(), JBoss7Server.MANAGEMENT_HTTP_PORT.getName(), JBoss7Server.MANAGEMENT_HTTPS_PORT.getName(),
+                    JBoss7Server.MANAGEMENT_NATIVE_PORT.getName()).contains(sensor.getName())) {
                 AttributeSensor<Integer> original = Sensors.newIntegerSensor(sensor.getName());
                 AttributeSensor<String> target = Sensors.newStringSensor("mapped." + sensor.getName(), sensor.getDescription() + " (Docker mapping)");
                 entity.addEnricher(dockerHost.getSubnetTier().hostAndPortTransformingEnricher(original, target));
