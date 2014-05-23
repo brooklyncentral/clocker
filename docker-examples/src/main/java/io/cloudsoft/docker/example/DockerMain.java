@@ -75,7 +75,9 @@ public class DockerMain extends Main {
         protected void populateCatalog(BrooklynCatalog catalog) {
             super.populateCatalog(catalog);
             catalog.addItem(BasicInfrastructure.class);
-            catalog.addItem(SingleWebServerExample.class);
+            catalog.addItem(JBossApplication.class);
+            catalog.addItem(ActiveMQApplication.class);
+            catalog.addItem(TomcatApplication.class);
             catalog.addItem(WebClusterDatabaseExample.class);
         }
 

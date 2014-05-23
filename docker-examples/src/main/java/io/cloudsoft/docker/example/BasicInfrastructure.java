@@ -49,7 +49,7 @@ public class BasicInfrastructure extends AbstractApplication {
                 .configure(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_SIZE, 4);
 
         addChild(EntitySpec.create(DockerInfrastructure.class)
-                .configure(DockerInfrastructure.SECURITY_GROUP, "universal") // AWS EC2 All TCP and UDP ports from 0.0.0.0/0
+                .configure(DockerInfrastructure.SECURITY_GROUP, "docker")
                 .configure(DockerInfrastructure.OPEN_IPTABLES, true)
                 .configure(DockerInfrastructure.LOCATION_NAME, getConfig(LOCATION_NAME))
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE))
