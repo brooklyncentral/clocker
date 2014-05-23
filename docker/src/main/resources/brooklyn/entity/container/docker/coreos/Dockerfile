@@ -14,9 +14,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-# sshd
+# sshd and coreos etcd
 #
-# VERSION 0.0.2
+# VERSION 0.0.1
 
 FROM ubuntu:12.04
 MAINTAINER Cloudsoft "brooklyn@cloudsoftcorp.com"
@@ -36,4 +36,16 @@ RUN /usr/sbin/sshd
 
 EXPOSE 22
 
-CMD [ "/usr/sbin/sshd", "-D" ]
+RUN [ "/usr/sbin/sshd", "-D" ]
+
+# install go from source
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -qy build-essential curl git
+RUN curl -s https://go.googlecode.com/files/go1.2.1.src.tar.gz | tar -v -C /usr/local -xz
+RUN cd /usr/local/go/src && ./make.bash --no-clean 2>&1
+ENV PATH /usr/local/go/bin:[#noparse]$PATH[/#noparse]
+ADD . /opt/etcd
+RUN cd /opt/etcd && ./build
+
+EXPOSE 4001 7001
+
+ENTRYPOINT [ "/opt/etcd/bin/etcd" ]

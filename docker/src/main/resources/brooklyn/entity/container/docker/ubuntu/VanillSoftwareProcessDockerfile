@@ -14,9 +14,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-# sshd
+# sshd and scripts
 #
-# VERSION 0.0.2
+# VERSION               0.0.2
 
 FROM ubuntu:12.04
 MAINTAINER Cloudsoft "brooklyn@cloudsoftcorp.com"
@@ -27,6 +27,10 @@ RUN apt-get update
 
 # setup root account
 RUN echo 'root:password' | chpasswd
+
+# run scripts
+ADD scripts /var/run/scripts
+RUN cd /var/run/scripts && sudo chmod +x *.sh && ./vanilla.sh && sudo rm -rf /var/run/scripts
 
 # install sshd
 RUN apt-get install -y openssh-server

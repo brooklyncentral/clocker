@@ -16,19 +16,23 @@
 #
 # sshd
 #
-# VERSION               0.0.1
+# VERSION 0.0.2
 
-FROM     centos
-MAINTAINER Andrea Turli "andrea.turli@cloudsoftcorp.com"
+FROM centos
+MAINTAINER Cloudsoft "brooklyn@cloudsoftcorp.com"
 
-# Install packages
+# install packages
 RUN yum -y groupinstall 'Development Tools'
 RUN yum -y install sudo openssh-server openssh-clients openssl-devel
-RUN ssh-keygen -q -N "" -t dsa -f /etc/ssh/ssh_host_dsa_key && ssh-keygen -q -N "" -t rsa -f /etc/ssh/ssh_host_rsa_key && sed -i "s/#UsePrivilegeSeparation.*/UsePrivilegeSeparation no/g" /etc/ssh/sshd_config && sed -i "s/UsePAM.*/UsePAM no/g" /etc/ssh/sshd_config
-RUN echo 'root:password' |chpasswd
 
+# setup root account
+RUN ssh-keygen -q -N "" -t dsa -f /etc/ssh/ssh_host_dsa_key && ssh-keygen -q -N "" -t rsa -f /etc/ssh/ssh_host_rsa_key && sed -i "s/#UsePrivilegeSeparation.*/UsePrivilegeSeparation no/g" /etc/ssh/sshd_config && sed -i "s/UsePAM.*/UsePAM no/g" /etc/ssh/sshd_config
+RUN echo 'root:password' | chpasswd
+
+# install sshd
 RUN chkconfig sshd on
 RUN service sshd start
 
 EXPOSE 22
-CMD ["/usr/sbin/sshd", "-D"]
+
+CMD [ "/usr/sbin/sshd", "-D" ]
