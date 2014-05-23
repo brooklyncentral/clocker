@@ -46,6 +46,7 @@ import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.management.LocationManager;
+import brooklyn.management.ManagementContext;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.collections.MutableSet;
 import brooklyn.util.exceptions.Exceptions;
@@ -191,6 +192,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                     .displayName(getDockerContainerName())
                     .id(locationName);
             DockerContainerLocation location = getManagementContext().getLocationManager().createLocation(spec);
+
             setAttribute(DYNAMIC_LOCATION, location);
             setAttribute(LOCATION_NAME, location.getId());
 

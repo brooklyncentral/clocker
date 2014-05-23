@@ -50,6 +50,7 @@ import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.location.jclouds.templates.PortableTemplateBuilder;
 import brooklyn.management.LocationManager;
+import brooklyn.management.ManagementContext;
 import brooklyn.policy.PolicySpec;
 import brooklyn.policy.ha.ServiceFailureDetector;
 import brooklyn.policy.ha.ServiceReplacer;
@@ -249,15 +250,27 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
 
         String locationSpec = String.format(DockerResolver.DOCKER_HOST_MACHINE_SPEC, infrastructure.getId(), getId()) + String.format(":(name=\"%s\")", locationName);
         setAttribute(LOCATION_SPEC, locationSpec);
-        LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
-        Location location = getManagementContext().getLocationRegistry().resolve(definition);
-        getManagementContext().getLocationManager().manage(location);
 
-        setAttribute(DYNAMIC_LOCATION, location);
-        setAttribute(LOCATION_NAME, location.getId());
+        final LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
+        Location location = getManagementContext().getLocationRegistry().resolve(definition);
         if (getConfig(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS)) {
             getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
         }
+        getManagementContext().getLocationManager().manage(location);
+
+        getManagementContext().addPropertiesReloadListener(new ManagementContext.PropertiesReloadListener() {
+            @Override
+            public void reloaded() {
+                Location resolved = getManagementContext().getLocationRegistry().resolve(definition);
+                if (getConfig(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS)) {
+                    getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
+                }
+                getManagementContext().getLocationManager().manage(resolved);
+            }
+        });
+
+        setAttribute(DYNAMIC_LOCATION, location);
+        setAttribute(LOCATION_NAME, location.getId());
 
         LOG.info("New Docker host location {} created", location);
         return (DockerHostLocation) location;

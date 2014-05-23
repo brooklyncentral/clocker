@@ -33,6 +33,7 @@ import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.location.dynamic.LocationOwner;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.util.flags.SetFromFlag;
+import brooklyn.util.time.Duration;
 
 /**
  * A Docker container.
@@ -66,6 +67,12 @@ public interface DockerContainer extends BasicStartable, HasShortName, LocationO
     AttributeSensor<Boolean> CONTAINER_RUNNING = Sensors.newBooleanSensor("docker.container.running", "The Docker container process status");
 
     AttributeSensor<Lifecycle> SERVICE_STATE = SoftwareProcess.SERVICE_STATE;
+
+    AttributeSensor<Duration> UPTIME = DockerAttributes.UPTIME;
+
+    AttributeSensor<Double> CPU_USAGE = DockerAttributes.CPU_USAGE;
+
+    AttributeSensor<Long> USED_MEMORY = DockerAttributes.USED_MEMORY;
 
     AttributeSensor<SshMachineLocation> SSH_MACHINE_LOCATION = Sensors.newSensor(SshMachineLocation.class, "docker.container.ssh", "The SSHable machine");
 

@@ -43,6 +43,7 @@ import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.DockerResolver;
 import brooklyn.management.LocationManager;
+import brooklyn.management.ManagementContext;
 import brooklyn.util.collections.MutableMap;
 
 import com.google.common.base.Function;
@@ -200,12 +201,23 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         }
         String locationSpec = String.format(DockerResolver.DOCKER_INFRASTRUCTURE_SPEC, getId()) + String.format(":(name=\"%s\")", locationName);
         setAttribute(LOCATION_SPEC, locationSpec);
-        LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
+
+        final LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
         Location location = getManagementContext().getLocationRegistry().resolve(definition);
+        getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
+        getManagementContext().getLocationManager().manage(location);
+
+        getManagementContext().addPropertiesReloadListener(new ManagementContext.PropertiesReloadListener() {
+            @Override
+            public void reloaded() {
+                Location resolved = getManagementContext().getLocationRegistry().resolve(definition);
+                getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
+                getManagementContext().getLocationManager().manage(resolved);
+            }
+        });
 
         setAttribute(DYNAMIC_LOCATION, location);
         setAttribute(LOCATION_NAME, location.getId());
-        getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
 
         LOG.info("New Docker location {} created", location);
         return (DockerLocation) location;
