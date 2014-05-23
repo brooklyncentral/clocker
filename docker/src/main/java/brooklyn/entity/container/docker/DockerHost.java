@@ -54,7 +54,7 @@ import brooklyn.util.flags.SetFromFlag;
 public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, LocationOwner<DockerHostLocation, DockerHost> {
 
     @SetFromFlag("version")
-    ConfigKey<String> SUGGESTED_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "0.8");
+    ConfigKey<String> SUGGESTED_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "0.11");
 
     BasicAttributeSensorAndConfigKey<String> DOWNLOAD_URL = new BasicAttributeSensorAndConfigKey<String>(
             SoftwareProcess.DOWNLOAD_URL, "https://get.docker.io/builds/Linux/x86_64/docker-latest");
