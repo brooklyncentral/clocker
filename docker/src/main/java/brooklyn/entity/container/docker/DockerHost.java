@@ -25,6 +25,7 @@ import brooklyn.entity.Entity;
 import brooklyn.entity.annotation.Effector;
 import brooklyn.entity.annotation.EffectorParam;
 import brooklyn.entity.basic.ConfigKeys;
+import brooklyn.entity.basic.MethodEffector;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.proxying.EntitySpec;
@@ -105,6 +106,9 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
     List<Entity> getDockerContainerList();
 
     DockerInfrastructure getInfrastructure();
+
+    MethodEffector<String> CREATE_SSHABLE_IMAGE = new MethodEffector<String>(DockerHost.class, "createSshableImage");
+    MethodEffector<String> RUN_DOCKER_COMMAND = new MethodEffector<String>(DockerHost.class, "runDockerCommand");
 
     /**
      * Create an SSHable image and returns the image ID.
