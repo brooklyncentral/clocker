@@ -96,10 +96,13 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     public String dockerCommand(String command) {
         try {
             SshEffectorTasks.SshEffectorTaskFactory<String> task = SshEffectorTasks.ssh(sudo("docker " + command))
+                    .machine(getMachine())
                     .summary("docker " + Strings.getFirstWord(command))
                     .returning(SshTasks.returningStdoutLoggingInfo(logSsh, true));
             String stdout = DynamicTasks.queueIfPossible(task)
-                    .orSubmitAndBlock().asTask()
+                    .executionContext(getEntity())
+                    .orSubmitAndBlock()
+                    .asTask()
                     .get(Duration.minutes(10));
             return stdout;
         } catch (TimeoutException te) {
