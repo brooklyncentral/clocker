@@ -77,7 +77,6 @@ public class DockerAttributes {
     /** Valid characters for the Dockerfile location. */
     public static final CharMatcher DOCKERFILE_CHARACTERS = CharMatcher.anyOf("-_.")
             .or(CharMatcher.inRange('a', 'z'))
-            .or(CharMatcher.inRange('A', 'Z'))
             .or(CharMatcher.inRange('0', '9'));
     public static final CharMatcher DOCKERFILE_INVALID_CHARACTERS = DOCKERFILE_CHARACTERS.negate();
 
