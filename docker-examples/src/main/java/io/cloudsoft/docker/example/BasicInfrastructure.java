@@ -28,7 +28,7 @@ import brooklyn.entity.proxying.EntitySpec;
 /**
  * Brooklyn managed basic Docker infrastructure.
  */
-@Catalog(name="BasicInfrastructure",
+@Catalog(name="Basic Infrastructure",
         description="Deploys Simple Docker Infrastructure.",
         iconUrl="classpath://docker-top-logo.png")
 public class BasicInfrastructure extends AbstractApplication {

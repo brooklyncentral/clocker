@@ -23,6 +23,7 @@ import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.basic.StartableApplication;
+import brooklyn.entity.container.docker.DockerAttributes;
 import brooklyn.entity.java.UsesJmx;
 import brooklyn.entity.java.UsesJmx.JmxAgentModes;
 import brooklyn.entity.proxying.EntitySpec;
@@ -39,7 +40,7 @@ import brooklyn.location.basic.PortRanges;
         iconUrl="classpath://tomcat-logo.png")
 public class TomcatApplication extends AbstractApplication implements StartableApplication {
 
-    public static final String DEFAULT_WAR_PATH = "https://s3-eu-west-1.amazonaws.com/brooklyn-waratek/hello-world.war";
+    public static final String DEFAULT_WAR_PATH = "https://s3-eu-west-1.amazonaws.com/brooklyn-docker/hello-world.war";
 
     @CatalogConfig(label="War File (URL)", priority=0)
     public static final ConfigKey<String> WAR_PATH = ConfigKeys.newConfigKey(
@@ -49,6 +50,7 @@ public class TomcatApplication extends AbstractApplication implements StartableA
     public void init() {
         addChild(EntitySpec.create(TomcatServer.class)
                 .displayName("Tomcat Server")
+                .configure(DockerAttributes.DOCKERFILE_URL, "https://s3-eu-west-1.amazonaws.com/brooklyn-docker/UsesJavaDockerfile")
                 .configure(WebAppService.HTTP_PORT, PortRanges.fromString("8080+"))
                 .configure(JavaWebAppService.ROOT_WAR, Entities.getRequiredUrlConfig(this, WAR_PATH))
                 .configure(SoftwareProcess.SUGGESTED_VERSION, "7.0.53")

@@ -15,13 +15,20 @@
  */
 package brooklyn.entity.container.docker;
 
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
 
 import brooklyn.config.ConfigKey;
 import brooklyn.config.render.RendererHints;
+import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.ConfigKeys;
+import brooklyn.entity.database.DatastoreMixins;
+import brooklyn.entity.java.UsesJmx;
+import brooklyn.entity.messaging.activemq.ActiveMQBroker;
+import brooklyn.entity.webapp.WebAppServiceConstants;
+import brooklyn.entity.webapp.jboss.JBoss7Server;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
@@ -32,6 +39,7 @@ import brooklyn.util.time.Time;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
+import com.google.common.collect.ImmutableSet;
 
 public class DockerAttributes {
 
@@ -42,6 +50,24 @@ public class DockerAttributes {
      * Configuration and constants.
      */
 
+    public static final Set<String> PORT_SENSOR_NAMES = ImmutableSet.<String>of(
+            Attributes.HTTP_PORT.getName(),
+            Attributes.HTTPS_PORT.getName(),
+            Attributes.AMQP_PORT.getName(),
+            Attributes.DNS_PORT.getName(),
+            Attributes.SSH_PORT.getName(),
+            Attributes.SMTP_PORT.getName(),
+            UsesJmx.JMX_PORT.getName(),
+            UsesJmx.RMI_REGISTRY_PORT.getName(),
+            JBoss7Server.MANAGEMENT_HTTP_PORT.getName(),
+            JBoss7Server.MANAGEMENT_HTTPS_PORT.getName(),
+            JBoss7Server.MANAGEMENT_NATIVE_PORT.getName(),
+            ActiveMQBroker.AMQ_JETTY_PORT.getName());
+
+    public static final Set<String> URL_SENSOR_NAMES = ImmutableSet.<String>of(
+            WebAppServiceConstants.ROOT_URL.getName(),
+            DatastoreMixins.DATASTORE_URL.getName());
+
     public static final String DEFAULT_DOCKER_CONTAINER_NAME_FORMAT = "docker-container-brooklyn-%1$s";
     public static final String DEFAULT_DOCKER_HOST_NAME_FORMAT = "docker-host-brooklyn-%1$s";
 
@@ -51,7 +77,6 @@ public class DockerAttributes {
     /** Valid characters for the Dockerfile location. */
     public static final CharMatcher DOCKERFILE_CHARACTERS = CharMatcher.anyOf("-_.")
             .or(CharMatcher.inRange('a', 'z'))
-            .or(CharMatcher.inRange('A', 'Z'))
             .or(CharMatcher.inRange('0', '9'));
     public static final CharMatcher DOCKERFILE_INVALID_CHARACTERS = DOCKERFILE_CHARACTERS.negate();
 

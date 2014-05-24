@@ -16,7 +16,7 @@
 #
 # sshd and scripts
 #
-# VERSION               0.0.2
+# VERSION 0.0.2
 
 FROM ubuntu:12.04
 MAINTAINER Cloudsoft "brooklyn@cloudsoftcorp.com"

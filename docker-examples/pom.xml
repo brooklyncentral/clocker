@@ -33,11 +33,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.brooklyn.example</groupId>
-            <artifactId>brooklyn-example-simple-web-cluster</artifactId>
-            <version>${brooklyn.version}</version>
-        </dependency>
-        <dependency>
             <groupId>io.cloudsoft.docker</groupId>
             <artifactId>brooklyn-docker</artifactId>
             <version>${project.parent.version}</version>
