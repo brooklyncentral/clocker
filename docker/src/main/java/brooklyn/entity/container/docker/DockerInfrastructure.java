@@ -24,32 +24,36 @@ import brooklyn.entity.basic.BasicStartable;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.DynamicGroup;
 import brooklyn.entity.group.DynamicCluster;
+import brooklyn.entity.group.DynamicMultiGroup;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.entity.trait.Resizable;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.BasicAttributeSensorAndConfigKey;
+import brooklyn.event.basic.Sensors;
 import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.dynamic.LocationOwner;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.util.flags.SetFromFlag;
 
+/**
+ * A collection of machines running Docker.
+ */
+@Catalog(name = "Docker Infrastructure",
+        description = "Docker is an open-source engine to easily create lightweight, portable, self-sufficient containers from any application.",
+        iconUrl = "classpath:///docker-top-logo.png")
 @ImplementedBy(DockerInfrastructureImpl.class)
-@Catalog(name="DockerInfrastructure", description="Docker Infrastructure.", iconUrl = "classpath:///docker-top-logo.png")
-
 public interface DockerInfrastructure extends BasicStartable, Resizable, LocationOwner<DockerLocation, DockerInfrastructure> {
 
     @SetFromFlag("securityGroup")
     ConfigKey<String> SECURITY_GROUP = ConfigKeys.newStringConfigKey(
-            "docker.host.securityGroup", "Set a network security group for cloud servers to use; (null to use default" +
-                    " configuration)");
+            "docker.host.securityGroup", "Set a network security group for cloud servers to use; (null to use default configuration)");
 
     @SetFromFlag("openIptables")
-    ConfigKey<Boolean> OPEN_IPTABLES = ConfigKeys.newConfigKeyWithPrefix("docker.host",
-            JcloudsLocationConfig.OPEN_IPTABLES);
+    ConfigKey<Boolean> OPEN_IPTABLES = ConfigKeys.newConfigKeyWithPrefix("docker.host.", JcloudsLocationConfig.OPEN_IPTABLES);
 
     @SetFromFlag("minHost")
-    ConfigKey<Integer> DOCKER_HOST_CLUSTER_MIN_SIZE = ConfigKeys.newConfigKeyWithPrefix("docker.host", DynamicCluster.INITIAL_SIZE);
+    ConfigKey<Integer> DOCKER_HOST_CLUSTER_MIN_SIZE = ConfigKeys.newConfigKeyWithPrefix("docker.host.", DynamicCluster.INITIAL_SIZE);
 
     @SetFromFlag("maxContainer")
     ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = ConfigKeys.newIntegerConfigKey("docker.container.cluster.maxSize",
@@ -63,6 +67,19 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
     BasicAttributeSensorAndConfigKey<EntitySpec> DOCKER_HOST_SPEC = new BasicAttributeSensorAndConfigKey<EntitySpec>(
             EntitySpec.class, "docker.host.spec", "Specification to use when creating child Docker Hosts",
             EntitySpec.create(DockerHost.class));
+
+    @SetFromFlag("dockerfileUrl")
+    ConfigKey<String> DOCKERFILE_URL = ConfigKeys.newConfigKeyWithDefault(DockerAttributes.DOCKERFILE_URL, DockerAttributes.UBUNTU_DOCKERFILE);
+
+    @SetFromFlag("imageId")
+    ConfigKey<String> DOCKER_IMAGE_ID = DockerAttributes.DOCKER_IMAGE_ID.getConfigKey();
+
+    @SetFromFlag("hardwareId")
+    ConfigKey<String> DOCKER_HARDWARE_ID = DockerAttributes.DOCKER_HARDWARE_ID.getConfigKey();
+
+    AttributeSensor<DynamicCluster> DOCKER_HOST_CLUSTER = Sensors.newSensor(DynamicCluster.class, "docker.hosts", "Docker host cluster");
+    AttributeSensor<DynamicGroup> DOCKER_CONTAINER_FABRIC = Sensors.newSensor(DynamicGroup.class, "docker.fabric", "Docker container fabric");
+    AttributeSensor<DynamicMultiGroup> DOCKER_APPLICATIONS = Sensors.newSensor(DynamicMultiGroup.class, "docker.buckets", "Docker applications");
 
     AttributeSensor<Integer> DOCKER_HOST_COUNT = DockerAttributes.DOCKER_HOST_COUNT;
     AttributeSensor<Integer> DOCKER_CONTAINER_COUNT = DockerAttributes.DOCKER_CONTAINER_COUNT;

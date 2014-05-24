@@ -22,7 +22,7 @@
     <parent>
         <artifactId>brooklyn-docker-parent</artifactId>
         <groupId>io.cloudsoft.docker</groupId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>0.2.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -31,6 +31,11 @@
     <description>Brooklyn entity for Docker</description>
 
     <dependencies>
+        <dependency>
+            <groupId>io.cloudsoft.networking</groupId>
+            <artifactId>brooklyn-networking-portforwarding</artifactId>
+            <version>${brooklyn.networking.version}</version>
+        </dependency>
         <dependency>
             <groupId>io.brooklyn</groupId>
             <artifactId>brooklyn-software-base</artifactId>

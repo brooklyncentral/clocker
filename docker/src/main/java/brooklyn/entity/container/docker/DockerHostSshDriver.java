@@ -15,33 +15,42 @@
  */
 package brooklyn.entity.container.docker;
 
-import static brooklyn.util.ssh.BashCommands.INSTALL_WGET;
-import static brooklyn.util.ssh.BashCommands.chainGroup;
-import static brooklyn.util.ssh.BashCommands.ifExecutableElse0;
-import static brooklyn.util.ssh.BashCommands.installPackage;
-import static brooklyn.util.ssh.BashCommands.sudo;
+import static brooklyn.util.ssh.BashCommands.*;
 import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
+import java.util.concurrent.TimeoutException;
 
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.lifecycle.ScriptHelper;
 import brooklyn.entity.drivers.downloads.DownloadResolver;
+import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.location.OsDetails;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.util.collections.MutableMap;
-import brooklyn.util.internal.Repeater;
+import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.net.Networking;
+import brooklyn.util.os.Os;
+import brooklyn.util.repeat.Repeater;
+import brooklyn.util.ssh.BashCommands;
+import brooklyn.util.task.DynamicTasks;
+import brooklyn.util.task.ssh.SshTasks;
+import brooklyn.util.text.Strings;
+import brooklyn.util.time.Duration;
+
+import com.google.common.base.CharMatcher;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.Uninterruptibles;
 
 public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implements DockerHostDriver {
+
+    public static final String DOCKERFILE = "Dockerfile";
 
     public DockerHostSshDriver(DockerHostImpl entity, SshMachineLocation machine) {
         super(entity, machine);
@@ -56,6 +65,53 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         return getEntity().getAttribute(DockerHost.DOCKER_PORT);
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public String buildImage(String dockerFile, String name) {
+        DynamicTasks.queueIfPossible(SshEffectorTasks.ssh(format("mkdir -p %s", Os.mergePaths(getRunDir(), name)))).orSubmitAndBlock();
+
+        copyTemplate(dockerFile, Os.mergePaths(name, DOCKERFILE));
+
+        // Build an image from the Dockerfile
+        String build = format("build --rm -t %s - < %s", Os.mergePaths("brooklyn", name), Os.mergePaths(getRunDir(), name, DOCKERFILE));
+        String stdout = dockerCommand(build);
+        String prefix = Strings.getFirstWordAfter(stdout, "Successfully built");
+
+        // Inspect the Docker image with this prefix
+        String inspect = format("inspect --format={{.id}} %s", prefix);
+        String imageId = dockerCommand(inspect);
+
+        // Parse and return the Image ID
+        imageId = Strings.trim(imageId).toLowerCase(Locale.ENGLISH);
+        if (imageId.length() == 64 && CharMatcher.anyOf("0123456789abcdef").matchesAllOf(imageId)) {
+            return imageId;
+        } else {
+            throw new IllegalStateException("Invalid image ID returned: " + imageId);
+        }
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public String dockerCommand(String command) {
+        try {
+            SshEffectorTasks.SshEffectorTaskFactory<String> task = SshEffectorTasks.ssh(sudo("docker " + command))
+                    .machine(getMachine())
+                    .summary("docker " + Strings.getFirstWord(command))
+                    .returning(SshTasks.returningStdoutLoggingInfo(logSsh, true));
+            String stdout = DynamicTasks.queueIfPossible(task)
+                    .executionContext(getEntity())
+                    .orSubmitAndBlock()
+                    .asTask()
+                    .get(Duration.minutes(10));
+            return stdout;
+        } catch (TimeoutException te) {
+            throw new IllegalStateException("Timed out running Docker " + Strings.getFirstWord(command));
+        } catch (Exception e) {
+            throw Exceptions.propagate(e);
+        }
+    }
+
     public String getEpelRelease() {
         return getEntity().getConfig(DockerHost.EPEL_RELEASE);
     }
@@ -66,17 +122,15 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .body.append(sudo("service docker status"))
                 .failOnNonZeroResultCode()
                 .gatherOutput();
-
-        log.info("waiting for Docker {} to be ready", getLocation());
+        Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
         return Repeater.create()
-                .repeat()
-                .every(1,SECONDS)
+                .every(Duration.ONE_SECOND)
                 .until(new Callable<Boolean>() {
                     public Boolean call() {
                         helper.execute();
                         return helper.getResultStdout().contains("running");
                     }})
-                .limitTimeTo(1, TimeUnit.MINUTES)
+                .limitTimeTo(Duration.ONE_MINUTE)
                 .rethrowExceptionImmediately()
                 .run();
     }
@@ -99,7 +153,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         String osMajorVersion = osDetails.getVersion();
         String osName = osDetails.getName();
         String arch = osDetails.getArch();
-        if(!osDetails.is64bit()) {
+        if (!osDetails.is64bit()) {
             throw new IllegalStateException("Docker supports only 64bit OS");
         }
         if(osName.equalsIgnoreCase("ubuntu") && osMajorVersion.equals("12.04")) {
@@ -113,13 +167,12 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         }
         log.info("waiting for Docker host {} to be sshable", getLocation());
         boolean isSshable = Repeater.create()
-                .repeat()
-                .every(1,SECONDS)
+                .every(Duration.ONE_SECOND)
                 .until(new Callable<Boolean>() {
                     public Boolean call() {
                         return getLocation().isSshable();
                     }})
-                .limitTimeTo(30, TimeUnit.MINUTES)
+                .limitTimeTo(Duration.minutes(15))
                 .run();
         if(!isSshable) {
             throw new IllegalStateException(String.format("The entity %s is not ssh'able after reboot", entity));
@@ -140,10 +193,14 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     private String useYum(String osMajorVersion, String arch, String epelRelease) {
         String osMajor = osMajorVersion.substring(0, osMajorVersion.indexOf('.'));
-        return chainGroup(
+        String group = chainGroup(
                 INSTALL_WGET,
-                sudo(format("rpm -Uvh http://download.fedoraproject.org/pub/epel/%s/%s/epel-release-%s.noarch.rpm",
-                        osMajor, arch, epelRelease)));
+                sudo(BashCommands.alternatives(sudo("rpm -qa | grep epel-release"),
+                        sudo(format("rpm -Uvh http://download.fedoraproject.org/pub/epel/%s/%s/epel-release-%s.noarch.rpm",
+                                osMajor, arch, epelRelease))
+                ))
+        );
+        return group;
     }
 
     private String useApt() {
@@ -160,12 +217,13 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         Networking.checkPortsValid(getPortMap());
         List<String> commands = ImmutableList.<String> builder()
                 .add(sudo("service docker stop"))
-                .add(ifExecutableElse0("apt-get", format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%s\"' | sudo tee -a /etc/default/docker", getDockerPort())))
-                .add(ifExecutableElse0("yum", format("echo 'other_args=\"-H tcp://0.0.0.0:%s\"' | sudo tee /etc/sysconfig/docker", getDockerPort())))
+                .add(ifExecutableElse0("apt-get", format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%s -H unix:///var/run/docker.sock\"' | sudo tee -a /etc/default/docker", getDockerPort())))
+                .add(ifExecutableElse0("yum", format("echo 'other_args=\"-H tcp://0.0.0.0:%s -H unix:///var/run/docker.sock\"' | sudo tee /etc/sysconfig/docker", getDockerPort())))
                 .build();
 
         newScript(CUSTOMIZING)
-                .body.append(commands).execute();
+                .body.append(commands)
+                .execute();
     }
 
     public String getPidFile() { return "/var/run/docker.pid"; }

@@ -18,6 +18,7 @@ package brooklyn.entity.container.docker;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
 
@@ -42,6 +43,7 @@ import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.DockerResolver;
 import brooklyn.management.LocationManager;
+import brooklyn.management.ManagementContext;
 import brooklyn.util.collections.MutableMap;
 
 import com.google.common.base.Function;
@@ -55,22 +57,27 @@ import com.google.common.collect.Iterables;
 
 public class DockerInfrastructureImpl extends BasicStartableImpl implements DockerInfrastructure {
 
-    private static final Logger log = LoggerFactory.getLogger(DockerInfrastructureImpl.class);
+    static {
+        DockerAttributes.init();
+    }
 
-    private DynamicCluster dockerHosts;
+    private static final Logger LOG = LoggerFactory.getLogger(DockerInfrastructureImpl.class);
+
+    private DynamicCluster hosts;
     private DynamicGroup fabric;
     private DynamicMultiGroup buckets;
-    private DockerLocation docker;
+
+    private transient AtomicBoolean started = new AtomicBoolean(false);
 
     private Predicate<Entity> sameInfrastructure = new Predicate<Entity>() {
         @Override
         public boolean apply(@Nullable Entity input) {
-            // Check if entity is deployed to a WaratekContainerLocation
+            // Check if entity is deployed to a DockerContainerLocation
             Optional<Location> lookup = Iterables.tryFind(input.getLocations(), Predicates.instanceOf(DockerContainerLocation.class));
             if (lookup.isPresent()) {
                 DockerContainerLocation container = (DockerContainerLocation) lookup.get();
                 // Only containers that are part of this infrastructure
-                return getId().equals(container.getDockerHost().getInfrastructure().getId());
+                return getId().equals(container.getOwner().getDockerHost().getInfrastructure().getId());
             } else {
                 return false;
             }
@@ -84,7 +91,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 .configure(DockerHost.DOCKER_INFRASTRUCTURE, this)
                 .configure(SoftwareProcess.CHILDREN_STARTABLE_MODE, ChildStartableMode.BACKGROUND_LATE);
 
-        dockerHosts = addChild(EntitySpec.create(DynamicCluster.class)
+        hosts = addChild(EntitySpec.create(DynamicCluster.class)
                 .configure(Cluster.INITIAL_SIZE, initialSize)
                 .configure(DynamicCluster.QUARANTINE_FAILED_ENTITIES, true)
                 .configure(DynamicCluster.MEMBER_SPEC, dockerHostSpec)
@@ -106,18 +113,21 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 .displayName("Docker Applications"));
 
         if (Entities.isManaged(this)) {
-            Entities.manage(dockerHosts);
+            Entities.manage(hosts);
             Entities.manage(fabric);
             Entities.manage(buckets);
         }
+        setAttribute(DOCKER_HOST_CLUSTER, hosts);
+        setAttribute(DOCKER_CONTAINER_FABRIC, fabric);
+        setAttribute(DOCKER_APPLICATIONS, buckets);
 
-        dockerHosts.addEnricher(Enrichers.builder()
+        hosts.addEnricher(Enrichers.builder()
                 .aggregating(DockerAttributes.AVERAGE_CPU_USAGE)
                 .computingAverage()
                 .fromMembers()
                 .publishing(DockerAttributes.AVERAGE_CPU_USAGE)
                 .build());
-        dockerHosts.addEnricher(Enrichers.builder()
+        hosts.addEnricher(Enrichers.builder()
                 .aggregating(DOCKER_CONTAINER_COUNT)
                 .computingSum()
                 .fromMembers()
@@ -126,25 +136,25 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
         addEnricher(Enrichers.builder()
                 .propagating(DOCKER_CONTAINER_COUNT, DockerAttributes.AVERAGE_CPU_USAGE)
-                .from(dockerHosts)
+                .from(hosts)
                 .build());
         addEnricher(Enrichers.builder()
                 .propagating(ImmutableMap.of(DynamicCluster.GROUP_SIZE, DOCKER_HOST_COUNT))
-                .from(dockerHosts)
+                .from(hosts)
                 .build());
     }
 
     @Override
     public List<Entity> getDockerHostList() {
-        if (dockerHosts == null) {
+        if (hosts == null) {
             return ImmutableList.of();
         } else {
-            return ImmutableList.copyOf(dockerHosts.getMembers());
+            return ImmutableList.copyOf(hosts.getMembers());
         }
     }
 
     @Override
-    public DynamicCluster getDockerHostCluster() { return dockerHosts; }
+    public DynamicCluster getDockerHostCluster() { return hosts; }
 
     @Override
     public List<Entity> getDockerContainerList() {
@@ -160,17 +170,25 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
     @Override
     public Integer resize(Integer desiredSize) {
-        return dockerHosts.resize(desiredSize);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Resize Docker infrastructure to {} at {}", new Object[] { desiredSize, getLocations() });
+        }
+        return hosts.resize(desiredSize);
     }
 
     @Override
     public Integer getCurrentSize() {
-        return dockerHosts.getCurrentSize();
+        return hosts.getCurrentSize();
     }
 
     @Override
     public DockerLocation getDynamicLocation() {
-        return docker;
+        return (DockerLocation) getAttribute(DYNAMIC_LOCATION);
+    }
+
+    @Override
+    public boolean isLocationAvailable() {
+        return getDynamicLocation() != null;
     }
 
     @Override
@@ -181,54 +199,76 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
             String suffix = getConfig(LOCATION_NAME_SUFFIX);
             locationName = Joiner.on("-").skipNulls().join(prefix, getId(), suffix);
         }
-        String locationSpec = String.format(DockerResolver.DOCKER_INFRASTRUCTURE_SPEC,
-                getId()) + String.format(":(name=\"%s\")", locationName);
+        String locationSpec = String.format(DockerResolver.DOCKER_INFRASTRUCTURE_SPEC, getId()) + String.format(":(name=\"%s\")", locationName);
         setAttribute(LOCATION_SPEC, locationSpec);
-        LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
+
+        final LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
         Location location = getManagementContext().getLocationRegistry().resolve(definition);
+        getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
+        getManagementContext().getLocationManager().manage(location);
+
+        getManagementContext().addPropertiesReloadListener(new ManagementContext.PropertiesReloadListener() {
+            @Override
+            public void reloaded() {
+                Location resolved = getManagementContext().getLocationRegistry().resolve(definition);
+                getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
+                getManagementContext().getLocationManager().manage(resolved);
+            }
+        });
 
         setAttribute(DYNAMIC_LOCATION, location);
         setAttribute(LOCATION_NAME, location.getId());
-        getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
 
+        LOG.info("New Docker location {} created", location);
         return (DockerLocation) location;
     }
 
     @Override
-    public boolean isLocationAvailable() {
-        return docker != null;
+    public void deleteLocation() {
+        DockerLocation host = getDynamicLocation();
+
+        if (host != null) {
+            LocationManager mgr = getManagementContext().getLocationManager();
+            if (mgr.isManaged(host)) {
+                mgr.unmanage(host);
+            }
+        }
+
+        setAttribute(DYNAMIC_LOCATION, null);
+        setAttribute(LOCATION_NAME, null);
     }
 
     @Override
     public void start(Collection<? extends Location> locations) {
-        Location provisioner = Iterables.getOnlyElement(locations);
-        log.info("Creating new DockerLocation wrapping {}", provisioner);
+        if (started.compareAndSet(false, true)) {
+            // TODO support multiple locations
+            setAttribute(SERVICE_UP, Boolean.FALSE);
 
-        Map<String, ?> flags = MutableMap.<String, Object>builder()
-                .putAll(getConfig(LOCATION_FLAGS))
-                .put("provisioner", provisioner)
-                .build();
-        docker = createLocation(flags);
-        log.info("New Docker location {} created", docker);
+            Location provisioner = Iterables.getOnlyElement(locations);
+            LOG.info("Creating new DockerLocation wrapping {}", provisioner);
 
-        super.start(locations);
+            Map<String, ?> flags = MutableMap.<String, Object>builder()
+                    .putAll(getConfig(LOCATION_FLAGS))
+                    .put("provisioner", provisioner)
+                    .build();
+            createLocation(flags);
+
+            super.start(locations);
+
+            setAttribute(SERVICE_UP, Boolean.TRUE);
+        }
     }
 
     /**
      * De-register our {@link DockerLocation} and its children.
      */
     public void stop() {
-        super.stop();
+        if (started.compareAndSet(true, false)) {
+            setAttribute(SERVICE_UP, Boolean.FALSE);
 
-        deleteLocation();
-    }
+            super.stop();
 
-    @Override
-    public void deleteLocation() {
-        LocationManager mgr = getManagementContext().getLocationManager();
-        if (docker != null && mgr.isManaged(docker)) {
-            mgr.unmanage(docker);
-            setAttribute(DYNAMIC_LOCATION,  null);
+            deleteLocation();
         }
     }
 

@@ -15,7 +15,9 @@
  */
 package brooklyn.location.docker;
 
-import java.net.InetAddress;
+import io.cloudsoft.networking.subnet.PortForwarder;
+import io.cloudsoft.networking.subnet.SubnetTier;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -23,31 +25,40 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.base.Optional;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-
 import brooklyn.entity.Entity;
+import brooklyn.entity.basic.AbstractEntity;
+import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.container.docker.DockerAttributes;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
+import brooklyn.entity.database.DatastoreMixins;
 import brooklyn.entity.group.DynamicCluster;
-import brooklyn.location.MachineDetails;
-import brooklyn.location.MachineLocation;
+import brooklyn.entity.java.UsesJmx;
+import brooklyn.entity.webapp.WebAppServiceConstants;
+import brooklyn.entity.webapp.jboss.JBoss7Server;
+import brooklyn.event.AttributeSensor;
+import brooklyn.event.Sensor;
+import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
+import brooklyn.event.basic.Sensors;
 import brooklyn.location.MachineProvisioningLocation;
 import brooklyn.location.NoMachinesAvailableException;
-import brooklyn.location.OsDetails;
 import brooklyn.location.basic.AbstractLocation;
 import brooklyn.location.basic.SshMachineLocation;
-import brooklyn.location.cloud.AvailabilityZoneExtension;
 import brooklyn.location.dynamic.DynamicLocation;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.flags.SetFromFlag;
+import brooklyn.util.net.Cidr;
+import brooklyn.util.text.Strings;
 
-public class DockerHostLocation extends AbstractLocation implements MachineLocation,
+import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+
+public class DockerHostLocation extends AbstractLocation implements
         MachineProvisioningLocation<DockerContainerLocation>, DockerVirtualLocation,
         DynamicLocation<DockerHost, DockerHostLocation> {
 
@@ -58,6 +69,9 @@ public class DockerHostLocation extends AbstractLocation implements MachineLocat
 
     @SetFromFlag("jcloudsLocation")
     private JcloudsLocation jcloudsLocation;
+
+    @SetFromFlag("portForwarder")
+    private PortForwarder portForwarder;
 
     @SetFromFlag("owner")
     private DockerHost dockerHost;
@@ -74,12 +88,6 @@ public class DockerHostLocation extends AbstractLocation implements MachineLocat
         }
     }
 
-    @Override
-    public void init() {
-        super.init();
-        addExtension(AvailabilityZoneExtension.class, new DockerContainerExtension(getManagementContext(), this));
-    }
-
     public DockerContainerLocation obtain() throws NoMachinesAvailableException {
         return obtain(Maps.<String,Object>newLinkedHashMap());
     }
@@ -88,25 +96,74 @@ public class DockerHostLocation extends AbstractLocation implements MachineLocat
     public DockerContainerLocation obtain(Map<?,?> flags) throws NoMachinesAvailableException {
         Integer maxSize = dockerHost.getConfig(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
         Integer currentSize = dockerHost.getAttribute(DockerAttributes.DOCKER_CONTAINER_COUNT);
+        Entity entity = (Entity) flags.get("entity");
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Docker host {}: {} containers, max {}", new Object[] { dockerHost.getDockerHostName(),
-                    currentSize, maxSize });
+            LOG.debug("Docker host {}: {} containers, max {}", new Object[] { dockerHost.getDockerHostName(), currentSize, maxSize });
         }
 
-        // also try to satisfy the affinty rules etc.
         if (currentSize != null && currentSize >= maxSize) {
             throw new NoMachinesAvailableException(String.format("Limit of %d containers reached at %s", maxSize, dockerHost.getDockerHostName()));
         }
 
+        // Configure the entity
+        LOG.info("Configuring entity {} via subnet {}", entity, dockerHost.getSubnetTier());
+        ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.PORT_FORWARDING_MANAGER, dockerHost.getSubnetTier().getAttribute(SubnetTier.SUBNET_SERVICE_PORT_FORWARDS));
+        ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.PORT_FORWARDER, portForwarder);
+        ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL);
+        configureEnrichers((AbstractEntity) entity);
+
+        // Add the entity Dockerfile if configured
+        String dockerfile = entity.getConfig(DockerAttributes.DOCKERFILE_URL);
+        String imageId = entity.getConfig(DockerAttributes.DOCKER_IMAGE_ID);
+        if (Strings.isNonBlank(dockerfile)) {
+            if (imageId != null) {
+                LOG.warn("Ignoring container imageId {} as dockerfile URL is set: {}", imageId, dockerfile);
+            }
+            String entityType = DockerAttributes.DOCKERFILE_INVALID_CHARACTERS.trimAndCollapseFrom(entity.getClass().getName(), '-');
+            imageId = dockerHost.createSshableImage(dockerfile, entityType);
+        } else if (Strings.isBlank(imageId)) {
+            imageId = getOwner().getAttribute(DockerHost.DOCKER_IMAGE_ID);
+        }
+
+        // Look up hardware ID
+        String hardwareId = entity.getConfig(DockerAttributes.DOCKER_HARDWARE_ID);
+        if (Strings.isEmpty(hardwareId)) {
+            hardwareId = getOwner().getConfig(DockerAttributes.DOCKER_HARDWARE_ID);
+        }
+
         // increase size of Docker container cluster
+        LOG.info("Increase size of Docker container cluster at {}", machine);
+        Map<Object, Object> containerFlags = MutableMap.builder()
+                .putAll(flags)
+                .put("entity", entity)
+                .putIfNotNull("imageId", imageId)
+                .putIfNotNull("hardwareId", hardwareId)
+                .build();
         DynamicCluster cluster = dockerHost.getDockerContainerCluster();
-        //Optional<Entity> added = cluster.growByOne(machine, flags);
-        Optional<Entity> added = cluster.addInSingleLocation(jcloudsLocation, flags);
+        Optional<Entity> added = cluster.addInSingleLocation(machine, containerFlags);
         if (!added.isPresent()) {
             throw new NoMachinesAvailableException(String.format("Failed to create containers. Limit reached at %s", dockerHost.getDockerHostName()));
         }
+
         DockerContainer dockerContainer = (DockerContainer) added.get();
         return dockerContainer.getDynamicLocation();
+    }
+
+    private void configureEnrichers(AbstractEntity entity) {
+        for (Sensor<?> sensor : entity.getEntityType().getSensors()) {
+            if (ImmutableSet.<String>of(WebAppServiceConstants.ROOT_URL.getName(), DatastoreMixins.DATASTORE_URL.getName()).contains(sensor.getName())) {
+                AttributeSensor<String> original = Sensors.newStringSensor(sensor.getName());
+                AttributeSensor<String> target = Sensors.newSensorWithPrefix("mapped.", original);
+                entity.addEnricher(dockerHost.getSubnetTier().uriTransformingEnricher(original, target));
+            } if (ImmutableSet.<String>of(Attributes.HTTP_PORT.getName(), Attributes.HTTPS_PORT.getName(), Attributes.AMQP_PORT.getName(),
+                    Attributes.DNS_PORT.getName(), Attributes.SSH_PORT.getName(), Attributes.SMTP_PORT.getName(), UsesJmx.JMX_PORT.getName(),
+                    UsesJmx.RMI_REGISTRY_PORT.getName(), JBoss7Server.MANAGEMENT_HTTP_PORT.getName(), JBoss7Server.MANAGEMENT_HTTPS_PORT.getName(),
+                    JBoss7Server.MANAGEMENT_NATIVE_PORT.getName()).contains(sensor.getName())) {
+                AttributeSensor<Integer> original = Sensors.newIntegerSensor(sensor.getName());
+                AttributeSensor<String> target = Sensors.newStringSensor("mapped." + sensor.getName(), sensor.getDescription() + " (Docker mapping)");
+                entity.addEnricher(dockerHost.getSubnetTier().hostAndPortTransformingEnricher(original, target));
+            }
+        }
     }
 
     @Override
@@ -126,27 +183,20 @@ public class DockerHostLocation extends AbstractLocation implements MachineLocat
     }
 
     @Override
-    public InetAddress getAddress() {
-        return machine.getAddress();
-    }
-
-    @Override
-    public OsDetails getOsDetails() {
-        return machine.getOsDetails();
-    }
-
-    @Override
-    public MachineDetails getMachineDetails() {
-        return null;
-    }
-
-    @Override
     public DockerHost getOwner() {
         return dockerHost;
     }
 
     public SshMachineLocation getMachine() {
         return machine;
+    }
+
+    public JcloudsLocation getJcloudsLocation() {
+        return jcloudsLocation;
+    }
+
+    public PortForwarder getPortForwarder() {
+        return portForwarder;
     }
 
     public int getCurrentSize() {
@@ -166,6 +216,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineLocat
     public ToStringHelper string() {
         return super.string()
                 .add("machine", machine)
+                .add("jcloudsLocation", jcloudsLocation)
                 .add("dockerHost", dockerHost);
     }
 

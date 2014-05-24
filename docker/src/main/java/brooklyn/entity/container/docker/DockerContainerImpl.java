@@ -19,62 +19,96 @@ import static java.lang.String.format;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.entity.basic.SoftwareProcessImpl;
+import brooklyn.config.ConfigKey;
+import brooklyn.entity.Entity;
+import brooklyn.entity.basic.BasicStartableImpl;
+import brooklyn.entity.basic.Lifecycle;
+import brooklyn.entity.basic.SoftwareProcess;
+import brooklyn.event.feed.function.FunctionFeed;
+import brooklyn.event.feed.function.FunctionPollConfig;
 import brooklyn.location.Location;
 import brooklyn.location.LocationSpec;
+import brooklyn.location.NoMachinesAvailableException;
+import brooklyn.location.PortRange;
+import brooklyn.location.basic.LocationConfigKeys;
+import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.dynamic.DynamicLocation;
+import brooklyn.location.jclouds.JcloudsLocation;
+import brooklyn.location.jclouds.JcloudsLocationConfig;
+import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.management.LocationManager;
+import brooklyn.management.ManagementContext;
 import brooklyn.util.collections.MutableMap;
+import brooklyn.util.collections.MutableSet;
+import brooklyn.util.exceptions.Exceptions;
+import brooklyn.util.internal.ssh.SshTool;
+import brooklyn.util.ssh.BashCommands;
+import brooklyn.util.time.Duration;
 
-public class DockerContainerImpl extends SoftwareProcessImpl implements DockerContainer {
+import com.google.common.collect.ImmutableList;
 
-    private static final Logger log = LoggerFactory.getLogger(DockerContainerImpl.class);
-    private static final AtomicInteger counter = new AtomicInteger(0);
-    private DockerContainerLocation container;
+/**
+ * A single Docker container.
+ */
+public class DockerContainerImpl extends BasicStartableImpl implements DockerContainer {
+
+    private static final Logger LOG = LoggerFactory.getLogger(DockerContainerImpl.class);
+    private static final AtomicInteger COUNTER = new AtomicInteger(0);
+
+    private transient FunctionFeed sensorFeed;
 
     @Override
     public void init() {
-        log.info("Starting Docker container id {}", getId());
+        LOG.info("Starting Docker container id {}", getId());
 
-        String dockerContainerName = format(getConfig(DockerContainer.DOCKER_CONTAINER_NAME_FORMAT), getId(),
-                counter.incrementAndGet());
+        String dockerContainerName = format(getConfig(DockerContainer.DOCKER_CONTAINER_NAME_FORMAT), getId(), COUNTER.incrementAndGet());
         setDisplayName(dockerContainerName);
         setAttribute(DOCKER_CONTAINER_NAME, dockerContainerName);
+        setRunningEntity(getConfig(ENTITY));
     }
 
-    @Override
-    public void doStart(Collection<? extends Location> locations) {
-        super.doStart(locations);
-
-        Map<String, ?> flags = MutableMap.<String, Object>builder()
-                .putAll(getConfig(LOCATION_FLAGS))
+    protected void connectSensors() {
+        sensorFeed = FunctionFeed.builder()
+                .entity(this)
+                .period(Duration.TEN_SECONDS)
+                .poll(new FunctionPollConfig<Boolean, Boolean>(SERVICE_UP)
+                        .callable(new Callable<Boolean>() {
+                                @Override
+                                public Boolean call() throws Exception {
+                                    return getDynamicLocation().isSshable();
+                                }
+                        }))
+                .poll(new FunctionPollConfig<Boolean, Boolean>(CONTAINER_RUNNING)
+                        .callable(new Callable<Boolean>() {
+                                @Override
+                                public Boolean call() throws Exception {
+                                    String running = getDockerHost().runDockerCommand("inspect -f {{.State.Running}} " + getContainerId());
+                                    return Boolean.parseBoolean(running);
+                                }
+                        }))
                 .build();
-        container = createLocation(flags);
-        log.info("New Docker container location {} created", container);
+    }
+
+    public void disconnectSensors() {
+        if (sensorFeed !=  null) sensorFeed.stop();
     }
 
     @Override
-    public void doStop() {
-        deleteLocation();
-
-        super.doStop();
+    public Entity getRunningEntity() {
+        return getAttribute(ENTITY);
     }
 
-    @Override
-    public void deleteLocation() {
-        LocationManager mgr = getManagementContext().getLocationManager();
-        DockerContainerLocation location = getDynamicLocation();
-        if (location != null && mgr.isManaged(location)) {
-            mgr.unmanage(location);
-            setAttribute(DYNAMIC_LOCATION,  null);
-        }
+    public void setRunningEntity(Entity entity) {
+        setAttribute(ENTITY, entity);
     }
 
     @Override
@@ -83,43 +117,18 @@ public class DockerContainerImpl extends SoftwareProcessImpl implements DockerCo
     }
 
     @Override
+    public String getContainerId() {
+        return getAttribute(CONTAINER_ID);
+    }
+
+    @Override
+    public SshMachineLocation getMachine() {
+        return getAttribute(SSH_MACHINE_LOCATION);
+    }
+
+    @Override
     public DockerHost getDockerHost() {
         return getConfig(DOCKER_HOST);
-    }
-
-    @Override
-    protected void connectSensors() {
-        super.connectSensors();
-        connectServiceUpIsRunning();
-    }
-
-    @Override
-    public void disconnectSensors() {
-        disconnectServiceUpIsRunning();
-        super.disconnectSensors();
-    }
-
-    @Override
-    public void shutDown() {
-        String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
-        log.info("Shut-Down {}", dockerContainerName);
-    }
-
-    @Override
-    public void pause() {
-        String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
-        log.info("Pausing {}", dockerContainerName);
-    }
-
-    @Override
-    public void resume() {
-        String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
-        log.info("Resume {}", dockerContainerName);
-    }
-
-    @Override
-    public Class getDriverInterface() {
-        return DockerContainerDriver.class;
     }
 
     @Override
@@ -132,35 +141,138 @@ public class DockerContainerImpl extends SoftwareProcessImpl implements DockerCo
         return (DockerContainerLocation) getAttribute(DYNAMIC_LOCATION);
     }
 
-    /**
-     * Create a new {@link brooklyn.location.jclouds.JcloudsLocation} wrapping the machine we are starting in.
-     */
     @Override
-    public DockerContainerLocation createLocation(Map flags) {
-        DockerHost dockerHost = getConfig(DOCKER_HOST);
-        DockerHostLocation host = dockerHost.getDynamicLocation();
-        String locationName = host.getId() + "-" + getId();
-        LocationSpec<DockerContainerLocation> spec = LocationSpec.create(DockerContainerLocation.class)
-                .parent(host)
-                .configure(flags)
-                .configure(DynamicLocation.OWNER, this)
-                .configure("machine", host.getMachine()) // The underlying SshMachineLocation
-                .configure("address", host.getAddress()) // FIXME
-                .configure("port", getAttribute(DockerHost.DOCKER_PORT))
-                .configure(host.getMachine().getAllConfig(true))
-                .displayName(getDockerContainerName())
-                .id(locationName);
-        DockerContainerLocation location = getManagementContext().getLocationManager().createLocation(spec);
-        setAttribute(DYNAMIC_LOCATION, location);
-        setAttribute(LOCATION_NAME, location.getId());
-
-        return location;
+    public boolean isLocationAvailable() {
+        return getDynamicLocation() != null;
     }
 
     @Override
-    public boolean isLocationAvailable() {
-        // TODO implementation
-        return container != null;
+    public void shutDown() {
+        String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
+        LOG.info("Shut-Down {}", dockerContainerName);
+        getDockerHost().runDockerCommand("kill " + getContainerId());
+    }
+
+    @Override
+    public void pause() {
+        String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
+        LOG.info("Pausing {}", dockerContainerName);
+        getDockerHost().runDockerCommand("stop " + getContainerId());
+    }
+
+    @Override
+    public void resume() {
+        String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
+        LOG.info("Resume {}", dockerContainerName);
+        getDockerHost().runDockerCommand("start" + getContainerId());
+    }
+
+    /**
+     * Create a new {@link DockerContainerLocation} wrapping a machine from the host's {@link JcloudsLocation}.
+     */
+    @Override
+    public DockerContainerLocation createLocation(Map flags) {
+        DockerHost dockerHost = getDockerHost();
+        DockerHostLocation host = dockerHost.getDynamicLocation();
+        String locationName = host.getId() + "-" + getId();
+
+        try {
+            // Create a new container using jclouds Docker driver
+            JcloudsSshMachineLocation container = host.getJcloudsLocation().obtain(flags);
+            setAttribute(CONTAINER_ID, container.getNode().getId());
+
+            // Create our wrapper location around the container
+            LocationSpec<DockerContainerLocation> spec = LocationSpec.create(DockerContainerLocation.class)
+                    .parent(host)
+                    .configure(flags)
+                    .configure(DynamicLocation.OWNER, this)
+                    .configure("machine", container) // the underlying JcloudsLocation
+                    .configure(container.getAllConfig(true))
+                    .configure(SshTool.PROP_PASSWORD, "password") // TODO configure this externally
+                    .displayName(getDockerContainerName())
+                    .id(locationName);
+            DockerContainerLocation location = getManagementContext().getLocationManager().createLocation(spec);
+
+            setAttribute(DYNAMIC_LOCATION, location);
+            setAttribute(LOCATION_NAME, location.getId());
+
+            LOG.info("New Docker container location {} created", location);
+            return location;
+        } catch (NoMachinesAvailableException e) {
+            throw Exceptions.propagate(e);
+        }
+    }
+
+    @Override
+    public void deleteLocation() {
+        DockerContainerLocation location = getDynamicLocation();
+
+        if (location != null) {
+            LocationManager mgr = getManagementContext().getLocationManager();
+            if (mgr.isManaged(location)) {
+                mgr.unmanage(location);
+            }
+        }
+
+        setAttribute(DYNAMIC_LOCATION, null);
+        setAttribute(LOCATION_NAME, null);
+    }
+
+    /** @return the ports required for a specific entity */
+    protected Collection<Integer> getRequiredOpenPorts(Entity entity) {
+        Set<Integer> ports = MutableSet.of(22);
+        for (ConfigKey<?> k: entity.getEntityType().getConfigKeys()) {
+            if (PortRange.class.isAssignableFrom(k.getType())) {
+                PortRange p = (PortRange) entity.getConfig(k);
+                if (p != null && !p.isEmpty()) ports.add(p.iterator().next());
+            }
+        }
+        LOG.debug("getRequiredOpenPorts detected default {} for {}", ports, entity);
+        return ports;
+    }
+
+    @Override
+    public void start(Collection<? extends Location> locations) {
+        setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.STARTING);
+        setAttribute(SoftwareProcess.SERVICE_UP, Boolean.FALSE);
+
+        Map<String, ?> flags = MutableMap.<String, Object>builder()
+                .putAll(getConfig(LOCATION_FLAGS))
+                .put(JcloudsLocationConfig.IMAGE_ID.getName(), getConfig(DOCKER_IMAGE_ID))
+                .put(JcloudsLocationConfig.HARDWARE_ID.getName(), getConfig(DOCKER_HARDWARE_ID))
+                .put(LocationConfigKeys.USER.getName(), "root")
+                .put(LocationConfigKeys.PASSWORD.getName(), "password")
+                .put(LocationConfigKeys.PRIVATE_KEY_DATA.getName(), null)
+                .put(LocationConfigKeys.PRIVATE_KEY_FILE.getName(), null)
+//                .put(JcloudsLocationConfig.DONT_CREATE_USER.getName(), true)
+                .put(JcloudsLocationConfig.INBOUND_PORTS.getName(), getRequiredOpenPorts(getRunningEntity()))
+                .put(JcloudsLocationConfig.STRING_TAGS.getName(), ImmutableList.of(getRunningEntity().getId() + "-privateTarget"))
+                .build();
+        createLocation(flags);
+
+        setAttribute(SSH_MACHINE_LOCATION, getDynamicLocation().getMachine());
+
+        connectSensors();
+
+        super.start(locations);
+
+        setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.RUNNING);
+    }
+
+    @Override
+    public void stop() {
+        setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.STOPPING);
+
+        super.stop();
+
+        disconnectSensors();
+
+        setAttribute(SSH_MACHINE_LOCATION, null);
+
+        deleteLocation();
+
+        setAttribute(SoftwareProcess.SERVICE_UP, Boolean.FALSE);
+        setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.STOPPED);
     }
 
 }

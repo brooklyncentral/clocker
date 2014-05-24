@@ -16,57 +16,125 @@
 package brooklyn.location.docker;
 
 import java.io.IOException;
-import java.util.Map;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.collect.Maps;
-
 import brooklyn.entity.container.docker.DockerContainer;
-import brooklyn.entity.container.docker.DockerHost;
+import brooklyn.entity.container.docker.DockerInfrastructure;
+import brooklyn.location.Location;
+import brooklyn.location.PortRange;
+import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.dynamic.DynamicLocation;
-import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.util.flags.SetFromFlag;
+import brooklyn.util.net.Protocol;
+import brooklyn.util.ssh.IptablesCommands;
+import brooklyn.util.ssh.IptablesCommands.Chain;
+import brooklyn.util.ssh.IptablesCommands.Policy;
 
-public class DockerContainerLocation extends JcloudsSshMachineLocation implements DynamicLocation<DockerContainer, DockerContainerLocation> {
+import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
+
+/**
+ * A {@link Location} that wraps a Docker container.
+ * <p>
+ * The underlying container is presented as an {@link SshMachineLocation} obtained using the jclouds Docker driver.
+ */
+public class DockerContainerLocation extends SshMachineLocation implements DynamicLocation<DockerContainer, DockerContainerLocation> {
 
     private static final Logger LOG = LoggerFactory.getLogger(DockerContainerLocation.class);
 
     @SetFromFlag("machine")
-    private JcloudsSshMachineLocation machine;
+    private SshMachineLocation machine;
 
     @SetFromFlag("owner")
     private DockerContainer dockerContainer;
 
-    /*
-    public DockerContainerLocation() {
-        this(Maps.newLinkedHashMap());
+    @Override
+    public void init() {
+        super.init();
     }
-
-    public DockerContainerLocation(Map properties) {
-        super(properties);
-
-        if (isLegacyConstruction()) {
-            init();
-        }
-    }
-    */
 
     @Override
     public DockerContainer getOwner() {
         return dockerContainer;
     }
 
-    public DockerHost getDockerHost() {
-        return dockerContainer.getDockerHost();
+    public SshMachineLocation getMachine() {
+        return machine;
+    }
+
+    /*
+     * Delegate port operations to machine. Note that firewall configuration is
+     * fixed after initial provisioning, so updates use iptables to open ports.
+     */
+
+    private void addIptablesRule(Integer port) {
+        if (getOwner().getConfig(DockerInfrastructure.OPEN_IPTABLES)) {
+            SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Using iptables to add access for TCP/{} to {}", port, host);
+            }
+            List<String> commands = ImmutableList.of(
+                    IptablesCommands.insertIptablesRule(Chain.INPUT, Protocol.TCP, port, Policy.ACCEPT),
+                    IptablesCommands.cleanUpIptablesRules(),
+                    IptablesCommands.saveIptablesRules());
+            int result = host.execCommands(String.format("Open iptables TCP/%d", port), commands);
+            if (result != 0) {
+                String msg = String.format("Error running iptables update for TCP/%d on %s", port, host);
+                LOG.error(msg);
+                throw new RuntimeException(msg);
+            }
+        }
+    }
+
+    public int getMappedPort(int portNumber) {
+        String portMap = getOwner().getDockerHost()
+                .runDockerCommand("inspect -f {{.NetworkSettings.Ports}} " + getOwner().getContainerId());
+        int i = portMap.indexOf(portNumber + "/tcp:[");
+        if (i == -1) throw new IllegalStateException();
+        int j = portMap.substring(i).indexOf("HostPort:");
+        int k = portMap.substring(i + j).indexOf("]]");
+        String hostPort = portMap.substring(i + j + "HostPort:".length(), i + j + k);
+        return Integer.valueOf(hostPort);
+    }
+
+    @Override
+    public boolean obtainSpecificPort(int portNumber) {
+        SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
+        boolean result = host.obtainSpecificPort(portNumber);
+        if (result) {
+            int targetPort = getMappedPort(portNumber);
+            getOwner().getDockerHost().getPortForwarder()
+                    .openPortForwarding(machine, portNumber, Optional.of(targetPort), Protocol.TCP, null);
+            addIptablesRule(targetPort);
+        }
+        return result;
+    }
+
+    @Override
+    public int obtainPort(PortRange range) {
+        SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
+        int portNumber = host.obtainPort(range);
+        int targetPort = getMappedPort(portNumber);
+        getOwner().getDockerHost().getPortForwarder()
+                .openPortForwarding(machine, portNumber, Optional.of(targetPort), Protocol.TCP, null);
+        addIptablesRule(targetPort);
+        return portNumber;
+    }
+
+    @Override
+    public void releasePort(int portNumber) {
+        SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
+        host.releasePort(portNumber);
     }
 
     @Override
     public void close() throws IOException {
-        // TODO close down resources used by this container only
-        LOG.info("Close called on Docker container location (ignored): {}", this);
+        machine.close();
+        LOG.info("Close called on Docker container location: {}", this);
     }
 
     @Override

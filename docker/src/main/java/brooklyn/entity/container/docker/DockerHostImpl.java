@@ -15,10 +15,12 @@
  */
 package brooklyn.entity.container.docker;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static java.lang.String.format;
+import io.cloudsoft.networking.portforwarding.DockerPortForwarder;
+import io.cloudsoft.networking.subnet.PortForwarder;
+import io.cloudsoft.networking.subnet.SubnetTier;
+import io.cloudsoft.networking.subnet.SubnetTierImpl;
 
-import java.util.Collection;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,12 +29,8 @@ import org.jclouds.compute.domain.OsFamily;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-
 import brooklyn.enricher.Enrichers;
 import brooklyn.entity.Entity;
-import brooklyn.entity.annotation.EffectorParam;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.SoftwareProcessImpl;
 import brooklyn.entity.group.Cluster;
@@ -41,41 +39,48 @@ import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.location.Location;
 import brooklyn.location.LocationDefinition;
 import brooklyn.location.MachineProvisioningLocation;
+import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.basic.BasicLocationDefinition;
 import brooklyn.location.basic.Machines;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.DockerResolver;
+import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.location.jclouds.templates.PortableTemplateBuilder;
 import brooklyn.management.LocationManager;
+import brooklyn.management.ManagementContext;
 import brooklyn.policy.PolicySpec;
 import brooklyn.policy.ha.ServiceFailureDetector;
 import brooklyn.policy.ha.ServiceReplacer;
 import brooklyn.policy.ha.ServiceRestarter;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.guava.Maybe;
+import brooklyn.util.net.Cidr;
+import brooklyn.util.text.Strings;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 /**
- * @author Andrea Turli
+ * The host running the Docker service.
  */
 public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
 
-    private static final Logger log = LoggerFactory.getLogger(DockerHostImpl.class);
-    private static final AtomicInteger counter = new AtomicInteger(0);
+    private static final Logger LOG = LoggerFactory.getLogger(DockerHostImpl.class);
+    private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
     private DynamicCluster containers;
-    private DockerHostLocation host;
-
-    public DockerHostImpl() {
-    }
+    private JcloudsLocation jcloudsLocation;
+    private DockerPortForwarder portForwarder;
+    private SubnetTier subnetTier;
 
     @Override
     public void init() {
-        log.info("Starting Docker host id {}", getId());
+        LOG.info("Starting Docker host id {}", getId());
 
-        String dockerHostName = format(getConfig(DockerHost.HOST_NAME_FORMAT), getId(), counter.incrementAndGet());
+        String dockerHostName = String.format(getConfig(DockerHost.HOST_NAME_FORMAT), getId(), COUNTER.incrementAndGet());
         setDisplayName(dockerHostName);
         setAttribute(HOST_NAME, dockerHostName);
 
@@ -96,6 +101,7 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
             containers.addPolicy(PolicySpec.create(ServiceReplacer.class)
                     .configure(ServiceReplacer.FAILURE_SENSOR_TO_MONITOR, ServiceRestarter.ENTITY_RESTART_FAILED));
         }
+
         if (Entities.isManaged(this)) Entities.manage(containers);
 
         containers.addEnricher(Enrichers.builder()
@@ -114,15 +120,6 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
                 .from(containers)
                 .build());
     }
-    
-    @Override
-    public Class<?> getDriverInterface() {
-        return DockerHostDriver.class;
-    }
-
-    public int getPort() {
-        return checkNotNull(getAttribute(DOCKER_PORT), "%s must not be null", DOCKER_PORT);
-    }
 
     @Override
     protected void connectSensors() {
@@ -137,13 +134,26 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     }
 
     @Override
-    public String getShortName() {
-        return "Docker Host";
+    protected Map<String, Object> obtainProvisioningFlags(MachineProvisioningLocation location) {
+        Map flags = super.obtainProvisioningFlags(location);
+        flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), new PortableTemplateBuilder()
+                .osFamily(OsFamily.UBUNTU)
+                .osVersionMatches("12.04")
+                .os64Bit(true)
+                .minRam(2048));
+        String securityGroup = getConfig(DockerInfrastructure.SECURITY_GROUP);
+        if (securityGroup != null) {
+            flags.put("securityGroups", securityGroup);
+        }
+        return flags;
     }
 
     @Override
-    public Integer resize(@EffectorParam(name = "desiredSize", description = "The new size of the cluster") Integer desiredSize) {
+    public Integer resize(Integer desiredSize) {
         Integer maxSize = getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Resize Docker host to {} (max {}) at {}", new Object[] { desiredSize, maxSize, getLocations() });
+        }
         if (desiredSize > maxSize) {
             return getDockerContainerCluster().resize(maxSize);
         } else {
@@ -152,8 +162,28 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     }
 
     @Override
+    public String getShortName() {
+        return "Docker Host";
+    }
+
+    @Override
     public Integer getCurrentSize() {
         return getDockerContainerCluster().getCurrentSize();
+    }
+
+    @Override
+    public Class<?> getDriverInterface() {
+        return DockerHostDriver.class;
+    }
+
+    @Override
+    public DockerHostDriver getDriver() {
+        return (DockerHostDriver) super.getDriver();
+    }
+
+    @Override
+    public Integer getDockerPort() {
+        return getAttribute(DOCKER_PORT);
     }
 
     @Override
@@ -162,24 +192,8 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     }
 
     @Override
-    public DynamicCluster getDockerContainerCluster() {
-        return containers;
-    }
-
-    @Override
     public List<Entity> getDockerContainerList() {
         return ImmutableList.copyOf(containers.getMembers());
-    }
-
-    @Override
-    protected Map<String, Object> obtainProvisioningFlags(MachineProvisioningLocation location) {
-        Map flags = super.obtainProvisioningFlags(location);
-        flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), new PortableTemplateBuilder()
-                .osFamily(OsFamily.UBUNTU)
-                .osVersionMatches("12.04")
-                .os64Bit(true)
-                .minRam(2048));
-        return flags;
     }
 
     @Override
@@ -187,69 +201,142 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
         return getConfig(DOCKER_INFRASTRUCTURE);
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public String createSshableImage(String dockerFile, String name) {
+       String imageId = getDriver().buildImage(dockerFile, name);
+       LOG.info("Successfully created image {} (brooklyn/{})", imageId, name);
+       return imageId;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public String runDockerCommand(String command) {
+       String stdout = getDriver().dockerCommand(command);
+       LOG.info("Successfully executed Docker {}", Strings.getFirstWord(command));
+       return stdout;
+    }
+
     @Override
     public DockerHostLocation getDynamicLocation() {
         return (DockerHostLocation) getAttribute(DYNAMIC_LOCATION);
     }
 
+    @Override
+    public boolean isLocationAvailable() {
+        return getDynamicLocation() != null;
+    }
+
+    @Override
+    public DynamicCluster getDockerContainerCluster() { return containers; }
+
+    @Override
+    public JcloudsLocation getJcloudsLocation() { return jcloudsLocation; }
+
+    @Override
+    public PortForwarder getPortForwarder() { return portForwarder; }
+
+    @Override
+    public SubnetTier getSubnetTier() { return subnetTier; }
+
     /**
-     * Create a new {@link brooklyn.location.docker.DockerHostLocation} wrapping the machine we are starting in.
+     * Create a new {@link DockerHostLocation} wrapping the machine we are starting in.
      */
     @Override
     public DockerHostLocation createLocation(Map<String, ?> flags) {
         DockerInfrastructure infrastructure = getConfig(DOCKER_INFRASTRUCTURE);
         DockerLocation docker = infrastructure.getDynamicLocation();
         String locationName = docker.getId() + "-" + getDockerHostName();
-        String locationSpec = format(DockerResolver.DOCKER_HOST_MACHINE_SPEC, infrastructure.getId(),
-                getId()) + format(":(name=\"%s\")", locationName);
+
+        String locationSpec = String.format(DockerResolver.DOCKER_HOST_MACHINE_SPEC, infrastructure.getId(), getId()) + String.format(":(name=\"%s\")", locationName);
         setAttribute(LOCATION_SPEC, locationSpec);
-        LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
+
+        final LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
         Location location = getManagementContext().getLocationRegistry().resolve(definition);
-        setAttribute(DYNAMIC_LOCATION, location);
-        setAttribute(LOCATION_NAME, location.getId());
         if (getConfig(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS)) {
             getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
         }
+        getManagementContext().getLocationManager().manage(location);
+
+        getManagementContext().addPropertiesReloadListener(new ManagementContext.PropertiesReloadListener() {
+            @Override
+            public void reloaded() {
+                Location resolved = getManagementContext().getLocationRegistry().resolve(definition);
+                if (getConfig(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS)) {
+                    getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
+                }
+                getManagementContext().getLocationManager().manage(resolved);
+            }
+        });
+
+        setAttribute(DYNAMIC_LOCATION, location);
+        setAttribute(LOCATION_NAME, location.getId());
+
+        LOG.info("New Docker host location {} created", location);
         return (DockerHostLocation) location;
     }
 
     @Override
-    public boolean isLocationAvailable() {
-        // TODO implementation
-        return host != null;
+    public void deleteLocation() {
+        DockerHostLocation location = getDynamicLocation();
+
+        if (location != null) {
+            LocationManager mgr = getManagementContext().getLocationManager();
+            if (mgr.isManaged(location)) {
+                mgr.unmanage(location);
+            }
+            if (getConfig(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS)) {
+                getManagementContext().getLocationRegistry().removeDefinedLocation(location.getId());
+            }
+        }
+
+        setAttribute(DYNAMIC_LOCATION, null);
+        setAttribute(LOCATION_NAME, null);
     }
 
     @Override
-    public void doStart(Collection<? extends Location> locations) {
-        super.doStart(locations);
-
+    protected void preStart() {
         Maybe<SshMachineLocation> found = Machines.findUniqueSshMachineLocation(getLocations());
+        String dockerLocationSpec = String.format("jclouds:docker:http://%s:%s",
+                found.get().getSshHostAndPort().getHostText(), getDockerPort());
+        jcloudsLocation = (JcloudsLocation) getManagementContext().getLocationRegistry()
+                .resolve(dockerLocationSpec, MutableMap.of("identity", "docker", "credential", "docker"));
+
+        portForwarder = new DockerPortForwarder(new PortForwardManager());
+        portForwarder.init(URI.create(jcloudsLocation.getEndpoint()));
+
+        subnetTier = addChild(EntitySpec.create(SubnetTier.class)
+                .impl(SubnetTierImpl.class)
+                .configure(SubnetTier.PORT_FORWARDER, portForwarder)
+                .configure(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL));
+        subnetTier.start(ImmutableList.of(found.get()));
+
         Map<String, ?> flags = MutableMap.<String, Object>builder()
                 .putAll(getConfig(LOCATION_FLAGS))
                 .put("machine", found.get())
-                .put("jcloudsLocation", getManagementContext().getLocationRegistry().resolve(
-                        format("jclouds:docker:http://%s:%s",
-                                found.get().getSshHostAndPort().getHostText(),
-                                this.getPort())))
+                .put("jcloudsLocation", jcloudsLocation)
+                .put("portForwarder", portForwarder)
                 .build();
-        host = createLocation(flags);
-        log.info("New Docker host location {} created", host);
+        createLocation(flags);
+    }
+
+    @Override
+    public void postStart() {
+        String imageId = getConfig(DOCKER_IMAGE_ID);
+
+        if (Strings.isBlank(imageId)) {
+            String dockerfileUrl = getConfig(DockerInfrastructure.DOCKERFILE_URL);
+            imageId = createSshableImage(dockerfileUrl, "default");
+        }
+
+        setAttribute(DOCKER_IMAGE_ID, imageId);
     }
 
     @Override
     public void doStop() {
-        deleteLocation();
-
         super.doStop();
+
+        deleteLocation();
     }
 
-    @Override
-    public void deleteLocation() {
-        LocationManager mgr = getManagementContext().getLocationManager();
-        DockerHostLocation host = getDynamicLocation();
-        if (host != null && mgr.isManaged(host)) {
-            mgr.unmanage(host);
-            setAttribute(DYNAMIC_LOCATION,  null);
-        }
-    }
 }

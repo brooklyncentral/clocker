@@ -34,15 +34,15 @@ import io.airlift.command.Option;
  * It inherits the standard Brooklyn CLI options from {@link Main},
  * plus adds a few more shortcuts for favourite blueprints to the {@link LaunchCommand}.
  */
-public class SampleMain extends Main {
+public class DockerMain extends Main {
 
-    private static final Logger log = LoggerFactory.getLogger(SampleMain.class);
+    private static final Logger log = LoggerFactory.getLogger(DockerMain.class);
 
     public static final String DEFAULT_LOCATION = "localhost";
 
     public static void main(String... args) {
         log.debug("CLI invoked with args "+ Arrays.asList(args));
-        new SampleMain().execCli(args);
+        new DockerMain().execCli(args);
     }
 
     @Override
@@ -55,13 +55,9 @@ public class SampleMain extends Main {
         return LaunchCommand.class;
     }
 
-    @Command(name = "launch", description = "Starts a brooklyn server, and optionally an application. "
-            + "Use --single or --infrastructure to launch one-node or clustered variants Docker.")
+    @Command(name = "launch", description = "Starts a brooklyn server, and optionally an application. " +
+            "Use --infrastructure to launch a basic Docker cluster.")
     public static class LaunchCommand extends Main.LaunchCommand {
-
-        // add these options to the LaunchCommand as shortcuts for our favourite applications
-        @Option(name = { "--single" }, description = "Deploy a single docker server instance")
-        public boolean single;
 
         @Option(name = { "--infrastructure" }, description = "Launch a basic Docker infrastructure")
         public boolean infrastructure;
@@ -69,7 +65,6 @@ public class SampleMain extends Main {
         @Override
         public Void call() throws Exception {
             // process our CLI arguments
-            if (single) setAppToLaunch(SingleDockerHostExample.class.getCanonicalName() );
             if (infrastructure) setAppToLaunch(BasicInfrastructure.class.getCanonicalName() );
 
             // now process the standard launch arguments
@@ -79,16 +74,16 @@ public class SampleMain extends Main {
         @Override
         protected void populateCatalog(BrooklynCatalog catalog) {
             super.populateCatalog(catalog);
-            catalog.addItem(SingleDockerHostExample.class);
-            catalog.addItem(SingleWebServerExample.class);
+            catalog.addItem(BasicInfrastructure.class);
+            catalog.addItem(JBossApplication.class);
+            catalog.addItem(ActiveMQApplication.class);
+            catalog.addItem(TomcatApplication.class);
             catalog.addItem(WebClusterDatabaseExample.class);
         }
 
         @Override
         public ToStringHelper string() {
-            return super.string()
-                    .add("single", single)
-                    .add("infrastructure", infrastructure);
+            return super.string().add("infrastructure", infrastructure);
         }
     }
 }

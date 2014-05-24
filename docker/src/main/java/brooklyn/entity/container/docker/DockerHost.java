@@ -15,12 +15,17 @@
  */
 package brooklyn.entity.container.docker;
 
+import io.cloudsoft.networking.subnet.PortForwarder;
+import io.cloudsoft.networking.subnet.SubnetTier;
+
 import java.util.List;
 
-import brooklyn.catalog.Catalog;
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
+import brooklyn.entity.annotation.Effector;
+import brooklyn.entity.annotation.EffectorParam;
 import brooklyn.entity.basic.ConfigKeys;
+import brooklyn.entity.basic.MethodEffector;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.proxying.EntitySpec;
@@ -28,26 +33,29 @@ import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.entity.trait.HasShortName;
 import brooklyn.entity.trait.Resizable;
 import brooklyn.event.AttributeSensor;
+import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.BasicAttributeSensorAndConfigKey;
 import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
+import brooklyn.location.basic.PortRanges;
 import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.dynamic.LocationOwner;
+import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.util.flags.SetFromFlag;
 
 /**
- * @author Andrea Turli
+ * A single machine running Docker.
+ * <p>
+ * This entity controls the {@link DockerHostLocation} location, and creates
+ * and wraps a {@link JcloudsLocatiopn} representing the API for the Docker
+ * service on this machine.
  */
-@Catalog(name = "Docker Node", description = "Docker is an open-source engine to easily create lightweight, portable, " +
-        "self-sufficient containers from any application.",
-        iconUrl = "classpath:///docker-top-logo.png")
 @ImplementedBy(DockerHostImpl.class)
 public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, LocationOwner<DockerHostLocation, DockerHost> {
 
-    String DEFAULT_DOCKER_HOST_NAME_FORMAT = "docker-host-brooklyn-%1$s";
-
     @SetFromFlag("version")
-    ConfigKey<String> SUGGESTED_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "0.8");
+    ConfigKey<String> SUGGESTED_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "0.11");
+
     BasicAttributeSensorAndConfigKey<String> DOWNLOAD_URL = new BasicAttributeSensorAndConfigKey<String>(
             SoftwareProcess.DOWNLOAD_URL, "https://get.docker.io/builds/Linux/x86_64/docker-latest");
 
@@ -60,11 +68,10 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
 
     @SetFromFlag("dockerPort")
     PortAttributeSensorAndConfigKey DOCKER_PORT = new PortAttributeSensorAndConfigKey("docker.port",
-            "Docker port", "4243+");
+            "Docker port", PortRanges.fromString("4243+"));
 
     @SetFromFlag("containerSpec")
-    BasicAttributeSensorAndConfigKey<EntitySpec> DOCKER_CONTAINER_SPEC = new
-            BasicAttributeSensorAndConfigKey<EntitySpec>(
+    AttributeSensorAndConfigKey<EntitySpec, EntitySpec> DOCKER_CONTAINER_SPEC = ConfigKeys.newSensorAndConfigKey(
             EntitySpec.class, "docker.container.spec", "Specification to use when creating child Docker container",
             EntitySpec.create(DockerContainer.class));
 
@@ -73,12 +80,24 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
             "docker.infrastructure", "The parent Docker infrastructure");
 
     ConfigKey<String> HOST_NAME_FORMAT = ConfigKeys.newStringConfigKey("docker.host.nameFormat",
-            "Format for generating Docker host names", DEFAULT_DOCKER_HOST_NAME_FORMAT);
+            "Format for generating Docker host names", DockerAttributes.DEFAULT_DOCKER_HOST_NAME_FORMAT);
 
     ConfigKey<? extends String> EPEL_RELEASE = ConfigKeys.newStringConfigKey("docker.host.epel.release",
             "EPEL release for yum based OS", "6-8");
 
+    AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_ID = DockerAttributes.DOCKER_IMAGE_ID;
+
+    AttributeSensorAndConfigKey<String, String> DOCKER_HARDWARE_ID = DockerAttributes.DOCKER_HARDWARE_ID;
+
     AttributeSensor<String> HOST_NAME = Sensors.newStringSensor("docker.host.name", "The name of the Docker host");
+
+    Integer getDockerPort();
+
+    JcloudsLocation getJcloudsLocation();
+
+    PortForwarder getPortForwarder();
+
+    SubnetTier getSubnetTier();
 
     String getDockerHostName();
 
@@ -87,5 +106,30 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
     List<Entity> getDockerContainerList();
 
     DockerInfrastructure getInfrastructure();
+
+    MethodEffector<String> CREATE_SSHABLE_IMAGE = new MethodEffector<String>(DockerHost.class, "createSshableImage");
+    MethodEffector<String> RUN_DOCKER_COMMAND = new MethodEffector<String>(DockerHost.class, "runDockerCommand");
+
+    /**
+     * Create an SSHable image and returns the image ID.
+     *
+     * @param dockerFile URL of Dockerfile to copy
+     * @param name Repository name
+     * @see DockerHostDriver#buildImage(String, String)
+     */
+    @Effector(description="Create an SSHable image and returns the image ID")
+    String createSshableImage(
+            @EffectorParam(name="dockerFile", description="URL of Dockerfile to copy") String dockerFile,
+            @EffectorParam(name="folder", description="Repository name") String name);
+
+
+    /**
+     * Execute a Docker command and return the output.
+     *
+     * @param command Docker command
+     */
+    @Effector(description="Execute a Docker command and return the output")
+    String runDockerCommand(
+            @EffectorParam(name="command", description="Docker command") String command);
 
 }

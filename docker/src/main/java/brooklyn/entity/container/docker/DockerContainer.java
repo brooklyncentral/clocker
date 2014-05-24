@@ -16,36 +16,65 @@
 package brooklyn.entity.container.docker;
 
 import brooklyn.config.ConfigKey;
+import brooklyn.entity.Entity;
 import brooklyn.entity.annotation.Effector;
+import brooklyn.entity.basic.BasicStartable;
 import brooklyn.entity.basic.ConfigKeys;
+import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.basic.MethodEffector;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.entity.trait.HasShortName;
 import brooklyn.event.AttributeSensor;
+import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
+import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.location.dynamic.LocationOwner;
+import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.util.flags.SetFromFlag;
+import brooklyn.util.time.Duration;
 
+/**
+ * A Docker container.
+ * <p>
+ * This entity controls the {@link DockerContainerLocation} location, and creates
+ * and the {@link JcloudsSshMachineLocation} that entities communicate with when
+ * deployed to the {@link DockerInfrastructure}.
+ */
 @ImplementedBy(DockerContainerImpl.class)
-public interface DockerContainer extends SoftwareProcess, HasShortName, LocationOwner<DockerContainerLocation, DockerContainer> {
-
-    String STATUS_RUNNING = "Running";
-    String STATUS_SHUT_OFF = "Shut Off";
-    String STATUS_PAUSED = "Paused";
-
-    String DEFAULT_DOCKER_CONTAINER_NAME_FORMAT = "docker-container-brooklyn-%1$s";
+public interface DockerContainer extends BasicStartable, HasShortName, LocationOwner<DockerContainerLocation, DockerContainer> {
 
     @SetFromFlag("dockerHost")
-    ConfigKey<DockerHost> DOCKER_HOST = ConfigKeys.newConfigKey(DockerHost.class, "docker.host",
-            "The parent Docker host");
+    ConfigKey<DockerHost> DOCKER_HOST = ConfigKeys.newConfigKey(DockerHost.class, "docker.host", "The parent Docker host");
+
+    @SetFromFlag("imageId")
+    ConfigKey<String> DOCKER_IMAGE_ID = DockerAttributes.DOCKER_IMAGE_ID.getConfigKey();
+
+    @SetFromFlag("hardwareId")
+    ConfigKey<String> DOCKER_HARDWARE_ID = DockerAttributes.DOCKER_HARDWARE_ID.getConfigKey();
+
+    @SetFromFlag("entity")
+    AttributeSensorAndConfigKey<Entity, Entity> ENTITY = ConfigKeys.newSensorAndConfigKey(Entity.class, "docker.container.entity", "The entity running in this Docker container");
 
     ConfigKey<String> DOCKER_CONTAINER_NAME_FORMAT = ConfigKeys.newStringConfigKey("docker.container.nameFormat",
-            "Format for generating Docker container names", DEFAULT_DOCKER_CONTAINER_NAME_FORMAT);
+            "Format for generating Docker container names", DockerAttributes.DEFAULT_DOCKER_CONTAINER_NAME_FORMAT);
 
-    AttributeSensor<String> DOCKER_CONTAINER_NAME = Sensors.newStringSensor("docker.container.name",
-            "The name of the Docker container");
+    AttributeSensor<String> DOCKER_CONTAINER_NAME = Sensors.newStringSensor("docker.container.name", "The name of the Docker container");
+
+    AttributeSensor<String> CONTAINER_ID = Sensors.newStringSensor("docker.container.id", "The Docker container ID");
+
+    AttributeSensor<Boolean> CONTAINER_RUNNING = Sensors.newBooleanSensor("docker.container.running", "The Docker container process status");
+
+    AttributeSensor<Lifecycle> SERVICE_STATE = SoftwareProcess.SERVICE_STATE;
+
+    AttributeSensor<Duration> UPTIME = DockerAttributes.UPTIME;
+
+    AttributeSensor<Double> CPU_USAGE = DockerAttributes.CPU_USAGE;
+
+    AttributeSensor<Long> USED_MEMORY = DockerAttributes.USED_MEMORY;
+
+    AttributeSensor<SshMachineLocation> SSH_MACHINE_LOCATION = Sensors.newSensor(SshMachineLocation.class, "docker.container.ssh", "The SSHable machine");
 
     MethodEffector<Void> SHUT_DOWN = new MethodEffector<Void>(DockerContainer.class, "shutDown");
     MethodEffector<Void> PAUSE = new MethodEffector<Void>(DockerContainer.class, "pause");
@@ -71,6 +100,14 @@ public interface DockerContainer extends SoftwareProcess, HasShortName, Location
 
     String getDockerContainerName();
 
+    String getContainerId();
+
+    Entity getRunningEntity();
+
+    void setRunningEntity(Entity entity);
+
     DockerHost getDockerHost();
+
+    SshMachineLocation getMachine();
 
 }

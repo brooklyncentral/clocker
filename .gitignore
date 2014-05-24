@@ -9,6 +9,8 @@ build
 out
 lib
 
+test-output
+
 target
 pom.xml.*
 release.properties

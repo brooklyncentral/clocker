@@ -1,9 +1,0 @@
-<included>
-
-    <!-- include everything in this project at debug level -->
-    <logger name="io.cloudsoft.docker" level="DEBUG"/>
-    
-    <!-- logfile named after this project -->
-    <property name="logging.basename" scope="context" value="amp-apigee" />
-
-</included>
