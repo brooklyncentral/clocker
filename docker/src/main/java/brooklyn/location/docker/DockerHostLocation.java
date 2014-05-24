@@ -20,6 +20,7 @@ import io.cloudsoft.networking.subnet.SubnetTier;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -114,7 +115,8 @@ public class DockerHostLocation extends AbstractLocation implements
             if (imageId != null) {
                 LOG.warn("Ignoring container imageId {} as dockerfile URL is set: {}", imageId, dockerfile);
             }
-            String entityType = DockerAttributes.DOCKERFILE_INVALID_CHARACTERS.trimAndCollapseFrom(entity.getClass().getName(), '-');
+            String className = entity.getClass().getName().toLowerCase(Locale.ENGLISH);
+            String entityType = DockerAttributes.DOCKERFILE_INVALID_CHARACTERS.trimAndCollapseFrom(className, '-');
             imageId = dockerHost.createSshableImage(dockerfile, entityType);
         } else if (Strings.isBlank(imageId)) {
             imageId = getOwner().getAttribute(DockerHost.DOCKER_IMAGE_ID);
