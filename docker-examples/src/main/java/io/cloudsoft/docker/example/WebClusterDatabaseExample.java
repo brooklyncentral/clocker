@@ -28,6 +28,7 @@ import brooklyn.enricher.Enrichers;
 import brooklyn.enricher.HttpLatencyDetector;
 import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.Attributes;
+import brooklyn.entity.container.docker.DockerAttributes;
 import brooklyn.entity.database.DatastoreMixins;
 import brooklyn.entity.database.mysql.MySqlNode;
 import brooklyn.entity.proxy.nginx.NginxController;
@@ -71,6 +72,7 @@ public class WebClusterDatabaseExample extends AbstractApplication {
 
         ControlledDynamicWebAppCluster web = addChild(EntitySpec.create(ControlledDynamicWebAppCluster.class)
                 .configure(ControlledDynamicWebAppCluster.MEMBER_SPEC, EntitySpec.create(JBoss7Server.class)
+                        .configure(DockerAttributes.DOCKERFILE_URL, "classpath://brooklyn/entity/container/docker/ubuntu/UsesJavaDockerfile")
                         .configure(WebAppService.HTTP_PORT, PortRanges.fromString("8080+"))
                         .configure(JavaWebAppService.ROOT_WAR, WAR_PATH)
                         .configure(javaSysProp("brooklyn.example.db.url"),

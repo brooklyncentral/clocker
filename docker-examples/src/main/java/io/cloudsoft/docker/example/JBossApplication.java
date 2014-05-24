@@ -22,6 +22,7 @@ import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.StartableApplication;
+import brooklyn.entity.container.docker.DockerAttributes;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.entity.webapp.JavaWebAppService;
 import brooklyn.entity.webapp.WebAppService;
@@ -33,17 +34,18 @@ import brooklyn.location.basic.PortRanges;
         iconUrl="classpath://jboss_logo.png")
 public class JBossApplication extends AbstractApplication implements StartableApplication {
 
-        public static final String DEFAULT_WAR_PATH = "https://s3-eu-west-1.amazonaws.com/brooklyn-waratek/hello-world.war";
+    public static final String DEFAULT_WAR_PATH = "https://s3-eu-west-1.amazonaws.com/brooklyn-waratek/hello-world.war";
 
-        @CatalogConfig(label="War File (URL)", priority=0)
-        public static final ConfigKey<String> WAR_PATH = ConfigKeys.newConfigKey(
-                "app.war", "URL to the application archive which should be deployed", DEFAULT_WAR_PATH);
+    @CatalogConfig(label="War File (URL)", priority=0)
+    public static final ConfigKey<String> WAR_PATH = ConfigKeys.newConfigKey(
+            "app.war", "URL to the application archive which should be deployed", DEFAULT_WAR_PATH);
 
-        @Override
-        public void init() {
-            addChild(EntitySpec.create(JBoss7Server.class)
-                    .displayName("JBoss Server")
-                    .configure(WebAppService.HTTP_PORT, PortRanges.fromString("8080+"))
-                    .configure(JavaWebAppService.ROOT_WAR, Entities.getRequiredUrlConfig(this, WAR_PATH)));
-        }
+    @Override
+    public void init() {
+        addChild(EntitySpec.create(JBoss7Server.class)
+                .displayName("JBoss Server")
+                .configure(DockerAttributes.DOCKERFILE_URL, "classpath://brooklyn/entity/container/docker/ubuntu/UsesJavaDockerfile")
+                .configure(WebAppService.HTTP_PORT, PortRanges.fromString("8080+"))
+                .configure(JavaWebAppService.ROOT_WAR, Entities.getRequiredUrlConfig(this, WAR_PATH)));
+    }
 }

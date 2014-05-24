@@ -16,7 +16,7 @@
 #
 # java and sshd
 #
-# VERSION               0.0.1
+# VERSION 0.0.2
 
 FROM ubuntu:12.04
 MAINTAINER Cloudsoft "brooklyn@cloudsoftcorp.com"
@@ -29,9 +29,12 @@ RUN apt-get update
 RUN echo 'root:password' | chpasswd
 
 # install openjdk 1.7.0
+RUN apt-get -y --force-yes install tzdata=2012b-1 # 2013g-0ubuntu0.12.04
+RUN apt-get -y --force-yes install python2.7-minimal=2.7.3-0ubuntu3 # 2.7.3-0ubuntu3.4
+RUN apt-get -y --force-yes install python-minimal=2.7.3-0ubuntu2 # 2.7.3-0ubuntu2.2
 RUN apt-get -y install openjdk-7-jdk && apt-get clean
 RUN update-alternatives --display java
-ENV JAVA_HOME /usr/lib/jvm/openjdk-7-jdk
+ENV JAVA_HOME /usr/lib/jvm/java-7-openjdk-amd64
 
 # install sshd
 RUN apt-get install -y openssh-server

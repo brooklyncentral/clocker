@@ -34,6 +34,7 @@ import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.database.DatastoreMixins;
 import brooklyn.entity.group.DynamicCluster;
+import brooklyn.entity.java.UsesJava;
 import brooklyn.entity.java.UsesJmx;
 import brooklyn.entity.webapp.WebAppServiceConstants;
 import brooklyn.entity.webapp.jboss.JBoss7Server;
@@ -111,6 +112,8 @@ public class DockerHostLocation extends AbstractLocation implements
         ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.PORT_FORWARDER, portForwarder);
         ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL);
         configureEnrichers((AbstractEntity) entity);
+
+        // TODO choose Dockerfile based on entity interfaces such as UsesJava
 
         // Add the entity Dockerfile if configured
         String dockerfile = entity.getConfig(DockerAttributes.DOCKERFILE_URL);
