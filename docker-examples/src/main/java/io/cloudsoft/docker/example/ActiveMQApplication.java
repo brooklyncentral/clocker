@@ -41,7 +41,7 @@ public class ActiveMQApplication extends AbstractApplication {
     public void init() {
         addChild(EntitySpec.create(ActiveMQBroker.class)
                 .displayName("ActiveMQ Broker")
-                .configure(DockerAttributes.DOCKERFILE_URL, "classpath://brooklyn/entity/container/docker/ubuntu/UsesJavaDockerfile")
+                .configure(DockerAttributes.DOCKERFILE_URL, "https://s3-eu-west-1.amazonaws.com/brooklyn-docker/UsesJavaDockerfile")
                 .configure(UsesJmx.USE_JMX, Boolean.TRUE)
                 .configure(UsesJmx.JMX_AGENT_MODE, JmxAgentModes.JMX_RMI_CUSTOM_AGENT)
                 .configure(UsesJmx.JMX_PORT, PortRanges.fromString("30000+"))

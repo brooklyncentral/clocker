@@ -24,13 +24,19 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.catalog.Catalog;
+import brooklyn.catalog.CatalogConfig;
+import brooklyn.config.ConfigKey;
 import brooklyn.enricher.Enrichers;
 import brooklyn.enricher.HttpLatencyDetector;
 import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.Attributes;
+import brooklyn.entity.basic.ConfigKeys;
+import brooklyn.entity.basic.Entities;
 import brooklyn.entity.container.docker.DockerAttributes;
 import brooklyn.entity.database.DatastoreMixins;
 import brooklyn.entity.database.mysql.MySqlNode;
+import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.proxy.nginx.NginxController;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.entity.webapp.ControlledDynamicWebAppCluster;
@@ -48,12 +54,25 @@ import com.google.common.collect.ImmutableMap;
 /**
  * Launches a 3-tier app with nginx, clustered jboss, and mysql.
  */
+@Catalog(name="Elastic Web Application",
+        description="Deploys a WAR to a load-balanced elastic Java AppServer cluster, " +
+                "with an auto-scaling policy, wired to a database initialized with the provided SQL; " +
+                "defaults to a 'Hello World' chatroom app.",
+        iconUrl="classpath://glossy-3d-blue-web-icon.png")
 public class WebClusterDatabaseExample extends AbstractApplication {
 
     public static final Logger LOG = LoggerFactory.getLogger(WebClusterDatabaseExample.class);
 
-    public static final String WAR_PATH = "https://s3-eu-west-1.amazonaws.com/brooklyn-waratek/hello-world-sql.war";
-    public static final String DB_SETUP_SQL_URL = "https://s3-eu-west-1.amazonaws.com/brooklyn-waratek/visitors-creation-script.sql";
+    public static final String DEFAULT_WAR_PATH = "https://s3-eu-west-1.amazonaws.com/brooklyn-docker/hello-world-sql.war";
+    public static final String DEFAULT_DB_SETUP_SQL_URL = "https://s3-eu-west-1.amazonaws.com/brooklyn-docker/visitors-creation-script.sql";
+
+    @CatalogConfig(label="WAR (URL)", priority=0)
+    public static final ConfigKey<String> WAR_PATH = ConfigKeys.newConfigKey(
+            "app.war", "URL to the application archive which should be deployed", DEFAULT_WAR_PATH);
+
+    @CatalogConfig(label="DB Setup SQL (URL)", priority=0)
+    public static final ConfigKey<String> DB_SETUP_SQL_URL = ConfigKeys.newConfigKey(
+            "app.db_sql", "URL to the SQL script to set up the database", DEFAULT_DB_SETUP_SQL_URL);
 
     public static final String DB_TABLE = "visitors";
     public static final String DB_USERNAME = "brooklyn";
@@ -68,13 +87,14 @@ public class WebClusterDatabaseExample extends AbstractApplication {
         AttributeSensor<String> mappedHostAndPortAttribute = Sensors.newStringSensor("mapped." + Attributes.HTTP_PORT.getName(), "Docker HTTP port mapping");
 
         MySqlNode mysql = addChild(EntitySpec.create(MySqlNode.class)
-                .configure("creationScriptUrl", DB_SETUP_SQL_URL));
+                .configure("creationScriptUrl", Entities.getRequiredUrlConfig(this, DB_SETUP_SQL_URL)));
 
         ControlledDynamicWebAppCluster web = addChild(EntitySpec.create(ControlledDynamicWebAppCluster.class)
+                .configure(DynamicCluster.INITIAL_SIZE, 2)
                 .configure(ControlledDynamicWebAppCluster.MEMBER_SPEC, EntitySpec.create(JBoss7Server.class)
-                        .configure(DockerAttributes.DOCKERFILE_URL, "classpath://brooklyn/entity/container/docker/ubuntu/UsesJavaDockerfile")
+                        .configure(DockerAttributes.DOCKERFILE_URL, "https://s3-eu-west-1.amazonaws.com/brooklyn-docker/UsesJavaDockerfile")
                         .configure(WebAppService.HTTP_PORT, PortRanges.fromString("8080+"))
-                        .configure(JavaWebAppService.ROOT_WAR, WAR_PATH)
+                        .configure(JavaWebAppService.ROOT_WAR, Entities.getRequiredUrlConfig(this, WAR_PATH))
                         .configure(javaSysProp("brooklyn.example.db.url"),
                                 formatString("jdbc:%s%s?user=%s\\&password=%s",
                                         attributeWhenReady(mysql, mappedDatastoreUrl),
