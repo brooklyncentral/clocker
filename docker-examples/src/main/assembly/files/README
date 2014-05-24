@@ -6,7 +6,7 @@ Docker containers.
 
 # Getting Started
 
-    % ./start.sh docker --location aws-ec2:eu-west-1
+    % ./start.sh launch --infrastructure --location aws-ec2:eu-west-1
 
 ----
 Copyright 2014 by Cloudsoft Corporation Limited
