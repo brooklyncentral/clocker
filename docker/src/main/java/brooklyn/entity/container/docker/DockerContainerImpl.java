@@ -26,6 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableList;
+
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.BasicStartableImpl;
@@ -50,9 +52,10 @@ import brooklyn.util.collections.MutableMap;
 import brooklyn.util.collections.MutableSet;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.internal.ssh.SshTool;
+import brooklyn.util.net.Cidr;
 import brooklyn.util.time.Duration;
-
-import com.google.common.collect.ImmutableList;
+import io.cloudsoft.networking.portforwarding.subnet.JcloudsPortforwardingSubnetLocation;
+import io.cloudsoft.networking.subnet.SubnetTier;
 
 /**
  * A single Docker container.
@@ -173,6 +176,15 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         DockerHost dockerHost = getDockerHost();
         DockerHostLocation host = dockerHost.getDynamicLocation();
         String locationName = host.getId() + "-" + getId();
+
+        SubnetTier subnetTier = dockerHost.getSubnetTier();
+
+        // put these fields on the location so it has the info it needs to create the subnet
+        flags.put(JcloudsLocation.USE_PORT_FORWARDING, true);
+        flags.put(JcloudsLocation.PORT_FORWARDER, subnetTier.getPortForwarderExtension());
+        flags.put(JcloudsLocation.PORT_FORWARDING_MANAGER, subnetTier.getPortForwardManager());
+        flags.put(JcloudsPortforwardingSubnetLocation.PORT_FORWARDER, subnetTier.getPortForwarder());
+        flags.put(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL);
 
         try {
             // Create a new container using jclouds Docker driver

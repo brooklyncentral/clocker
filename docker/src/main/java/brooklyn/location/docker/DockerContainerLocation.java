@@ -21,6 +21,10 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
+
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.location.Location;
@@ -32,10 +36,6 @@ import brooklyn.util.net.Protocol;
 import brooklyn.util.ssh.IptablesCommands;
 import brooklyn.util.ssh.IptablesCommands.Chain;
 import brooklyn.util.ssh.IptablesCommands.Policy;
-
-import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 
 /**
  * A {@link Location} that wraps a Docker container.
@@ -119,9 +119,8 @@ public class DockerContainerLocation extends SshMachineLocation implements Dynam
         SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
         int portNumber = host.obtainPort(range);
         int targetPort = getMappedPort(portNumber);
-        getOwner().getDockerHost().getPortForwarder()
-                .openPortForwarding(machine, portNumber, Optional.of(targetPort), Protocol.TCP, null);
-        addIptablesRule(targetPort);
+        //getOwner().getDockerHost().getPortForwarder().openPortForwarding(machine, portNumber, Optional.of(targetPort), Protocol.TCP, null);
+        //addIptablesRule(targetPort);
         return portNumber;
     }
 

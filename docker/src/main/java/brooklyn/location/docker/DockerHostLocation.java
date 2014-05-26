@@ -15,9 +15,6 @@
  */
 package brooklyn.location.docker;
 
-import io.cloudsoft.networking.subnet.PortForwarder;
-import io.cloudsoft.networking.subnet.SubnetTier;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -25,6 +22,11 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.base.Optional;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.AbstractEntity;
@@ -46,11 +48,8 @@ import brooklyn.util.collections.MutableMap;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.text.Strings;
-
-import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.base.Optional;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+import io.cloudsoft.networking.subnet.PortForwarder;
+import io.cloudsoft.networking.subnet.SubnetTier;
 
 public class DockerHostLocation extends AbstractLocation implements
         MachineProvisioningLocation<DockerContainerLocation>, DockerVirtualLocation,
