@@ -100,7 +100,7 @@ public class DockerHostLocation extends AbstractLocation implements
 
         // Configure the entity
         LOG.info("Configuring entity {} via subnet {}", entity, dockerHost.getSubnetTier());
-        ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.PORT_FORWARDING_MANAGER, dockerHost.getSubnetTier().getAttribute(SubnetTier.SUBNET_SERVICE_PORT_FORWARDS));
+        ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.PORT_FORWARDING_MANAGER, dockerHost.getSubnetTier().getPortForwardManager());
         ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.PORT_FORWARDER, portForwarder);
         ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL);
         configureEnrichers((AbstractEntity) entity);
@@ -148,7 +148,7 @@ public class DockerHostLocation extends AbstractLocation implements
     private void configureEnrichers(AbstractEntity entity) {
         for (Sensor<?> sensor : entity.getEntityType().getSensors()) {
             if (DockerAttributes.URL_SENSOR_NAMES.contains(sensor.getName())) {
-                AttributeSensor<String> original = Sensors.newStringSensor(sensor.getName());
+                AttributeSensor<String> original = Sensors.newStringSensor(sensor.getName(), sensor.getDescription());
                 AttributeSensor<String> target = Sensors.newSensorWithPrefix("mapped.", original);
                 entity.addEnricher(dockerHost.getSubnetTier().uriTransformingEnricher(original, target));
             } else if (DockerAttributes.PORT_SENSOR_NAMES.contains(sensor.getName())) {

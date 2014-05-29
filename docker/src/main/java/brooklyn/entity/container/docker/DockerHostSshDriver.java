@@ -39,7 +39,7 @@ import brooklyn.util.os.Os;
 import brooklyn.util.repeat.Repeater;
 import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.task.DynamicTasks;
-import brooklyn.util.task.ssh.SshTasks;
+import brooklyn.util.task.system.ProcessTaskWrapper;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 
@@ -68,7 +68,10 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     /** {@inheritDoc} */
     @Override
     public String buildImage(String dockerFile, String name) {
-        DynamicTasks.queueIfPossible(SshEffectorTasks.ssh(format("mkdir -p %s", Os.mergePaths(getRunDir(), name)))).orSubmitAndBlock();
+        ProcessTaskWrapper<Integer> task = SshEffectorTasks.ssh(format("mkdir -p %s", Os.mergePaths(getRunDir(), name)))
+                .machine(getMachine())
+                .newTask();
+        DynamicTasks.queueIfPossible(task).executionContext(getEntity()).orSubmitAndBlock();
 
         copyTemplate(dockerFile, Os.mergePaths(name, DOCKERFILE));
 
@@ -95,16 +98,20 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     @Override
     public String dockerCommand(String command) {
         try {
-            SshEffectorTasks.SshEffectorTaskFactory<String> task = SshEffectorTasks.ssh(sudo("docker " + command))
+            ProcessTaskWrapper<Integer> task = SshEffectorTasks.ssh(sudo("docker " + command))
                     .machine(getMachine())
                     .summary("docker " + Strings.getFirstWord(command))
-                    .returning(SshTasks.returningStdoutLoggingInfo(logSsh, true));
-            String stdout = DynamicTasks.queueIfPossible(task)
+                    .newTask();
+            Integer result = DynamicTasks.queueIfPossible(task)
                     .executionContext(getEntity())
-                    .orSubmitAndBlock()
+                    .orSubmitAsync()
                     .asTask()
                     .get(Duration.minutes(10));
-            return stdout;
+            if (result != 0) {
+                log.warn("Docker command failed: {}", task.getStderr());
+                throw new IllegalStateException("Docker command failed, return code " + result);
+            }
+            return task.getStdout();
         } catch (TimeoutException te) {
             throw new IllegalStateException("Timed out running Docker " + Strings.getFirstWord(command));
         } catch (Exception e) {
@@ -150,13 +157,12 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         setExpandedInstallDir(getInstallDir()+"/"+resolver.getUnpackedDirectoryName(format("docker-%s", getVersion())));
 
         OsDetails osDetails = getMachine().getMachineDetails().getOsDetails();
-        String osMajorVersion = osDetails.getVersion();
-        String osName = osDetails.getName();
+        String osVersion = osDetails.getVersion();
         String arch = osDetails.getArch();
         if (!osDetails.is64bit()) {
             throw new IllegalStateException("Docker supports only 64bit OS");
         }
-        if(osName.equalsIgnoreCase("ubuntu") && osMajorVersion.equals("12.04")) {
+        if (osDetails.getName().equalsIgnoreCase("ubuntu") && osVersion.equals("12.04")) {
             List<String> commands = ImmutableList.<String> builder().add(installPackage("linux-image-generic-lts-raring"))
                            .add(installPackage("linux-headers-generic-lts-raring"))
                            .add(sudo("reboot"))
@@ -167,20 +173,20 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         }
         log.info("waiting for Docker host {} to be sshable", getLocation());
         boolean isSshable = Repeater.create()
-                .every(Duration.ONE_SECOND)
+                .every(Duration.TEN_SECONDS)
                 .until(new Callable<Boolean>() {
                     public Boolean call() {
                         return getLocation().isSshable();
                     }})
-                .limitTimeTo(Duration.minutes(15))
+                .limitTimeTo(Duration.minutes(15)) // Because of the reboot
                 .run();
-        if(!isSshable) {
+        if (!isSshable) {
             throw new IllegalStateException(String.format("The entity %s is not ssh'able after reboot", entity));
         }
         log.info("Docker host {} is now sshable; continuing with setup", getLocation());
 
         List<String> commands = ImmutableList.<String> builder()
-                .add(ifExecutableElse0("yum", useYum(osMajorVersion, arch, getEpelRelease())))
+                .add(ifExecutableElse0("yum", useYum(osVersion, arch, getEpelRelease())))
                 .add(ifExecutableElse0("apt-get", useApt()))
                 .add(installPackage(ImmutableMap.of("yum", "docker-io", "apt", "lxc-docker"), null))
                 .build();
@@ -188,7 +194,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         newScript(INSTALLING)
                 .failOnNonZeroResultCode()
                 .body.append(commands)
-                .execute();        
+                .execute();
     }
 
     private String useYum(String osMajorVersion, String arch, String epelRelease) {
