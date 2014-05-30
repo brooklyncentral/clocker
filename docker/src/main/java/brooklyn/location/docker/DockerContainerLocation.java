@@ -19,12 +19,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import org.jclouds.ContextBuilder;
-import org.jclouds.compute.ComputeServiceContext;
-import org.jclouds.docker.DockerApi;
-import org.jclouds.docker.domain.Container;
-import org.jclouds.logging.slf4j.config.SLF4JLoggingModule;
-import org.jclouds.sshj.config.SshjSshClientModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,8 +30,8 @@ import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.basic.SupportsPortForwarding;
 import brooklyn.location.dynamic.DynamicLocation;
-import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
+import brooklyn.location.jclouds.JcloudsUtil;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.Protocol;
@@ -45,15 +39,9 @@ import brooklyn.util.ssh.IptablesCommands;
 import brooklyn.util.ssh.IptablesCommands.Chain;
 import brooklyn.util.ssh.IptablesCommands.Policy;
 
-import com.google.common.base.Function;
 import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
-import com.google.inject.Module;
 
 /**
  * A {@link Location} that wraps a Docker container.
@@ -109,8 +97,12 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     }
 
     public int getMappedPort(int portNumber) {
-        Map<Integer, Integer> mapping = getPortMappingsForDocker(getOwner().getDockerHost().getJcloudsLocation());
+        String containerId = getOwner().getContainerId();
+        Map<Integer, Integer> mapping = JcloudsUtil.dockerPortMappingsFor(getOwner().getDockerHost().getJcloudsLocation(), containerId);
         Integer publicPort = mapping.get(portNumber);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Docker mapped port {} to {} for Container {}", new Object[] { portNumber, publicPort, containerId });
+        }
         return publicPort;
     }
 
@@ -139,40 +131,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
         PortForwardManager portForwardManager = getOwner().getDockerHost().getSubnetTier().getPortForwardManager();
         portForwardManager.recordPublicIpHostname(dockerHost, dockerHost);
         portForwardManager.acquirePublicPortExplicit(dockerHost, hostPort);
-        portForwardManager.associate(dockerHost, hostPort, machine, containerPort);
-    }
-
-    private Map<Integer, Integer> getPortMappingsForDocker(JcloudsLocation docker) {
-        ComputeServiceContext context = null;
-        try {
-            context = ContextBuilder.newBuilder("docker")
-                    .endpoint(docker.getEndpoint())
-                    .credentials("docker", "docker")
-                    .modules(ImmutableSet.<Module>of(new SLF4JLoggingModule(), new SshjSshClientModule()))
-                    .build(ComputeServiceContext.class);
-            DockerApi api = context.unwrapApi(DockerApi.class);
-            String containerId = getOwner().getContainerId();
-            Container container = api.getRemoteApi().inspectContainer(containerId);
-            Map<Integer, Integer> portMappings = Maps.newLinkedHashMap();
-            Map<String, List<Map<String, String>>> ports = container.getNetworkSettings().getPorts();
-            LOG.debug("Docker will forward these ports {}", ports);
-            for (Map.Entry<String, List<Map<String, String>>> entrySet : ports.entrySet()) {
-                String containerPort = Iterables.get(Splitter.on("/").split(entrySet.getKey()), 0);
-                String hostPort = Iterables.getOnlyElement(Iterables.transform(entrySet.getValue(),
-                        new Function<Map<String, String>, String>() {
-                            @Override
-                            public String apply(Map<String, String> hostIpAndPort) {
-                                return hostIpAndPort.get("HostPort");
-                            }
-                        }));
-                portMappings.put(Integer.parseInt(containerPort), Integer.parseInt(hostPort));
-            }
-            return portMappings;
-        } finally {
-            if (context != null) {
-                context.close();
-            }
-        }
+        portForwardManager.associate(dockerHost, hostPort, this, containerPort);
     }
 
     @Override
