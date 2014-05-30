@@ -29,6 +29,7 @@ import brooklyn.entity.java.UsesJmx;
 import brooklyn.entity.messaging.activemq.ActiveMQBroker;
 import brooklyn.entity.webapp.WebAppServiceConstants;
 import brooklyn.entity.webapp.jboss.JBoss7Server;
+import brooklyn.entity.webapp.tomcat.TomcatServer;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
@@ -62,6 +63,7 @@ public class DockerAttributes {
             JBoss7Server.MANAGEMENT_HTTP_PORT.getName(),
             JBoss7Server.MANAGEMENT_HTTPS_PORT.getName(),
             JBoss7Server.MANAGEMENT_NATIVE_PORT.getName(),
+            TomcatServer.SHUTDOWN_PORT.getName(),
             ActiveMQBroker.AMQ_JETTY_PORT.getName());
 
     public static final Set<String> URL_SENSOR_NAMES = ImmutableSet.<String>of(
