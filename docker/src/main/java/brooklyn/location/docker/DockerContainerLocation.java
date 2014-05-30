@@ -16,6 +16,7 @@
 package brooklyn.location.docker;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
 
@@ -42,6 +43,7 @@ import brooklyn.util.ssh.IptablesCommands.Policy;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
+import com.google.common.net.InetAddresses;
 
 /**
  * A {@link Location} that wraps a Docker container.
@@ -144,6 +146,12 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     @Override
     public void releasePort(int portNumber) {
         machine.releasePort(portNumber);
+    }
+
+    @Override
+    public InetAddress getAddress() {
+        String containerAddress = getOwner().getDockerHost().runDockerCommand("inspect --format={{.NetworkSettings.IPAddress}} " + getOwner().getContainerId());
+        return InetAddresses.forString(containerAddress.trim());
     }
 
     @Override
