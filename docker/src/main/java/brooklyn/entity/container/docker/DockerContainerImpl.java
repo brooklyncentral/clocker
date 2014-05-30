@@ -16,6 +16,8 @@
 package brooklyn.entity.container.docker;
 
 import static java.lang.String.format;
+import io.cloudsoft.networking.portforwarding.subnet.JcloudsPortforwardingSubnetLocation;
+import io.cloudsoft.networking.subnet.SubnetTier;
 
 import java.util.Collection;
 import java.util.Map;
@@ -25,8 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.ImmutableList;
 
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
@@ -54,8 +54,6 @@ import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.internal.ssh.SshTool;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.time.Duration;
-import io.cloudsoft.networking.portforwarding.subnet.JcloudsPortforwardingSubnetLocation;
-import io.cloudsoft.networking.subnet.SubnetTier;
 
 /**
  * A single Docker container.
@@ -85,7 +83,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                         .callable(new Callable<Boolean>() {
                                 @Override
                                 public Boolean call() throws Exception {
-                                    return getDynamicLocation().isSshable();
+                                    return getDynamicLocation().getMachine().isSshable();
                                 }
                         }))
                 .poll(new FunctionPollConfig<Boolean, Boolean>(CONTAINER_RUNNING)
@@ -179,16 +177,16 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         SubnetTier subnetTier = dockerHost.getSubnetTier();
 
         // put these fields on the location so it has the info it needs to create the subnet
+        String hostname = getDockerHost().getDynamicLocation().getMachine().getAddress().getHostName();
         Map<?, ?> dockerFlags = MutableMap.<Object, Object>builder()
                 .put(JcloudsLocationConfig.IMAGE_ID, getConfig(DOCKER_IMAGE_ID))
                 .put(JcloudsLocationConfig.HARDWARE_ID, getConfig(DOCKER_HARDWARE_ID))
+                .put(JcloudsLocationConfig.USER_METADATA_MAP, MutableMap.of("HostName", hostname))
                 .put(LocationConfigKeys.USER, "root")
                 .put(LocationConfigKeys.PASSWORD, "password")
                 .put(LocationConfigKeys.PRIVATE_KEY_DATA, null)
                 .put(LocationConfigKeys.PRIVATE_KEY_FILE, null)
-//                .put(JcloudsLocationConfig.DONT_CREATE_USER, true)
                 .put(JcloudsLocationConfig.INBOUND_PORTS, getRequiredOpenPorts(getRunningEntity()))
-                .put(JcloudsLocationConfig.STRING_TAGS, ImmutableList.of(getRunningEntity().getId() + "-privateTarget"))
                 .put(JcloudsLocation.USE_PORT_FORWARDING, true)
                 .put(JcloudsLocation.PORT_FORWARDER, subnetTier.getPortForwarderExtension())
                 .put(JcloudsLocation.PORT_FORWARDING_MANAGER, subnetTier.getPortForwardManager())
