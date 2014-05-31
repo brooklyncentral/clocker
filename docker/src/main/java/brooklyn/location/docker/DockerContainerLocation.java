@@ -16,7 +16,9 @@
 package brooklyn.location.docker;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,29 +27,35 @@ import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.location.Location;
 import brooklyn.location.PortRange;
+import brooklyn.location.access.PortForwardManager;
 import brooklyn.location.basic.SshMachineLocation;
+import brooklyn.location.basic.SupportsPortForwarding;
 import brooklyn.location.dynamic.DynamicLocation;
+import brooklyn.location.jclouds.JcloudsSshMachineLocation;
+import brooklyn.location.jclouds.JcloudsUtil;
 import brooklyn.util.flags.SetFromFlag;
+import brooklyn.util.net.Cidr;
 import brooklyn.util.net.Protocol;
 import brooklyn.util.ssh.IptablesCommands;
 import brooklyn.util.ssh.IptablesCommands.Chain;
 import brooklyn.util.ssh.IptablesCommands.Policy;
 
 import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.common.net.HostAndPort;
+import com.google.common.net.InetAddresses;
 
 /**
  * A {@link Location} that wraps a Docker container.
  * <p>
  * The underlying container is presented as an {@link SshMachineLocation} obtained using the jclouds Docker driver.
  */
-public class DockerContainerLocation extends SshMachineLocation implements DynamicLocation<DockerContainer, DockerContainerLocation> {
+public class DockerContainerLocation extends SshMachineLocation implements SupportsPortForwarding, DynamicLocation<DockerContainer, DockerContainerLocation> {
 
     private static final Logger LOG = LoggerFactory.getLogger(DockerContainerLocation.class);
 
     @SetFromFlag("machine")
-    private SshMachineLocation machine;
+    private JcloudsSshMachineLocation machine;
 
     @SetFromFlag("owner")
     private DockerContainer dockerContainer;
@@ -62,7 +70,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Dynam
         return dockerContainer;
     }
 
-    public SshMachineLocation getMachine() {
+    public JcloudsSshMachineLocation getMachine() {
         return machine;
     }
 
@@ -91,24 +99,21 @@ public class DockerContainerLocation extends SshMachineLocation implements Dynam
     }
 
     public int getMappedPort(int portNumber) {
-        String portMap = getOwner().getDockerHost()
-                .runDockerCommand("inspect -f {{.NetworkSettings.Ports}} " + getOwner().getContainerId());
-        int i = portMap.indexOf(portNumber + "/tcp:[");
-        if (i == -1) throw new IllegalStateException();
-        int j = portMap.substring(i).indexOf("HostPort:");
-        int k = portMap.substring(i + j).indexOf("]]");
-        String hostPort = portMap.substring(i + j + "HostPort:".length(), i + j + k);
-        return Integer.valueOf(hostPort);
+        String containerId = getOwner().getContainerId();
+        Map<Integer, Integer> mapping = JcloudsUtil.dockerPortMappingsFor(getOwner().getDockerHost().getJcloudsLocation(), containerId);
+        Integer publicPort = mapping.get(portNumber);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Docker mapped port {} to {} for Container {}", new Object[] { portNumber, publicPort, containerId });
+        }
+        return publicPort;
     }
 
     @Override
     public boolean obtainSpecificPort(int portNumber) {
-        SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
-        boolean result = host.obtainSpecificPort(portNumber);
+        boolean result = machine.obtainSpecificPort(portNumber);
         if (result) {
             int targetPort = getMappedPort(portNumber);
-            getOwner().getDockerHost().getPortForwarder()
-                    .openPortForwarding(machine, portNumber, Optional.of(targetPort), Protocol.TCP, null);
+            mapPort(targetPort, portNumber);
             addIptablesRule(targetPort);
         }
         return result;
@@ -116,19 +121,37 @@ public class DockerContainerLocation extends SshMachineLocation implements Dynam
 
     @Override
     public int obtainPort(PortRange range) {
-        SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
-        int portNumber = host.obtainPort(range);
+        int portNumber = machine.obtainPort(range);
         int targetPort = getMappedPort(portNumber);
-        getOwner().getDockerHost().getPortForwarder()
-                .openPortForwarding(machine, portNumber, Optional.of(targetPort), Protocol.TCP, null);
+        mapPort(targetPort, portNumber);
         addIptablesRule(targetPort);
         return portNumber;
     }
 
+    private void mapPort(int hostPort, int containerPort) {
+        String dockerHost = getOwner().getDockerHost().getDynamicLocation().getMachine().getAddress().getHostAddress();
+        PortForwardManager portForwardManager = getOwner().getDockerHost().getSubnetTier().getPortForwardManager();
+        portForwardManager.recordPublicIpHostname(dockerHost, dockerHost);
+        portForwardManager.acquirePublicPortExplicit(dockerHost, hostPort);
+        portForwardManager.associate(dockerHost, hostPort, this, containerPort);
+    }
+
+    @Override
+    public HostAndPort getSocketEndpointFor(Cidr accessor, int privatePort) {
+        String dockerHost = getOwner().getDockerHost().getDynamicLocation().getMachine().getAddress().getHostAddress();
+        int hostPort = getMappedPort(privatePort);
+        return HostAndPort.fromParts(dockerHost, hostPort);
+    }
+
     @Override
     public void releasePort(int portNumber) {
-        SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
-        host.releasePort(portNumber);
+        machine.releasePort(portNumber);
+    }
+
+    @Override
+    public InetAddress getAddress() {
+        String containerAddress = getOwner().getDockerHost().runDockerCommand("inspect --format={{.NetworkSettings.IPAddress}} " + getOwner().getContainerId());
+        return InetAddresses.forString(containerAddress.trim());
     }
 
     @Override

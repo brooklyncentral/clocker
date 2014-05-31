@@ -55,9 +55,8 @@ public class TomcatApplication extends AbstractApplication implements StartableA
                 .configure(JavaWebAppService.ROOT_WAR, Entities.getRequiredUrlConfig(this, WAR_PATH))
                 .configure(SoftwareProcess.SUGGESTED_VERSION, "7.0.53")
                 .configure(UsesJmx.USE_JMX, Boolean.TRUE)
-                .configure(UsesJmx.JMX_AGENT_MODE, JmxAgentModes.JMX_RMI_CUSTOM_AGENT)
-                .configure(UsesJmx.JMX_PORT, PortRanges.fromString("30000+"))
-                .configure(UsesJmx.RMI_REGISTRY_PORT, PortRanges.fromString("40000+")));
+                .configure(UsesJmx.JMX_AGENT_MODE, JmxAgentModes.JMXMP)
+                .configure(UsesJmx.JMX_PORT, PortRanges.fromString("30000+")));
     }
 
 }

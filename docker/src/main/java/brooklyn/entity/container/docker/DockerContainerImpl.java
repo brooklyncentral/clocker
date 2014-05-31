@@ -16,6 +16,8 @@
 package brooklyn.entity.container.docker;
 
 import static java.lang.String.format;
+import io.cloudsoft.networking.portforwarding.subnet.JcloudsPortforwardingSubnetLocation;
+import io.cloudsoft.networking.subnet.SubnetTier;
 
 import java.util.Collection;
 import java.util.Map;
@@ -50,9 +52,8 @@ import brooklyn.util.collections.MutableMap;
 import brooklyn.util.collections.MutableSet;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.internal.ssh.SshTool;
+import brooklyn.util.net.Cidr;
 import brooklyn.util.time.Duration;
-
-import com.google.common.collect.ImmutableList;
 
 /**
  * A single Docker container.
@@ -82,7 +83,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                         .callable(new Callable<Boolean>() {
                                 @Override
                                 public Boolean call() throws Exception {
-                                    return getDynamicLocation().isSshable();
+                                    return getDynamicLocation().getMachine().isSshable();
                                 }
                         }))
                 .poll(new FunctionPollConfig<Boolean, Boolean>(CONTAINER_RUNNING)
@@ -173,10 +174,27 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         DockerHost dockerHost = getDockerHost();
         DockerHostLocation host = dockerHost.getDynamicLocation();
         String locationName = host.getId() + "-" + getId();
+        SubnetTier subnetTier = dockerHost.getSubnetTier();
+
+        // put these fields on the location so it has the info it needs to create the subnet
+        Map<?, ?> dockerFlags = MutableMap.<Object, Object>builder()
+                .put(JcloudsLocationConfig.IMAGE_ID, getConfig(DOCKER_IMAGE_ID))
+                .put(JcloudsLocationConfig.HARDWARE_ID, getConfig(DOCKER_HARDWARE_ID))
+                .put(LocationConfigKeys.USER, "root")
+                .put(LocationConfigKeys.PASSWORD, "password")
+                .put(LocationConfigKeys.PRIVATE_KEY_DATA, null)
+                .put(LocationConfigKeys.PRIVATE_KEY_FILE, null)
+                .put(JcloudsLocationConfig.INBOUND_PORTS, getRequiredOpenPorts(getRunningEntity()))
+                .put(JcloudsLocation.USE_PORT_FORWARDING, true)
+                .put(JcloudsLocation.PORT_FORWARDER, subnetTier.getPortForwarderExtension())
+                .put(JcloudsLocation.PORT_FORWARDING_MANAGER, subnetTier.getPortForwardManager())
+                .put(JcloudsPortforwardingSubnetLocation.PORT_FORWARDER, subnetTier.getPortForwarder())
+                .put(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL)
+                .build();
 
         try {
             // Create a new container using jclouds Docker driver
-            JcloudsSshMachineLocation container = host.getJcloudsLocation().obtain(flags);
+            JcloudsSshMachineLocation container = host.getJcloudsLocation().obtain(dockerFlags);
             setAttribute(CONTAINER_ID, container.getNode().getId());
 
             // Create our wrapper location around the container
@@ -234,18 +252,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.STARTING);
         setAttribute(SoftwareProcess.SERVICE_UP, Boolean.FALSE);
 
-        Map<String, ?> flags = MutableMap.<String, Object>builder()
-                .putAll(getConfig(LOCATION_FLAGS))
-                .put(JcloudsLocationConfig.IMAGE_ID.getName(), getConfig(DOCKER_IMAGE_ID))
-                .put(JcloudsLocationConfig.HARDWARE_ID.getName(), getConfig(DOCKER_HARDWARE_ID))
-                .put(LocationConfigKeys.USER.getName(), "root")
-                .put(LocationConfigKeys.PASSWORD.getName(), "password")
-                .put(LocationConfigKeys.PRIVATE_KEY_DATA.getName(), null)
-                .put(LocationConfigKeys.PRIVATE_KEY_FILE.getName(), null)
-//                .put(JcloudsLocationConfig.DONT_CREATE_USER.getName(), true)
-                .put(JcloudsLocationConfig.INBOUND_PORTS.getName(), getRequiredOpenPorts(getRunningEntity()))
-                .put(JcloudsLocationConfig.STRING_TAGS.getName(), ImmutableList.of(getRunningEntity().getId() + "-privateTarget"))
-                .build();
+        Map<String, ?> flags = MutableMap.copyOf(getConfig(LOCATION_FLAGS));
         createLocation(flags);
 
         setAttribute(SSH_MACHINE_LOCATION, getDynamicLocation().getMachine());

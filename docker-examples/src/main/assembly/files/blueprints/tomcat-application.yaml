@@ -26,6 +26,5 @@ services:
       https://s3-eu-west-1.amazonaws.com/brooklyn-docker/hello-world.war
     version: "7.0.53"
     jmx.enabled: true
-    jmx.agent.mode: "JMX_RMI_CUSTOM_AGENT"
+    jmx.agent.mode: "JMXMP"
     jmx.direct.port: "30000+"
-    rmi.registry.port: "31000+"

@@ -15,11 +15,6 @@
  */
 package brooklyn.entity.container.docker;
 
-import io.cloudsoft.networking.portforwarding.DockerPortForwarder;
-import io.cloudsoft.networking.subnet.PortForwarder;
-import io.cloudsoft.networking.subnet.SubnetTier;
-import io.cloudsoft.networking.subnet.SubnetTierImpl;
-
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +23,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jclouds.compute.domain.OsFamily;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import brooklyn.enricher.Enrichers;
 import brooklyn.entity.Entity;
@@ -59,9 +57,10 @@ import brooklyn.util.collections.MutableMap;
 import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.text.Strings;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
+import io.cloudsoft.networking.portforwarding.DockerPortForwarder;
+import io.cloudsoft.networking.subnet.PortForwarder;
+import io.cloudsoft.networking.subnet.SubnetTier;
+import io.cloudsoft.networking.subnet.SubnetTierImpl;
 
 /**
  * The host running the Docker service.

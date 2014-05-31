@@ -78,7 +78,7 @@ public class DockerMain extends Main {
             catalog.addItem(JBossApplication.class);
             catalog.addItem(ActiveMQApplication.class);
             catalog.addItem(TomcatApplication.class);
-            catalog.addItem(WebClusterDatabaseExample.class);
+            catalog.addItem(JettyClusterWithMySql.class);
         }
 
         @Override
