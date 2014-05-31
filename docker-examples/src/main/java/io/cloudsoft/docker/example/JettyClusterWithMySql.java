@@ -37,13 +37,15 @@ import brooklyn.entity.container.docker.DockerAttributes;
 import brooklyn.entity.database.DatastoreMixins;
 import brooklyn.entity.database.mysql.MySqlNode;
 import brooklyn.entity.group.DynamicCluster;
+import brooklyn.entity.java.UsesJmx;
+import brooklyn.entity.java.UsesJmx.JmxAgentModes;
 import brooklyn.entity.proxy.nginx.NginxController;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.entity.webapp.ControlledDynamicWebAppCluster;
 import brooklyn.entity.webapp.DynamicWebAppCluster;
 import brooklyn.entity.webapp.JavaWebAppService;
 import brooklyn.entity.webapp.WebAppService;
-import brooklyn.entity.webapp.jboss.JBoss7Server;
+import brooklyn.entity.webapp.jetty.Jetty6Server;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.Sensors;
 import brooklyn.location.basic.PortRanges;
@@ -55,13 +57,12 @@ import com.google.common.collect.ImmutableMap;
  * Launches a 3-tier app with nginx, clustered jboss, and mysql.
  */
 @Catalog(name="Elastic Web Application",
-        description="Deploys a WAR to a load-balanced elastic Java AppServer cluster, " +
-                "with an auto-scaling policy, wired to a database initialized with the provided SQL; " +
-                "defaults to a 'Hello World' chatroom app.",
+        description="Deploys a WAR to an Nginx load-balanced elastic Jetty cluster, " +
+                "with an auto-scaling policy, wired to a MySQL database.",
         iconUrl="classpath://glossy-3d-blue-web-icon.png")
-public class WebClusterDatabaseExample extends AbstractApplication {
+public class JettyClusterWithMySql extends AbstractApplication {
 
-    public static final Logger LOG = LoggerFactory.getLogger(WebClusterDatabaseExample.class);
+    public static final Logger LOG = LoggerFactory.getLogger(JettyClusterWithMySql.class);
 
     public static final String DEFAULT_WAR_PATH = "https://s3-eu-west-1.amazonaws.com/brooklyn-docker/hello-world-sql.war";
     public static final String DEFAULT_DB_SETUP_SQL_URL = "https://s3-eu-west-1.amazonaws.com/brooklyn-docker/visitors-creation-script.sql";
@@ -91,9 +92,12 @@ public class WebClusterDatabaseExample extends AbstractApplication {
 
         ControlledDynamicWebAppCluster web = addChild(EntitySpec.create(ControlledDynamicWebAppCluster.class)
                 .configure(DynamicCluster.INITIAL_SIZE, 2)
-                .configure(ControlledDynamicWebAppCluster.MEMBER_SPEC, EntitySpec.create(JBoss7Server.class)
+                .configure(ControlledDynamicWebAppCluster.MEMBER_SPEC, EntitySpec.create(Jetty6Server.class)
                         .configure(DockerAttributes.DOCKERFILE_URL, "https://s3-eu-west-1.amazonaws.com/brooklyn-docker/UsesJavaDockerfile")
                         .configure(WebAppService.HTTP_PORT, PortRanges.fromString("8080+"))
+                        .configure(UsesJmx.USE_JMX, Boolean.TRUE)
+                        .configure(UsesJmx.JMX_AGENT_MODE, JmxAgentModes.JMXMP)
+                        .configure(UsesJmx.JMX_PORT, PortRanges.fromString("30000+"))
                         .configure(JavaWebAppService.ROOT_WAR, Entities.getRequiredUrlConfig(this, WAR_PATH))
                         .configure(javaSysProp("brooklyn.example.db.url"),
                                 formatString("jdbc:%s%s?user=%s\\&password=%s",

@@ -129,7 +129,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     }
 
     private void mapPort(int hostPort, int containerPort) {
-        String dockerHost = getOwner().getDockerHost().getDynamicLocation().getMachine().getAddress().getHostName();
+        String dockerHost = getOwner().getDockerHost().getDynamicLocation().getMachine().getAddress().getHostAddress();
         PortForwardManager portForwardManager = getOwner().getDockerHost().getSubnetTier().getPortForwardManager();
         portForwardManager.recordPublicIpHostname(dockerHost, dockerHost);
         portForwardManager.acquirePublicPortExplicit(dockerHost, hostPort);
@@ -138,7 +138,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
 
     @Override
     public HostAndPort getSocketEndpointFor(Cidr accessor, int privatePort) {
-        String dockerHost = getOwner().getDockerHost().getDynamicLocation().getMachine().getAddress().getHostName();
+        String dockerHost = getOwner().getDockerHost().getDynamicLocation().getMachine().getAddress().getHostAddress();
         int hostPort = getMappedPort(privatePort);
         return HostAndPort.fromParts(dockerHost, hostPort);
     }

@@ -177,11 +177,9 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         SubnetTier subnetTier = dockerHost.getSubnetTier();
 
         // put these fields on the location so it has the info it needs to create the subnet
-        String hostname = getDockerHost().getDynamicLocation().getMachine().getAddress().getHostName();
         Map<?, ?> dockerFlags = MutableMap.<Object, Object>builder()
                 .put(JcloudsLocationConfig.IMAGE_ID, getConfig(DOCKER_IMAGE_ID))
                 .put(JcloudsLocationConfig.HARDWARE_ID, getConfig(DOCKER_HARDWARE_ID))
-                .put(JcloudsLocationConfig.USER_METADATA_MAP, MutableMap.of("HostName", hostname))
                 .put(LocationConfigKeys.USER, "root")
                 .put(LocationConfigKeys.PASSWORD, "password")
                 .put(LocationConfigKeys.PRIVATE_KEY_DATA, null)
