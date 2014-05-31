@@ -140,7 +140,7 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Storing container mapping {} to {}", deployed.get(), machine.getId());
                 }
-                machines.put(machine.getMachine(), dockerHost.getId());
+                machines.put(machine.getMachine(), container.getId());
                 containers.put(container.getId(), deployed.get());
             }
             return container;
