@@ -225,7 +225,7 @@ public class DockerHostLocation extends AbstractLocation implements
 
     @Override
     public DockerInfrastructure getDockerInfrastructure() {
-        return ((DockerHostLocation) getParent()).getDockerInfrastructure();
+        return ((DockerLocation) getParent()).getDockerInfrastructure();
     }
 
 
