@@ -204,7 +204,7 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     @Override
     public String createSshableImage(String dockerFile, String name) {
        String imageId = getDriver().buildImage(dockerFile, name);
-       LOG.info("Successfully created image {} (brooklyn/{})", imageId, name);
+       if (LOG.isDebugEnabled()) LOG.debug("Successfully created image {} (brooklyn/{})", imageId, name);
        return imageId;
     }
 
@@ -212,7 +212,7 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     @Override
     public String runDockerCommand(String command) {
        String stdout = getDriver().dockerCommand(command);
-       LOG.info("Successfully executed Docker {}", Strings.getFirstWord(command));
+       if (LOG.isDebugEnabled()) LOG.debug("Successfully executed Docker {}: {}", Strings.getFirstWord(command), Strings.getFirstLine(stdout));
        return stdout;
     }
 
