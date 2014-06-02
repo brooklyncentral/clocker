@@ -15,6 +15,11 @@
  */
 package brooklyn.entity.container.docker;
 
+import io.cloudsoft.networking.portforwarding.DockerPortForwarder;
+import io.cloudsoft.networking.subnet.PortForwarder;
+import io.cloudsoft.networking.subnet.SubnetTier;
+import io.cloudsoft.networking.subnet.SubnetTierImpl;
+
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -23,9 +28,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jclouds.compute.domain.OsFamily;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import brooklyn.enricher.Enrichers;
 import brooklyn.entity.Entity;
@@ -37,7 +39,7 @@ import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.location.Location;
 import brooklyn.location.LocationDefinition;
 import brooklyn.location.MachineProvisioningLocation;
-import brooklyn.location.access.PortForwardManager;
+import brooklyn.location.access.PortForwardManagerAuthority;
 import brooklyn.location.basic.BasicLocationDefinition;
 import brooklyn.location.basic.Machines;
 import brooklyn.location.basic.SshMachineLocation;
@@ -57,10 +59,9 @@ import brooklyn.util.collections.MutableMap;
 import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.text.Strings;
-import io.cloudsoft.networking.portforwarding.DockerPortForwarder;
-import io.cloudsoft.networking.subnet.PortForwarder;
-import io.cloudsoft.networking.subnet.SubnetTier;
-import io.cloudsoft.networking.subnet.SubnetTierImpl;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 /**
  * The host running the Docker service.
@@ -252,6 +253,9 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
 
         final LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
         Location location = getManagementContext().getLocationRegistry().resolve(definition);
+        setAttribute(DYNAMIC_LOCATION, location);
+        setAttribute(LOCATION_NAME, location.getId());
+
         if (getConfig(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS)) {
             getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
         }
@@ -267,9 +271,6 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
                 getManagementContext().getLocationManager().manage(resolved);
             }
         });
-
-        setAttribute(DYNAMIC_LOCATION, location);
-        setAttribute(LOCATION_NAME, location.getId());
 
         LOG.info("New Docker host location {} created", location);
         return (DockerHostLocation) location;
@@ -301,11 +302,10 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
         jcloudsLocation = (JcloudsLocation) getManagementContext().getLocationRegistry()
                 .resolve(dockerLocationSpec, MutableMap.of("identity", "docker", "credential", "docker"));
 
-        portForwarder = new DockerPortForwarder(new PortForwardManager());
+        portForwarder = new DockerPortForwarder(new PortForwardManagerAuthority(this));
         portForwarder.init(URI.create(jcloudsLocation.getEndpoint()));
 
-        subnetTier = addChild(EntitySpec.create(SubnetTier.class)
-                .impl(SubnetTierImpl.class)
+        subnetTier = addChild(EntitySpec.create(SubnetTier.class, SubnetTierImpl.class)
                 .configure(SubnetTier.PORT_FORWARDER, portForwarder)
                 .configure(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL));
         subnetTier.start(ImmutableList.of(found.get()));
