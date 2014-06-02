@@ -23,8 +23,10 @@ import brooklyn.location.Location;
 import brooklyn.location.cloud.AbstractAvailabilityZoneExtension;
 import brooklyn.management.ManagementContext;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 public class DockerHostExtension extends AbstractAvailabilityZoneExtension {
@@ -38,13 +40,20 @@ public class DockerHostExtension extends AbstractAvailabilityZoneExtension {
 
     @Override
     protected List<Location> doGetAllSubLocations() {
-        List<Location> result = Lists.newArrayList();
+        List<Optional<Location>> result = Lists.newArrayList();
         for (Entity entity : location.getDockerHostList()) {
             DockerHost host = (DockerHost) entity;
             DockerHostLocation machine = host.getDynamicLocation();
-            result.add(machine);
+            result.add(Optional.<Location>fromNullable(machine));
         }
-        return result;
+        return ImmutableList.copyOf(Optional.presentInstances(result));
+    }
+
+    /** Forces call to {@link #doGetAllSubLocations()} each time. */
+    @Override
+    public List<Location> getAllSubLocations() {
+        subLocations.set(null);
+        return super.getAllSubLocations();
     }
 
     @Override
