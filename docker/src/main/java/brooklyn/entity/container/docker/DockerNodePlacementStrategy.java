@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import brooklyn.entity.Entity;
+import brooklyn.entity.basic.Entities;
 import brooklyn.entity.group.zoneaware.BalancingNodePlacementStrategy;
 import brooklyn.entity.trait.Identifiable;
 import brooklyn.location.Location;
@@ -86,8 +87,10 @@ public class DockerNodePlacementStrategy extends BalancingNodePlacementStrategy 
                 LOG.debug("Added {} Docker hosts: {}", delta, Iterables.toString(Iterables.transform(added, identity())));
             }
 
+            // Wait until all new Docker hosts have started up
+            for (Entity each : added) Entities.waitForServiceUp(each);
+
             // Add the newly created locations for each Docker host
-            // TODO wait until all Docker hosts have started up?
             Collection<DockerHostLocation> dockerHosts = Collections2.transform(added, new Function<Entity, DockerHostLocation>() {
                 @Override
                 public DockerHostLocation apply(@Nullable Entity input) {

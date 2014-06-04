@@ -24,6 +24,7 @@ import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.proxying.EntitySpec;
+import brooklyn.util.time.Duration;
 
 /**
  * Brooklyn managed basic Docker infrastructure.
@@ -53,6 +54,7 @@ public class BasicInfrastructure extends AbstractApplication {
     public void init() {
         EntitySpec dockerSpec = EntitySpec.create(DockerHost.class)
                 .configure(SoftwareProcess.SUGGESTED_VERSION, getConfig(DOCKER_VERSION))
+                .configure(SoftwareProcess.START_TIMEOUT, Duration.minutes(15))
                 .configure(DockerHost.HA_POLICY_ENABLE, getConfig(HA_POLICY_ENABLE))
                 .configure(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_SIZE, getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE));
 
