@@ -29,7 +29,7 @@ services:
     proxy.http.port: "8000+"
     java.sysprops:
       brooklyn.example.db.url: >
-        $brooklyn:formatString("jdbc:%s%s?user=%s\\&password=%s",
+        $brooklyn:formatString("jdbc:%s%s?user=%s&password=%s",
         component("mysql").attributeWhenReady("mapped.datastore.url"),
         "visitors", "brooklyn", "br00k11n")
     memberSpec:

@@ -100,7 +100,7 @@ public class JettyClusterWithMySql extends AbstractApplication {
                         .configure(UsesJmx.JMX_PORT, PortRanges.fromString("30000+"))
                         .configure(JavaWebAppService.ROOT_WAR, Entities.getRequiredUrlConfig(this, WAR_PATH))
                         .configure(javaSysProp("brooklyn.example.db.url"),
-                                formatString("jdbc:%s%s?user=%s\\&password=%s",
+                                formatString("jdbc:%s%s?user=%s&password=%s",
                                         attributeWhenReady(mysql, mappedDatastoreUrl),
                                         DB_TABLE, DB_USERNAME, DB_PASSWORD)))
                 .configure(ControlledDynamicWebAppCluster.CONTROLLER_SPEC, EntitySpec.create(NginxController.class)
