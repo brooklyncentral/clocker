@@ -33,11 +33,11 @@ import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.docker.DockerAttributes;
 import brooklyn.entity.database.DatastoreMixins;
 import brooklyn.entity.database.mysql.MySqlNode;
 import brooklyn.entity.group.Cluster;
-import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.java.UsesJmx;
 import brooklyn.entity.java.UsesJmx.JmxAgentModes;
 import brooklyn.entity.proxy.nginx.NginxController;
@@ -46,7 +46,7 @@ import brooklyn.entity.webapp.ControlledDynamicWebAppCluster;
 import brooklyn.entity.webapp.DynamicWebAppCluster;
 import brooklyn.entity.webapp.JavaWebAppService;
 import brooklyn.entity.webapp.WebAppService;
-import brooklyn.entity.webapp.jetty.Jetty6Server;
+import brooklyn.entity.webapp.tomcat.TomcatServer;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.Sensors;
 import brooklyn.location.basic.PortRanges;
@@ -58,12 +58,12 @@ import com.google.common.collect.ImmutableMap;
  * Launches a 3-tier app with nginx, clustered jboss, and mysql.
  */
 @Catalog(name="Elastic Web Application",
-        description="Deploys a WAR to an Nginx load-balanced elastic Jetty cluster, " +
+        description="Deploys a WAR to an Nginx load-balanced Tomcat cluster, " +
                 "with an auto-scaling policy, wired to a MySQL database.",
         iconUrl="classpath://glossy-3d-blue-web-icon.png")
-public class JettyClusterWithMySql extends AbstractApplication {
+public class TomcatClusterWithMySql extends AbstractApplication {
 
-    public static final Logger LOG = LoggerFactory.getLogger(JettyClusterWithMySql.class);
+    public static final Logger LOG = LoggerFactory.getLogger(TomcatClusterWithMySql.class);
 
     public static final String DEFAULT_WAR_PATH = "https://s3-eu-west-1.amazonaws.com/brooklyn-docker/hello-world-sql.war";
     public static final String DEFAULT_DB_SETUP_SQL_URL = "https://s3-eu-west-1.amazonaws.com/brooklyn-docker/visitors-creation-script.sql";
@@ -96,9 +96,10 @@ public class JettyClusterWithMySql extends AbstractApplication {
 
         ControlledDynamicWebAppCluster web = addChild(EntitySpec.create(ControlledDynamicWebAppCluster.class)
                 .configure(Cluster.INITIAL_SIZE, getConfig(INITIAL_SIZE))
-                .configure(ControlledDynamicWebAppCluster.MEMBER_SPEC, EntitySpec.create(Jetty6Server.class)
+                .configure(ControlledDynamicWebAppCluster.MEMBER_SPEC, EntitySpec.create(TomcatServer.class)
                         .configure(DockerAttributes.DOCKERFILE_URL, "https://s3-eu-west-1.amazonaws.com/brooklyn-docker/UsesJavaDockerfile")
                         .configure(WebAppService.HTTP_PORT, PortRanges.fromString("8080+"))
+                        .configure(SoftwareProcess.SUGGESTED_VERSION, "7.0.53")
                         .configure(UsesJmx.USE_JMX, Boolean.TRUE)
                         .configure(UsesJmx.JMX_AGENT_MODE, JmxAgentModes.JMXMP)
                         .configure(UsesJmx.JMX_PORT, PortRanges.fromString("30000+"))

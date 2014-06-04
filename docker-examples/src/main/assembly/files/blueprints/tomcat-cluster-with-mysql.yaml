@@ -34,10 +34,11 @@ services:
         "visitors", "brooklyn", "br00k11n")
     memberSpec:
       $brooklyn:entitySpec:
-        type: brooklyn.entity.webapp.jetty.Jetty6Server
+        type: brooklyn.entity.webapp.tomcat.TomcatServer
         brooklyn.config:
           docker.dockerfile.url:
             https://s3-eu-west-1.amazonaws.com/brooklyn-docker/UsesJavaDockerfile
+          version: "7.0.53"
           jmx.enabled: true
           jmx.agent.mode: "JMXMP"
           jmx.direct.port: "30000+"
