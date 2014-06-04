@@ -59,9 +59,13 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
     ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = ConfigKeys.newIntegerConfigKey("docker.container.cluster.maxSize",
             "Maximum size of a Docker container cluster", 4);
 
-    @SetFromFlag("registerDockerHosts")
+    @SetFromFlag("registerHosts")
     ConfigKey<Boolean> REGISTER_DOCKER_HOST_LOCATIONS = ConfigKeys.newBooleanConfigKey("docker.host.register",
             "Register new Docker Host locations for deployment", Boolean.FALSE);
+
+    @SetFromFlag("removeEmptyHosts")
+    ConfigKey<Boolean> REMOVE_EMPTY_DOCKER_HOSTS = ConfigKeys.newBooleanConfigKey("docker.host.removeEmpty",
+            "Remove empty Docker Hosts with no containers", Boolean.FALSE);
 
     @SetFromFlag("hostSpec")
     BasicAttributeSensorAndConfigKey<EntitySpec> DOCKER_HOST_SPEC = new BasicAttributeSensorAndConfigKey<EntitySpec>(

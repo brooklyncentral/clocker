@@ -18,6 +18,7 @@ package brooklyn.location.docker;
 import io.cloudsoft.networking.subnet.PortForwarder;
 import io.cloudsoft.networking.subnet.SubnetTier;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -178,6 +179,11 @@ public class DockerHostLocation extends AbstractLocation implements
             LOG.info("Docker Host {}: member {} released", new Object[] { dockerHost.getDockerHostName(), machine });
         } else {
             LOG.info("Docker Host {}: member {} not found for release", new Object[] { dockerHost.getDockerHostName(), machine });
+        }
+        try {
+            machine.close();
+        } catch (IOException ioe) {
+            LOG.warn("Error releasing container: " + machine, ioe);
         }
     }
 
