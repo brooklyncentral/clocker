@@ -157,7 +157,6 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     @Override
     public void close() throws IOException {
         machine.close();
-        getOwner().stop();
         LOG.info("Close called on Docker container location: {}", this);
     }
 

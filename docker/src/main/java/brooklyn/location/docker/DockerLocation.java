@@ -27,6 +27,7 @@ import brooklyn.entity.basic.Entities;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.container.docker.DockerNodePlacementStrategy;
+import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.group.DynamicCluster.NodePlacementStrategy;
 import brooklyn.location.Location;
 import brooklyn.location.MachineLocation;
@@ -38,6 +39,7 @@ import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.cloud.AvailabilityZoneExtension;
 import brooklyn.location.dynamic.DynamicLocation;
 import brooklyn.util.collections.MutableMap;
+import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.flags.SetFromFlag;
 
 import com.google.common.base.Objects.ToStringHelper;
@@ -163,12 +165,34 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
                     }
                     if (getOwner().getConfig(DockerInfrastructure.REMOVE_EMPTY_DOCKER_HOSTS)) {
                         LOG.info("Removing empty Docker host: {}", host);
-                        getOwner().getDockerHostCluster().removeChild(host.getOwner());
+                        remove(host);
                     }
                 }
             } else {
                 throw new IllegalArgumentException("Request to release "+machine+", but container mapping not found");
             }
+        }
+    }
+
+    protected void remove(DockerHostLocation machine) {
+        LOG.info("Releasing {}", machine);
+        DynamicCluster cluster = infrastructure.getDockerHostCluster();
+        DockerHost host = machine.getOwner();
+        if (cluster.removeMember(host)) {
+            LOG.info("Docker Host {} released", host.getDockerHostName());
+        } else {
+            LOG.warn("Docker Host {} not found for release", host.getDockerHostName());
+        }
+
+        // Now close and unmange the host
+        try {
+            machine.close();
+            host.stop();
+        } catch (Exception e) {
+            LOG.warn("Error stopping host: " + host, e);
+            Exceptions.propagateIfFatal(e);
+        } finally {
+            Entities.unmanage(host);
         }
     }
 

@@ -18,6 +18,7 @@ package brooklyn.location.docker;
 import io.cloudsoft.networking.subnet.PortForwarder;
 import io.cloudsoft.networking.subnet.SubnetTier;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
@@ -33,6 +34,7 @@ import brooklyn.config.render.RendererHints.Hint;
 import brooklyn.config.render.RendererHints.NamedActionWithUrl;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.AbstractEntity;
+import brooklyn.entity.basic.Entities;
 import brooklyn.entity.container.docker.DockerAttributes;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
@@ -48,19 +50,19 @@ import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.dynamic.DynamicLocation;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.util.collections.MutableMap;
+import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.text.Strings;
 
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Optional;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class DockerHostLocation extends AbstractLocation implements
         MachineProvisioningLocation<DockerContainerLocation>, DockerVirtualLocation,
-        DynamicLocation<DockerHost, DockerHostLocation> {
+        DynamicLocation<DockerHost, DockerHostLocation>, Closeable {
 
     private static final Logger LOG = LoggerFactory.getLogger(DockerHostLocation.class);
 
@@ -173,17 +175,24 @@ public class DockerHostLocation extends AbstractLocation implements
 
     @Override
     public void release(DockerContainerLocation machine) {
-        LOG.info("Docker Host {}: releasing {}", new Object[] { dockerHost.getDockerHostName(), machine });
+        LOG.info("Releasing {}", machine);
         DynamicCluster cluster = dockerHost.getDockerContainerCluster();
-        if (cluster.removeMember(machine.getOwner())) {
-            LOG.info("Docker Host {}: member {} released", new Object[] { dockerHost.getDockerHostName(), machine });
+        DockerContainer container = machine.getOwner();
+        if (cluster.removeMember(container)) {
+            LOG.info("Docker Host {}: member {} released", dockerHost.getDockerHostName(), machine);
         } else {
-            LOG.info("Docker Host {}: member {} not found for release", new Object[] { dockerHost.getDockerHostName(), machine });
+            LOG.warn("Docker Host {}: member {} not found for release", dockerHost.getDockerHostName(), machine);
         }
+
+        // Now close and unmange the container
         try {
             machine.close();
-        } catch (IOException ioe) {
-            LOG.warn("Error releasing container: " + machine, ioe);
+            container.stop();
+        } catch (Exception e) {
+            LOG.warn("Error stopping container: " + container, e);
+            Exceptions.propagateIfFatal(e);
+        } finally {
+            Entities.unmanage(container);
         }
     }
 
@@ -245,5 +254,10 @@ public class DockerHostLocation extends AbstractLocation implements
         return ((DockerLocation) getParent()).getDockerInfrastructure();
     }
 
+    @Override
+    public void close() throws IOException {
+        machine.close();
+        LOG.info("Close called on Docker host location: {}", this);
+    }
 
 }
