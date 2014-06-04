@@ -36,6 +36,7 @@ import brooklyn.entity.basic.Entities;
 import brooklyn.entity.container.docker.DockerAttributes;
 import brooklyn.entity.database.DatastoreMixins;
 import brooklyn.entity.database.mysql.MySqlNode;
+import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.java.UsesJmx;
 import brooklyn.entity.java.UsesJmx.JmxAgentModes;
@@ -75,6 +76,9 @@ public class JettyClusterWithMySql extends AbstractApplication {
     public static final ConfigKey<String> DB_SETUP_SQL_URL = ConfigKeys.newConfigKey(
             "app.db_sql", "URL to the SQL script to set up the database", DEFAULT_DB_SETUP_SQL_URL);
 
+    @CatalogConfig(label="Initial Cluster Size", priority=1)
+    public static final ConfigKey<Integer> INITIAL_SIZE = ConfigKeys.newConfigKeyWithDefault(Cluster.INITIAL_SIZE, 2);
+
     public static final String DB_TABLE = "visitors";
     public static final String DB_USERNAME = "brooklyn";
     public static final String DB_PASSWORD = "br00k11n";
@@ -91,7 +95,7 @@ public class JettyClusterWithMySql extends AbstractApplication {
                 .configure("creationScriptUrl", Entities.getRequiredUrlConfig(this, DB_SETUP_SQL_URL)));
 
         ControlledDynamicWebAppCluster web = addChild(EntitySpec.create(ControlledDynamicWebAppCluster.class)
-                .configure(DynamicCluster.INITIAL_SIZE, 2)
+                .configure(Cluster.INITIAL_SIZE, getConfig(INITIAL_SIZE))
                 .configure(ControlledDynamicWebAppCluster.MEMBER_SPEC, EntitySpec.create(Jetty6Server.class)
                         .configure(DockerAttributes.DOCKERFILE_URL, "https://s3-eu-west-1.amazonaws.com/brooklyn-docker/UsesJavaDockerfile")
                         .configure(WebAppService.HTTP_PORT, PortRanges.fromString("8080+"))
