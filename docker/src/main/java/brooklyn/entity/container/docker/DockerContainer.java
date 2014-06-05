@@ -33,7 +33,6 @@ import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.location.dynamic.LocationOwner;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.util.flags.SetFromFlag;
-import brooklyn.util.time.Duration;
 
 /**
  * A Docker container.
@@ -62,17 +61,14 @@ public interface DockerContainer extends BasicStartable, HasShortName, LocationO
 
     AttributeSensor<String> DOCKER_CONTAINER_NAME = Sensors.newStringSensor("docker.container.name", "The name of the Docker container");
 
+    AttributeSensor<String> IMAGE_ID = Sensors.newStringSensor("docker.container.imageId", "The Docker container image ID");
+    AttributeSensor<String> IMAGE_NAME = Sensors.newStringSensor("docker.container.imageName", "The Docker container image name");
+    AttributeSensor<String> HARDWARE_ID = Sensors.newStringSensor("docker.container.hardwareId", "The Docker container hardware ID");
     AttributeSensor<String> CONTAINER_ID = Sensors.newStringSensor("docker.container.id", "The Docker container ID");
 
     AttributeSensor<Boolean> CONTAINER_RUNNING = Sensors.newBooleanSensor("docker.container.running", "The Docker container process status");
 
     AttributeSensor<Lifecycle> SERVICE_STATE = SoftwareProcess.SERVICE_STATE;
-
-    AttributeSensor<Duration> UPTIME = DockerAttributes.UPTIME;
-
-    AttributeSensor<Double> CPU_USAGE = DockerAttributes.CPU_USAGE;
-
-    AttributeSensor<Long> USED_MEMORY = DockerAttributes.USED_MEMORY;
 
     AttributeSensor<SshMachineLocation> SSH_MACHINE_LOCATION = Sensors.newSensor(SshMachineLocation.class, "docker.container.ssh", "The SSHable machine");
 

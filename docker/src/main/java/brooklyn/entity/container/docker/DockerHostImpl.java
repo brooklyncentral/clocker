@@ -112,20 +112,8 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
 
         if (Entities.isManaged(this)) Entities.manage(containers);
 
-        containers.addEnricher(Enrichers.builder()
-                .aggregating(DockerAttributes.CPU_USAGE)
-                .computingAverage()
-                .fromMembers()
-                .publishing(DockerAttributes.AVERAGE_CPU_USAGE)
-                .valueToReportIfNoSensors(0d)
-                .build());
-
         addEnricher(Enrichers.builder()
                 .propagating(ImmutableMap.of(DynamicCluster.GROUP_SIZE, DockerAttributes.DOCKER_CONTAINER_COUNT))
-                .from(containers)
-                .build());
-        addEnricher(Enrichers.builder()
-                .propagating(DockerAttributes.AVERAGE_CPU_USAGE)
                 .from(containers)
                 .build());
     }

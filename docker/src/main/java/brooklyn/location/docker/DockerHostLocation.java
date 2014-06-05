@@ -22,7 +22,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -35,6 +34,7 @@ import brooklyn.config.render.RendererHints.NamedActionWithUrl;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.AbstractEntity;
 import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.container.docker.DockerAttributes;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
@@ -123,12 +123,13 @@ public class DockerHostLocation extends AbstractLocation implements
         // Add the entity Dockerfile if configured
         String dockerfile = entity.getConfig(DockerAttributes.DOCKERFILE_URL);
         String imageId = entity.getConfig(DockerAttributes.DOCKER_IMAGE_ID);
+        String imageName = null;
         if (Strings.isNonBlank(dockerfile)) {
             if (imageId != null) {
                 LOG.warn("Ignoring container imageId {} as dockerfile URL is set: {}", imageId, dockerfile);
             }
             // Lookup image ID or build new image from Dockerfile
-            String imageName = Identifiers.makeIdFromHash(Hashing.md5().hashString(dockerfile, Charsets.UTF_8).asLong()).toLowerCase();
+            imageName = Identifiers.makeIdFromHash(Hashing.md5().hashString(dockerfile, Charsets.UTF_8).asLong()).toLowerCase();
             String imageList = dockerHost.runDockerCommand("images --no-trunc " + Os.mergePaths("brooklyn", imageName));
             if (Strings.containsLiteral(imageList, imageName)) {
                 imageId = Strings.getFirstWordAfter(imageList, "latest");
@@ -159,7 +160,11 @@ public class DockerHostLocation extends AbstractLocation implements
             throw new NoMachinesAvailableException(String.format("Failed to create containers. Limit reached at %s", dockerHost.getDockerHostName()));
         }
 
+        // Save the container attributes on the entity
         DockerContainer dockerContainer = (DockerContainer) added.get();
+        ((EntityLocal) dockerContainer).setAttribute(DockerContainer.IMAGE_ID, imageId);
+        ((EntityLocal) dockerContainer).setAttribute(DockerContainer.IMAGE_NAME, imageName);
+        ((EntityLocal) dockerContainer).setAttribute(DockerContainer.HARDWARE_ID, hardwareId);
         return dockerContainer.getDynamicLocation();
     }
 

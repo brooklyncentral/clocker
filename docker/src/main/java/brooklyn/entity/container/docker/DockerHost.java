@@ -98,6 +98,11 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
 
     AttributeSensor<String> HOST_NAME = Sensors.newStringSensor("docker.host.name", "The name of the Docker host");
 
+    AttributeSensor<Duration> UPTIME = DockerAttributes.UPTIME;
+    AttributeSensor<Double> LOAD_AVERAGE = DockerAttributes.LOAD_AVERAGE;
+    AttributeSensor<Double> CPU_USAGE = DockerAttributes.CPU_USAGE;
+    AttributeSensor<Long> USED_MEMORY = DockerAttributes.USED_MEMORY;
+
     Integer getDockerPort();
 
     JcloudsLocation getJcloudsLocation();
