@@ -22,10 +22,10 @@ import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.container.docker.DockerAttributes;
-import brooklyn.entity.container.docker.DockerNodePlacementStrategy;
 import brooklyn.entity.container.docker.application.VanillaDockerApplication;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.proxying.EntitySpec;
+import brooklyn.location.docker.strategy.DockerNodePlacementStrategy;
 
 /**
  * Brooklyn managed {@link VanillaDockerApplication} cluster

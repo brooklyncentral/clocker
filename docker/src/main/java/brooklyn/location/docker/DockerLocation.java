@@ -26,7 +26,6 @@ import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
-import brooklyn.entity.container.docker.DockerNodePlacementStrategy;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.group.DynamicCluster.NodePlacementStrategy;
 import brooklyn.location.Location;
@@ -37,8 +36,10 @@ import brooklyn.location.basic.AbstractLocation;
 import brooklyn.location.basic.LocationConfigKeys;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.cloud.AvailabilityZoneExtension;
+import brooklyn.location.docker.strategy.DockerNodePlacementStrategy;
 import brooklyn.location.dynamic.DynamicLocation;
 import brooklyn.util.collections.MutableMap;
+import brooklyn.util.config.ConfigBag;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.flags.SetFromFlag;
 
@@ -87,6 +88,11 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
         super.init();
         if (strategy == null) {
             strategy = new DockerNodePlacementStrategy();
+        }
+        if (strategy instanceof DockerNodePlacementStrategy) {
+            ConfigBag setup = ConfigBag.newInstanceCopying(getAllConfigBag())
+                    .configure(DockerNodePlacementStrategy.DOCKER_INFRASTRUCTURE, infrastructure);
+            ((DockerNodePlacementStrategy) strategy).init(setup);
         }
         addExtension(AvailabilityZoneExtension.class, new DockerHostExtension(getManagementContext(), this));
     }

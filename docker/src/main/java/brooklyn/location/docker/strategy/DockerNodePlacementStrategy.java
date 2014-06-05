@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.entity.container.docker;
+package brooklyn.location.docker.strategy;
 
 import java.util.Collection;
 import java.util.List;
@@ -24,12 +24,16 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Entities;
+import brooklyn.entity.container.docker.DockerHost;
+import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.group.zoneaware.BalancingNodePlacementStrategy;
 import brooklyn.entity.trait.Identifiable;
 import brooklyn.location.Location;
 import brooklyn.location.docker.DockerHostLocation;
+import brooklyn.util.config.ConfigBag;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
@@ -57,6 +61,16 @@ public class DockerNodePlacementStrategy extends BalancingNodePlacementStrategy 
         }
     };
 
+    public static final ConfigKey<DockerInfrastructure> DOCKER_INFRASTRUCTURE = DockerHost.DOCKER_INFRASTRUCTURE;
+
+    protected DockerInfrastructure infrastructure;
+
+    public void init(ConfigBag setup) {
+        infrastructure = setup.get(DOCKER_INFRASTRUCTURE);
+    }
+
+    public DockerInfrastructure getDockerInfrastructure() { return infrastructure; }
+
     @Override
     public List<Location> locationsForAdditions(Multimap<Location, Entity> currentMembers, Collection<? extends Location> locs, int numToAdd) {
         if (locs.isEmpty() && numToAdd > 0) {
@@ -76,13 +90,10 @@ public class DockerNodePlacementStrategy extends BalancingNodePlacementStrategy 
         }
 
         if (remaining > 0) {
-            // FIXME what happens if there are no Docker hosts available?
-            DockerHostLocation machine = Iterables.get(available, 0);
-
             // Grow the Docker host cluster; based on max number of Docker containers
-            int maxSize = machine.getMaxSize();
+            int maxSize = getDockerInfrastructure().getConfig(DockerInfrastructure.DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
             int delta = (remaining / maxSize) + (remaining % maxSize > 0 ? 1 : 0);
-            Collection<Entity> added = machine.getDockerInfrastructure().getDockerHostCluster().resizeByDelta(delta);
+            Collection<Entity> added = getDockerInfrastructure().getDockerHostCluster().resizeByDelta(delta);
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Added {} Docker hosts: {}", delta, Iterables.toString(Iterables.transform(added, identity())));
             }

@@ -48,7 +48,7 @@ services:
         brooklyn.config:
           dynamiccluster.zone.enable: true
           dynamiccluster.zone.placementStrategy:
-            brooklyn.entity.container.docker.DockerNodePlacementStrategy
+            brooklyn.location.docker.strategy.DockerNodePlacementStrategy
 - serviceType: brooklyn.entity.database.mysql.MySqlNode
   id: mysql
   name: MySQL Database

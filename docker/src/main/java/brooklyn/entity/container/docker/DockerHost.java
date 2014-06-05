@@ -66,6 +66,9 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
     @SetFromFlag("maxSize")
     ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = DockerInfrastructure.DOCKER_CONTAINER_CLUSTER_MAX_SIZE;
 
+    @SetFromFlag("maxCpu")
+    ConfigKey<Double> DOCKER_CONTAINER_CLUSTER_MAX_CPU = DockerInfrastructure.DOCKER_CONTAINER_CLUSTER_MAX_CPU;
+
     @SetFromFlag("highAvailabilty")
     ConfigKey<Boolean> HA_POLICY_ENABLE = ConfigKeys.newBooleanConfigKey("docker.policy.ha.enable",
             "Enable high-availability and resilience/restart policies", false);
