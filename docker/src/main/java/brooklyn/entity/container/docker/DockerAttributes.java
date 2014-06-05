@@ -150,6 +150,16 @@ public class DockerAttributes {
 
     private static AtomicBoolean initialized = new AtomicBoolean(false);
 
+    /** Returns a default value if the input is null. */
+    public static final <T> Function defaultValue(final T value) {
+        return new Function<T, T>() {
+            @Override
+            public T apply(@Nullable T input) {
+                return (input == null) ? value : input;
+            }
+        };
+    }
+
     /** Setup renderer hints. */
     @SuppressWarnings("rawtypes")
     public static void init() {
@@ -165,8 +175,8 @@ public class DockerAttributes {
 
         RendererHints.register(UPTIME, RendererHints.displayValue(Time.toTimeStringRounded()));
 
-        RendererHints.register(CPU_USAGE, RendererHints.displayValue(StringFunctions.formatter("%.2f%%")));
-        RendererHints.register(AVERAGE_CPU_USAGE, RendererHints.displayValue(StringFunctions.formatter("%.2f%%")));
+        RendererHints.register(CPU_USAGE, RendererHints.displayValue(Functions.compose(StringFunctions.formatter("%.2f%%"), defaultValue(0d))));
+        RendererHints.register(AVERAGE_CPU_USAGE, RendererHints.displayValue(Functions.compose(StringFunctions.formatter("%.2f%%"), defaultValue(0d))));
 
         RendererHints.register(FREE_MEMORY, RendererHints.displayValue(ByteSizeStrings.metric()));
         RendererHints.register(TOTAL_MEMORY, RendererHints.displayValue(ByteSizeStrings.metric()));
