@@ -53,12 +53,16 @@ import brooklyn.util.collections.MutableMap;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
+import brooklyn.util.os.Os;
+import brooklyn.util.text.Identifiers;
 import brooklyn.util.text.Strings;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.hash.Hashing;
 
 public class DockerHostLocation extends AbstractLocation implements
         MachineProvisioningLocation<DockerContainerLocation>, DockerVirtualLocation,
@@ -123,9 +127,14 @@ public class DockerHostLocation extends AbstractLocation implements
             if (imageId != null) {
                 LOG.warn("Ignoring container imageId {} as dockerfile URL is set: {}", imageId, dockerfile);
             }
-            String className = entity.getClass().getName().toLowerCase(Locale.ENGLISH);
-            String entityType = DockerAttributes.DOCKERFILE_INVALID_CHARACTERS.trimAndCollapseFrom(className, '-');
-            imageId = dockerHost.createSshableImage(dockerfile, entityType);
+            // Lookup image ID or build new image from Dockerfile
+            String imageName = Identifiers.makeIdFromHash(Hashing.md5().hashString(dockerfile, Charsets.UTF_8).asLong()).toLowerCase();
+            String imageList = dockerHost.runDockerCommand("images --no-trunc " + Os.mergePaths("brooklyn", imageName));
+            if (Strings.containsLiteral(imageList, imageName)) {
+                imageId = Strings.getFirstWordAfter(imageList, "latest");
+            } else {
+                imageId = dockerHost.createSshableImage(dockerfile, imageName);
+            }
         } else if (Strings.isBlank(imageId)) {
             imageId = getOwner().getAttribute(DockerHost.DOCKER_IMAGE_ID);
         }
@@ -136,8 +145,8 @@ public class DockerHostLocation extends AbstractLocation implements
             hardwareId = getOwner().getConfig(DockerAttributes.DOCKER_HARDWARE_ID);
         }
 
-        // increase size of Docker container cluster
-        LOG.info("Increase size of Docker container cluster at {}", machine);
+        // Create new Docker container in the host cluster
+        LOG.info("Starting container with imageId {} and hardwareId {} at {}", new Object[] { imageId, hardwareId, machine });
         Map<Object, Object> containerFlags = MutableMap.builder()
                 .putAll(flags)
                 .put("entity", entity)

@@ -132,7 +132,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
     @Override
     public String getShortName() {
-        return "Docker container";
+        return "Docker Container";
     }
 
     @Override
