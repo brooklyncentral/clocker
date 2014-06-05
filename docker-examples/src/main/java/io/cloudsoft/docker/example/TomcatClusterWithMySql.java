@@ -51,6 +51,7 @@ import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.Sensors;
 import brooklyn.location.basic.PortRanges;
 import brooklyn.policy.autoscaling.AutoScalerPolicy;
+import brooklyn.util.time.Duration;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -122,11 +123,13 @@ public class TomcatClusterWithMySql extends AbstractApplication {
                 build());
 
         // simple scaling policy
-        web.getCluster().addPolicy(AutoScalerPolicy.builder().
-                metric(DynamicWebAppCluster.REQUESTS_PER_SECOND_IN_WINDOW_PER_NODE).
-                metricRange(10, 100).
-                sizeRange(1, 5).
-                build());
+        web.getCluster().addPolicy(AutoScalerPolicy.builder()
+                .metric(DynamicWebAppCluster.REQUESTS_PER_SECOND_IN_WINDOW_PER_NODE)
+                .metricRange(0.1, 10.0)
+                .sizeRange(getConfig(INITIAL_SIZE), 10)
+                .resizeDownStabilizationDelay(Duration.ONE_MINUTE.toMilliseconds())
+                .resizeUpStabilizationDelay(Duration.THIRTY_SECONDS.toMilliseconds())
+                .build());
 
         // expose some KPI's
         addEnricher(Enrichers.builder()
