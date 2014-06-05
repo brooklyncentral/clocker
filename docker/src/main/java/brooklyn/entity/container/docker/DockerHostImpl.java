@@ -23,6 +23,7 @@ import io.cloudsoft.networking.subnet.SubnetTierImpl;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jclouds.compute.domain.OsFamily;
@@ -36,6 +37,8 @@ import brooklyn.entity.basic.SoftwareProcessImpl;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.proxying.EntitySpec;
+import brooklyn.event.feed.function.FunctionFeed;
+import brooklyn.event.feed.function.FunctionPollConfig;
 import brooklyn.location.Location;
 import brooklyn.location.LocationDefinition;
 import brooklyn.location.MachineProvisioningLocation;
@@ -59,7 +62,10 @@ import brooklyn.util.collections.MutableMap;
 import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.text.Strings;
+import brooklyn.util.time.Duration;
 
+import com.google.common.base.Functions;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -75,6 +81,8 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     private JcloudsLocation jcloudsLocation;
     private DockerPortForwarder portForwarder;
     private SubnetTier subnetTier;
+
+    private transient FunctionFeed sensorFeed;
 
     @Override
     public void init() {
@@ -109,6 +117,7 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
                 .computingAverage()
                 .fromMembers()
                 .publishing(DockerAttributes.AVERAGE_CPU_USAGE)
+                .valueToReportIfNoSensors(0d)
                 .build());
 
         addEnricher(Enrichers.builder()
@@ -124,12 +133,73 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     @Override
     protected void connectSensors() {
         super.connectSensors();
+
+        sensorFeed = FunctionFeed.builder()
+                .entity(this)
+                .period(Duration.THIRTY_SECONDS)
+                .poll(new FunctionPollConfig<Double, Double>(DockerAttributes.LOAD_AVERAGE)
+                        .onFailureOrException(Functions.constant(-1d))
+                        .callable(new Callable<Double>() {
+                                @Override
+                                public Double call() throws Exception {
+                                    String output = getDriver().execCommand("uptime");
+                                    String loadAverage = Strings.getFirstWordAfter(output, "load average:").replace(",", "");
+                                    return Double.valueOf(loadAverage);
+                                }
+                        }))
+                .poll(new FunctionPollConfig<Double, Double>(DockerAttributes.CPU_USAGE)
+                        .onFailureOrException(Functions.constant(0d))
+                        .callable(new Callable<Double>() {
+                                @Override
+                                public Double call() throws Exception {
+                                    String output = getDriver().execCommand("cat /proc/stat");
+                                    List<String> cpuData = Splitter.on(" ").omitEmptyStrings().splitToList(Strings.getFirstLine(output));
+                                    Integer system = Integer.parseInt(cpuData.get(1));
+                                    Integer user = Integer.parseInt(cpuData.get(3));
+                                    Integer idle = Integer.parseInt(cpuData.get(4));
+                                    Double cpuUsage = (double) (system + user) / (double) (system + user + idle);
+                                    return cpuUsage * 100d;
+                                }
+                        }))
+                .poll(new FunctionPollConfig<Long, Long>(DockerAttributes.USED_MEMORY)
+                        .onFailureOrException(Functions.constant(-1L))
+                        .callable(new Callable<Long>() {
+                                @Override
+                                public Long call() throws Exception {
+                                    String output = getDriver().execCommand("free | grep Mem:");
+                                    List<String> memoryData = Splitter.on(" ").omitEmptyStrings().splitToList(Strings.getFirstLine(output));
+                                    return Long.parseLong(memoryData.get(2)) * 1024;
+                                }
+                        }))
+                .poll(new FunctionPollConfig<Long, Long>(DockerAttributes.FREE_MEMORY)
+                        .onFailureOrException(Functions.constant(-1L))
+                        .callable(new Callable<Long>() {
+                                @Override
+                                public Long call() throws Exception {
+                                    String output = getDriver().execCommand("free | grep Mem:");
+                                    List<String> memoryData = Splitter.on(" ").omitEmptyStrings().splitToList(Strings.getFirstLine(output));
+                                    return Long.parseLong(memoryData.get(3)) * 1024;
+                                }
+                        }))
+                .poll(new FunctionPollConfig<Long, Long>(DockerAttributes.TOTAL_MEMORY)
+                        .onFailureOrException(Functions.constant(-1L))
+                        .callable(new Callable<Long>() {
+                                @Override
+                                public Long call() throws Exception {
+                                    String output = getDriver().execCommand("free | grep Mem:");
+                                    List<String> memoryData = Splitter.on(" ").omitEmptyStrings().splitToList(Strings.getFirstLine(output));
+                                    return Long.parseLong(memoryData.get(1)) * 1024;
+                                }
+                        }))
+                .build();
+
         connectServiceUpIsRunning();
     }
 
     @Override
-    protected void disconnectSensors() {
+    public void disconnectSensors() {
         disconnectServiceUpIsRunning();
+        if (sensorFeed !=  null) sensorFeed.stop();
         super.disconnectSensors();
     }
 
@@ -212,7 +282,7 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     /** {@inheritDoc} */
     @Override
     public String runDockerCommand(String command) {
-       String stdout = getDriver().dockerCommand(command);
+       String stdout = getDriver().execCommand("docker " + command);
        if (LOG.isDebugEnabled()) LOG.debug("Successfully executed Docker {}: {}", Strings.getFirstWord(command), Strings.getFirstLine(stdout));
        return stdout;
     }
