@@ -251,6 +251,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
             Map<String, ?> flags = MutableMap.<String, Object>builder()
                     .putAll(getConfig(LOCATION_FLAGS))
                     .put("provisioner", provisioner)
+                    .putIfNotNull("strategy", getConfig(PLACEMENT_STRATEGY))
                     .build();
             createLocation(flags);
 

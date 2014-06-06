@@ -32,6 +32,7 @@ import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.BasicAttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.location.docker.DockerLocation;
+import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
 import brooklyn.location.dynamic.LocationOwner;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.util.flags.SetFromFlag;
@@ -58,6 +59,10 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
     @SetFromFlag("maxContainer")
     ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = ConfigKeys.newIntegerConfigKey("docker.container.cluster.maxSize",
             "Maximum size of a Docker container cluster", 4);
+
+    @SetFromFlag("strategy")
+    ConfigKey<DockerAwarePlacementStrategy> PLACEMENT_STRATEGY = ConfigKeys.newConfigKey(DockerAwarePlacementStrategy.class,
+            "docker.container.strategye", "Placement stratgy for Docker containers");
 
     @SetFromFlag("maxCpu")
     ConfigKey<Double> DOCKER_CONTAINER_CLUSTER_MAX_CPU = ConfigKeys.newDoubleConfigKey("docker.container.cluster.maxCpu",

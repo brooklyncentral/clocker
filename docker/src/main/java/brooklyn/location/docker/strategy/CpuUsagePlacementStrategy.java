@@ -40,9 +40,9 @@ import com.google.common.collect.Multimap;
 /**
  * Placement strategy that selects the Docker host with the lowest CPU usage.
  */
-public class DockerCpuUsagePlacementStrategy extends DockerNodePlacementStrategy {
+public class CpuUsagePlacementStrategy extends AbstractDockerPlacementStrategy {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DockerCpuUsagePlacementStrategy.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CpuUsagePlacementStrategy.class);
 
     @Override
     public List<Location> locationsForAdditions(Multimap<Location, Entity> currentMembers, Collection<? extends Location> locs, int numToAdd) {
@@ -95,17 +95,12 @@ public class DockerCpuUsagePlacementStrategy extends DockerNodePlacementStrategy
         return result;
     }
 
-    protected Map<DockerHostLocation, Integer> toAvailableLocationSizes(Iterable<DockerHostLocation> locs) {
+    public Map<DockerHostLocation, Integer> toAvailableLocationSizes(Iterable<DockerHostLocation> locs) {
         Map<DockerHostLocation, Integer> result = Maps.newLinkedHashMap();
         for (DockerHostLocation loc : locs) {
             result.put(loc, loc.getOwner().getAttribute(DockerAttributes.CPU_USAGE).intValue());
         }
         return result;
-    }
-
-    @Override
-    public String toString() {
-        return "Docker CPU Usage NodePlacementStrategy";
     }
 
 }

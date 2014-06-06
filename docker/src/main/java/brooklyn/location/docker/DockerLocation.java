@@ -36,7 +36,8 @@ import brooklyn.location.basic.AbstractLocation;
 import brooklyn.location.basic.LocationConfigKeys;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.cloud.AvailabilityZoneExtension;
-import brooklyn.location.docker.strategy.DockerNodePlacementStrategy;
+import brooklyn.location.docker.strategy.DepthFirstPlacementStrategy;
+import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
 import brooklyn.location.dynamic.DynamicLocation;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.config.ConfigBag;
@@ -87,12 +88,14 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
     public void init() {
         super.init();
         if (strategy == null) {
-            strategy = new DockerNodePlacementStrategy();
+            strategy = new DepthFirstPlacementStrategy();
         }
-        if (strategy instanceof DockerNodePlacementStrategy) {
+        if (strategy instanceof DockerAwarePlacementStrategy) {
             ConfigBag setup = ConfigBag.newInstanceCopying(getAllConfigBag())
-                    .configure(DockerNodePlacementStrategy.DOCKER_INFRASTRUCTURE, infrastructure);
-            ((DockerNodePlacementStrategy) strategy).init(setup);
+                    .configure(DockerAwarePlacementStrategy.DOCKER_INFRASTRUCTURE, infrastructure);
+            ((DockerAwarePlacementStrategy) strategy).init(setup);
+        } else {
+            LOG.warn("Placement strategy does not implement DockerAwarePlacementStrategy: %s", strategy);
         }
         addExtension(AvailabilityZoneExtension.class, new DockerHostExtension(getManagementContext(), this));
     }

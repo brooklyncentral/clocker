@@ -24,6 +24,7 @@ import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.proxying.EntitySpec;
+import brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy;
 import brooklyn.util.time.Duration;
 
 /**
@@ -64,6 +65,7 @@ public class BasicInfrastructure extends AbstractApplication {
                 .configure(DockerInfrastructure.LOCATION_NAME, getConfig(LOCATION_NAME))
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE))
                 .configure(DockerInfrastructure.DOCKER_HOST_SPEC, dockerSpec)
+                .configure(DockerInfrastructure.PLACEMENT_STRATEGY, new BreadthFirstPlacementStrategy()) // TODO make configurable
                 .displayName("Docker Infrastructure"));
     }
 }
