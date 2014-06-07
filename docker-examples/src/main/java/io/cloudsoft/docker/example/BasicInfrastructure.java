@@ -53,7 +53,7 @@ public class BasicInfrastructure extends AbstractApplication {
 
     @Override
     public void init() {
-        EntitySpec dockerSpec = EntitySpec.create(DockerHost.class)
+        EntitySpec<?> dockerSpec = EntitySpec.create(DockerHost.class)
                 .configure(SoftwareProcess.SUGGESTED_VERSION, getConfig(DOCKER_VERSION))
                 .configure(SoftwareProcess.START_TIMEOUT, Duration.minutes(15))
                 .configure(DockerHost.HA_POLICY_ENABLE, getConfig(HA_POLICY_ENABLE))

@@ -51,7 +51,6 @@ import brooklyn.entity.webapp.tomcat.TomcatServer;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.Sensors;
 import brooklyn.location.basic.PortRanges;
-import brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy;
 import brooklyn.location.docker.strategy.CpuUsagePlacementStrategy;
 import brooklyn.policy.autoscaling.AutoScalerPolicy;
 import brooklyn.util.time.Duration;

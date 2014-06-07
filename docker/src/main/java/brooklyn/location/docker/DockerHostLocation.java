@@ -68,6 +68,9 @@ public class DockerHostLocation extends AbstractLocation implements
         MachineProvisioningLocation<DockerContainerLocation>, DockerVirtualLocation,
         DynamicLocation<DockerHost, DockerHostLocation>, Closeable {
 
+    /** serialVersionUID */
+    private static final long serialVersionUID = -4603496125230031563L;
+
     private static final Logger LOG = LoggerFactory.getLogger(DockerHostLocation.class);
 
     @SetFromFlag("machine")
