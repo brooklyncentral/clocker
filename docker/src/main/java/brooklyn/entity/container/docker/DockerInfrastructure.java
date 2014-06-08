@@ -32,6 +32,7 @@ import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.BasicAttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.location.docker.DockerLocation;
+import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
 import brooklyn.location.dynamic.LocationOwner;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.util.flags.SetFromFlag;
@@ -59,9 +60,21 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
     ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = ConfigKeys.newIntegerConfigKey("docker.container.cluster.maxSize",
             "Maximum size of a Docker container cluster", 4);
 
-    @SetFromFlag("registerDockerHosts")
+    @SetFromFlag("strategy")
+    ConfigKey<DockerAwarePlacementStrategy> PLACEMENT_STRATEGY = ConfigKeys.newConfigKey(DockerAwarePlacementStrategy.class,
+            "docker.container.strategye", "Placement stratgy for Docker containers");
+
+    @SetFromFlag("maxCpu")
+    ConfigKey<Double> DOCKER_CONTAINER_CLUSTER_MAX_CPU = ConfigKeys.newDoubleConfigKey("docker.container.cluster.maxCpu",
+            "Maximum CPU usage across a Docker container cluster", 100d);
+
+    @SetFromFlag("registerHosts")
     ConfigKey<Boolean> REGISTER_DOCKER_HOST_LOCATIONS = ConfigKeys.newBooleanConfigKey("docker.host.register",
             "Register new Docker Host locations for deployment", Boolean.FALSE);
+
+    @SetFromFlag("removeEmptyHosts")
+    ConfigKey<Boolean> REMOVE_EMPTY_DOCKER_HOSTS = ConfigKeys.newBooleanConfigKey("docker.host.removeEmpty",
+            "Remove empty Docker Hosts with no containers", Boolean.FALSE);
 
     @SetFromFlag("hostSpec")
     BasicAttributeSensorAndConfigKey<EntitySpec> DOCKER_HOST_SPEC = new BasicAttributeSensorAndConfigKey<EntitySpec>(

@@ -25,15 +25,26 @@ import brooklyn.config.render.RendererHints;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.database.DatastoreMixins;
+import brooklyn.entity.database.mariadb.MariaDbNode;
+import brooklyn.entity.database.mysql.MySqlNode;
+import brooklyn.entity.database.postgresql.PostgreSqlNode;
 import brooklyn.entity.java.UsesJmx;
+import brooklyn.entity.messaging.MessageBroker;
 import brooklyn.entity.messaging.activemq.ActiveMQBroker;
+import brooklyn.entity.messaging.kafka.KafkaBroker;
+import brooklyn.entity.nosql.cassandra.CassandraNode;
+import brooklyn.entity.nosql.couchbase.CouchbaseNode;
+import brooklyn.entity.nosql.solr.SolrServer;
+import brooklyn.entity.proxy.nginx.NginxController;
 import brooklyn.entity.webapp.WebAppServiceConstants;
 import brooklyn.entity.webapp.jboss.JBoss7Server;
 import brooklyn.entity.webapp.tomcat.TomcatServer;
+import brooklyn.entity.zookeeper.ZooKeeperNode;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.util.text.ByteSizeStrings;
+import brooklyn.util.text.StringFunctions;
 import brooklyn.util.time.Duration;
 import brooklyn.util.time.Time;
 
@@ -51,6 +62,8 @@ public class DockerAttributes {
      * Configuration and constants.
      */
 
+    // TODO automate discovery of sensors to map
+
     public static final Set<String> PORT_SENSOR_NAMES = ImmutableSet.<String>of(
             Attributes.HTTP_PORT.getName(),
             Attributes.HTTPS_PORT.getName(),
@@ -64,11 +77,33 @@ public class DockerAttributes {
             JBoss7Server.MANAGEMENT_HTTPS_PORT.getName(),
             JBoss7Server.MANAGEMENT_NATIVE_PORT.getName(),
             TomcatServer.SHUTDOWN_PORT.getName(),
-            ActiveMQBroker.AMQ_JETTY_PORT.getName());
+            NginxController.PROXY_HTTP_PORT.getName(),
+            ActiveMQBroker.OPEN_WIRE_PORT.getName(),
+            ActiveMQBroker.AMQ_JETTY_PORT.getName(),
+            MySqlNode.MYSQL_PORT.getName(),
+            MariaDbNode.MARIADB_PORT.getName(),
+            PostgreSqlNode.POSTGRESQL_PORT.getName(),
+            CassandraNode.GOSSIP_PORT.getName(),
+            CassandraNode.THRIFT_PORT.getName(),
+            ZooKeeperNode.ZOOKEEPER_PORT.getName(),
+            KafkaBroker.KAFKA_PORT.getName(),
+            SolrServer.SOLR_PORT.getName(),
+            CouchbaseNode.COUCHBASE_API_PORT.getName(),
+            CouchbaseNode.COUCHBASE_CAPI_HTTPS_FOR_SSL.getName(),
+            CouchbaseNode.COUCHBASE_CLIENT_INTERFACE_PROXY.getName(),
+            CouchbaseNode.COUCHBASE_INCOMING_SSL_PROXY.getName(),
+            CouchbaseNode.COUCHBASE_INTERNAL_BUCKET_PORT.getName(),
+            CouchbaseNode.COUCHBASE_INTERNAL_EXTERNAL_BUCKET_PORT.getName(),
+            CouchbaseNode.COUCHBASE_INTERNAL_OUTGOING_SSL_PROXY.getName(),
+            CouchbaseNode.COUCHBASE_REST_HTTPS_FOR_SSL.getName(),
+            CouchbaseNode.COUCHBASE_WEB_ADMIN_PORT.getName(),
+            CouchbaseNode.ERLANG_PORT_MAPPER.getName());
 
     public static final Set<String> URL_SENSOR_NAMES = ImmutableSet.<String>of(
             WebAppServiceConstants.ROOT_URL.getName(),
-            DatastoreMixins.DATASTORE_URL.getName());
+            DatastoreMixins.DATASTORE_URL.getName(),
+            CouchbaseNode.COUCHBASE_WEB_ADMIN_URL.getName(),
+            MessageBroker.BROKER_URL.getName());
 
     public static final String DEFAULT_DOCKER_CONTAINER_NAME_FORMAT = "docker-container-brooklyn-%1$s";
     public static final String DEFAULT_DOCKER_HOST_NAME_FORMAT = "docker-host-brooklyn-%1$s";
@@ -89,17 +124,20 @@ public class DockerAttributes {
     public static final AttributeSensorAndConfigKey<String, String> DOCKER_HARDWARE_ID = ConfigKeys.newSensorAndConfigKey(String.class, "docker.hardwareId", "The ID of a Docker gardware type to use for a container", "small");
 
     /*
-     * Sensor attributes for Docker containers.
+     * Sensor attributes for Docker containers and hosts.
      */
 
-    public static final AttributeSensor<Duration> UPTIME = Sensors.newSensor(Duration.class, "docker.container.uptime", "Current uptime");
+    public static final AttributeSensor<Duration> UPTIME = Sensors.newSensor(Duration.class, "docker.machine.uptime", "Current uptime");
+    public static final AttributeSensor<Double> LOAD_AVERAGE = Sensors.newDoubleSensor("docker.machine.loadAverage", "Current load average");
 
-    public static final AttributeSensor<Double> CPU_USAGE = Sensors.newDoubleSensor("docker.container.cpu", "Current CPU usage");
+    public static final AttributeSensor<Double> CPU_USAGE = Sensors.newDoubleSensor("docker.machine.cpu", "Current CPU usage");
     public static final AttributeSensor<Double> AVERAGE_CPU_USAGE = Sensors.newDoubleSensor("docker.cpu.average", "Average CPU usage across the cluster");
 
-    public static final AttributeSensor<Long> USED_MEMORY = Sensors.newLongSensor("docker.container.memory", "Current memory usage");
-    public static final AttributeSensor<Long> USED_MEMORY_DELTA_PER_SECOND_LAST = Sensors.newLongSensor("docker.container.memory.delta", "Change in memory usage per second");
-    public static final AttributeSensor<Long> USED_MEMORY_DELTA_PER_SECOND_IN_WINDOW = Sensors.newLongSensor("docker.container.memory.windowed", "Average change in memory usage over 30s");
+    public static final AttributeSensor<Long> FREE_MEMORY = Sensors.newLongSensor("docker.machine.memory.free", "Current free memory");
+    public static final AttributeSensor<Long> TOTAL_MEMORY = Sensors.newLongSensor("docker.machine.memory.total", "Total memory");
+    public static final AttributeSensor<Long> USED_MEMORY = Sensors.newLongSensor("docker.machine.memory.used", "Current memory usage");
+    public static final AttributeSensor<Double> USED_MEMORY_DELTA_PER_SECOND_LAST = Sensors.newDoubleSensor("docker.memory.used.delta", "Change in memory usage per second");
+    public static final AttributeSensor<Double> USED_MEMORY_DELTA_PER_SECOND_IN_WINDOW = Sensors.newDoubleSensor("docker.memory.used.windowed", "Average change in memory usage over 30s");
 
     /*
      * Counter attributes.
@@ -112,22 +150,36 @@ public class DockerAttributes {
 
     private static AtomicBoolean initialized = new AtomicBoolean(false);
 
+    /** Returns a default value if the input is null. */
+    public static final <T> Function defaultValue(final T value) {
+        return new Function<T, T>() {
+            @Override
+            public T apply(@Nullable T input) {
+                return (input == null) ? value : input;
+            }
+        };
+    }
+
     /** Setup renderer hints. */
     @SuppressWarnings("rawtypes")
     public static void init() {
         if (initialized.getAndSet(true)) return;
 
-        Function longValue = new Function<Double, Long>() {
+        final Function longValue = new Function<Double, Long>() {
             @Override
             public Long apply(@Nullable Double input) {
                 if (input == null) return null;
                 return input.longValue();
             }
-
         };
 
         RendererHints.register(UPTIME, RendererHints.displayValue(Time.toTimeStringRounded()));
 
+        RendererHints.register(CPU_USAGE, RendererHints.displayValue(Functions.compose(StringFunctions.formatter("%.2f%%"), defaultValue(0d))));
+        RendererHints.register(AVERAGE_CPU_USAGE, RendererHints.displayValue(Functions.compose(StringFunctions.formatter("%.2f%%"), defaultValue(0d))));
+
+        RendererHints.register(FREE_MEMORY, RendererHints.displayValue(ByteSizeStrings.metric()));
+        RendererHints.register(TOTAL_MEMORY, RendererHints.displayValue(ByteSizeStrings.metric()));
         RendererHints.register(USED_MEMORY, RendererHints.displayValue(ByteSizeStrings.metric()));
         RendererHints.register(USED_MEMORY_DELTA_PER_SECOND_LAST, RendererHints.displayValue(Functions.compose(ByteSizeStrings.metric(), longValue)));
         RendererHints.register(USED_MEMORY_DELTA_PER_SECOND_IN_WINDOW, RendererHints.displayValue(Functions.compose(ByteSizeStrings.metric(), longValue)));

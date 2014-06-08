@@ -16,13 +16,13 @@
 #
 # sshd
 #
-# VERSION 0.0.2
+# VERSION 0.0.3
 
 FROM ubuntu:12.04
 MAINTAINER Cloudsoft "brooklyn@cloudsoftcorp.com"
 
 # make sure the package repository is up to date
-RUN echo "deb http://archive.ubuntu.com/ubuntu precise main universe" > /etc/apt/sources.list
+RUN ( echo "deb http://archive.ubuntu.com/ubuntu precise main universe" ; echo "deb http://archive.ubuntu.com/ubuntu precise-updates main universe" ) > /etc/apt/sources.list
 RUN apt-get update
 
 # setup root account

@@ -18,7 +18,6 @@ package brooklyn.location.docker;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +26,7 @@ import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
-import brooklyn.entity.container.docker.DockerNodePlacementStrategy;
+import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.group.DynamicCluster.NodePlacementStrategy;
 import brooklyn.location.Location;
 import brooklyn.location.MachineLocation;
@@ -35,20 +34,21 @@ import brooklyn.location.MachineProvisioningLocation;
 import brooklyn.location.NoMachinesAvailableException;
 import brooklyn.location.basic.AbstractLocation;
 import brooklyn.location.basic.LocationConfigKeys;
-import brooklyn.location.basic.Machines;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.cloud.AvailabilityZoneExtension;
+import brooklyn.location.docker.strategy.DepthFirstPlacementStrategy;
+import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
 import brooklyn.location.dynamic.DynamicLocation;
 import brooklyn.util.collections.MutableMap;
+import brooklyn.util.config.ConfigBag;
+import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.flags.SetFromFlag;
-import brooklyn.util.guava.Maybe;
 
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
 
 public class DockerLocation extends AbstractLocation implements DockerVirtualLocation,
         MachineProvisioningLocation<MachineLocation>, DynamicLocation<DockerInfrastructure, DockerLocation> {
@@ -69,9 +69,8 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
 
     /* Mappings for provisioned locations */
 
-    private final Set<SshMachineLocation> obtained = Sets.newHashSet();
     private final Multimap<SshMachineLocation, String> machines = HashMultimap.create();
-    private final Map<String, SshMachineLocation> containers = Maps.newHashMap();
+    private final Map<String, DockerHostLocation> containers = Maps.newHashMap();
 
     public DockerLocation() {
         this(Maps.newLinkedHashMap());
@@ -89,7 +88,14 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
     public void init() {
         super.init();
         if (strategy == null) {
-            strategy = new DockerNodePlacementStrategy();
+            strategy = new DepthFirstPlacementStrategy();
+        }
+        if (strategy instanceof DockerAwarePlacementStrategy) {
+            ConfigBag setup = ConfigBag.newInstanceCopying(getAllConfigBag())
+                    .configure(DockerAwarePlacementStrategy.DOCKER_INFRASTRUCTURE, infrastructure);
+            ((DockerAwarePlacementStrategy) strategy).init(setup);
+        } else {
+            LOG.warn("Placement strategy does not implement DockerAwarePlacementStrategy: %s", strategy);
         }
         addExtension(AvailabilityZoneExtension.class, new DockerHostExtension(getManagementContext(), this));
     }
@@ -134,15 +140,9 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
                 LOG.debug("Obtain a new container from {} for {}", machine, entity);
             }
             DockerContainerLocation container = machine.obtain(MutableMap.of("entity", entity));
+            machines.put(machine.getMachine(), container.getId());
+            containers.put(container.getId(), machine);
 
-            Maybe<SshMachineLocation> deployed = Machines.findUniqueSshMachineLocation(dockerHost.getLocations());
-            if (deployed.isPresent()) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Storing container mapping {} to {}", deployed.get(), machine.getId());
-                }
-                machines.put(machine.getMachine(), dockerHost.getId());
-                containers.put(container.getId(), deployed.get());
-            }
             return container;
         }
     }
@@ -154,36 +154,54 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
 
     @Override
     public void release(MachineLocation machine) {
-        if (provisioner != null) {
-            synchronized (mutex) {
-                String id = machine.getId();
-                SshMachineLocation ssh = containers.remove(id);
-                if (ssh != null) {
+        if (provisioner == null) {
+            throw new IllegalStateException("No provisioner available to release "+machine);
+        }
+        synchronized (mutex) {
+            String id = machine.getId();
+            DockerHostLocation host = containers.remove(id);
+            if (host == null) {
+                throw new IllegalArgumentException("Request to release "+machine+", but this machine is not currently allocated");
+            }
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Request to remove container mapping {} to {}", host, id);
+            }
+            host.release((DockerContainerLocation) machine);
+            if (machines.remove(host.getMachine(), id)) {
+                if (machines.get(host.getMachine()).isEmpty()) {
                     if (LOG.isDebugEnabled()) {
-                        LOG.debug("Request to remove container mapping {} to {}", ssh, id);
+                        LOG.debug("Empty Docker host: {}", host);
                     }
-                    if (machines.remove(ssh, id)) {
-                        if (machines.get(ssh).isEmpty()) {
-                            if (LOG.isDebugEnabled()) {
-                                LOG.debug("Empty Docker host at {}", ssh);
-                            }
-                        }
-                    } else {
-                        throw new IllegalArgumentException("Request to release "+machine+", but container mapping not found");
-                    }
-                } else {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("Request to release machine {}", machine);
-                    }
-                    if (obtained.remove(machine)) {
-                        provisioner.release((SshMachineLocation) machine);
-                    } else {
-                        throw new IllegalArgumentException("Request to release "+machine+", but this machine is not currently allocated");
+                    if (getOwner().getConfig(DockerInfrastructure.REMOVE_EMPTY_DOCKER_HOSTS)) {
+                        LOG.info("Removing empty Docker host: {}", host);
+                        remove(host);
                     }
                 }
+            } else {
+                throw new IllegalArgumentException("Request to release "+machine+", but container mapping not found");
             }
+        }
+    }
+
+    protected void remove(DockerHostLocation machine) {
+        LOG.info("Releasing {}", machine);
+        DynamicCluster cluster = infrastructure.getDockerHostCluster();
+        DockerHost host = machine.getOwner();
+        if (cluster.removeMember(host)) {
+            LOG.info("Docker Host {} released", host.getDockerHostName());
         } else {
-            throw new IllegalStateException("No provisioner available to release "+machine);
+            LOG.warn("Docker Host {} not found for release", host.getDockerHostName());
+        }
+
+        // Now close and unmange the host
+        try {
+            machine.close();
+            host.stop();
+        } catch (Exception e) {
+            LOG.warn("Error stopping host: " + host, e);
+            Exceptions.propagateIfFatal(e);
+        } finally {
+            Entities.unmanage(host);
         }
     }
 

@@ -42,6 +42,7 @@ import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.dynamic.LocationOwner;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.util.flags.SetFromFlag;
+import brooklyn.util.time.Duration;
 
 /**
  * A single machine running Docker.
@@ -56,11 +57,17 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
     @SetFromFlag("version")
     ConfigKey<String> SUGGESTED_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "0.11");
 
+    @SetFromFlag("startTimeout")
+    ConfigKey<Duration> START_TIMEOUT = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.START_TIMEOUT, Duration.FIVE_MINUTES);
+
     BasicAttributeSensorAndConfigKey<String> DOWNLOAD_URL = new BasicAttributeSensorAndConfigKey<String>(
             SoftwareProcess.DOWNLOAD_URL, "https://get.docker.io/builds/Linux/x86_64/docker-latest");
 
     @SetFromFlag("maxSize")
     ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = DockerInfrastructure.DOCKER_CONTAINER_CLUSTER_MAX_SIZE;
+
+    @SetFromFlag("maxCpu")
+    ConfigKey<Double> DOCKER_CONTAINER_CLUSTER_MAX_CPU = DockerInfrastructure.DOCKER_CONTAINER_CLUSTER_MAX_CPU;
 
     @SetFromFlag("highAvailabilty")
     ConfigKey<Boolean> HA_POLICY_ENABLE = ConfigKeys.newBooleanConfigKey("docker.policy.ha.enable",
@@ -90,6 +97,11 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
     AttributeSensorAndConfigKey<String, String> DOCKER_HARDWARE_ID = DockerAttributes.DOCKER_HARDWARE_ID;
 
     AttributeSensor<String> HOST_NAME = Sensors.newStringSensor("docker.host.name", "The name of the Docker host");
+
+    AttributeSensor<Duration> UPTIME = DockerAttributes.UPTIME;
+    AttributeSensor<Double> LOAD_AVERAGE = DockerAttributes.LOAD_AVERAGE;
+    AttributeSensor<Double> CPU_USAGE = DockerAttributes.CPU_USAGE;
+    AttributeSensor<Long> USED_MEMORY = DockerAttributes.USED_MEMORY;
 
     Integer getDockerPort();
 

@@ -15,17 +15,20 @@
  */
 package brooklyn.entity.container.docker;
 
+import io.cloudsoft.networking.portforwarding.DockerPortForwarder;
+import io.cloudsoft.networking.subnet.PortForwarder;
+import io.cloudsoft.networking.subnet.SubnetTier;
+import io.cloudsoft.networking.subnet.SubnetTierImpl;
+
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jclouds.compute.domain.OsFamily;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import brooklyn.enricher.Enrichers;
 import brooklyn.entity.Entity;
@@ -34,10 +37,12 @@ import brooklyn.entity.basic.SoftwareProcessImpl;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.proxying.EntitySpec;
+import brooklyn.event.feed.function.FunctionFeed;
+import brooklyn.event.feed.function.FunctionPollConfig;
 import brooklyn.location.Location;
 import brooklyn.location.LocationDefinition;
 import brooklyn.location.MachineProvisioningLocation;
-import brooklyn.location.access.PortForwardManager;
+import brooklyn.location.access.PortForwardManagerAuthority;
 import brooklyn.location.basic.BasicLocationDefinition;
 import brooklyn.location.basic.Machines;
 import brooklyn.location.basic.SshMachineLocation;
@@ -57,10 +62,12 @@ import brooklyn.util.collections.MutableMap;
 import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.text.Strings;
-import io.cloudsoft.networking.portforwarding.DockerPortForwarder;
-import io.cloudsoft.networking.subnet.PortForwarder;
-import io.cloudsoft.networking.subnet.SubnetTier;
-import io.cloudsoft.networking.subnet.SubnetTierImpl;
+import brooklyn.util.time.Duration;
+
+import com.google.common.base.Functions;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 /**
  * The host running the Docker service.
@@ -74,6 +81,8 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     private JcloudsLocation jcloudsLocation;
     private DockerPortForwarder portForwarder;
     private SubnetTier subnetTier;
+
+    private transient FunctionFeed sensorFeed;
 
     @Override
     public void init() {
@@ -103,19 +112,8 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
 
         if (Entities.isManaged(this)) Entities.manage(containers);
 
-        containers.addEnricher(Enrichers.builder()
-                .aggregating(DockerAttributes.CPU_USAGE)
-                .computingAverage()
-                .fromMembers()
-                .publishing(DockerAttributes.AVERAGE_CPU_USAGE)
-                .build());
-
         addEnricher(Enrichers.builder()
                 .propagating(ImmutableMap.of(DynamicCluster.GROUP_SIZE, DockerAttributes.DOCKER_CONTAINER_COUNT))
-                .from(containers)
-                .build());
-        addEnricher(Enrichers.builder()
-                .propagating(DockerAttributes.AVERAGE_CPU_USAGE)
                 .from(containers)
                 .build());
     }
@@ -123,12 +121,73 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     @Override
     protected void connectSensors() {
         super.connectSensors();
+
+        sensorFeed = FunctionFeed.builder()
+                .entity(this)
+                .period(Duration.THIRTY_SECONDS)
+                .poll(new FunctionPollConfig<Double, Double>(DockerAttributes.LOAD_AVERAGE)
+                        .onFailureOrException(Functions.constant(-1d))
+                        .callable(new Callable<Double>() {
+                                @Override
+                                public Double call() throws Exception {
+                                    String output = getDriver().execCommand("uptime");
+                                    String loadAverage = Strings.getFirstWordAfter(output, "load average:").replace(",", "");
+                                    return Double.valueOf(loadAverage);
+                                }
+                        }))
+                .poll(new FunctionPollConfig<Double, Double>(DockerAttributes.CPU_USAGE)
+                        .onFailureOrException(Functions.constant(0d))
+                        .callable(new Callable<Double>() {
+                                @Override
+                                public Double call() throws Exception {
+                                    String output = getDriver().execCommand("cat /proc/stat");
+                                    List<String> cpuData = Splitter.on(" ").omitEmptyStrings().splitToList(Strings.getFirstLine(output));
+                                    Integer system = Integer.parseInt(cpuData.get(1));
+                                    Integer user = Integer.parseInt(cpuData.get(3));
+                                    Integer idle = Integer.parseInt(cpuData.get(4));
+                                    Double cpuUsage = (double) (system + user) / (double) (system + user + idle);
+                                    return cpuUsage * 100d;
+                                }
+                        }))
+                .poll(new FunctionPollConfig<Long, Long>(DockerAttributes.USED_MEMORY)
+                        .onFailureOrException(Functions.constant(-1L))
+                        .callable(new Callable<Long>() {
+                                @Override
+                                public Long call() throws Exception {
+                                    String output = getDriver().execCommand("free | grep Mem:");
+                                    List<String> memoryData = Splitter.on(" ").omitEmptyStrings().splitToList(Strings.getFirstLine(output));
+                                    return Long.parseLong(memoryData.get(2)) * 1024;
+                                }
+                        }))
+                .poll(new FunctionPollConfig<Long, Long>(DockerAttributes.FREE_MEMORY)
+                        .onFailureOrException(Functions.constant(-1L))
+                        .callable(new Callable<Long>() {
+                                @Override
+                                public Long call() throws Exception {
+                                    String output = getDriver().execCommand("free | grep Mem:");
+                                    List<String> memoryData = Splitter.on(" ").omitEmptyStrings().splitToList(Strings.getFirstLine(output));
+                                    return Long.parseLong(memoryData.get(3)) * 1024;
+                                }
+                        }))
+                .poll(new FunctionPollConfig<Long, Long>(DockerAttributes.TOTAL_MEMORY)
+                        .onFailureOrException(Functions.constant(-1L))
+                        .callable(new Callable<Long>() {
+                                @Override
+                                public Long call() throws Exception {
+                                    String output = getDriver().execCommand("free | grep Mem:");
+                                    List<String> memoryData = Splitter.on(" ").omitEmptyStrings().splitToList(Strings.getFirstLine(output));
+                                    return Long.parseLong(memoryData.get(1)) * 1024;
+                                }
+                        }))
+                .build();
+
         connectServiceUpIsRunning();
     }
 
     @Override
-    protected void disconnectSensors() {
+    public void disconnectSensors() {
         disconnectServiceUpIsRunning();
+        if (sensorFeed !=  null) sensorFeed.stop();
         super.disconnectSensors();
     }
 
@@ -204,15 +263,15 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     @Override
     public String createSshableImage(String dockerFile, String name) {
        String imageId = getDriver().buildImage(dockerFile, name);
-       LOG.info("Successfully created image {} (brooklyn/{})", imageId, name);
+       if (LOG.isDebugEnabled()) LOG.debug("Successfully created image {} (brooklyn/{})", imageId, name);
        return imageId;
     }
 
     /** {@inheritDoc} */
     @Override
     public String runDockerCommand(String command) {
-       String stdout = getDriver().dockerCommand(command);
-       LOG.info("Successfully executed Docker {}", Strings.getFirstWord(command));
+       String stdout = getDriver().execCommand("docker " + command);
+       if (LOG.isDebugEnabled()) LOG.debug("Successfully executed Docker {}: {}", Strings.getFirstWord(command), Strings.getFirstLine(stdout));
        return stdout;
     }
 
@@ -252,6 +311,9 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
 
         final LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
         Location location = getManagementContext().getLocationRegistry().resolve(definition);
+        setAttribute(DYNAMIC_LOCATION, location);
+        setAttribute(LOCATION_NAME, location.getId());
+
         if (getConfig(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS)) {
             getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
         }
@@ -267,9 +329,6 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
                 getManagementContext().getLocationManager().manage(resolved);
             }
         });
-
-        setAttribute(DYNAMIC_LOCATION, location);
-        setAttribute(LOCATION_NAME, location.getId());
 
         LOG.info("New Docker host location {} created", location);
         return (DockerHostLocation) location;
@@ -301,11 +360,10 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
         jcloudsLocation = (JcloudsLocation) getManagementContext().getLocationRegistry()
                 .resolve(dockerLocationSpec, MutableMap.of("identity", "docker", "credential", "docker"));
 
-        portForwarder = new DockerPortForwarder(new PortForwardManager());
+        portForwarder = new DockerPortForwarder(new PortForwardManagerAuthority(this));
         portForwarder.init(URI.create(jcloudsLocation.getEndpoint()));
 
-        subnetTier = addChild(EntitySpec.create(SubnetTier.class)
-                .impl(SubnetTierImpl.class)
+        subnetTier = addChild(EntitySpec.create(SubnetTier.class, SubnetTierImpl.class)
                 .configure(SubnetTier.PORT_FORWARDER, portForwarder)
                 .configure(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL));
         subnetTier.start(ImmutableList.of(found.get()));

@@ -122,10 +122,11 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         setAttribute(DOCKER_APPLICATIONS, buckets);
 
         hosts.addEnricher(Enrichers.builder()
-                .aggregating(DockerAttributes.AVERAGE_CPU_USAGE)
+                .aggregating(DockerAttributes.CPU_USAGE)
                 .computingAverage()
                 .fromMembers()
                 .publishing(DockerAttributes.AVERAGE_CPU_USAGE)
+                .valueToReportIfNoSensors(0d)
                 .build());
         hosts.addEnricher(Enrichers.builder()
                 .aggregating(DOCKER_CONTAINER_COUNT)
@@ -250,6 +251,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
             Map<String, ?> flags = MutableMap.<String, Object>builder()
                     .putAll(getConfig(LOCATION_FLAGS))
                     .put("provisioner", provisioner)
+                    .putIfNotNull("strategy", getConfig(PLACEMENT_STRATEGY))
                     .build();
             createLocation(flags);
 

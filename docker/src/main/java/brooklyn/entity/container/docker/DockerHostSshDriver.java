@@ -76,13 +76,13 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         copyTemplate(dockerFile, Os.mergePaths(name, DOCKERFILE));
 
         // Build an image from the Dockerfile
-        String build = format("build --rm -t %s - < %s", Os.mergePaths("brooklyn", name), Os.mergePaths(getRunDir(), name, DOCKERFILE));
-        String stdout = dockerCommand(build);
+        String build = format("docker build --rm -t %s - < %s", Os.mergePaths("brooklyn", name), Os.mergePaths(getRunDir(), name, DOCKERFILE));
+        String stdout = execCommand(build, Duration.minutes(15));
         String prefix = Strings.getFirstWordAfter(stdout, "Successfully built");
 
         // Inspect the Docker image with this prefix
-        String inspect = format("inspect --format={{.id}} %s", prefix);
-        String imageId = dockerCommand(inspect);
+        String inspect = format("docker inspect --format={{.id}} %s", prefix);
+        String imageId = execCommand(inspect);
 
         // Parse and return the Image ID
         imageId = Strings.trim(imageId).toLowerCase(Locale.ENGLISH);
@@ -93,27 +93,30 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         }
     }
 
-
     /** {@inheritDoc} */
     @Override
-    public String dockerCommand(String command) {
+    public String execCommand(String command) {
+        return execCommand(command, Duration.ONE_MINUTE);
+    }
+
+    private String execCommand(String command, Duration timeout) {
         try {
-            ProcessTaskWrapper<Integer> task = SshEffectorTasks.ssh(sudo("docker " + command))
+            ProcessTaskWrapper<Integer> task = SshEffectorTasks.ssh(sudo(command))
                     .machine(getMachine())
-                    .summary("docker " + Strings.getFirstWord(command))
+                    .summary(Strings.getFirstWord(command))
                     .newTask();
             Integer result = DynamicTasks.queueIfPossible(task)
                     .executionContext(getEntity())
                     .orSubmitAsync()
                     .asTask()
-                    .get(Duration.minutes(10));
+                    .get(timeout);
             if (result != 0) {
-                log.warn("Docker command failed: {}", task.getStderr());
-                throw new IllegalStateException("Docker command failed, return code " + result);
+                log.warn("Command failed: {}", task.getStderr());
+                throw new IllegalStateException("Command failed, return code " + result);
             }
             return task.getStdout();
         } catch (TimeoutException te) {
-            throw new IllegalStateException("Timed out running Docker " + Strings.getFirstWord(command));
+            throw new IllegalStateException("Timed out running command: " + command);
         } catch (Exception e) {
             throw Exceptions.propagate(e);
         }
