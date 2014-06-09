@@ -46,6 +46,7 @@ import brooklyn.event.basic.Sensors;
 import brooklyn.location.MachineProvisioningLocation;
 import brooklyn.location.NoMachinesAvailableException;
 import brooklyn.location.basic.AbstractLocation;
+import brooklyn.location.basic.LocationConfigKeys;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.dynamic.DynamicLocation;
 import brooklyn.location.jclouds.JcloudsLocation;
@@ -102,14 +103,20 @@ public class DockerHostLocation extends AbstractLocation implements
     public DockerContainerLocation obtain(Map<?,?> flags) throws NoMachinesAvailableException {
         Integer maxSize = dockerHost.getConfig(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
         Integer currentSize = dockerHost.getAttribute(DockerAttributes.DOCKER_CONTAINER_COUNT);
-        Entity entity = (Entity) flags.get("entity");
         if (LOG.isDebugEnabled()) {
             LOG.debug("Docker host {}: {} containers, max {}", new Object[] { dockerHost.getDockerHostName(), currentSize, maxSize });
         }
-
         if (currentSize != null && currentSize >= maxSize) {
             throw new NoMachinesAvailableException(String.format("Limit of %d containers reached at %s", maxSize, dockerHost.getDockerHostName()));
         }
+
+        // Lookup entity from context or flags
+        Object context = flags.get(LocationConfigKeys.CALLER_CONTEXT.getName());
+        if (context == null) context = flags.get("entity");
+        if (context != null && !(context instanceof Entity)) {
+            throw new IllegalStateException("Invalid location context: " + context);
+        }
+        Entity entity = (Entity) context;
 
         // Configure the entity
         LOG.info("Configuring entity {} via subnet {}", entity, dockerHost.getSubnetTier());

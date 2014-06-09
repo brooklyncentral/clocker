@@ -48,6 +48,8 @@ public class CpuUsagePlacementStrategy extends AbstractDockerPlacementStrategy {
     public List<Location> locationsForAdditions(Multimap<Location, Entity> currentMembers, Collection<? extends Location> locs, int numToAdd) {
         if (locs.isEmpty() && numToAdd > 0) {
             throw new IllegalArgumentException("No locations supplied, when requesting locations for "+numToAdd+" nodes");
+        } else {
+            init(locs);
         }
 
         // Reject hosts over the allowed maximum CPU

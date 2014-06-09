@@ -52,7 +52,6 @@ import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.Sensors;
 import brooklyn.location.basic.PortRanges;
 import brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy;
-import brooklyn.location.docker.strategy.CpuUsagePlacementStrategy;
 import brooklyn.policy.autoscaling.AutoScalerPolicy;
 import brooklyn.util.time.Duration;
 
@@ -101,7 +100,7 @@ public class TomcatClusterWithMySql extends AbstractApplication {
         ControlledDynamicWebAppCluster web = addChild(EntitySpec.create(ControlledDynamicWebAppCluster.class)
                 .configure(Cluster.INITIAL_SIZE, getConfig(INITIAL_SIZE))
                 .configure(DynamicCluster.ENABLE_AVAILABILITY_ZONES, true)
-                .configure(DynamicCluster.ZONE_PLACEMENT_STRATEGY, new CpuUsagePlacementStrategy())
+                .configure(DynamicCluster.ZONE_PLACEMENT_STRATEGY, new BreadthFirstPlacementStrategy())
                 .configure(ControlledDynamicWebAppCluster.MEMBER_SPEC, EntitySpec.create(TomcatServer.class)
                         .configure(DockerAttributes.DOCKERFILE_URL, "https://s3-eu-west-1.amazonaws.com/brooklyn-docker/UsesJavaDockerfile")
                         .configure(WebAppService.HTTP_PORT, PortRanges.fromString("8080+"))

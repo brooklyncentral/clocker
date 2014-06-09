@@ -49,6 +49,8 @@ public class BreadthFirstPlacementStrategy extends AbstractDockerPlacementStrate
     public List<Location> locationsForAdditions(Multimap<Location, Entity> currentMembers, Collection<? extends Location> locs, int numToAdd) {
         if (locs.isEmpty() && numToAdd > 0) {
             throw new IllegalArgumentException("No locations supplied, when requesting locations for "+numToAdd+" nodes");
+        } else {
+            init(locs);
         }
 
         List<DockerHostLocation> available = Lists.newArrayList(Iterables.filter(locs, DockerHostLocation.class));

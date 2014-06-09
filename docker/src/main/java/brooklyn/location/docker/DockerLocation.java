@@ -90,13 +90,6 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
         if (strategy == null) {
             strategy = new DepthFirstPlacementStrategy();
         }
-        if (strategy instanceof DockerAwarePlacementStrategy) {
-            ConfigBag setup = ConfigBag.newInstanceCopying(getAllConfigBag())
-                    .configure(DockerAwarePlacementStrategy.DOCKER_INFRASTRUCTURE, infrastructure);
-            ((DockerAwarePlacementStrategy) strategy).init(setup);
-        } else {
-            LOG.warn("Placement strategy does not implement DockerAwarePlacementStrategy: %s", strategy);
-        }
         addExtension(AvailabilityZoneExtension.class, new DockerHostExtension(getManagementContext(), this));
     }
 

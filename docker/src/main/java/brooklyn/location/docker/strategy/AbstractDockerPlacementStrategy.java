@@ -15,6 +15,8 @@
  */
 package brooklyn.location.docker.strategy;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -22,10 +24,13 @@ import javax.annotation.Nullable;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.group.zoneaware.BalancingNodePlacementStrategy;
 import brooklyn.entity.trait.Identifiable;
+import brooklyn.location.Location;
 import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.util.config.ConfigBag;
 
 import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 /**
@@ -47,8 +52,10 @@ public abstract class AbstractDockerPlacementStrategy extends BalancingNodePlace
     protected DockerInfrastructure infrastructure;
 
     @Override
-    public void init(ConfigBag setup) {
-        infrastructure = setup.get(DOCKER_INFRASTRUCTURE);
+    public void init(Collection<? extends Location> locs) {
+        List<DockerHostLocation> available = Lists.newArrayList(Iterables.filter(locs, DockerHostLocation.class));
+        DockerHostLocation first = Iterables.get(available, 0);
+        infrastructure = first.getDockerInfrastructure();
     }
 
     @Override
