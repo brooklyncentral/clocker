@@ -19,8 +19,8 @@ or [docker-infrastructure.yaml](https://raw.githubusercontent.com/cloudsoft/broo
     % mvn clean install assembly:single
 
     % cd target
-    % tar zxvf brooklyn-docker-examples-0.2.0-SNAPSHOT-dist.tar.gz
-    % cd brooklyn-docker-examples-0.2.0-SNAPSHOT
+    % tar zxvf brooklyn-docker-examples-0.2.0-dist.tar.gz
+    % cd brooklyn-docker-examples-0.2.0
     % ./start.sh launch --infrastructure --location cloud
 
 Where `cloud` can be e.g. `jclouds:softlayer`, or a named location or a fixed IP e.g. `byon:(hosts="1.2.3.4")`. Those
