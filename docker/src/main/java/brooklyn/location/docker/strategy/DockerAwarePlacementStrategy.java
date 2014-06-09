@@ -15,23 +15,20 @@
  */
 package brooklyn.location.docker.strategy;
 
+import java.util.Collection;
 import java.util.Map;
 
-import brooklyn.config.ConfigKey;
-import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.group.DynamicCluster.NodePlacementStrategy;
+import brooklyn.location.Location;
 import brooklyn.location.docker.DockerHostLocation;
-import brooklyn.util.config.ConfigBag;
 
 /**
  * Placement strategy for Docker containers in host clusters.
  */
 public interface DockerAwarePlacementStrategy extends NodePlacementStrategy {
 
-    ConfigKey<DockerInfrastructure> DOCKER_INFRASTRUCTURE = DockerHost.DOCKER_INFRASTRUCTURE;
-
-    void init(ConfigBag setup);
+    void init(Collection<? extends Location> locs);
 
     DockerInfrastructure getDockerInfrastructure();
 
