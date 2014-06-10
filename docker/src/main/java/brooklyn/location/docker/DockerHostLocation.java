@@ -65,11 +65,16 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.hash.Hashing;
 
-public class DockerHostLocation extends AbstractLocation implements
-        MachineProvisioningLocation<DockerContainerLocation>, DockerVirtualLocation,
+public class DockerHostLocation extends AbstractLocation implements MachineProvisioningLocation<DockerContainerLocation>, DockerVirtualLocation,
         DynamicLocation<DockerHost, DockerHostLocation>, Closeable {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DockerHostLocation.class);
+    /** serialVersionUID */
+	private static final long serialVersionUID = -1453203257759956820L;
+
+	private static final Logger LOG = LoggerFactory.getLogger(DockerHostLocation.class);
+
+    @SetFromFlag("mutex")
+    private Object mutex;
 
     @SetFromFlag("machine")
     private SshMachineLocation machine;
@@ -95,84 +100,94 @@ public class DockerHostLocation extends AbstractLocation implements
         }
     }
 
+    @Override
+    public void configure(Map properties) {
+        if (mutex == null) {
+            mutex = new Object[0];
+        }
+        super.configure(properties);
+    }
+
     public DockerContainerLocation obtain() throws NoMachinesAvailableException {
         return obtain(Maps.<String,Object>newLinkedHashMap());
     }
 
     @Override
     public DockerContainerLocation obtain(Map<?,?> flags) throws NoMachinesAvailableException {
-        Integer maxSize = dockerHost.getConfig(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
-        Integer currentSize = dockerHost.getAttribute(DockerAttributes.DOCKER_CONTAINER_COUNT);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Docker host {}: {} containers, max {}", new Object[] { dockerHost.getDockerHostName(), currentSize, maxSize });
-        }
-        if (currentSize != null && currentSize >= maxSize) {
-            throw new NoMachinesAvailableException(String.format("Limit of %d containers reached at %s", maxSize, dockerHost.getDockerHostName()));
-        }
+    	synchronized (mutex) {
+	        Integer maxSize = dockerHost.getConfig(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
+	        Integer currentSize = dockerHost.getAttribute(DockerAttributes.DOCKER_CONTAINER_COUNT);
+	        if (LOG.isDebugEnabled()) {
+	            LOG.debug("Docker host {}: {} containers, max {}", new Object[] { dockerHost.getDockerHostName(), currentSize, maxSize });
+	        }
+	        if (currentSize != null && currentSize >= maxSize) {
+	            throw new NoMachinesAvailableException(String.format("Limit of %d containers reached at %s", maxSize, dockerHost.getDockerHostName()));
+	        }
 
-        // Lookup entity from context or flags
-        Object context = flags.get(LocationConfigKeys.CALLER_CONTEXT.getName());
-        if (context == null) context = flags.get("entity");
-        if (context != null && !(context instanceof Entity)) {
-            throw new IllegalStateException("Invalid location context: " + context);
-        }
-        Entity entity = (Entity) context;
+	        // Lookup entity from context or flags
+	        Object context = flags.get(LocationConfigKeys.CALLER_CONTEXT.getName());
+	        if (context == null) context = flags.get("entity");
+	        if (context != null && !(context instanceof Entity)) {
+	            throw new IllegalStateException("Invalid location context: " + context);
+	        }
+	        Entity entity = (Entity) context;
 
-        // Configure the entity
-        LOG.info("Configuring entity {} via subnet {}", entity, dockerHost.getSubnetTier());
-        ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.PORT_FORWARDING_MANAGER, dockerHost.getSubnetTier().getPortForwardManager());
-        ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.PORT_FORWARDER, portForwarder);
-        ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL);
-        configureEnrichers((AbstractEntity) entity);
+	        // Configure the entity
+	        LOG.info("Configuring entity {} via subnet {}", entity, dockerHost.getSubnetTier());
+	        ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.PORT_FORWARDING_MANAGER, dockerHost.getSubnetTier().getPortForwardManager());
+	        ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.PORT_FORWARDER, portForwarder);
+	        ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL);
+	        configureEnrichers((AbstractEntity) entity);
 
-        // TODO choose Dockerfile based on entity interfaces such as UsesJava
+	        // TODO choose Dockerfile based on entity interfaces such as UsesJava
 
-        // Add the entity Dockerfile if configured
-        String dockerfile = entity.getConfig(DockerAttributes.DOCKERFILE_URL);
-        String imageId = entity.getConfig(DockerAttributes.DOCKER_IMAGE_ID);
-        String imageName = null;
-        if (Strings.isNonBlank(dockerfile)) {
-            if (imageId != null) {
-                LOG.warn("Ignoring container imageId {} as dockerfile URL is set: {}", imageId, dockerfile);
-            }
-            // Lookup image ID or build new image from Dockerfile
-            imageName = Identifiers.makeIdFromHash(Hashing.md5().hashString(dockerfile, Charsets.UTF_8).asLong()).toLowerCase();
-            String imageList = dockerHost.runDockerCommand("images --no-trunc " + Os.mergePaths("brooklyn", imageName));
-            if (Strings.containsLiteral(imageList, imageName)) {
-                imageId = Strings.getFirstWordAfter(imageList, "latest");
-            } else {
-                imageId = dockerHost.createSshableImage(dockerfile, imageName);
-            }
-        } else if (Strings.isBlank(imageId)) {
-            imageId = getOwner().getAttribute(DockerHost.DOCKER_IMAGE_ID);
-        }
+	        // Add the entity Dockerfile if configured
+	        String dockerfile = entity.getConfig(DockerAttributes.DOCKERFILE_URL);
+	        String imageId = entity.getConfig(DockerAttributes.DOCKER_IMAGE_ID);
+	        String imageName = null;
+	        if (Strings.isNonBlank(dockerfile)) {
+	            if (imageId != null) {
+	                LOG.warn("Ignoring container imageId {} as dockerfile URL is set: {}", imageId, dockerfile);
+	            }
+	            // Lookup image ID or build new image from Dockerfile
+	            imageName = Identifiers.makeIdFromHash(Hashing.md5().hashString(dockerfile, Charsets.UTF_8).asLong()).toLowerCase();
+	            String imageList = dockerHost.runDockerCommand("images --no-trunc " + Os.mergePaths("brooklyn", imageName));
+	            if (Strings.containsLiteral(imageList, imageName)) {
+	                imageId = Strings.getFirstWordAfter(imageList, "latest");
+	            } else {
+	                imageId = dockerHost.createSshableImage(dockerfile, imageName);
+	            }
+	        } else if (Strings.isBlank(imageId)) {
+	            imageId = getOwner().getAttribute(DockerHost.DOCKER_IMAGE_ID);
+	        }
 
-        // Look up hardware ID
-        String hardwareId = entity.getConfig(DockerAttributes.DOCKER_HARDWARE_ID);
-        if (Strings.isEmpty(hardwareId)) {
-            hardwareId = getOwner().getConfig(DockerAttributes.DOCKER_HARDWARE_ID);
-        }
+	        // Look up hardware ID
+	        String hardwareId = entity.getConfig(DockerAttributes.DOCKER_HARDWARE_ID);
+	        if (Strings.isEmpty(hardwareId)) {
+	            hardwareId = getOwner().getConfig(DockerAttributes.DOCKER_HARDWARE_ID);
+	        }
 
-        // Create new Docker container in the host cluster
-        LOG.info("Starting container with imageId {} and hardwareId {} at {}", new Object[] { imageId, hardwareId, machine });
-        Map<Object, Object> containerFlags = MutableMap.builder()
-                .putAll(flags)
-                .put("entity", entity)
-                .putIfNotNull("imageId", imageId)
-                .putIfNotNull("hardwareId", hardwareId)
-                .build();
-        DynamicCluster cluster = dockerHost.getDockerContainerCluster();
-        Optional<Entity> added = cluster.addInSingleLocation(machine, containerFlags);
-        if (!added.isPresent()) {
-            throw new NoMachinesAvailableException(String.format("Failed to create containers. Limit reached at %s", dockerHost.getDockerHostName()));
-        }
+	        // Create new Docker container in the host cluster
+	        LOG.info("Starting container with imageId {} and hardwareId {} at {}", new Object[] { imageId, hardwareId, machine });
+	        Map<Object, Object> containerFlags = MutableMap.builder()
+	                .putAll(flags)
+	                .put("entity", entity)
+	                .putIfNotNull("imageId", imageId)
+	                .putIfNotNull("hardwareId", hardwareId)
+	                .build();
+	        DynamicCluster cluster = dockerHost.getDockerContainerCluster();
+	        Optional<Entity> added = cluster.addInSingleLocation(machine, containerFlags);
+	        if (!added.isPresent()) {
+	            throw new NoMachinesAvailableException(String.format("Failed to create containers. Limit reached at %s", dockerHost.getDockerHostName()));
+	        }
 
-        // Save the container attributes on the entity
-        DockerContainer dockerContainer = (DockerContainer) added.get();
-        ((EntityLocal) dockerContainer).setAttribute(DockerContainer.IMAGE_ID, imageId);
-        ((EntityLocal) dockerContainer).setAttribute(DockerContainer.IMAGE_NAME, imageName);
-        ((EntityLocal) dockerContainer).setAttribute(DockerContainer.HARDWARE_ID, hardwareId);
-        return dockerContainer.getDynamicLocation();
+	        // Save the container attributes on the entity
+	        DockerContainer dockerContainer = (DockerContainer) added.get();
+	        ((EntityLocal) dockerContainer).setAttribute(DockerContainer.IMAGE_ID, imageId);
+	        ((EntityLocal) dockerContainer).setAttribute(DockerContainer.IMAGE_NAME, imageName);
+	        ((EntityLocal) dockerContainer).setAttribute(DockerContainer.HARDWARE_ID, hardwareId);
+	        return dockerContainer.getDynamicLocation();
+    	}
     }
 
     private void configureEnrichers(AbstractEntity entity) {
@@ -196,25 +211,27 @@ public class DockerHostLocation extends AbstractLocation implements
 
     @Override
     public void release(DockerContainerLocation machine) {
-        LOG.info("Releasing {}", machine);
-        DynamicCluster cluster = dockerHost.getDockerContainerCluster();
-        DockerContainer container = machine.getOwner();
-        if (cluster.removeMember(container)) {
-            LOG.info("Docker Host {}: member {} released", dockerHost.getDockerHostName(), machine);
-        } else {
-            LOG.warn("Docker Host {}: member {} not found for release", dockerHost.getDockerHostName(), machine);
-        }
+    	synchronized (mutex) {
+	        LOG.info("Releasing {}", machine);
+	        DynamicCluster cluster = dockerHost.getDockerContainerCluster();
+	        DockerContainer container = machine.getOwner();
+	        if (cluster.removeMember(container)) {
+	            LOG.info("Docker Host {}: member {} released", dockerHost.getDockerHostName(), machine);
+	        } else {
+	            LOG.warn("Docker Host {}: member {} not found for release", dockerHost.getDockerHostName(), machine);
+	        }
 
-        // Now close and unmange the container
-        try {
-            machine.close();
-            container.stop();
-        } catch (Exception e) {
-            LOG.warn("Error stopping container: " + container, e);
-            Exceptions.propagateIfFatal(e);
-        } finally {
-            Entities.unmanage(container);
-        }
+	        // Now close and unmange the container
+	        try {
+	            machine.close();
+	            container.stop();
+	        } catch (Exception e) {
+	            LOG.warn("Error stopping container: " + container, e);
+	            Exceptions.propagateIfFatal(e);
+	        } finally {
+	            Entities.unmanage(container);
+	        }
+    	}
     }
 
     @Override

@@ -52,7 +52,10 @@ import com.google.common.net.InetAddresses;
  */
 public class DockerContainerLocation extends SshMachineLocation implements SupportsPortForwarding, DynamicLocation<DockerContainer, DockerContainerLocation> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DockerContainerLocation.class);
+    /** serialVersionUID */
+	private static final long serialVersionUID = 610389734596906782L;
+
+	private static final Logger LOG = LoggerFactory.getLogger(DockerContainerLocation.class);
 
     @SetFromFlag("machine")
     private JcloudsSshMachineLocation machine;

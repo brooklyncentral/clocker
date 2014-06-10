@@ -37,10 +37,8 @@ import brooklyn.location.basic.LocationConfigKeys;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.cloud.AvailabilityZoneExtension;
 import brooklyn.location.docker.strategy.DepthFirstPlacementStrategy;
-import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
 import brooklyn.location.dynamic.DynamicLocation;
 import brooklyn.util.collections.MutableMap;
-import brooklyn.util.config.ConfigBag;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.flags.SetFromFlag;
 
@@ -50,10 +48,13 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 
-public class DockerLocation extends AbstractLocation implements DockerVirtualLocation,
-        MachineProvisioningLocation<MachineLocation>, DynamicLocation<DockerInfrastructure, DockerLocation> {
+public class DockerLocation extends AbstractLocation implements DockerVirtualLocation, MachineProvisioningLocation<MachineLocation>,
+        DynamicLocation<DockerInfrastructure, DockerLocation> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DockerLocation.class);
+    /** serialVersionUID */
+	private static final long serialVersionUID = -4562281299895377963L;
+
+	private static final Logger LOG = LoggerFactory.getLogger(DockerLocation.class);
 
     @SetFromFlag("mutex")
     private Object mutex;
@@ -87,9 +88,6 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
     @Override
     public void init() {
         super.init();
-        if (strategy == null) {
-            strategy = new DepthFirstPlacementStrategy();
-        }
         addExtension(AvailabilityZoneExtension.class, new DockerHostExtension(getManagementContext(), this));
     }
 
@@ -99,6 +97,9 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
 
     @Override
     public void configure(Map properties) {
+        if (strategy == null) {
+            strategy = new DepthFirstPlacementStrategy();
+        }
         if (mutex == null) {
             mutex = new Object[0];
         }
