@@ -46,15 +46,8 @@ public class DepthFirstPlacementStrategy extends AbstractDockerPlacementStrategy
     private static final Logger LOG = LoggerFactory.getLogger(DepthFirstPlacementStrategy.class);
 
     @Override
-    public List<Location> locationsForAdditions(Multimap<Location, Entity> currentMembers, Collection<? extends Location> locs, int numToAdd) {
-        if (locs.isEmpty() && numToAdd > 0) {
-            throw new IllegalArgumentException("No locations supplied, when requesting locations for "+numToAdd+" nodes");
-        } else {
-            init(locs);
-        }
-
-        List<DockerHostLocation> available = Lists.newArrayList(Iterables.filter(locs, DockerHostLocation.class));
-        int remaining = numToAdd;
+    protected List<Location> getDockerHostLocations(Multimap<Location, Entity> members, List<DockerHostLocation> available, int n) {
+        int remaining = n;
         for (DockerHostLocation machine : available) {
             int maxSize = machine.getOwner().getConfig(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
             int currentSize = machine.getOwner().getCurrentSize();
@@ -62,7 +55,7 @@ public class DepthFirstPlacementStrategy extends AbstractDockerPlacementStrategy
         }
         if (LOG.isDebugEnabled()) {
             LOG.debug("Requested {}, Need {} more from new Docker hosts, current hosts {}",
-                    new Object[] { numToAdd, remaining, Iterables.toString(Iterables.transform(locs, identity())) });
+                    new Object[] { n, remaining, Iterables.toString(Iterables.transform(available, identity())) });
         }
 
         if (remaining > 0) {
@@ -90,7 +83,7 @@ public class DepthFirstPlacementStrategy extends AbstractDockerPlacementStrategy
         // Logic from parent, with enhancements and types
         List<Location> result = Lists.newArrayList();
         Map<DockerHostLocation, Integer> sizes = toAvailableLocationSizes(available);
-        for (int i = 0; i < numToAdd; i++) {
+        for (int i = 0; i < n; i++) {
             DockerHostLocation largest = null;
             int maxSize = 0;
             for (DockerHostLocation loc : sizes.keySet()) {
@@ -113,7 +106,7 @@ public class DepthFirstPlacementStrategy extends AbstractDockerPlacementStrategy
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Placement for {} nodes: {}", numToAdd, Iterables.toString(Iterables.transform(result, identity())));
+            LOG.debug("Placement for {} nodes: {}", n, Iterables.toString(Iterables.transform(result, identity())));
         }
         return result;
     }

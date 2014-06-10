@@ -45,15 +45,8 @@ public class CpuUsagePlacementStrategy extends AbstractDockerPlacementStrategy {
     private static final Logger LOG = LoggerFactory.getLogger(CpuUsagePlacementStrategy.class);
 
     @Override
-    public List<Location> locationsForAdditions(Multimap<Location, Entity> currentMembers, Collection<? extends Location> locs, int numToAdd) {
-        if (locs.isEmpty() && numToAdd > 0) {
-            throw new IllegalArgumentException("No locations supplied, when requesting locations for "+numToAdd+" nodes");
-        } else {
-            init(locs);
-        }
-
+    protected List<Location> getDockerHostLocations(Multimap<Location, Entity> members, List<DockerHostLocation> available, int n) {
         // Reject hosts over the allowed maximum CPU
-        List<DockerHostLocation> available = Lists.newArrayList(Iterables.filter(locs, DockerHostLocation.class));
         for (DockerHostLocation machine : ImmutableList.copyOf(available)) {
             Double maxCpu = machine.getOwner().getConfig(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_CPU);
             Double currentCpu = machine.getOwner().getAttribute(DockerAttributes.CPU_USAGE);
@@ -86,21 +79,21 @@ public class CpuUsagePlacementStrategy extends AbstractDockerPlacementStrategy {
                 }
             }
         }
-        Preconditions.checkState(host != null, "Chosen Docker host was null; locs=%s", locs);
+        Preconditions.checkState(host != null, "Chosen Docker host was null; locs=%s", available);
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Placement for {} nodes in: {}", numToAdd, host);
+            LOG.debug("Placement for {} nodes in: {}", n, host);
         }
 
         // Add the newly created locations for each Docker host
         List<Location> result = Lists.newArrayList();
-        result.addAll(Collections.<Location>nCopies(numToAdd, host.getDynamicLocation()));
+        result.addAll(Collections.<Location>nCopies(n, host.getDynamicLocation()));
         return result;
     }
 
-    public Map<DockerHostLocation, Integer> toAvailableLocationSizes(Iterable<DockerHostLocation> locs) {
+    public Map<DockerHostLocation, Integer> toAvailableLocationSizes(Iterable<DockerHostLocation> locations) {
         Map<DockerHostLocation, Integer> result = Maps.newLinkedHashMap();
-        for (DockerHostLocation loc : locs) {
-            result.put(loc, loc.getOwner().getAttribute(DockerAttributes.CPU_USAGE).intValue());
+        for (DockerHostLocation host : locations) {
+            result.put(host, host.getOwner().getAttribute(DockerAttributes.CPU_USAGE).intValue());
         }
         return result;
     }

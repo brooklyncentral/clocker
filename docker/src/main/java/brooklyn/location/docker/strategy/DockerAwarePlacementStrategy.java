@@ -15,12 +15,11 @@
  */
 package brooklyn.location.docker.strategy;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.group.DynamicCluster.NodePlacementStrategy;
-import brooklyn.location.Location;
 import brooklyn.location.docker.DockerHostLocation;
 
 /**
@@ -28,10 +27,10 @@ import brooklyn.location.docker.DockerHostLocation;
  */
 public interface DockerAwarePlacementStrategy extends NodePlacementStrategy {
 
-    void init(Collection<? extends Location> locs);
+    void init(List<DockerHostLocation> locations);
 
     DockerInfrastructure getDockerInfrastructure();
 
-    Map<DockerHostLocation, Integer> toAvailableLocationSizes(Iterable<DockerHostLocation> locs);
+    Map<DockerHostLocation, Integer> toAvailableLocationSizes(Iterable<DockerHostLocation> locations);
 
 }
