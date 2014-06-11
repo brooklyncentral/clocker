@@ -1,12 +1,12 @@
-Brooklyn Docker
-================
+Clocker
+=======
 
 Entities and sample code to allow Brooklyn to deploy and manage
-Docker containers.
+a Docker cloud infrastructure.
 
 # Getting Started
 
-    % ./start.sh launch --infrastructure --location aws-ec2:eu-west-1
+    % ./clocker.sh launch --cloud --location jclouds:aws-ec2:us-east-1
 
 ----
 Copyright 2014 by Cloudsoft Corporation Limited

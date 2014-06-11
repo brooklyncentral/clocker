@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.cloudsoft.docker.example;
+package brooklyn.clocker.example;
 
 import brooklyn.catalog.Catalog;
 import brooklyn.catalog.CatalogConfig;
@@ -28,19 +28,19 @@ import brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy;
 import brooklyn.util.time.Duration;
 
 /**
- * Brooklyn managed basic Docker infrastructure.
+ * Brooklyn managed Docker cloud infrastructure.
  */
-@Catalog(name="Basic Infrastructure",
-        description="Deploys Simple Docker Infrastructure.",
+@Catalog(name="Docker Cloud",
+        description="Deploys a Docker cloud infrastructure.",
         iconUrl="classpath://docker-top-logo.png")
-public class BasicInfrastructure extends AbstractApplication {
+public class DockerCloud extends AbstractApplication {
 
     @CatalogConfig(label="Docker Version", priority=0)
     public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "0.11");
 
     @CatalogConfig(label="Location Name", priority=1)
     public static final ConfigKey<String> LOCATION_NAME = ConfigKeys.newConfigKeyWithDefault(
-            DockerInfrastructure.LOCATION_NAME.getConfigKey(), "docker-infrastructure");
+            DockerInfrastructure.LOCATION_NAME.getConfigKey(), "my-docker-cloud");
 
     @CatalogConfig(label="Host Cluster Minimum Size", priority=1)
     public static final ConfigKey<Integer> DOCKER_HOST_CLUSTER_MIN_SIZE = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 1);

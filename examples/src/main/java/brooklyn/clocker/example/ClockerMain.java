@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.cloudsoft.docker.example;
+package brooklyn.clocker.example;
 
 import java.util.Arrays;
 
@@ -29,25 +29,20 @@ import io.airlift.command.Command;
 import io.airlift.command.Option;
 
 /**
- * This class provides a static main entry point for launching a custom Brooklyn-based app.
- * <p>
- * It inherits the standard Brooklyn CLI options from {@link Main},
- * plus adds a few more shortcuts for favourite blueprints to the {@link LaunchCommand}.
+ * Launch the Clocker service.
  */
-public class DockerMain extends Main {
+public class ClockerMain extends Main {
 
-    private static final Logger log = LoggerFactory.getLogger(DockerMain.class);
-
-    public static final String DEFAULT_LOCATION = "localhost";
+    private static final Logger log = LoggerFactory.getLogger(ClockerMain.class);
 
     public static void main(String... args) {
         log.debug("CLI invoked with args "+ Arrays.asList(args));
-        new DockerMain().execCli(args);
+        new ClockerMain().execCli(args);
     }
 
     @Override
     protected String cliScriptName() {
-        return "start.sh";
+        return "clocker.sh";
     }
 
     @Override
@@ -55,17 +50,17 @@ public class DockerMain extends Main {
         return LaunchCommand.class;
     }
 
-    @Command(name = "launch", description = "Starts a brooklyn server, and optionally an application. " +
-            "Use --infrastructure to launch a basic Docker cluster.")
+    @Command(name = "launch", description = "Starts a Brooklyn server, and optionally an application. " +
+            "Use --cloud to launch a Docker cloud infrastructure.")
     public static class LaunchCommand extends Main.LaunchCommand {
 
-        @Option(name = { "--infrastructure" }, description = "Launch a basic Docker infrastructure")
-        public boolean infrastructure;
+        @Option(name = { "--cloud" }, description = "Launch a Docker cloud infrastructure")
+        public boolean cloud;
 
         @Override
         public Void call() throws Exception {
             // process our CLI arguments
-            if (infrastructure) setAppToLaunch(BasicInfrastructure.class.getCanonicalName() );
+            if (cloud) setAppToLaunch(DockerCloud.class.getCanonicalName() );
 
             // now process the standard launch arguments
             return super.call();
@@ -74,7 +69,7 @@ public class DockerMain extends Main {
         @Override
         protected void populateCatalog(BrooklynCatalog catalog) {
             super.populateCatalog(catalog);
-            catalog.addItem(BasicInfrastructure.class);
+            catalog.addItem(DockerCloud.class);
             catalog.addItem(JBossApplication.class);
             catalog.addItem(ActiveMQApplication.class);
             catalog.addItem(TomcatApplication.class);
@@ -83,7 +78,7 @@ public class DockerMain extends Main {
 
         @Override
         public ToStringHelper string() {
-            return super.string().add("infrastructure", infrastructure);
+            return super.string().add("cloud", cloud);
         }
     }
 }

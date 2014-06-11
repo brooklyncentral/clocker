@@ -12,19 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-id: jetty-cluster-with-mysql
-name: "Jetty Application Server Cluster with MySQL Database"
-origin: http://brooklyncentral.github.io/
+id: tomcat-cluster-with-mysql
+name: "Tomcat Application Server Cluster with MySQL Database"
+origin: "http://brooklyncentral.github.io/"
 locations:
-- docker-infrastructure
+- my-docker-cloud
 services:
 - serviceType: brooklyn.entity.webapp.ControlledDynamicWebAppCluster
-  id: jetty-cluster
-  name: "Jetty Cluster"
+  id: tomcat-cluster
+  name: "Tomcat Cluster"
   brooklyn.config:
     initialSize: 2
     wars.root:
-      https://s3-eu-west-1.amazonaws.com/brooklyn-docker/hello-world-sql.war
+      "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/hello-world-sql.war"
     http.port: "8080+"
     proxy.http.port: "8000+"
     java.sysprops:
@@ -37,7 +37,7 @@ services:
         type: brooklyn.entity.webapp.tomcat.TomcatServer
         brooklyn.config:
           docker.dockerfile.url:
-            https://s3-eu-west-1.amazonaws.com/brooklyn-docker/UsesJavaDockerfile
+            "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/UsesJavaDockerfile"
           version: "7.0.53"
           jmx.enabled: true
           jmx.agent.mode: "JMXMP"
@@ -48,10 +48,10 @@ services:
         brooklyn.config:
           dynamiccluster.zone.enable: true
           dynamiccluster.zone.placementStrategy:
-            brooklyn.location.docker.strategy.BreadtFirstPlacementStrategy
+            brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy
 - serviceType: brooklyn.entity.database.mysql.MySqlNode
   id: mysql
   name: MySQL Database
   brooklyn.config:
     creationScriptUrl:
-      https://s3-eu-west-1.amazonaws.com/brooklyn-docker/visitors-creation-script.sql
+      "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/visitors-creation-script.sql"
