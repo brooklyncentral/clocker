@@ -68,8 +68,8 @@ public class TomcatClusterWithMySql extends AbstractApplication {
 
     public static final Logger LOG = LoggerFactory.getLogger(TomcatClusterWithMySql.class);
 
-    public static final String DEFAULT_WAR_PATH = "https://s3-eu-west-1.amazonaws.com/brooklyn-docker/hello-world-sql.war";
-    public static final String DEFAULT_DB_SETUP_SQL_URL = "https://s3-eu-west-1.amazonaws.com/brooklyn-docker/visitors-creation-script.sql";
+    public static final String DEFAULT_WAR_PATH = "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/hello-world-sql.war";
+    public static final String DEFAULT_DB_SETUP_SQL_URL = "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/visitors-creation-script.sql";
 
     @CatalogConfig(label="WAR (URL)", priority=0)
     public static final ConfigKey<String> WAR_PATH = ConfigKeys.newConfigKey(
@@ -102,7 +102,7 @@ public class TomcatClusterWithMySql extends AbstractApplication {
                 .configure(DynamicCluster.ENABLE_AVAILABILITY_ZONES, true)
                 .configure(DynamicCluster.ZONE_PLACEMENT_STRATEGY, new BreadthFirstPlacementStrategy())
                 .configure(ControlledDynamicWebAppCluster.MEMBER_SPEC, EntitySpec.create(TomcatServer.class)
-                        .configure(DockerAttributes.DOCKERFILE_URL, "https://s3-eu-west-1.amazonaws.com/brooklyn-docker/UsesJavaDockerfile")
+                        .configure(DockerAttributes.DOCKERFILE_URL, "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/UsesJavaDockerfile")
                         .configure(WebAppService.HTTP_PORT, PortRanges.fromString("8080+"))
                         .configure(SoftwareProcess.SUGGESTED_VERSION, "7.0.53")
                         .configure(UsesJmx.USE_JMX, Boolean.TRUE)

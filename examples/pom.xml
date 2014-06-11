@@ -30,7 +30,7 @@
     <version>${project.parent.version}</version>
     <name>Clocker Examples</name>
     <description>
-        Clocker example Brooklyn blueprintss for Docker.
+        Clocker example Brooklyn blueprints for Docker.
     </description>
 
     <dependencies>

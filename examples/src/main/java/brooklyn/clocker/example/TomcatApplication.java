@@ -40,7 +40,7 @@ import brooklyn.location.basic.PortRanges;
         iconUrl="classpath://tomcat-logo.png")
 public class TomcatApplication extends AbstractApplication implements StartableApplication {
 
-    public static final String DEFAULT_WAR_PATH = "https://s3-eu-west-1.amazonaws.com/brooklyn-docker/hello-world.war";
+    public static final String DEFAULT_WAR_PATH = "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/hello-world.war";
 
     @CatalogConfig(label="War File (URL)", priority=0)
     public static final ConfigKey<String> WAR_PATH = ConfigKeys.newConfigKey(
@@ -50,7 +50,7 @@ public class TomcatApplication extends AbstractApplication implements StartableA
     public void init() {
         addChild(EntitySpec.create(TomcatServer.class)
                 .displayName("Tomcat Server")
-                .configure(DockerAttributes.DOCKERFILE_URL, "https://s3-eu-west-1.amazonaws.com/brooklyn-docker/UsesJavaDockerfile")
+                .configure(DockerAttributes.DOCKERFILE_URL, "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/UsesJavaDockerfile")
                 .configure(WebAppService.HTTP_PORT, PortRanges.fromString("8080+"))
                 .configure(JavaWebAppService.ROOT_WAR, Entities.getRequiredUrlConfig(this, WAR_PATH))
                 .configure(SoftwareProcess.SUGGESTED_VERSION, "7.0.53")

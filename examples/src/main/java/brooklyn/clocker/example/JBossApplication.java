@@ -34,7 +34,7 @@ import brooklyn.location.basic.PortRanges;
         iconUrl="classpath://jboss_logo.png")
 public class JBossApplication extends AbstractApplication implements StartableApplication {
 
-    public static final String DEFAULT_WAR_PATH = "https://s3-eu-west-1.amazonaws.com/brooklyn-docker/hello-world.war";
+    public static final String DEFAULT_WAR_PATH = "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/hello-world.war";
 
     @CatalogConfig(label="War File (URL)", priority=0)
     public static final ConfigKey<String> WAR_PATH = ConfigKeys.newConfigKey(
@@ -44,7 +44,7 @@ public class JBossApplication extends AbstractApplication implements StartableAp
     public void init() {
         addChild(EntitySpec.create(JBoss7Server.class)
                 .displayName("JBoss Server")
-                .configure(DockerAttributes.DOCKERFILE_URL, "https://s3-eu-west-1.amazonaws.com/brooklyn-docker/UsesJavaDockerfile")
+                .configure(DockerAttributes.DOCKERFILE_URL, "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/UsesJavaDockerfile")
                 .configure(WebAppService.HTTP_PORT, PortRanges.fromString("8080+"))
                 .configure(JavaWebAppService.ROOT_WAR, Entities.getRequiredUrlConfig(this, WAR_PATH)));
     }
