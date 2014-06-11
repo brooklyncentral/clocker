@@ -22,8 +22,8 @@ Build and run the examples as follows:
     % mvn clean install assembly:single
 
     % cd target
-    % tar zxf brooklyn-clocker-examples-0.3.0-SNAPSHOT-dist.tar.gz
-    % cd brooklyn-clocker-examples-0.3.0-SNAPSHOT
+    % tar zxf brooklyn-clocker-examples-0.4.0-SNAPSHOT-dist.tar.gz
+    % cd brooklyn-clocker-examples-0.4.0-SNAPSHOT
     % ./clocker.sh launch --cloud --location location
 ```
 
