@@ -14,7 +14,7 @@
 
 id: docker-infrastructure
 name: Docker Basic Infrastructure
-origin: https://github.com/cloudsoft/brooklyn-docker/
+origin: "https://github.com/cloudsoft/brooklyn-docker/"
 locations:
 - jclouds:aws-ec2:eu-west-1:
     hardwareId: m1.small
@@ -22,7 +22,7 @@ services:
 - serviceType: brooklyn.entity.container.docker.DockerInfrastructure
   id: infrastructure
   brooklyn.config:
-    entity.dynamicLocation.name: "docker-infrastructure"
+    entity.dynamicLocation.name: "my-docker-cloud"
     docker.host.securityGroup: "docker"
     docker.host.initial.size: 1
     docker.container.cluster.maxSize: 4

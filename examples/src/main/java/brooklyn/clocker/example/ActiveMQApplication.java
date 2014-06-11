@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.cloudsoft.docker.example;
+package brooklyn.clocker.example;
 
 import brooklyn.catalog.Catalog;
 import brooklyn.catalog.CatalogConfig;

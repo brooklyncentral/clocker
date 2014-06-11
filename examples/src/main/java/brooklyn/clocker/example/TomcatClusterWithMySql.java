@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.cloudsoft.docker.example;
+package brooklyn.clocker.example;
 
 import static brooklyn.entity.java.JavaEntityMethods.javaSysProp;
 import static brooklyn.event.basic.DependentConfiguration.attributeWhenReady;

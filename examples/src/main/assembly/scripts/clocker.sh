@@ -27,11 +27,11 @@ if [ ! -x "${JAVA}" ] ; then
   exit 1
 fi
 
-if [ -z "$(ls brooklyn-docker-examples-*.jar 2> /dev/null)" ] ; then
+if [ -z "$(ls brooklyn-clocker-examples-*.jar 2> /dev/null)" ] ; then
   echo Command must be run from the directory where the JAR is installed.
   exit 4
 fi
 
 ${JAVA} -Xms256m -Xmx1024m -XX:MaxPermSize=1024m \
-    -classpath "conf/:patch/*:*:lib/*" io.cloudsoft.docker.example.DockerMain "$@"
+    -classpath "conf/:patch/*:*:lib/*" brooklyn.clocker.example.ClockerMain "$@"
 

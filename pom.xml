@@ -19,8 +19,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <modules>
-        <module>docker-examples</module>
         <module>docker</module>
+        <module>examples</module>
     </modules>
 
     <parent>
@@ -29,11 +29,14 @@
         <version>7</version>
     </parent>
 
-    <groupId>io.cloudsoft.docker</groupId>
-    <artifactId>brooklyn-docker-parent</artifactId>
+    <groupId>io.brooklyn.clocker</groupId>
+    <artifactId>brooklyn-clocker-parent</artifactId>
     <version>0.3.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>Brooklyn Docker Deployment and Management (Parent)</name>
+    <name>Clocker Project (Parent)</name>
+    <description>
+        Clocker parent. Brooklyn deployment and management of Docker containers as a cloud infrastructure.
+    </description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -49,15 +52,15 @@
     </properties>
 
     <scm>
-        <url>https://github.com/cloudsoft/brooklyn-docker</url>
-        <connection>scm:git:https://github.com/cloudsoft/brooklyn-docker.git</connection>
-        <developerConnection>scm:git:git@github.com:cloudsoft/brooklyn-docker.git</developerConnection>
+        <url>https://github.com/brooklyncentral/clocker</url>
+        <connection>scm:git:https://github.com/brooklyncentral/clocker.git</connection>
+        <developerConnection>scm:git:git@github.com:brooklyncentral/clocker.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
     <issueManagement>
         <system>GitHub Issues</system>
-        <url>https://github.com/cloudsoft/brooklyn-docker/issues</url>
+        <url>https://github.com/brooklyncentral/clocker/issues</url>
     </issueManagement>
 
     <licenses>
