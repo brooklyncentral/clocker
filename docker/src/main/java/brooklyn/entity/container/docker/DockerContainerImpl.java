@@ -29,8 +29,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import brooklyn.config.ConfigKey;
+import brooklyn.config.render.RendererHints;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.BasicStartableImpl;
+import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.event.feed.function.FunctionFeed;
@@ -63,6 +65,10 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     private static final Logger LOG = LoggerFactory.getLogger(DockerContainerImpl.class);
     private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
+	static {
+		RendererHints.register(ENTITY, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+	}
+    
     private transient FunctionFeed sensorFeed;
 
     @Override
