@@ -27,7 +27,6 @@
     </parent>
 
     <artifactId>brooklyn-clocker-examples</artifactId>
-    <version>${project.parent.version}</version>
     <name>Clocker Examples</name>
     <description>
         Clocker example Brooklyn blueprints for Docker.
