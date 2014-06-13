@@ -28,6 +28,7 @@ import brooklyn.entity.database.DatastoreMixins;
 import brooklyn.entity.database.mariadb.MariaDbNode;
 import brooklyn.entity.database.mysql.MySqlNode;
 import brooklyn.entity.database.postgresql.PostgreSqlNode;
+import brooklyn.entity.group.DynamicCluster.NodePlacementStrategy;
 import brooklyn.entity.java.UsesJmx;
 import brooklyn.entity.messaging.MessageBroker;
 import brooklyn.entity.messaging.activemq.ActiveMQBroker;
@@ -43,6 +44,9 @@ import brooklyn.entity.zookeeper.ZooKeeperNode;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
+import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
+import brooklyn.util.flags.TypeCoercions;
+import brooklyn.util.javalang.Reflections;
 import brooklyn.util.text.ByteSizeStrings;
 import brooklyn.util.text.StringFunctions;
 import brooklyn.util.time.Duration;
@@ -51,6 +55,7 @@ import brooklyn.util.time.Time;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 
 public class DockerAttributes {
@@ -172,6 +177,19 @@ public class DockerAttributes {
                 return input.longValue();
             }
         };
+
+        TypeCoercions.registerAdapter(String.class, DockerAwarePlacementStrategy.class, new Function<String, DockerAwarePlacementStrategy>() {
+            @Override
+            public DockerAwarePlacementStrategy apply(final String input) {
+                ClassLoader classLoader = DockerAwarePlacementStrategy.class.getClassLoader();
+                Optional<DockerAwarePlacementStrategy> strategy = Reflections.<DockerAwarePlacementStrategy>invokeConstructorWithArgs(classLoader, input);
+                if (strategy.isPresent()) {
+                    return strategy.get();
+                } else {
+                    throw new IllegalStateException("Failed to create DockerAwarePlacementStrategy "+input);
+                }
+            }
+        });
 
         RendererHints.register(UPTIME, RendererHints.displayValue(Time.toTimeStringRounded()));
 

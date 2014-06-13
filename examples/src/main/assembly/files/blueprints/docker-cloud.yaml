@@ -13,7 +13,7 @@
 # limitations under the License.
 
 id: docker-cloud
-name: Docker Cloud Infrastructure
+name: "Docker Cloud Infrastructure"
 origin: "https://github.com/brooklyncentral/clocker/"
 locations:
 - jclouds:aws-ec2:eu-west-1:
@@ -24,15 +24,17 @@ services:
   brooklyn.config:
     entity.dynamicLocation.name: "my-docker-cloud"
     docker.host.securityGroup: "docker"
-    docker.host.initial.size: 1
+    docker.host.initial.size: 2
     docker.container.cluster.maxSize: 4
     docker.host.register: false
+    docker.container.strategy:
+      "brooklyn.location.docker.strategy.CpuUsagePlacementStrategy"
     docker.host.spec:
       $brooklyn:entitySpec:
         type: brooklyn.entity.container.docker.DockerHost
         brooklyn.config:
+          version: "1.0"
           docker.host.nameFormat: "docker-%1$s"
-          start.timeout: 900
           docker.container.spec:
             $brooklyn:entitySpec:
               type: brooklyn.entity.container.docker.DockerContainer
