@@ -22,18 +22,20 @@ services:
 - serviceType: brooklyn.entity.container.docker.DockerInfrastructure
   id: infrastructure
   brooklyn.config:
+    docker.version: "1.0"
     entity.dynamicLocation.name: "my-docker-cloud"
     docker.host.securityGroup: "docker"
     docker.host.initial.size: 2
     docker.container.cluster.maxSize: 4
     docker.host.register: false
+    docker.policy.ha.enable: true
     docker.container.strategy:
       "brooklyn.location.docker.strategy.CpuUsagePlacementStrategy"
     docker.host.spec:
       $brooklyn:entitySpec:
         type: brooklyn.entity.container.docker.DockerHost
         brooklyn.config:
-          version: "1.0"
+          start.timeout: 900
           docker.host.nameFormat: "docker-%1$s"
           docker.container.spec:
             $brooklyn:entitySpec:
