@@ -36,14 +36,14 @@ import brooklyn.util.time.Duration;
 public class DockerCloud extends AbstractApplication {
 
     @CatalogConfig(label="Docker Version", priority=0)
-    public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "0.11");
+    public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "1.0");
 
     @CatalogConfig(label="Location Name", priority=1)
     public static final ConfigKey<String> LOCATION_NAME = ConfigKeys.newConfigKeyWithDefault(
             DockerInfrastructure.LOCATION_NAME.getConfigKey(), "my-docker-cloud");
 
     @CatalogConfig(label="Host Cluster Minimum Size", priority=1)
-    public static final ConfigKey<Integer> DOCKER_HOST_CLUSTER_MIN_SIZE = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 1);
+    public static final ConfigKey<Integer> DOCKER_HOST_CLUSTER_MIN_SIZE = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 2);
 
     @CatalogConfig(label="Container Cluster Maximum Size", priority=2)
     public static final ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = ConfigKeys.newConfigKeyWithDefault(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_SIZE, 4);
@@ -54,12 +54,12 @@ public class DockerCloud extends AbstractApplication {
     @Override
     public void init() {
         EntitySpec dockerSpec = EntitySpec.create(DockerHost.class)
-                .configure(SoftwareProcess.SUGGESTED_VERSION, getConfig(DOCKER_VERSION))
                 .configure(SoftwareProcess.START_TIMEOUT, Duration.minutes(15))
                 .configure(DockerHost.HA_POLICY_ENABLE, getConfig(HA_POLICY_ENABLE))
                 .configure(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_SIZE, getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE));
 
         addChild(EntitySpec.create(DockerInfrastructure.class)
+                .configure(DockerInfrastructure.DOCKER_VERSION, getConfig(DOCKER_VERSION))
                 .configure(DockerInfrastructure.SECURITY_GROUP, "docker")
                 .configure(DockerInfrastructure.OPEN_IPTABLES, true)
                 .configure(DockerInfrastructure.LOCATION_NAME, getConfig(LOCATION_NAME))
