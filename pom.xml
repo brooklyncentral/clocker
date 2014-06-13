@@ -48,7 +48,7 @@
         <!-- Test Dependencies -->
         <testng.version>6.8</testng.version>
         <brooklyn.version>0.7.0-SNAPSHOT</brooklyn.version>
-        <brooklyn.networking.version>0.2.0-SNAPSHOT</brooklyn.networking.version>
+        <brooklyn.networking.version>0.3.0-SNAPSHOT</brooklyn.networking.version>
     </properties>
 
     <scm>
