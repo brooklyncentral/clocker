@@ -32,7 +32,8 @@ simple steps will give you a running docker instance on your favourite cloud.
 
 **Important**: Please be sure that the location allows incoming connections on TCP port *4243* (the Docker daemon) and in
 the range *49000-49900* used by Docker to map container ports onto ports on the hosts public IP address. If you create a
-security group on AWS called _docker_ this will be used automatically by the application.
+security group on AWS called _docker_ this will be used automatically by the application. If the location you use is
+configured to use a specific image then please ensure that that image uses Ubuntu for its operating system.
 
 For more information on setting up locations, see the _Setting up Locations_ section of
 [Brooklyn Getting Started](http://brooklyncentral.github.io/use/guide/quickstart/index.html), and the "Off-the-shelf
