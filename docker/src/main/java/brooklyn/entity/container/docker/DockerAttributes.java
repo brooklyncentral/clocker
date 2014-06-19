@@ -28,7 +28,6 @@ import brooklyn.entity.database.DatastoreMixins;
 import brooklyn.entity.database.mariadb.MariaDbNode;
 import brooklyn.entity.database.mysql.MySqlNode;
 import brooklyn.entity.database.postgresql.PostgreSqlNode;
-import brooklyn.entity.group.DynamicCluster.NodePlacementStrategy;
 import brooklyn.entity.java.UsesJmx;
 import brooklyn.entity.messaging.MessageBroker;
 import brooklyn.entity.messaging.activemq.ActiveMQBroker;

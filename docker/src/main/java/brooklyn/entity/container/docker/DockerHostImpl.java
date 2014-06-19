@@ -92,7 +92,7 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
         setDisplayName(dockerHostName);
         setAttribute(HOST_NAME, dockerHostName);
 
-        EntitySpec dockerContainerSpec = EntitySpec.create(getConfig(DOCKER_CONTAINER_SPEC))
+        EntitySpec<?> dockerContainerSpec = EntitySpec.create(getConfig(DOCKER_CONTAINER_SPEC))
                 .configure(DockerContainer.DOCKER_HOST, this);
         if (getConfig(HA_POLICY_ENABLE)) {
             dockerContainerSpec.policy(PolicySpec.create(ServiceFailureDetector.class));
