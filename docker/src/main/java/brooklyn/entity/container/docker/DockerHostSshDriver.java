@@ -72,6 +72,8 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .machine(getMachine())
                 .newTask();
         DynamicTasks.queueIfPossible(task).executionContext(getEntity()).orSubmitAndBlock();
+        int result = task.get();
+        if (result != 0) throw new IllegalStateException("Error creating image directory: " + name);
 
         copyTemplate(dockerFile, Os.mergePaths(name, DOCKERFILE));
 
