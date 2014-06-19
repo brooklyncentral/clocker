@@ -15,7 +15,11 @@
  */
 package brooklyn.entity.container.docker;
 
-import static brooklyn.util.ssh.BashCommands.*;
+import static brooklyn.util.ssh.BashCommands.INSTALL_WGET;
+import static brooklyn.util.ssh.BashCommands.chainGroup;
+import static brooklyn.util.ssh.BashCommands.ifExecutableElse0;
+import static brooklyn.util.ssh.BashCommands.installPackage;
+import static brooklyn.util.ssh.BashCommands.sudo;
 import static java.lang.String.format;
 
 import java.util.List;
@@ -24,6 +28,11 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import com.google.common.base.CharMatcher;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.Uninterruptibles;
 
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
@@ -42,11 +51,6 @@ import brooklyn.util.task.DynamicTasks;
 import brooklyn.util.task.system.ProcessTaskWrapper;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
-
-import com.google.common.base.CharMatcher;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.util.concurrent.Uninterruptibles;
 
 public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implements DockerHostDriver {
 
@@ -203,15 +207,14 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     private String useYum(String osMajorVersion, String arch, String epelRelease) {
-        String osMajor = osMajorVersion.substring(0, osMajorVersion.indexOf('.'));
-        String group = chainGroup(
+        //String osMajor = osMajorVersion.substring(0, osMajorVersion.indexOf('.'));
+        return chainGroup(
                 INSTALL_WGET,
                 sudo(BashCommands.alternatives(sudo("rpm -qa | grep epel-release"),
                         sudo(format("rpm -Uvh http://download.fedoraproject.org/pub/epel/%s/%s/epel-release-%s.noarch.rpm",
-                                osMajor, arch, epelRelease))
+                                osMajorVersion, arch, epelRelease))
                 ))
         );
-        return group;
     }
 
     private String useApt() {
@@ -229,7 +232,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         List<String> commands = ImmutableList.<String> builder()
                 .add(sudo("service docker stop"))
                 .add(ifExecutableElse0("apt-get", format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%s -H unix:///var/run/docker.sock\"' | sudo tee -a /etc/default/docker", getDockerPort())))
-                .add(ifExecutableElse0("yum", format("echo 'other_args=\"-H tcp://0.0.0.0:%s -H unix:///var/run/docker.sock\"' | sudo tee /etc/sysconfig/docker", getDockerPort())))
+                .add(ifExecutableElse0("yum", format("echo 'other_args=\"--selinux-enabled -H tcp://0.0.0.0:%s -H unix:///var/run/docker.sock -e lxc\"' | sudo tee /etc/sysconfig/docker", getDockerPort())))
                 .build();
 
         newScript(CUSTOMIZING)

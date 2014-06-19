@@ -15,11 +15,6 @@
  */
 package brooklyn.entity.container.docker;
 
-import io.cloudsoft.networking.portforwarding.DockerPortForwarder;
-import io.cloudsoft.networking.subnet.PortForwarder;
-import io.cloudsoft.networking.subnet.SubnetTier;
-import io.cloudsoft.networking.subnet.SubnetTierImpl;
-
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +24,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jclouds.compute.domain.OsFamily;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Functions;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import brooklyn.enricher.Enrichers;
 import brooklyn.entity.Entity;
@@ -63,11 +63,10 @@ import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
-
-import com.google.common.base.Functions;
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
+import io.cloudsoft.networking.portforwarding.DockerPortForwarder;
+import io.cloudsoft.networking.subnet.PortForwarder;
+import io.cloudsoft.networking.subnet.SubnetTier;
+import io.cloudsoft.networking.subnet.SubnetTierImpl;
 
 /**
  * The host running the Docker service.
@@ -194,16 +193,30 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
     @Override
     protected Map<String, Object> obtainProvisioningFlags(MachineProvisioningLocation location) {
         Map flags = super.obtainProvisioningFlags(location);
-        flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), new PortableTemplateBuilder()
-                .osFamily(OsFamily.UBUNTU)
-                .osVersionMatches("12.04")
-                .os64Bit(true)
-                .minRam(2048));
-        String securityGroup = getConfig(DockerInfrastructure.SECURITY_GROUP);
-        if (securityGroup != null) {
-            flags.put("securityGroups", securityGroup);
+        if (isJcloudsLocation(location, "google-compute-engine")) {
+            flags.put("networkName", getConfig(DockerInfrastructure.SECURITY_GROUP));
+            flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(),
+                    new PortableTemplateBuilder().osFamily(OsFamily.CENTOS)
+                            .osVersionMatches("6")
+                            .os64Bit(true)
+                            .minRam(2048));
+        } else {
+            flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), new PortableTemplateBuilder()
+                    .osFamily(OsFamily.UBUNTU)
+                    .osVersionMatches("12.04")
+                    .os64Bit(true)
+                    .minRam(2048));
+            String securityGroup = getConfig(DockerInfrastructure.SECURITY_GROUP);
+            if (securityGroup != null) {
+                flags.put("securityGroups", securityGroup);
+            }
         }
         return flags;
+    }
+
+    private boolean isJcloudsLocation(MachineProvisioningLocation location, String providerName) {
+        return location instanceof JcloudsLocation
+                && ((JcloudsLocation) location).getProvider().equals(providerName);
     }
 
     @Override

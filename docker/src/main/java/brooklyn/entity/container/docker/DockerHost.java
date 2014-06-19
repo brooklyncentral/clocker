@@ -75,7 +75,7 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
 
     @SetFromFlag("dockerPort")
     PortAttributeSensorAndConfigKey DOCKER_PORT = new PortAttributeSensorAndConfigKey("docker.port",
-            "Docker port", PortRanges.fromString("4243+"));
+            "Docker port", PortRanges.fromString("2375+"));
 
     @SetFromFlag("containerSpec")
     AttributeSensorAndConfigKey<EntitySpec, EntitySpec> DOCKER_CONTAINER_SPEC = ConfigKeys.newSensorAndConfigKey(
