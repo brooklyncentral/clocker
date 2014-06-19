@@ -22,6 +22,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jclouds.compute.domain.OsFamily;
+import org.jclouds.compute.domain.TemplateBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -192,25 +193,31 @@ public class DockerHostImpl extends SoftwareProcessImpl implements DockerHost {
 
     @Override
     protected Map<String, Object> obtainProvisioningFlags(MachineProvisioningLocation location) {
-        Map flags = super.obtainProvisioningFlags(location);
-        if (isJcloudsLocation(location, "google-compute-engine")) {
-            flags.put("networkName", getConfig(DockerInfrastructure.SECURITY_GROUP));
-            flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(),
-                    new PortableTemplateBuilder().osFamily(OsFamily.CENTOS)
-                            .osVersionMatches("6")
-                            .os64Bit(true)
-                            .minRam(2048));
-        } else {
-            flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), new PortableTemplateBuilder()
-                    .osFamily(OsFamily.UBUNTU)
-                    .osVersionMatches("12.04")
-                    .os64Bit(true)
-                    .minRam(2048));
-            String securityGroup = getConfig(DockerInfrastructure.SECURITY_GROUP);
-            if (securityGroup != null) {
+        Map<String, Object> flags = super.obtainProvisioningFlags(location);
+
+        // Configure template for host virtual machine
+        TemplateBuilder template = (TemplateBuilder) flags.get(JcloudsLocationConfig.TEMPLATE_BUILDER.getName());
+        if (template == null) {
+            template = new PortableTemplateBuilder();
+            if (isJcloudsLocation(location, "google-compute-engine")) {
+                template.osFamily(OsFamily.CENTOS).osVersionMatches("6");
+            } else {
+                template.osFamily(OsFamily.UBUNTU).osVersionMatches("12.04");
+            }
+        }
+        template.os64Bit(true);
+        template.minRam(2048); // TODO from configuration
+
+        // Configure security groups for host virtual machine
+        String securityGroup = getConfig(DockerInfrastructure.SECURITY_GROUP);
+        if (securityGroup != null) {
+            if (isJcloudsLocation(location, "google-compute-engine")) {
+            	flags.put("networkName", securityGroup);
+            } else {
                 flags.put("securityGroups", securityGroup);
             }
         }
+
         return flags;
     }
 
