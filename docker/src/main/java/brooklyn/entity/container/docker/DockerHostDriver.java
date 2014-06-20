@@ -36,12 +36,4 @@ public interface DockerHostDriver extends SoftwareProcessDriver {
      */
     String buildImage(String dockerFile, String name);
 
-    /**
-     * Execute a command.
-     *
-     * @return the command output
-     * @see DockerHost#runDockerCommand(String)
-     */
-    String execCommand(String command);
-
 }

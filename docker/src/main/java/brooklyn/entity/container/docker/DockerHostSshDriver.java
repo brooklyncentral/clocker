@@ -27,12 +27,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
-import com.google.common.base.CharMatcher;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.util.concurrent.Uninterruptibles;
 
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
@@ -42,7 +36,6 @@ import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.location.OsDetails;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.util.collections.MutableMap;
-import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.net.Networking;
 import brooklyn.util.os.Os;
 import brooklyn.util.repeat.Repeater;
@@ -51,6 +44,11 @@ import brooklyn.util.task.DynamicTasks;
 import brooklyn.util.task.system.ProcessTaskWrapper;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
+
+import com.google.common.base.CharMatcher;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.Uninterruptibles;
 
 public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implements DockerHostDriver {
 
@@ -83,12 +81,12 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
         // Build an image from the Dockerfile
         String build = format("docker build --rm -t %s - < %s", Os.mergePaths("brooklyn", name), Os.mergePaths(getRunDir(), name, DOCKERFILE));
-        String stdout = execCommand(build, Duration.minutes(15));
+        String stdout = ((DockerHost) getEntity()).execCommandTimeout(sudo(build), Duration.minutes(15));
         String prefix = Strings.getFirstWordAfter(stdout, "Successfully built");
 
         // Inspect the Docker image with this prefix
         String inspect = format("docker inspect --format={{.Id}} %s", prefix);
-        String imageId = execCommand(inspect);
+        String imageId = ((DockerHost) getEntity()).execCommand(sudo(inspect));
 
         // Parse and return the Image ID
         imageId = Strings.trim(imageId).toLowerCase(Locale.ENGLISH);
@@ -96,35 +94,6 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
             return imageId;
         } else {
             throw new IllegalStateException("Invalid image ID returned: " + imageId);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public String execCommand(String command) {
-        return execCommand(command, Duration.ONE_MINUTE);
-    }
-
-    private String execCommand(String command, Duration timeout) {
-        try {
-            ProcessTaskWrapper<Integer> task = SshEffectorTasks.ssh(sudo(command))
-                    .machine(getMachine())
-                    .summary(Strings.getFirstWord(command))
-                    .newTask();
-            Integer result = DynamicTasks.queueIfPossible(task)
-                    .executionContext(getEntity())
-                    .orSubmitAsync()
-                    .asTask()
-                    .get(timeout);
-            if (result != 0) {
-                log.warn("Command failed: {}", task.getStderr());
-                throw new IllegalStateException("Command failed, return code " + result);
-            }
-            return task.getStdout();
-        } catch (TimeoutException te) {
-            throw new IllegalStateException("Timed out running command: " + command);
-        } catch (Exception e) {
-            throw Exceptions.propagate(e);
         }
     }
 
