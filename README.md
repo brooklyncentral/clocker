@@ -1,11 +1,12 @@
 Clocker
 =======
 
-Clocker contains Brooklyn entities, locations and examples that create a [Docker](http://www.docker.io) cloud infrastructure.
+Clocker contains [Brooklyn](http://brooklyn.io/) entities, locations and examples that create a [Docker](http://docker.io) cloud infrastructure.
 
-### Getting started
+## Getting started
 
-This project requires a Docker instance that Brooklyn will use as a target location when deploying application blueprints. 
+This project requires a Docker instance that Brooklyn will use as a target location when deploying application
+blueprints.
 
 You can use Brooklyn to install Docker onto a single existing machine, or create a Docker based cloud infrastructure on
 your favourite cloud provider or on a private cloud using any of the jclouds supported APIs.
@@ -14,21 +15,18 @@ To install a Docker cloud infrastucture using the Clocker Brooklyn entities, the
 [DockerCloud](https://raw.githubusercontent.com/brooklyncentral/clocker/master/examples/src/main/java/brooklyn/clocker/example/DockerCloud.java)
 or [docker-cloud.yaml](https://raw.githubusercontent.com/brooklyncentral/clocker/master/examples/src/main/assembly/files/blueprints/docker-cloud.yaml).
 
-Build and run the examples as follows:
+### Using the latest Clocker release
 
+You can build a *Docker Cloud Infrastructure* running these commands:
 ```Bash
-    % mvn clean install
-    % cd examples
-    % mvn clean install assembly:single
-
-    % cd target
-    % tar zxf brooklyn-clocker-examples-0.5.0-SNAPSHOT-dist.tar.gz
-    % cd brooklyn-clocker-examples-0.5.0-SNAPSHOT
-    % ./clocker.sh launch --cloud --location location
+    % wget --no-check-certificate --quiet \
+      -O brooklyn-clocker-examples-0.4.0-dist.tar.gz https://git.io/WOhfyw
+    % tar zxf brooklyn-clocker-examples-0.4.0-dist.tar.gz
+    % cd brooklyn-clocker-examples-0.4.0
+    % ./clocker.sh launch --cloud --location <location>
 ```
-
-Where `location` can be e.g. `jclouds:softlayer`, or a named location or a fixed IP e.g. `byon:(hosts="1.2.3.4")`. Those
-simple steps will give you a running docker instance on your favourite cloud.
+Where `<location>` can be e.g. `jclouds:softlayer`, or a named location or a fixed IP e.g. `byon:(hosts="1.2.3.4")`.
+Those simple steps will give you a running docker instance on your favourite cloud.
 
 **Important**: Please be sure that the location allows incoming connections on TCP ports *2375-2376* (the Docker daemon) and in
 the range *49000-49900* used by Docker to map container ports onto ports on the hosts public IP address. If you create a
@@ -41,6 +39,23 @@ Locations" section of [Brooklyn Common Usage](http://brooklyncentral.github.io/u
 Once the `DockerCloud`  application has started, a new location named `my-docker-cloud` will be
 available in the Locations drop-down list when adding new applications. Simply start a new application in this location
 and it will use Docker containers instead of virtual machines.
+
+### Building from source
+
+Build and run the examples as follows:
+
+```Bash
+    % git clone https://github.com/brooklyncentral/clocker.git
+    % cd clocker
+    % mvn clean install
+    % cd examples
+    % mvn assembly:single
+
+    % cd target
+    % tar zxf brooklyn-clocker-examples-0.5.0-SNAPSHOT-dist.tar.gz
+    % cd brooklyn-clocker-examples-0.5.0-SNAPSHOT
+    % ./clocker.sh launch --cloud --location <location>
+```
 
 ----
 Copyright 2014 by Cloudsoft Corporation Limited
