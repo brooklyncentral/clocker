@@ -28,6 +28,7 @@ import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.MethodEffector;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.group.DynamicCluster;
+import brooklyn.entity.machine.MachineEntity;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.entity.trait.HasShortName;
@@ -52,7 +53,7 @@ import brooklyn.util.time.Duration;
  * service on this machine.
  */
 @ImplementedBy(DockerHostImpl.class)
-public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, LocationOwner<DockerHostLocation, DockerHost> {
+public interface DockerHost extends MachineEntity, Resizable, HasShortName, LocationOwner<DockerHostLocation, DockerHost> {
 
     @SetFromFlag("version")
     ConfigKey<String> SUGGESTED_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "0.11");
@@ -98,11 +99,6 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
 
     AttributeSensor<String> HOST_NAME = Sensors.newStringSensor("docker.host.name", "The name of the Docker host");
 
-    AttributeSensor<Duration> UPTIME = DockerAttributes.UPTIME;
-    AttributeSensor<Double> LOAD_AVERAGE = DockerAttributes.LOAD_AVERAGE;
-    AttributeSensor<Double> CPU_USAGE = DockerAttributes.CPU_USAGE;
-    AttributeSensor<Long> USED_MEMORY = DockerAttributes.USED_MEMORY;
-
     Integer getDockerPort();
 
     JcloudsLocation getJcloudsLocation();
@@ -133,7 +129,6 @@ public interface DockerHost extends SoftwareProcess, Resizable, HasShortName, Lo
     String createSshableImage(
             @EffectorParam(name="dockerFile", description="URL of Dockerfile to copy") String dockerFile,
             @EffectorParam(name="folder", description="Repository name") String name);
-
 
     /**
      * Execute a Docker command and return the output.

@@ -128,22 +128,6 @@ public class DockerAttributes {
     public static final AttributeSensorAndConfigKey<String, String> DOCKER_HARDWARE_ID = ConfigKeys.newSensorAndConfigKey(String.class, "docker.hardwareId", "The ID of a Docker gardware type to use for a container", "small");
 
     /*
-     * Sensor attributes for Docker containers and hosts.
-     */
-
-    public static final AttributeSensor<Duration> UPTIME = Sensors.newSensor(Duration.class, "docker.machine.uptime", "Current uptime");
-    public static final AttributeSensor<Double> LOAD_AVERAGE = Sensors.newDoubleSensor("docker.machine.loadAverage", "Current load average");
-
-    public static final AttributeSensor<Double> CPU_USAGE = Sensors.newDoubleSensor("docker.machine.cpu", "Current CPU usage");
-    public static final AttributeSensor<Double> AVERAGE_CPU_USAGE = Sensors.newDoubleSensor("docker.cpu.average", "Average CPU usage across the cluster");
-
-    public static final AttributeSensor<Long> FREE_MEMORY = Sensors.newLongSensor("docker.machine.memory.free", "Current free memory");
-    public static final AttributeSensor<Long> TOTAL_MEMORY = Sensors.newLongSensor("docker.machine.memory.total", "Total memory");
-    public static final AttributeSensor<Long> USED_MEMORY = Sensors.newLongSensor("docker.machine.memory.used", "Current memory usage");
-    public static final AttributeSensor<Double> USED_MEMORY_DELTA_PER_SECOND_LAST = Sensors.newDoubleSensor("docker.memory.used.delta", "Change in memory usage per second");
-    public static final AttributeSensor<Double> USED_MEMORY_DELTA_PER_SECOND_IN_WINDOW = Sensors.newDoubleSensor("docker.memory.used.windowed", "Average change in memory usage over 30s");
-
-    /*
      * Counter attributes.
      */
 
@@ -154,28 +138,10 @@ public class DockerAttributes {
 
     private static AtomicBoolean initialized = new AtomicBoolean(false);
 
-    /** Returns a default value if the input is null. */
-    public static final <T> Function defaultValue(final T value) {
-        return new Function<T, T>() {
-            @Override
-            public T apply(@Nullable T input) {
-                return (input == null) ? value : input;
-            }
-        };
-    }
-
     /** Setup renderer hints. */
     @SuppressWarnings("rawtypes")
     public static void init() {
         if (initialized.getAndSet(true)) return;
-
-        final Function longValue = new Function<Double, Long>() {
-            @Override
-            public Long apply(@Nullable Double input) {
-                if (input == null) return null;
-                return input.longValue();
-            }
-        };
 
         TypeCoercions.registerAdapter(String.class, DockerAwarePlacementStrategy.class, new Function<String, DockerAwarePlacementStrategy>() {
             @Override
@@ -189,17 +155,6 @@ public class DockerAttributes {
                 }
             }
         });
-
-        RendererHints.register(UPTIME, RendererHints.displayValue(Time.toTimeStringRounded()));
-
-        RendererHints.register(CPU_USAGE, RendererHints.displayValue(Functions.compose(StringFunctions.formatter("%.2f%%"), defaultValue(0d))));
-        RendererHints.register(AVERAGE_CPU_USAGE, RendererHints.displayValue(Functions.compose(StringFunctions.formatter("%.2f%%"), defaultValue(0d))));
-
-        RendererHints.register(FREE_MEMORY, RendererHints.displayValue(ByteSizeStrings.metric()));
-        RendererHints.register(TOTAL_MEMORY, RendererHints.displayValue(ByteSizeStrings.metric()));
-        RendererHints.register(USED_MEMORY, RendererHints.displayValue(ByteSizeStrings.metric()));
-        RendererHints.register(USED_MEMORY_DELTA_PER_SECOND_LAST, RendererHints.displayValue(Functions.compose(ByteSizeStrings.metric(), longValue)));
-        RendererHints.register(USED_MEMORY_DELTA_PER_SECOND_IN_WINDOW, RendererHints.displayValue(Functions.compose(ByteSizeStrings.metric(), longValue)));
     }
 
     static {

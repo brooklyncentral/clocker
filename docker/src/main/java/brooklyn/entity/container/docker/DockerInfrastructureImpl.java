@@ -38,6 +38,7 @@ import brooklyn.entity.basic.SoftwareProcess.ChildStartableMode;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.group.DynamicMultiGroup;
+import brooklyn.entity.machine.MachineAttributes;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.location.Location;
 import brooklyn.location.LocationDefinition;
@@ -133,10 +134,10 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         setAttribute(DOCKER_APPLICATIONS, buckets);
 
         hosts.addEnricher(Enrichers.builder()
-                .aggregating(DockerAttributes.CPU_USAGE)
+                .aggregating(DockerHost.CPU_USAGE)
                 .computingAverage()
                 .fromMembers()
-                .publishing(DockerAttributes.AVERAGE_CPU_USAGE)
+                .publishing(MachineAttributes.AVERAGE_CPU_USAGE)
                 .valueToReportIfNoSensors(0d)
                 .build());
         hosts.addEnricher(Enrichers.builder()
@@ -147,7 +148,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 .build());
 
         addEnricher(Enrichers.builder()
-                .propagating(DOCKER_CONTAINER_COUNT, DockerAttributes.AVERAGE_CPU_USAGE)
+                .propagating(DOCKER_CONTAINER_COUNT, MachineAttributes.AVERAGE_CPU_USAGE)
                 .from(hosts)
                 .build());
         addEnricher(Enrichers.builder()

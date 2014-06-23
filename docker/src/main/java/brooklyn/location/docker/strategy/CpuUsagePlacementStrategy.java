@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Entities;
-import brooklyn.entity.container.docker.DockerAttributes;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.location.Location;
 import brooklyn.location.docker.DockerHostLocation;
@@ -49,7 +48,7 @@ public class CpuUsagePlacementStrategy extends AbstractDockerPlacementStrategy {
         // Reject hosts over the allowed maximum CPU
         for (DockerHostLocation machine : ImmutableList.copyOf(available)) {
             Double maxCpu = machine.getOwner().getConfig(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_CPU);
-            Double currentCpu = machine.getOwner().getAttribute(DockerAttributes.CPU_USAGE);
+            Double currentCpu = machine.getOwner().getAttribute(DockerHost.CPU_USAGE);
             if (currentCpu < maxCpu) available.remove(machine);
         }
         if (LOG.isDebugEnabled()) {
@@ -93,7 +92,7 @@ public class CpuUsagePlacementStrategy extends AbstractDockerPlacementStrategy {
     public Map<DockerHostLocation, Integer> toAvailableLocationSizes(Iterable<DockerHostLocation> locations) {
         Map<DockerHostLocation, Integer> result = Maps.newLinkedHashMap();
         for (DockerHostLocation host : locations) {
-            result.put(host, host.getOwner().getAttribute(DockerAttributes.CPU_USAGE).intValue());
+            result.put(host, host.getOwner().getAttribute(DockerHost.CPU_USAGE).intValue());
         }
         return result;
     }
