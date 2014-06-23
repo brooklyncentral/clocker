@@ -15,8 +15,8 @@
     limitations under the License.
 -->
 <configuration>
-    <property name="logging.basename" scope="context" value="brooklyn-docker" />
-    <logger name="io.cloudsoft" level="DEBUG" />
+    <property name="logging.basename" scope="context" value="brooklyn-clocker" />
+    <logger name="brooklyn.clocker" level="DEBUG" />
     <include resource="logback-main.xml" />
     <include resource="brooklyn/logback-logger-debug-jclouds.xml" />
 </configuration>
