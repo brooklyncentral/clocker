@@ -16,7 +16,16 @@
 package brooklyn.entity.container.docker.application;
 
 import brooklyn.entity.basic.VanillaSoftwareProcessDriver;
+import brooklyn.entity.container.docker.DockerContainer;
+import brooklyn.entity.container.docker.DockerHost;
+import brooklyn.entity.container.docker.DockerInfrastructure;
 
 public interface VanillaDockerApplicationDriver extends VanillaSoftwareProcessDriver {
+
+	DockerInfrastructure getDockerInfrastructure();
+
+	DockerHost getDockerHost();
+
+	DockerContainer getDockerContainer();
 
 }

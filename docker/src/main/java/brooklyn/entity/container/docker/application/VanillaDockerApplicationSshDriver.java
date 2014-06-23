@@ -18,6 +18,7 @@ package brooklyn.entity.container.docker.application;
 import brooklyn.entity.basic.VanillaSoftwareProcessSshDriver;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
+import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.docker.DockerContainerLocation;
 
@@ -26,15 +27,19 @@ import brooklyn.location.docker.DockerContainerLocation;
  */
 public class VanillaDockerApplicationSshDriver extends VanillaSoftwareProcessSshDriver implements VanillaDockerApplicationDriver {
 
-    public VanillaDockerApplicationSshDriver(VanillaDockerApplicationImpl entity, SshMachineLocation machine) {
+	public VanillaDockerApplicationSshDriver(VanillaDockerApplicationImpl entity, SshMachineLocation machine) {
         super(entity, machine);
     }
 
-    private DockerHost getDockerHost() {
+	public DockerInfrastructure getDockerInfrastructure() {
+		return getDockerHost().getInfrastructure();
+	}
+
+	public DockerHost getDockerHost() {
         return getDockerContainer().getDockerHost();
     }
 
-    private DockerContainer getDockerContainer() {
+	public DockerContainer getDockerContainer() {
         return ((DockerContainerLocation) getMachine()).getOwner();
     }
 
