@@ -236,6 +236,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .build();
 
         newScript(CUSTOMIZING)
+                .failOnNonZeroResultCode()
                 .body.append(commands)
                 .execute();
     }
