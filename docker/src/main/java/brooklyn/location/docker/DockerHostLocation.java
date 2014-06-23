@@ -15,6 +15,7 @@
  */
 package brooklyn.location.docker;
 
+import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
 import io.cloudsoft.networking.subnet.PortForwarder;
 import io.cloudsoft.networking.subnet.SubnetTier;
 
@@ -201,10 +202,13 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                 for (Hint<?> hint : hints) {
                     RendererHints.register(target, (NamedActionWithUrl) hint);
                 }
-            } else if (DockerAttributes.PORT_SENSOR_NAMES.contains(sensor.getName())) {
+            } else if (PortAttributeSensorAndConfigKey.class.isAssignableFrom(sensor.getClass())) {
                 AttributeSensor<Integer> original = Sensors.newIntegerSensor(sensor.getName());
                 AttributeSensor<String> target = Sensors.newStringSensor("mapped." + sensor.getName(), sensor.getDescription() + " (Docker mapping)");
                 entity.addEnricher(dockerHost.getSubnetTier().hostAndPortTransformingEnricher(original, target));
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Mapped port sensor: origin={}, mapped={}", original.getName(), target.getName());
+                }
             }
         }
     }
