@@ -57,6 +57,10 @@ Build and run the examples as follows:
     % ./clocker.sh launch --cloud --location <location>
 ```
 
+## Getting involved
+
+Clocker is Apache 2.0 licensed and the intention is to contribute it to Apache Brooklyn project so please get involved and join the discussion on [Freenode](http://freenode.net/) IRC `#brooklyncentral` or the Apache Brooklyn community [mailing list](https://brooklyn.incubator.apache.org/community/).
+
 ----
 Copyright 2014 by Cloudsoft Corporation Limited
 
