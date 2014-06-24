@@ -49,6 +49,11 @@ services:
           dynamiccluster.zone.enable: true
           dynamiccluster.zone.placementStrategy:
             brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy
+    controlleddynamicwebappcluster.controllerSpec:
+      $brooklyn:entitySpec:
+        type: brooklyn.entity.proxy.nginx.NginxController
+        brooklyn.config:
+          member.sensor.hostandport: "mapped.http.port"
 - serviceType: brooklyn.entity.database.mysql.MySqlNode
   id: mysql
   name: MySQL Database
