@@ -143,7 +143,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         String securityGroup = getConfig(DockerInfrastructure.SECURITY_GROUP);
         if (securityGroup != null) {
             if (isJcloudsLocation(location, "google-compute-engine")) {
-            	flags.put("networkName", securityGroup);
+                flags.put("networkName", securityGroup);
             } else {
                 flags.put("securityGroups", securityGroup);
             }

@@ -23,6 +23,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.entity.Entity;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.location.Location;
@@ -53,9 +54,12 @@ import com.google.common.net.InetAddresses;
 public class DockerContainerLocation extends SshMachineLocation implements SupportsPortForwarding, DynamicLocation<DockerContainer, DockerContainerLocation> {
 
     /** serialVersionUID */
-	private static final long serialVersionUID = 610389734596906782L;
+    private static final long serialVersionUID = 610389734596906782L;
 
-	private static final Logger LOG = LoggerFactory.getLogger(DockerContainerLocation.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DockerContainerLocation.class);
+
+    @SetFromFlag("entity")
+    private Entity entity;
 
     @SetFromFlag("machine")
     private JcloudsSshMachineLocation machine;
@@ -166,8 +170,9 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     @Override
     public ToStringHelper string() {
         return super.string()
+                .add("entity", entity)
                 .add("machine", machine)
-                .add("dockerContainer", dockerContainer);
+                .add("owner", dockerContainer);
     }
 
 }

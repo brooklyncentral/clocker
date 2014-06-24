@@ -133,7 +133,8 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Obtain a new container from {} for {}", machine, entity);
             }
-            DockerContainerLocation container = machine.obtain(MutableMap.of("entity", entity));
+            Map<?,?> hostFlags = MutableMap.copyOf(flags);
+            DockerContainerLocation container = machine.obtain(hostFlags);
             machines.put(machine.getMachine(), container.getId());
             containers.put(container.getId(), machine);
 
