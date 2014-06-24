@@ -59,6 +59,7 @@ import brooklyn.policy.ha.ServiceRestarter;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Cidr;
+import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.text.Strings;
 
 import com.google.common.collect.ImmutableList;
@@ -221,7 +222,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     /** {@inheritDoc} */
     @Override
     public String runDockerCommand(String command) {
-       String stdout = execCommand("docker " + command);
+       String stdout = execCommand(BashCommands.sudo("docker " + command));
        if (LOG.isDebugEnabled()) LOG.debug("Successfully executed Docker {}: {}", Strings.getFirstWord(command), Strings.getFirstLine(stdout));
        return stdout;
     }
