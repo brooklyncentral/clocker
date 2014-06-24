@@ -137,6 +137,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         }
         template.os64Bit(true);
         template.minRam(2048); // TODO from configuration
+        flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), template);
 
         // Configure security groups for host virtual machine
         String securityGroup = getConfig(DockerInfrastructure.SECURITY_GROUP);
