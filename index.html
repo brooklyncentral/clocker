@@ -1,0 +1,123 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Clocker by brooklyncentral</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1 class="header">Clocker</h1>
+        <p class="header">Brooklyn managed Docker containers</p>
+
+        <ul>
+          <li class="download"><a class="buttons" href="https://github.com/brooklyncentral/clocker/zipball/master">Download ZIP</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/brooklyncentral/clocker/tarball/master">Download TAR</a></li>
+          <li><a class="buttons github" href="https://github.com/brooklyncentral/clocker">View On GitHub</a></li>
+        </ul>
+
+        <p class="header">This project is maintained by <a class="header name" href="https://github.com/brooklyncentral">brooklyncentral</a></p>
+
+
+      </header>
+      <section>
+        <h1>
+<a name="clocker" class="anchor" href="#clocker"><span class="octicon octicon-link"></span></a>Clocker</h1>
+
+<p>Clocker contains <a href="http://brooklyn.io/">Brooklyn</a> entities, locations and examples that create a <a href="http://docker.io">Docker</a> cloud infrastructure.</p>
+
+<h2>
+<a name="getting-started" class="anchor" href="#getting-started"><span class="octicon octicon-link"></span></a>Getting started</h2>
+
+<p>This project requires a Docker instance that Brooklyn will use as a target location when deploying application blueprints.</p>
+
+<p>You can use Brooklyn to install Docker onto a single existing machine, or create a Docker based cloud infrastructure on your favourite cloud provider or on a private cloud using any of the jclouds supported APIs.</p>
+
+<p>To install a Docker cloud infrastucture using the Clocker Brooklyn entities, there is an example blueprint at
+<a href="https://raw.githubusercontent.com/brooklyncentral/clocker/master/examples/src/main/java/brooklyn/clocker/example/DockerCloud.java">DockerCloud</a> or <a href="https://raw.githubusercontent.com/brooklyncentral/clocker/master/examples/src/main/assembly/files/blueprints/docker-cloud.yaml">docker-cloud.yaml</a>.</p>
+
+<h3>
+<a name="using-the-latest-clocker-release" class="anchor" href="#using-the-latest-clocker-release"><span class="octicon octicon-link"></span></a>Using the latest Clocker release</h3>
+
+<p>You can build a <em>Docker Cloud Infrastructure</em> running these commands:</p>
+
+<div class="highlight highlight-Bash"><pre>% wget --no-check-certificate --quiet <span class="se">\</span>
+    -O brooklyn-clocker-examples-0.4.0-dist.tar.gz https://git.io/WOhfyw
+% tar zxf brooklyn-clocker-examples-0.4.0-dist.tar.gz
+% <span class="nb">cd </span>brooklyn-clocker-examples-0.4.0
+% ./clocker.sh launch --cloud --location &lt;location&gt;
+</pre></div>
+
+<p>Where <code>&lt;location&gt;</code> can be e.g. <code>jclouds:softlayer</code>, or a named location or a fixed IP e.g. <code>byon:(hosts="1.2.3.4")</code>. Those simple steps will give you a running docker instance on your favourite cloud.</p>
+
+<p><strong>Important</strong>: Please be sure that the location allows incoming connections on TCP ports <em>2375-2376</em> (the Docker daemon) and in the range <em>49000-49900</em> used by Docker to map container ports onto ports on the hosts public IP address. If you create a security group on AWS called <em>docker</em> this will be used automatically by the application.</p>
+
+<p>For more information on setting up locations, see the <em>Setting up Locations</em> section of <a href="http://brooklyncentral.github.io/use/guide/quickstart/index.html">Brooklyn Getting Started</a>, and the "Off-the-shelf Locations" section of <a href="http://brooklyncentral.github.io/use/guide/defining-applications/common-usage.html">Brooklyn Common Usage</a>.</p>
+
+<p>Once the <code>DockerCloud</code>  application has started, a new location named <code>my-docker-cloud</code> will be available in the Locations drop-down list when adding new applications. Simply start a new application in this location and it will use Docker containers instead of virtual machines.</p>
+
+<h3>
+<a name="building-from-source" class="anchor" href="#building-from-source"><span class="octicon octicon-link"></span></a>Building from source</h3>
+
+<p>Build and run the examples as follows:</p>
+
+<div class="highlight highlight-Bash"><pre>% git clone https://github.com/brooklyncentral/clocker.git
+...
+% <span class="nb">cd </span>clocker
+% mvn clean install
+...
+% <span class="nb">cd </span>examples
+% mvn assembly:single
+...
+% tar zxf target/brooklyn-clocker-examples-0.5.0-SNAPSHOT-dist.tar.gz
+% <span class="nb">cd </span>brooklyn-clocker-examples-0.5.0-SNAPSHOT
+% ./clocker.sh launch --cloud --location &lt;location&gt;
+...
+</pre></div>
+
+<h2>
+<a name="getting-involved" class="anchor" href="#getting-involved"><span class="octicon octicon-link"></span></a>Getting involved</h2>
+
+<p>Clocker is Apache 2.0 licensed and the intention is to contribute it to Apache Brooklyn project so please get involved and join the discussion on <a href="http://freenode.net/">Freenode</a> IRC <code>#brooklyncentral</code> or the Apache Brooklyn community <a href="https://brooklyn.incubator.apache.org/community/">mailing list</a>.</p>
+
+<hr><p>Copyright 2014 by Cloudsoft Corporation Limited</p>
+
+<p>Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at</p>
+
+<p><a href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></p>
+
+<p>Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.</p>
+      </section>
+      <footer>
+        <p><small>Hosted on <a href="http://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
+      </footer>
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+		          <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+          </script>
+          <script type="text/javascript">
+            try {
+              var pageTracker = _gat._getTracker("UA-15947686-1");
+            pageTracker._trackPageview();
+            } catch(err) {}
+          </script>
+
+  </body>
+</html>
