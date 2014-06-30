@@ -35,6 +35,7 @@ import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.basic.SoftwareProcess;
+import brooklyn.event.feed.ConfigToAttributes;
 import brooklyn.event.feed.function.FunctionFeed;
 import brooklyn.event.feed.function.FunctionPollConfig;
 import brooklyn.location.Location;
@@ -78,7 +79,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         String dockerContainerName = format(getConfig(DockerContainer.DOCKER_CONTAINER_NAME_FORMAT), getId(), COUNTER.incrementAndGet());
         setDisplayName(dockerContainerName);
         setAttribute(DOCKER_CONTAINER_NAME, dockerContainerName);
-        setRunningEntity(getConfig(ENTITY));
+
+        ConfigToAttributes.apply(this);
     }
 
     protected void connectSensors() {

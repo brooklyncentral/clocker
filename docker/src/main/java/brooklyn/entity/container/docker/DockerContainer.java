@@ -45,7 +45,10 @@ import brooklyn.util.flags.SetFromFlag;
 public interface DockerContainer extends BasicStartable, HasShortName, LocationOwner<DockerContainerLocation, DockerContainer> {
 
     @SetFromFlag("dockerHost")
-    ConfigKey<DockerHost> DOCKER_HOST = ConfigKeys.newConfigKey(DockerHost.class, "docker.host", "The parent Docker host");
+    AttributeSensorAndConfigKey<DockerHost, DockerHost> DOCKER_HOST = ConfigKeys.newSensorAndConfigKey(DockerHost.class, "docker.host", "The parent Docker host");
+
+    @SetFromFlag("infrastructure")
+    AttributeSensorAndConfigKey<DockerInfrastructure, DockerInfrastructure> DOCKER_INFRASTRUCTURE = DockerHost.DOCKER_INFRASTRUCTURE;
 
     @SetFromFlag("imageId")
     ConfigKey<String> DOCKER_IMAGE_ID = DockerAttributes.DOCKER_IMAGE_ID.getConfigKey();

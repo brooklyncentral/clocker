@@ -37,6 +37,7 @@ import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.machine.MachineEntityImpl;
 import brooklyn.entity.proxying.EntitySpec;
+import brooklyn.event.feed.ConfigToAttributes;
 import brooklyn.location.Location;
 import brooklyn.location.LocationDefinition;
 import brooklyn.location.MachineProvisioningLocation;
@@ -85,6 +86,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         String dockerHostName = String.format(getConfig(DockerHost.HOST_NAME_FORMAT), getId(), COUNTER.incrementAndGet());
         setDisplayName(dockerHostName);
         setAttribute(HOST_NAME, dockerHostName);
+
+        ConfigToAttributes.apply(this);
 
         EntitySpec<?> dockerContainerSpec = EntitySpec.create(getConfig(DOCKER_CONTAINER_SPEC))
                 .configure(DockerContainer.DOCKER_HOST, this);
