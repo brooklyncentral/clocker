@@ -17,16 +17,8 @@ package brooklyn.entity.container.docker;
 
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.annotation.Nullable;
-
-import com.google.common.base.CharMatcher;
-import com.google.common.base.Function;
-import com.google.common.base.Functions;
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableSet;
 
 import brooklyn.config.ConfigKey;
-import brooklyn.config.render.RendererHints;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.database.DatastoreMixins;
 import brooklyn.entity.messaging.MessageBroker;
@@ -38,10 +30,11 @@ import brooklyn.event.basic.Sensors;
 import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
 import brooklyn.util.flags.TypeCoercions;
 import brooklyn.util.javalang.Reflections;
-import brooklyn.util.text.ByteSizeStrings;
-import brooklyn.util.text.StringFunctions;
-import brooklyn.util.time.Duration;
-import brooklyn.util.time.Time;
+
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Function;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableSet;
 
 public class DockerAttributes {
 
