@@ -30,8 +30,10 @@ import org.jclouds.compute.domain.TemplateBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.config.render.RendererHints;
 import brooklyn.enricher.Enrichers;
 import brooklyn.entity.Entity;
+import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
@@ -74,6 +76,10 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     private static final Logger LOG = LoggerFactory.getLogger(DockerHostImpl.class);
     private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
+    static {
+        RendererHints.register(DOCKER_INFRASTRUCTURE, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+    }
+
     private DynamicCluster containers;
     private JcloudsLocation jcloudsLocation;
     private DockerPortForwarder portForwarder;
@@ -87,7 +93,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         setDisplayName(dockerHostName);
         setAttribute(HOST_NAME, dockerHostName);
 
-        ConfigToAttributes.apply(this);
+        ConfigToAttributes.apply(this, DOCKER_INFRASTRUCTURE);
 
         EntitySpec<?> dockerContainerSpec = EntitySpec.create(getConfig(DOCKER_CONTAINER_SPEC))
                 .configure(DockerContainer.DOCKER_HOST, this);
@@ -96,6 +102,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             dockerContainerSpec.policy(PolicySpec.create(ServiceRestarter.class)
                     .configure(ServiceRestarter.FAILURE_SENSOR_TO_MONITOR, ServiceFailureDetector.ENTITY_FAILED));
         }
+        setAttribute(DOCKER_CONTAINER_SPEC, dockerContainerSpec);
 
         containers = addChild(EntitySpec.create(DynamicCluster.class)
                 .configure(Cluster.INITIAL_SIZE, 0)

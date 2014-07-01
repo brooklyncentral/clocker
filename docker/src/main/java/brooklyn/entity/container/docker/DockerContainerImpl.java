@@ -66,10 +66,11 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     private static final Logger LOG = LoggerFactory.getLogger(DockerContainerImpl.class);
     private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
-	static {
-		RendererHints.register(ENTITY, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-	}
-    
+    static {
+        RendererHints.register(DOCKER_HOST, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(ENTITY, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+    }
+
     private transient FunctionFeed sensorFeed;
 
     @Override
@@ -80,7 +81,9 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         setDisplayName(dockerContainerName);
         setAttribute(DOCKER_CONTAINER_NAME, dockerContainerName);
 
-        ConfigToAttributes.apply(this);
+        ConfigToAttributes.apply(this, DOCKER_INFRASTRUCTURE);
+        ConfigToAttributes.apply(this, DOCKER_HOST);
+        ConfigToAttributes.apply(this, ENTITY);
     }
 
     protected void connectSensors() {
