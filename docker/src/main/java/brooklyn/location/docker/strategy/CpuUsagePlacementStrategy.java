@@ -49,7 +49,7 @@ public class CpuUsagePlacementStrategy extends AbstractDockerPlacementStrategy {
         for (DockerHostLocation machine : ImmutableList.copyOf(available)) {
             Double maxCpu = machine.getOwner().getConfig(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_CPU);
             Double currentCpu = machine.getOwner().getAttribute(DockerHost.CPU_USAGE);
-            if (currentCpu < maxCpu) available.remove(machine);
+            if (currentCpu > maxCpu) available.remove(machine);
         }
         if (LOG.isDebugEnabled()) {
             LOG.debug("Available Docker hosts: {}", Iterables.toString(available));
