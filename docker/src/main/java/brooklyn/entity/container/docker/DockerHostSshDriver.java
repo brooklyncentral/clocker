@@ -149,6 +149,15 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                     .body.append(commands)
                     .execute();
         }
+        if (osDetails.getName().equalsIgnoreCase("centos")) {
+            List<String> commands = ImmutableList.<String> builder()
+                    .add(sudo("yum -y --nogpgcheck upgrade kernel"))
+                    .add(sudo("reboot"))
+                    .build();
+            newScript(INSTALLING+"kernel")
+                    .body.append(commands)
+                    .execute();
+        }
         log.info("waiting for Docker host {} to be sshable", getLocation());
         boolean isSshable = Repeater.create()
                 .every(Duration.TEN_SECONDS)
