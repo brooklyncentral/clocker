@@ -15,9 +15,6 @@
  */
 package brooklyn.entity.container.docker;
 
-import io.cloudsoft.networking.subnet.PortForwarder;
-import io.cloudsoft.networking.subnet.SubnetTier;
-
 import java.util.List;
 
 import brooklyn.config.ConfigKey;
@@ -42,6 +39,8 @@ import brooklyn.location.basic.PortRanges;
 import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.dynamic.LocationOwner;
 import brooklyn.location.jclouds.JcloudsLocation;
+import brooklyn.networking.subnet.PortForwarder;
+import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.time.Duration;
 

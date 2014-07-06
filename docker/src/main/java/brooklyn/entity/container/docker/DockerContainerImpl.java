@@ -16,8 +16,6 @@
 package brooklyn.entity.container.docker;
 
 import static java.lang.String.format;
-import io.cloudsoft.networking.portforwarding.subnet.JcloudsPortforwardingSubnetLocation;
-import io.cloudsoft.networking.subnet.SubnetTier;
 
 import java.util.Collection;
 import java.util.Map;
@@ -51,6 +49,8 @@ import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.management.LocationManager;
+import brooklyn.networking.portforwarding.subnet.JcloudsPortforwardingSubnetLocation;
+import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.collections.MutableSet;
 import brooklyn.util.exceptions.Exceptions;

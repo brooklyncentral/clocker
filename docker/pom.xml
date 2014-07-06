@@ -34,9 +34,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.cloudsoft.networking</groupId>
+            <groupId>io.brooklyn.networking</groupId>
             <artifactId>brooklyn-networking-portforwarding</artifactId>
-            <version>${brooklyn.networking.version}</version>
+            <version>${brooklyn.version}</version>
         </dependency>
         <dependency>
             <groupId>io.brooklyn</groupId>
