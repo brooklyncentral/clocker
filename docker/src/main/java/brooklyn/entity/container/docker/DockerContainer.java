@@ -15,6 +15,8 @@
  */
 package brooklyn.entity.container.docker;
 
+import java.util.Map;
+
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
 import brooklyn.entity.annotation.Effector;
@@ -55,6 +57,18 @@ public interface DockerContainer extends BasicStartable, HasShortName, LocationO
 
     @SetFromFlag("hardwareId")
     ConfigKey<String> DOCKER_HARDWARE_ID = DockerAttributes.DOCKER_HARDWARE_ID.getConfigKey();
+
+    @SetFromFlag("useHostDnsName")
+    ConfigKey<Boolean> DOCKER_USE_HOST_DNS_NAME = DockerAttributes.DOCKER_USE_HOST_DNS_NAME;
+
+    @SetFromFlag("cpuShares")
+    ConfigKey<Integer> DOCKER_CPU_SHARES = DockerAttributes.DOCKER_CPU_SHARES;
+
+    @SetFromFlag("memory")
+    ConfigKey<Integer> DOCKER_MEMORY = DockerAttributes.DOCKER_MEMORY;
+
+    @SetFromFlag("volumes")
+    ConfigKey<Map<String, String>> DOCKER_VOLUMES = DockerAttributes.DOCKER_VOLUMES;
 
     @SetFromFlag("entity")
     AttributeSensorAndConfigKey<Entity, Entity> ENTITY = ConfigKeys.newSensorAndConfigKey(Entity.class, "docker.container.entity", "The entity running in this Docker container");
