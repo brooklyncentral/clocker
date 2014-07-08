@@ -95,7 +95,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         ConfigToAttributes.apply(this, DOCKER_INFRASTRUCTURE);
 
         EntitySpec<?> dockerContainerSpec = EntitySpec.create(getConfig(DOCKER_CONTAINER_SPEC))
-                .configure(DockerContainer.DOCKER_HOST, this);
+                .configure(DockerContainer.DOCKER_HOST, this)
+                .configure(DockerContainer.DOCKER_INFRASTRUCTURE, getInfrastructure());
         if (getConfig(HA_POLICY_ENABLE)) {
             dockerContainerSpec.policy(PolicySpec.create(ServiceFailureDetector.class));
             dockerContainerSpec.policy(PolicySpec.create(ServiceRestarter.class)
