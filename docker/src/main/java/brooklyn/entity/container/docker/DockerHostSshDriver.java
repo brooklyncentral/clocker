@@ -32,12 +32,15 @@ import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.location.OsDetails;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.util.collections.MutableMap;
+import brooklyn.util.file.ArchiveUtils;
 import brooklyn.util.net.Networking;
+import brooklyn.util.net.Urls;
 import brooklyn.util.os.Os;
 import brooklyn.util.repeat.Repeater;
 import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.task.DynamicTasks;
 import brooklyn.util.task.system.ProcessTaskWrapper;
+import brooklyn.util.text.Identifiers;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 
@@ -204,6 +207,29 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .failOnNonZeroResultCode()
                 .body.append(commands)
                 .execute();
+
+        // Configure volume mappings for the host
+        Map<String, String> mapping = MutableMap.of();
+        Map<String, String> volumes = getEntity().getConfig(DockerHost.DOCKER_HOST_VOLUME_MAPPING);
+        if (volumes != null) {
+            for (String source : volumes.keySet()) {
+                if (Urls.isUrlWithProtocol(source)) {
+                    String path = deployArchive(source);
+                    mapping.put(path, volumes.get(source));
+                } else {
+                    mapping.put(source, volumes.get(source));
+                }
+            }
+        }
+        getEntity().setAttribute(DockerHost.DOCKER_HOST_VOLUME_MAPPING, mapping); 
+    }
+
+    @Override
+    public String deployArchive(String url) {
+        String volumeId = Identifiers.makeIdFromHash(url.hashCode());
+        String path = Os.mergePaths(getRunDir(), volumeId);
+        ArchiveUtils.deploy(url, getMachine(), path);
+        return path;
     }
 
     public String getPidFile() { return "/var/run/docker.pid"; }

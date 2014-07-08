@@ -15,7 +15,7 @@
  */
 package brooklyn.entity.container.docker;
 
-import java.util.Map;
+import java.util.List;
 
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
@@ -67,8 +67,8 @@ public interface DockerContainer extends BasicStartable, HasShortName, LocationO
     @SetFromFlag("memory")
     ConfigKey<Integer> DOCKER_MEMORY = DockerAttributes.DOCKER_MEMORY;
 
-    @SetFromFlag("volumes")
-    ConfigKey<Map<String, String>> DOCKER_VOLUMES = DockerAttributes.DOCKER_VOLUMES;
+    @SetFromFlag("volumeExports")
+    ConfigKey<List<String>> DOCKER_CONTAINER_VOLUME_EXPORT = DockerAttributes.DOCKER_CONTAINER_VOLUME_EXPORT;
 
     @SetFromFlag("entity")
     AttributeSensorAndConfigKey<Entity, Entity> ENTITY = ConfigKeys.newSensorAndConfigKey(Entity.class, "docker.container.entity", "The entity running in this Docker container");

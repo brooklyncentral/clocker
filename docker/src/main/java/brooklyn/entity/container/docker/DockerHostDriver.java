@@ -36,4 +36,6 @@ public interface DockerHostDriver extends SoftwareProcessDriver {
      */
     String buildImage(String dockerFile, String name);
 
+    String deployArchive(String url);
+
 }

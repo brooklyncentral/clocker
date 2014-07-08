@@ -18,6 +18,7 @@ package brooklyn.entity.container.docker;
 import static java.lang.String.format;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -57,8 +58,12 @@ import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.collections.MutableSet;
 import brooklyn.util.exceptions.Exceptions;
+import brooklyn.util.file.ArchiveUtils;
 import brooklyn.util.internal.ssh.SshTool;
 import brooklyn.util.net.Cidr;
+import brooklyn.util.net.Urls;
+import brooklyn.util.os.Os;
+import brooklyn.util.text.Identifiers;
 import brooklyn.util.time.Duration;
 
 import com.google.common.collect.ImmutableMap;
@@ -202,9 +207,25 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         if (memory != null) options.memory(memory);
 
         // Volumes
-        // TODO need to check Docker documentation on volumes
-        // TODO should probably be specified as source on host, dest on container or entity?
-        options.volumes(ImmutableMap.<String, String>of());
+        Map<String, String> volumes = MutableMap.copyOf(getDockerHost().getAttribute(DockerHost.DOCKER_HOST_VOLUME_MAPPING));
+        Map<String, String> mapping = entity.getConfig(DockerHost.DOCKER_HOST_VOLUME_MAPPING);
+        if (mapping != null) {
+            for (String source : mapping.keySet()) {
+                if (Urls.isUrlWithProtocol(source)) {
+                    String path = getDockerHost().deployArchive(source);
+                    volumes.put(path, mapping.get(source));
+                } else {
+                    volumes.put(source, mapping.get(source));
+                }
+            }
+        }
+        List<String> exports = entity.getConfig(DockerContainer.DOCKER_CONTAINER_VOLUME_EXPORT);
+        if (exports != null) {
+            for (String dir : exports) {
+                volumes.put(dir, dir);
+            }
+        }
+        options.volumes(volumes);
 
         return options;
     }

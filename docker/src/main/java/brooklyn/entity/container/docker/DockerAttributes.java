@@ -15,6 +15,7 @@
  */
 package brooklyn.entity.container.docker;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -74,8 +75,11 @@ public class DockerAttributes {
     public static final ConfigKey<Boolean> DOCKER_USE_HOST_DNS_NAME = ConfigKeys.newBooleanConfigKey("docker.useHostDnsName", "Container uses same DNS hostname as Docker host", Boolean.FALSE);
     public static final ConfigKey<Integer> DOCKER_CPU_SHARES = ConfigKeys.newIntegerConfigKey("docker.cpuShares", "Container CPU shares configuration");
     public static final ConfigKey<Integer> DOCKER_MEMORY = ConfigKeys.newIntegerConfigKey("docker.memory", "Container memory configuration");
-    public static final ConfigKey<Map<String, String>> DOCKER_VOLUMES = ConfigKeys.newConfigKey(
-            new TypeToken<Map<String, String>>() { }, "docker.volumes", "Container volume configuration");
+
+    public static final AttributeSensorAndConfigKey<Map<String, String>, Map<String, String>> DOCKER_HOST_VOLUME_MAPPING = ConfigKeys.newSensorAndConfigKey(
+            new TypeToken<Map<String, String>>() { }, "docker.host.volumes", "Host volume mapping configuration");
+    public static final ConfigKey<List<String>> DOCKER_CONTAINER_VOLUME_EXPORT = ConfigKeys.newConfigKey(
+            new TypeToken<List<String>>() { }, "docker.container.volumes", "Container volume export configuration");
 
     /*
      * Counter attributes.
