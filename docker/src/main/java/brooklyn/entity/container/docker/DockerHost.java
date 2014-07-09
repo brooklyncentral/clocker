@@ -16,6 +16,7 @@
 package brooklyn.entity.container.docker;
 
 import java.util.List;
+import java.util.Map;
 
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
@@ -96,6 +97,9 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
 
     AttributeSensorAndConfigKey<String, String> DOCKER_HARDWARE_ID = DockerAttributes.DOCKER_HARDWARE_ID;
 
+    @SetFromFlag("volumeMappings")
+    AttributeSensorAndConfigKey<Map<String, String>, Map<String, String>> DOCKER_HOST_VOLUME_MAPPING = DockerAttributes.DOCKER_HOST_VOLUME_MAPPING;
+
     AttributeSensor<String> HOST_NAME = Sensors.newStringSensor("docker.host.name", "The name of the Docker host");
 
     Integer getDockerPort();
@@ -116,6 +120,7 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
 
     MethodEffector<String> CREATE_SSHABLE_IMAGE = new MethodEffector<String>(DockerHost.class, "createSshableImage");
     MethodEffector<String> RUN_DOCKER_COMMAND = new MethodEffector<String>(DockerHost.class, "runDockerCommand");
+    MethodEffector<String> DEPLOY_ARCHIVE = new MethodEffector<String>(DockerHost.class, "deployArchive");
 
     /**
      * Create an SSHable image and returns the image ID.
@@ -137,5 +142,14 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
     @Effector(description="Execute a Docker command and return the output")
     String runDockerCommand(
             @EffectorParam(name="command", description="Docker command") String command);
+
+    /**
+     * Upload an archive file to the host and expand it, for export to a container.
+     *
+     * @param url Archive source URL
+     */
+    @Effector(description="Upload an archive file to the host and expand it, for export to a container")
+    String deployArchive(
+            @EffectorParam(name="url", description="Archive source URL") String url);
 
 }

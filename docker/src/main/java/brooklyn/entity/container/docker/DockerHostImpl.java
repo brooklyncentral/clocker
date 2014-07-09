@@ -62,6 +62,7 @@ import brooklyn.util.collections.MutableMap;
 import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.ssh.BashCommands;
+import brooklyn.util.task.Tasks;
 import brooklyn.util.text.Strings;
 
 import com.google.common.collect.ImmutableList;
@@ -235,6 +236,17 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
        String stdout = execCommand(BashCommands.sudo("docker " + command));
        if (LOG.isDebugEnabled()) LOG.debug("Successfully executed Docker {}: {}", Strings.getFirstWord(command), Strings.getFirstLine(stdout));
        return stdout;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public String deployArchive(String url) {
+        Tasks.setBlockingDetails("Deploy " + url);
+        try {
+            return getDriver().deployArchive(url);
+        } finally {
+            Tasks.resetBlockingDetails();
+        }
     }
 
     @Override

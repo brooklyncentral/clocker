@@ -18,17 +18,20 @@ package brooklyn.entity.container.docker;
 import static java.lang.String.format;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jclouds.docker.compute.options.DockerTemplateOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import brooklyn.config.ConfigKey;
 import brooklyn.config.render.RendererHints;
 import brooklyn.entity.Entity;
+import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Lifecycle;
@@ -48,15 +51,22 @@ import brooklyn.location.dynamic.DynamicLocation;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
+import brooklyn.location.jclouds.templates.PortableTemplateBuilder;
 import brooklyn.management.LocationManager;
 import brooklyn.networking.portforwarding.subnet.JcloudsPortforwardingSubnetLocation;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.collections.MutableSet;
 import brooklyn.util.exceptions.Exceptions;
+import brooklyn.util.file.ArchiveUtils;
 import brooklyn.util.internal.ssh.SshTool;
 import brooklyn.util.net.Cidr;
+import brooklyn.util.net.Urls;
+import brooklyn.util.os.Os;
+import brooklyn.util.text.Identifiers;
 import brooklyn.util.time.Duration;
+
+import com.google.common.collect.ImmutableMap;
 
 /**
  * A single Docker container.
@@ -177,6 +187,49 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         getDockerHost().runDockerCommand("start" + getContainerId());
     }
 
+    private DockerTemplateOptions getDockerTemplateOptions() {
+        Entity entity = getRunningEntity();
+        DockerTemplateOptions options = DockerTemplateOptions.NONE;
+
+        // Use DockerHost hostname for the container
+        Boolean useHostDns = entity.getConfig(DOCKER_USE_HOST_DNS_NAME);
+        if (!useHostDns) useHostDns = getConfig(DOCKER_USE_HOST_DNS_NAME);
+        if (useHostDns) options.hostname(getDockerHost().getAttribute(Attributes.HOSTNAME));
+
+        // CPU shares
+        Integer cpuShares = entity.getConfig(DOCKER_CPU_SHARES);
+        if (cpuShares == null) cpuShares = getConfig(DOCKER_CPU_SHARES);
+        if (cpuShares != null) options.cpuShares(cpuShares);
+
+        // Memory
+        Integer memory = entity.getConfig(DOCKER_MEMORY);
+        if (memory == null) memory = getConfig(DOCKER_MEMORY);
+        if (memory != null) options.memory(memory);
+
+        // Volumes
+        Map<String, String> volumes = MutableMap.copyOf(getDockerHost().getAttribute(DockerHost.DOCKER_HOST_VOLUME_MAPPING));
+        Map<String, String> mapping = entity.getConfig(DockerHost.DOCKER_HOST_VOLUME_MAPPING);
+        if (mapping != null) {
+            for (String source : mapping.keySet()) {
+                if (Urls.isUrlWithProtocol(source)) {
+                    String path = getDockerHost().deployArchive(source);
+                    volumes.put(path, mapping.get(source));
+                } else {
+                    volumes.put(source, mapping.get(source));
+                }
+            }
+        }
+        List<String> exports = entity.getConfig(DockerContainer.DOCKER_CONTAINER_VOLUME_EXPORT);
+        if (exports != null) {
+            for (String dir : exports) {
+                volumes.put(dir, dir);
+            }
+        }
+        options.volumes(volumes);
+
+        return options;
+    }
+
     /**
      * Create a new {@link DockerContainerLocation} wrapping a machine from the host's {@link JcloudsLocation}.
      */
@@ -187,8 +240,12 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         String locationName = host.getId() + "-" + getId();
         SubnetTier subnetTier = dockerHost.getSubnetTier();
 
+        // Configure the container options based on the host and the running entity
+        DockerTemplateOptions options = getDockerTemplateOptions();
+
         // put these fields on the location so it has the info it needs to create the subnet
         Map<?, ?> dockerFlags = MutableMap.<Object, Object>builder()
+                .put(JcloudsLocationConfig.TEMPLATE_BUILDER, new PortableTemplateBuilder().options(options))
                 .put(JcloudsLocationConfig.IMAGE_ID, getConfig(DOCKER_IMAGE_ID))
                 .put(JcloudsLocationConfig.HARDWARE_ID, getConfig(DOCKER_HARDWARE_ID))
                 .put(LocationConfigKeys.USER, "root")
