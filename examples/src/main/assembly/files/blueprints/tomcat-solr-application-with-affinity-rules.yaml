@@ -12,20 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-id: tomcat-application
-name: "Tomcat Web Application"
+id: tomcat-solr-application
+name: "Tomcat Solr Application"
 origin: "http://brooklyncentral.github.io/"
 locations:
 - my-docker-cloud
 services:
+- serviceType: brooklyn.entity.nosql.solr.SolrServer
 - serviceType: brooklyn.entity.webapp.tomcat.TomcatServer
   brooklyn.config:
     docker.dockerfile.url:
       "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/UsesJavaDockerfile"
-    affinity.host.rules: |
-      "NOT TYPE"
-      "TYPE brooklyn.entity.nosql.solr.SolrServer"
-      "SAME APPLICATION"
+    affinity.rules: |
+      NOT TYPE
+      TYPE brooklyn.entity.nosql.solr.SolrServer
+      SAME APPLICATION
     wars.root:
       "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/hello-world.war"
     version: "7.0.53"

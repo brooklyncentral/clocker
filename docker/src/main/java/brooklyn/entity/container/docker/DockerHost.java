@@ -36,6 +36,7 @@ import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.BasicAttributeSensorAndConfigKey;
 import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
+import brooklyn.location.affinity.AffinityRules;
 import brooklyn.location.basic.PortRanges;
 import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.dynamic.LocationOwner;
@@ -101,7 +102,7 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
     AttributeSensorAndConfigKey<Map<String, String>, Map<String, String>> DOCKER_HOST_VOLUME_MAPPING = DockerAttributes.DOCKER_HOST_VOLUME_MAPPING;
 
     @SetFromFlag("affinityRules")
-    ConfigKey<String> DOCKER_HOST_AFFINITY_RULES = DockerAttributes.DOCKER_HOST_AFFINITY_RULES;
+    ConfigKey<String> DOCKER_HOST_AFFINITY_RULES = AffinityRules.AFFINITY_RULES;
 
     AttributeSensor<String> HOST_NAME = Sensors.newStringSensor("docker.host.name", "The name of the Docker host");
 

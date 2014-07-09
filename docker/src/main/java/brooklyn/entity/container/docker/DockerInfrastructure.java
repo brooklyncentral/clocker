@@ -32,6 +32,7 @@ import brooklyn.entity.trait.Resizable;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.BasicAttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
+import brooklyn.location.affinity.AffinityRules;
 import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
 import brooklyn.location.dynamic.LocationOwner;
@@ -95,7 +96,7 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
     ConfigKey<String> DOCKER_HARDWARE_ID = DockerAttributes.DOCKER_HARDWARE_ID.getConfigKey();
 
     @SetFromFlag("affinityRules")
-    ConfigKey<String> DOCKER_HOST_AFFINITY_RULES = DockerAttributes.DOCKER_HOST_AFFINITY_RULES;
+    ConfigKey<String> DOCKER_HOST_AFFINITY_RULES = AffinityRules.AFFINITY_RULES;
 
     AttributeSensor<DynamicCluster> DOCKER_HOST_CLUSTER = Sensors.newSensor(DynamicCluster.class, "docker.hosts", "Docker host cluster");
     AttributeSensor<DynamicGroup> DOCKER_CONTAINER_FABRIC = Sensors.newSensor(DynamicGroup.class, "docker.fabric", "Docker container fabric");

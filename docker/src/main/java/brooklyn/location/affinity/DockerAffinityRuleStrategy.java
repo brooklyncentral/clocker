@@ -64,7 +64,7 @@ public class DockerAffinityRuleStrategy implements AffinityRuleExtension {
             Optional<String> hostRules = Optional.fromNullable(machine.getOwner().getConfig(DockerHost.DOCKER_HOST_AFFINITY_RULES));
             Optional<String> infrastructureRules = Optional.fromNullable(machine.getOwner().getInfrastructure().getConfig(DockerHost.DOCKER_HOST_AFFINITY_RULES));
             String combined = Joiner.on('\n').join(Optional.presentInstances(ImmutableList.of(entityRules, hostRules, infrastructureRules)));
-            AffinityRules rules = AffinityRules.rules(combined);
+            AffinityRules rules = AffinityRules.rulesFor(entity).parse(combined);
 
             Iterable<Entity> entities = managementContext.getEntityManager().findEntities(EntityPredicates.withLocation(machine));
             if (Iterables.isEmpty(entities)) {

@@ -16,6 +16,7 @@
 package brooklyn.location.affinity;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Queue;
 
 import javax.annotation.Nullable;
@@ -24,6 +25,7 @@ import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.EntityPredicates;
+import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.util.javalang.Reflections;
 
 import com.google.common.base.CharMatcher;
@@ -32,23 +34,27 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 
 /**
  * Affinity rules for Docker hosts.
  * <p>
- * Rules are specified as stings, formatted as follows:
+ * Rules are specified as strings, formatted as follows:
  * <ul>
  * <li>(<code>SAME</code>|<code>NOT</code>)? <code>TYPE</code> <em>entityType</em>?
+ * <li>(<code>SAME</code>|<code>NOT</code>)? <code>NAME</code> <em>entityName</em>
  * <li>(<code>SAME</code>|<code>NOT</code>)? <code>ID</code> <em>entityId</em>?
  * <li>(<code>SAME</code>|<code>NOT</code>)? <code>APPLICATION</code> <em>applicationId</em>?
  * <li><code>PREDICATE</code> <em>entityPredicateClass</em>
+ * <li><code>EMPTY</code>
  * </ul>
  * The <code>SAME</code> token is the default behaviour, and means the entities must have the property defined in the rule, <code>NOT</code>
  * means they mustn't have the property. The parameter given specifies the type or id, and if it's missing thee rule will apply to the
- * properties of the entity being placed. Any rules that take a class name will instantiate an instance of that class from the current
- * classpath, so ensure the appropriate Jar files are available.
+ * properties of the entity being placed. Rules that take a class name will instantiate an instance of that class from the current
+ * classpath, so ensure the appropriate Jar files are available. The <code>EMPTY</code> rule will treaty empty locations as allowable,
+ * otherwise a new {@link DockerHostLocation} will be created for the container.
  * <p>
  * To specify a rule that there must be no entities of the same type, an entity of type SolrServer, all in the same application,
  * use these rules:
@@ -58,56 +64,63 @@ import com.google.common.collect.Queues;
  * SAME APPLICATION
  * </pre>
  * <p>
- * Specify the rules during configuration using the {@link #AFFINITY_RULES} key.
+ * Specify the rules during configuration using the {@link #AFFINITY_RULES} key:
  * <pre>
- * 
+ * - serviceType: brooklyn.entity.webapp.tomcat.TomcatServer
+ *   brooklyn.config:
+ *   affinity.rules: |
+ *     NOT TYPE
+ *     TYPE brooklyn.entity.nosql.solr.SolrServer
+ *     SAME APPLICATION
+ * </pre>
  */
 public class AffinityRules implements Predicate<Entity> {
 
-    public static final ConfigKey<String> AFFINITY_RULES = ConfigKeys.newStringConfigKey("host.affinity.rules", "Affinity rules for entity placemnent");
-
-    private Predicate<Entity> affinityRules = Predicates.alwaysTrue();
-    private boolean allowEmpty = false;
+    public static final ConfigKey<String> AFFINITY_RULES = ConfigKeys.newStringConfigKey("affinity.rules", "Affinity rules for entity placemnent");
 
     public static final String SAME = "SAME";
     public static final String NOT = "NOT";
     public static final String TYPE = "TYPE";
+    public static final String NAME = "NAME";
     public static final String ID = "ID";
     public static final String APPLICATION = "APPLICATION";
     public static final String PREDICATE = "PREDICATE";
     public static final String EMPTY = "EMPTY";
+    public static final Iterable<String> VERBS = ImmutableList.of(TYPE, NAME, ID, APPLICATION, PREDICATE);
 
-    private AffinityRules(String...rules) {
-        this(ImmutableList.copyOf(rules));
+    private Predicate<Entity> affinityRules = Predicates.alwaysTrue();
+    private boolean allowEmpty = false;
+
+    private final Entity entity;
+
+    private AffinityRules(Entity entity) {
+        this.entity = entity;
     }
 
-    private AffinityRules(String rules) {
-        this(Splitter.on(',').omitEmptyStrings().split(rules));
+    public static AffinityRules rulesFor(Entity entity) {
+        return new AffinityRules(entity);
     }
 
-    private AffinityRules(Iterable<String> rules) {
+    public AffinityRules parse(String...rules) {
+        return parse(ImmutableList.copyOf(rules));
+    }
+
+    public AffinityRules parse(String rules) {
+        return parse(Splitter.on(',').omitEmptyStrings().split(rules));
+    }
+
+    public AffinityRules parse(Iterable<String> rules) {
         List<Predicate<Entity>> predicates = Lists.newArrayList();
         for (String rule : rules) {
-            Predicate<Entity> predicate = parse(rule);
+            Predicate<Entity> predicate = predicate(rule);
             predicates.add(predicate);
         }
 
         affinityRules = Predicates.and(predicates);
+        return this;
     }
 
-    public static AffinityRules rules(String...rules) {
-        return new AffinityRules(rules);
-    }
-
-    public static AffinityRules rules(String rules) {
-        return new AffinityRules(rules);
-    }
-
-    public static AffinityRules rules(Iterable<String> rules) {
-        return new AffinityRules(rules);
-    }
-
-    public Predicate<Entity> parse(String rule) {
+    private Predicate<Entity> predicate(String rule) {
         Preconditions.checkNotNull(rule, "rule");
         Queue<String> tokens = Queues.newArrayDeque(Splitter.on(CharMatcher.BREAKING_WHITESPACE)
                 .omitEmptyStrings()
@@ -139,7 +152,7 @@ public class AffinityRules implements Predicate<Entity> {
         if (verb == null) {
             throw new IllegalStateException("Affinity rule verb not specified: " + rule);
         } else {
-            if (verb.equalsIgnoreCase(TYPE) || verb.equalsIgnoreCase(ID) || verb.equalsIgnoreCase(APPLICATION) || verb.equalsIgnoreCase(PREDICATE)) {
+            if (Iterables.contains(VERBS, verb.toUpperCase(Locale.ENGLISH))) {
                 tokens.remove();
             } else {
                 throw new IllegalStateException("Affinity rule parser found unexpected verb token: " + verb);
@@ -149,14 +162,36 @@ public class AffinityRules implements Predicate<Entity> {
         // Check paramater and instantiate if required
         final String parameter = tokens.peek();
         if (parameter == null) {
-            throw new IllegalStateException("Affinity rule parameter not specified: " + rule);
+            if (verb.equalsIgnoreCase(TYPE)) {
+                predicate = new Predicate<Entity>() {
+                    @Override
+                    public boolean apply(@Nullable Entity input) {
+                        return input.getEntityType().getName().equalsIgnoreCase(entity.getEntityType().getName()) ||
+                                input.getEntityType().getSimpleName().equalsIgnoreCase(entity.getEntityType().getSimpleName());
+                    }
+                };
+            } else if (verb.equalsIgnoreCase(ID)) {
+                predicate = EntityPredicates.idEqualTo(entity.getId());
+            } else if (verb.equalsIgnoreCase(APPLICATION)) {
+                predicate = EntityPredicates.applicationIdEqualTo(entity.getApplicationId());
+            } else {
+                throw new IllegalStateException("Affinity rule parameter not specified: " + rule);
+            }
         } else {
             tokens.remove();
             if (verb.equalsIgnoreCase(TYPE)) {
                 predicate = new Predicate<Entity>() {
                     @Override
                     public boolean apply(@Nullable Entity input) {
-                        return input.getEntityType().getName().equalsIgnoreCase(parameter);
+                        return input.getEntityType().getName().equalsIgnoreCase(parameter) ||
+                                input.getEntityType().getSimpleName().equalsIgnoreCase(parameter);
+                    }
+                };
+            } else if (verb.equalsIgnoreCase(NAME)) {
+                predicate = new Predicate<Entity>() {
+                    @Override
+                    public boolean apply(@Nullable Entity input) {
+                        return input.getDisplayName().toLowerCase(Locale.ENGLISH).contains(parameter.toLowerCase(Locale.ENGLISH));
                     }
                 };
             } else if (verb.equalsIgnoreCase(ID)) {
@@ -179,7 +214,7 @@ public class AffinityRules implements Predicate<Entity> {
 
         // Check for left-over tokens
         if (tokens.peek() != null) {
-            throw new IllegalStateException("Affinity rile has extra tokens: " + rule);
+            throw new IllegalStateException("Affinity rule has extra tokens: " + rule);
         }
 
         // Create predicate and return
