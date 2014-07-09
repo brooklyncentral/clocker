@@ -23,6 +23,11 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.collect.ImmutableList;
+import com.google.common.net.HostAndPort;
+import com.google.common.net.InetAddresses;
+
 import brooklyn.entity.Entity;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerInfrastructure;
@@ -40,11 +45,6 @@ import brooklyn.util.net.Protocol;
 import brooklyn.util.ssh.IptablesCommands;
 import brooklyn.util.ssh.IptablesCommands.Chain;
 import brooklyn.util.ssh.IptablesCommands.Policy;
-
-import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.collect.ImmutableList;
-import com.google.common.net.HostAndPort;
-import com.google.common.net.InetAddresses;
 
 /**
  * A {@link Location} that wraps a Docker container.
@@ -94,14 +94,15 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
             }
             List<String> commands = ImmutableList.of(
                     IptablesCommands.insertIptablesRule(Chain.INPUT, Protocol.TCP, port, Policy.ACCEPT),
-                    IptablesCommands.cleanUpIptablesRules(),
                     IptablesCommands.saveIptablesRules());
             int result = host.execCommands(String.format("Open iptables TCP/%d", port), commands);
+            /*
             if (result != 0) {
                 String msg = String.format("Error running iptables update for TCP/%d on %s", port, host);
                 LOG.error(msg);
                 throw new RuntimeException(msg);
             }
+            */
         }
     }
 

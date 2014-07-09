@@ -15,7 +15,12 @@
  */
 package brooklyn.entity.container.docker;
 
-import static brooklyn.util.ssh.BashCommands.*;
+import static brooklyn.util.ssh.BashCommands.INSTALL_CURL;
+import static brooklyn.util.ssh.BashCommands.INSTALL_WGET;
+import static brooklyn.util.ssh.BashCommands.chainGroup;
+import static brooklyn.util.ssh.BashCommands.ifExecutableElse0;
+import static brooklyn.util.ssh.BashCommands.installPackage;
+import static brooklyn.util.ssh.BashCommands.sudo;
 import static java.lang.String.format;
 
 import java.util.List;
@@ -23,6 +28,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+
+import com.google.common.base.CharMatcher;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.Uninterruptibles;
 
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
@@ -40,11 +51,6 @@ import brooklyn.util.task.DynamicTasks;
 import brooklyn.util.task.system.ProcessTaskWrapper;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
-
-import com.google.common.base.CharMatcher;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.util.concurrent.Uninterruptibles;
 
 public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implements DockerHostDriver {
 
@@ -119,7 +125,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     @Override
     public void stop() {
         newScript(STOPPING)
-                .body.append(sudo("service docker stop"))
+                .body.append(sudo("service docker start"))
                 .failOnNonZeroResultCode()
                 .execute();
     }
@@ -128,7 +134,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     @Override
     public void install() {
         DownloadResolver resolver = Entities.newDownloader(this);
-        setExpandedInstallDir(getInstallDir()+"/"+resolver.getUnpackedDirectoryName(format("docker-%s", getVersion())));
+        setExpandedInstallDir(getInstallDir() + "/" + resolver.getUnpackedDirectoryName(format("docker-%s", getVersion())));
 
         OsDetails osDetails = getMachine().getMachineDetails().getOsDetails();
         String osVersion = osDetails.getVersion();
@@ -137,21 +143,28 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
             throw new IllegalStateException("Docker supports only 64bit OS");
         }
         if (osDetails.getName().equalsIgnoreCase("ubuntu") && osVersion.equals("12.04")) {
-            List<String> commands = ImmutableList.<String> builder().add(installPackage("linux-image-generic-lts-raring"))
-                           .add(installPackage("linux-headers-generic-lts-raring"))
-                           .add(sudo("reboot"))
-                           .build();
-            newScript(INSTALLING+"kernel")
-                    .body.append(commands)
-                    .execute();
+            List<String> commands = ImmutableList.<String>builder().add(installPackage("linux-image-generic-lts-raring"))
+                    .add(installPackage("linux-headers-generic-lts-raring"))
+                    .add(sudo("reboot"))
+                    .build();
+            executeKernelInstallation(commands);
         }
+        if (osDetails.getName().equalsIgnoreCase("centos")) {
+            List<String> commands = ImmutableList.<String>builder()
+                    .add(sudo("yum -y --nogpgcheck upgrade kernel"))
+                    .add(sudo("reboot"))
+                    .build();
+            executeKernelInstallation(commands);
+        }
+
         log.info("waiting for Docker host {} to be sshable", getLocation());
         boolean isSshable = Repeater.create()
                 .every(Duration.TEN_SECONDS)
                 .until(new Callable<Boolean>() {
                     public Boolean call() {
                         return getLocation().isSshable();
-                    }})
+                    }
+                })
                 .limitTimeTo(Duration.minutes(15)) // Because of the reboot
                 .run();
         if (!isSshable) {
@@ -159,34 +172,42 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         }
         log.info("Docker host {} is now sshable; continuing with setup", getLocation());
 
-        List<String> commands = ImmutableList.<String> builder()
-                .add(ifExecutableElse0("yum", useYum(osVersion, arch, getEpelRelease())))
-                .add(ifExecutableElse0("apt-get", useApt()))
-                .add(installPackage(ImmutableMap.of("yum", "docker-io", "apt", "lxc-docker"), null))
-                .build();
-
+        List<String> commands = Lists.newArrayList();
+        if (osDetails.getName().equalsIgnoreCase("ubuntu")) {
+            commands.add(installDockerOnUbuntu());
+        } else if (osDetails.getName().equalsIgnoreCase("centos")) {
+            commands.add(ifExecutableElse0("yum", useYum(osVersion, arch, getEpelRelease())));
+            commands.add(installPackage(ImmutableMap.of("yum", "docker-io"), null));
+        } else { // Alternatively, just use the curl-able install.sh script provided at https://get.docker.io
+            commands.add(chainGroup(INSTALL_CURL, "curl -s https://get.docker.io/ | sudo sh"));
+        }
         newScript(INSTALLING)
                 .failOnNonZeroResultCode()
                 .body.append(commands)
                 .execute();
     }
 
-    private String useYum(String osMajorVersion, String arch, String epelRelease) {
-        //String osMajor = osMajorVersion.substring(0, osMajorVersion.indexOf('.'));
+    private void executeKernelInstallation(List<String> commands) {
+        newScript(INSTALLING + "kernel")
+                .body.append(commands)
+                .execute();
+    }
+
+    private String useYum(String osVersion, String arch, String epelRelease) {
+            String osMajorVersion = osVersion.substring(0, osVersion.lastIndexOf("."));
         return chainGroup(
                 INSTALL_WGET,
                 sudo(BashCommands.alternatives(sudo("rpm -qa | grep epel-release"),
-                        sudo(format("rpm -Uvh http://download.fedoraproject.org/pub/epel/%s/%s/epel-release-%s.noarch.rpm",
+                        sudo(format("rpm -Uvh http://dl.fedoraproject.org/pub/epel/%s/%s/epel-release-%s.noarch.rpm",
                                 osMajorVersion, arch, epelRelease))
                 ))
         );
     }
 
-    private String useApt() {
+    private String installDockerOnUbuntu() {
         return chainGroup(
-                INSTALL_WGET,
-                sudo("apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9"),
-                "echo \"deb http://get.docker.io/ubuntu docker main\" | sudo tee -a /etc/apt/sources.list.d/docker.list"
+                INSTALL_CURL,
+                "curl -s https://get.docker.io/ubuntu/ | sudo sh"
         );
     }
 
@@ -195,8 +216,11 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         log.debug("Customizing {}", entity);
         Networking.checkPortsValid(getPortMap());
         List<String> commands = ImmutableList.<String> builder()
-                .add(sudo("service docker stop"))
+                .add(sudo(sudo("service docker stop")))
                 .add(ifExecutableElse0("apt-get", format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%s -H unix:///var/run/docker.sock\"' | sudo tee -a /etc/default/docker", getDockerPort())))
+                .add(ifExecutableElse0("apt-get", sudo("groupadd -f docker")))
+                .add(ifExecutableElse0("apt-get", sudo(format("gpasswd -a %s docker", this.getMachine().getUser()))))
+                .add(ifExecutableElse0("apt-get", sudo(format("newgrp docker", this.getMachine().getUser()))))
                 .add(ifExecutableElse0("yum", format("echo 'other_args=\"--selinux-enabled -H tcp://0.0.0.0:%s -H unix:///var/run/docker.sock -e lxc\"' | sudo tee /etc/sysconfig/docker", getDockerPort())))
                 .build();
 
