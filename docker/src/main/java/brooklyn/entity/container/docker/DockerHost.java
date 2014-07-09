@@ -100,6 +100,9 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
     @SetFromFlag("volumeMappings")
     AttributeSensorAndConfigKey<Map<String, String>, Map<String, String>> DOCKER_HOST_VOLUME_MAPPING = DockerAttributes.DOCKER_HOST_VOLUME_MAPPING;
 
+    @SetFromFlag("affinityRules")
+    ConfigKey<String> DOCKER_HOST_AFFINITY_RULES = DockerAttributes.DOCKER_HOST_AFFINITY_RULES;
+
     AttributeSensor<String> HOST_NAME = Sensors.newStringSensor("docker.host.name", "The name of the Docker host");
 
     Integer getDockerPort();

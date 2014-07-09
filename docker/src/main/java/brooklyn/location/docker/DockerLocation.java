@@ -32,6 +32,8 @@ import brooklyn.location.Location;
 import brooklyn.location.MachineLocation;
 import brooklyn.location.MachineProvisioningLocation;
 import brooklyn.location.NoMachinesAvailableException;
+import brooklyn.location.affinity.AffinityRuleExtension;
+import brooklyn.location.affinity.DockerAffinityRuleStrategy;
 import brooklyn.location.basic.AbstractLocation;
 import brooklyn.location.basic.LocationConfigKeys;
 import brooklyn.location.basic.SshMachineLocation;
@@ -88,7 +90,9 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
     @Override
     public void init() {
         super.init();
+
         addExtension(AvailabilityZoneExtension.class, new DockerHostExtension(getManagementContext(), this));
+        addExtension(AffinityRuleExtension.class, new DockerAffinityRuleStrategy(getManagementContext(), this));
     }
 
     public MachineProvisioningLocation<SshMachineLocation> getProvisioner() {
@@ -120,8 +124,10 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
             }
             Entity entity = (Entity) context;
 
+            // Get the available hosts based on affinity rules
+             List<Location> dockerHosts = getExtension(AffinityRuleExtension.class).filterLocations(entity);
+
             // Use the docker strategy to add a new host
-            List<Location> dockerHosts = getExtension(AvailabilityZoneExtension.class).getAllSubLocations();
             DockerHostLocation machine = null;
             DockerHost dockerHost = null;
             if (dockerHosts != null && dockerHosts.size() > 0) {
