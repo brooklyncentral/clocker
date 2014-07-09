@@ -122,9 +122,17 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
 
             // Use the docker strategy to add a new host
             List<Location> dockerHosts = getExtension(AvailabilityZoneExtension.class).getAllSubLocations();
-            List<Location> added = strategy.locationsForAdditions(null, dockerHosts, 1);
-            DockerHostLocation machine = (DockerHostLocation) Iterables.getOnlyElement(added);
-            DockerHost dockerHost = machine.getOwner();
+            DockerHostLocation machine = null;
+            DockerHost dockerHost = null;
+            if (dockerHosts != null && dockerHosts.size() > 0) {
+                List<Location> added = strategy.locationsForAdditions(null, dockerHosts, 1);
+                machine = (DockerHostLocation) Iterables.getOnlyElement(added);
+                dockerHost = machine.getOwner();
+            } else {
+                Collection<Entity> added = getDockerInfrastructure().getDockerHostCluster().resizeByDelta(1);
+                dockerHost = (DockerHost) Iterables.getOnlyElement(added);
+                machine = dockerHost.getDynamicLocation();
+            }
 
             // Now wait until the host has started up
             Entities.waitForServiceUp(dockerHost);
