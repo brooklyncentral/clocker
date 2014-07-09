@@ -106,7 +106,7 @@ public class AffinityRules implements Predicate<Entity> {
     }
 
     public AffinityRules parse(String rules) {
-        return parse(Splitter.on(',').omitEmptyStrings().split(rules));
+        return parse(Splitter.on(CharMatcher.anyOf("\n,")).omitEmptyStrings().split(rules));
     }
 
     public AffinityRules parse(Iterable<String> rules) {
@@ -122,7 +122,7 @@ public class AffinityRules implements Predicate<Entity> {
 
     private Predicate<Entity> predicate(String rule) {
         Preconditions.checkNotNull(rule, "rule");
-        Queue<String> tokens = Queues.newArrayDeque(Splitter.on(CharMatcher.BREAKING_WHITESPACE)
+        Queue<String> tokens = Queues.newArrayDeque(Splitter.on(CharMatcher.WHITESPACE)
                 .omitEmptyStrings()
                 .splitToList(rule));
 
