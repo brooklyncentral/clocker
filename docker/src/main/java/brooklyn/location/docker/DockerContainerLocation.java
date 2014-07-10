@@ -85,7 +85,6 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
      * Delegate port operations to machine. Note that firewall configuration is
      * fixed after initial provisioning, so updates use iptables to open ports.
      */
-
     private void addIptablesRule(Integer port) {
         if (getOwner().getConfig(DockerInfrastructure.OPEN_IPTABLES)) {
             SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
@@ -93,16 +92,13 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
                 LOG.debug("Using iptables to add access for TCP/{} to {}", port, host);
             }
             List<String> commands = ImmutableList.of(
-                    IptablesCommands.insertIptablesRule(Chain.INPUT, Protocol.TCP, port, Policy.ACCEPT),
-                    IptablesCommands.saveIptablesRules());
+                    IptablesCommands.insertIptablesRule(Chain.INPUT, Protocol.TCP, port, Policy.ACCEPT));
             int result = host.execCommands(String.format("Open iptables TCP/%d", port), commands);
-            /*
             if (result != 0) {
                 String msg = String.format("Error running iptables update for TCP/%d on %s", port, host);
                 LOG.error(msg);
                 throw new RuntimeException(msg);
             }
-            */
         }
     }
 

@@ -125,7 +125,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     @Override
     public void stop() {
         newScript(STOPPING)
-                .body.append(sudo("service docker start"))
+                .body.append(sudo("service docker stop"))
                 .failOnNonZeroResultCode()
                 .execute();
     }
@@ -205,10 +205,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     private String installDockerOnUbuntu() {
-        return chainGroup(
-                INSTALL_CURL,
-                "curl -s https://get.docker.io/ubuntu/ | sudo sh"
-        );
+        return chainGroup(INSTALL_CURL, "curl -s https://get.docker.io/ubuntu/ | sudo sh");
     }
 
     @Override
@@ -216,7 +213,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         log.debug("Customizing {}", entity);
         Networking.checkPortsValid(getPortMap());
         List<String> commands = ImmutableList.<String> builder()
-                .add(sudo(sudo("service docker stop")))
+                .add(sudo("service docker stop"))
                 .add(ifExecutableElse0("apt-get", format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%s -H unix:///var/run/docker.sock\"' | sudo tee -a /etc/default/docker", getDockerPort())))
                 .add(ifExecutableElse0("apt-get", sudo("groupadd -f docker")))
                 .add(ifExecutableElse0("apt-get", sudo(format("gpasswd -a %s docker", this.getMachine().getUser()))))
