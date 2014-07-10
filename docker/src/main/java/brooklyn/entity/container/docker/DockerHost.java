@@ -144,8 +144,7 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
      * @param command Docker command
      */
     @Effector(description="Execute a Docker command and return the output")
-    String runDockerCommand(
-            @EffectorParam(name="command", description="Docker command") String command);
+    String runDockerCommand(@EffectorParam(name="command", description="Docker command") String command);
 
     /**
      * Upload an archive file to the host and expand it, for export to a container.
