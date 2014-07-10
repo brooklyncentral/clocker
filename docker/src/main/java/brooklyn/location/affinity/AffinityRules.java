@@ -43,12 +43,12 @@ import com.google.common.collect.Queues;
  * <p>
  * Rules are specified as strings, formatted as follows:
  * <ul>
- * <li>(<code>SAME</code>|<code>NOT</code>)? <code>TYPE</code> <em>entityType</em>?
- * <li>(<code>SAME</code>|<code>NOT</code>)? <code>NAME</code> <em>entityName</em>
- * <li>(<code>SAME</code>|<code>NOT</code>)? <code>ID</code> <em>entityId</em>?
- * <li>(<code>SAME</code>|<code>NOT</code>)? <code>APPLICATION</code> <em>applicationId</em>?
- * <li><code>PREDICATE</code> <em>entityPredicateClass</em>
- * <li><code>EMPTY</code>
+ * <li>(<code>NOT</code>) <code>TYPE</code> <em>entityType</em>?
+ * <li>(<code>NOT</code>) <code>NAME</code> <em>entityName</em>
+ * <li>(<code>NOT</code>) <code>ID</code> <em>entityId</em>?
+ * <li>(<code>NOT</code>) <code>APPLICATION</code> <em>applicationId</em>?
+ * <li>(<code>NOT</code>) <code>PREDICATE</code> <em>entityPredicateClass</em>
+ * <li>(<code>NOT</code>) <code>EMPTY</code>
  * </ul>
  * The <code>SAME</code> token is the default behaviour, and means the entities must have the property defined in the rule, <code>NOT</code>
  * means they mustn't have the property. The parameter given specifies the type or id, and if it's missing thee rule will apply to the
@@ -78,7 +78,6 @@ public class AffinityRules implements Predicate<Entity> {
 
     public static final ConfigKey<String> AFFINITY_RULES = ConfigKeys.newStringConfigKey("affinity.rules", "Affinity rules for entity placemnent");
 
-    public static final String SAME = "SAME";
     public static final String NOT = "NOT";
     public static final String TYPE = "TYPE";
     public static final String NAME = "NAME";
@@ -86,10 +85,10 @@ public class AffinityRules implements Predicate<Entity> {
     public static final String APPLICATION = "APPLICATION";
     public static final String PREDICATE = "PREDICATE";
     public static final String EMPTY = "EMPTY";
-    public static final Iterable<String> VERBS = ImmutableList.of(TYPE, NAME, ID, APPLICATION, PREDICATE);
+    public static final Iterable<String> VERBS = ImmutableList.of(TYPE, NAME, ID, APPLICATION, PREDICATE, EMPTY);
 
     private Predicate<Entity> affinityRules = Predicates.alwaysTrue();
-    private boolean allowEmpty = false;
+    private boolean allowEmpty = true;
 
     private final Entity entity;
 
@@ -131,18 +130,7 @@ public class AffinityRules implements Predicate<Entity> {
 
         // Check first token for special values
         String first = tokens.peek();
-        if (first.equalsIgnoreCase(EMPTY)) {
-            allowEmpty = true;
-            tokens.remove();
-            if (tokens.isEmpty()) {
-                return predicate;
-            } else {
-                throw new IllegalStateException("Affinity rule has extra tokens: " + rule);
-            }
-        } else if (first.equalsIgnoreCase(SAME)) {
-            same = true;
-            tokens.remove();
-        } else if (first.equalsIgnoreCase(NOT)) {
+        if (first.equalsIgnoreCase(NOT)) {
             same = false;
             tokens.remove();
         }
@@ -162,7 +150,15 @@ public class AffinityRules implements Predicate<Entity> {
         // Check paramater and instantiate if required
         final String parameter = tokens.peek();
         if (parameter == null) {
-            if (verb.equalsIgnoreCase(TYPE)) {
+            if (verb.equalsIgnoreCase(EMPTY)) {
+                allowEmpty = same;
+                tokens.remove();
+                if (tokens.isEmpty()) {
+                    return predicate;
+                } else {
+                    throw new IllegalStateException("Affinity rule has extra tokens: " + rule);
+                }
+            } else if (verb.equalsIgnoreCase(TYPE)) {
                 predicate = new Predicate<Entity>() {
                     @Override
                     public boolean apply(@Nullable Entity input) {
