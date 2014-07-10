@@ -35,6 +35,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Uninterruptibles;
 
+import brooklyn.entity.Entity;
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.lifecycle.ScriptHelper;
@@ -42,6 +43,7 @@ import brooklyn.entity.drivers.downloads.DownloadResolver;
 import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.location.OsDetails;
 import brooklyn.location.basic.SshMachineLocation;
+import brooklyn.location.docker.DockerLocation;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.file.ArchiveUtils;
 import brooklyn.util.net.Networking;
@@ -58,6 +60,8 @@ import brooklyn.util.time.Duration;
 public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implements DockerHostDriver {
 
     public static final String DOCKERFILE = "Dockerfile";
+    public static final String BRIDGE_NAME = "docker0";
+
 
     public DockerHostSshDriver(DockerHostImpl entity, SshMachineLocation machine) {
         super(entity, machine);
@@ -178,6 +182,8 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         List<String> commands = Lists.newArrayList();
         if (osDetails.getName().equalsIgnoreCase("ubuntu")) {
             commands.add(installDockerOnUbuntu());
+            commands.add(installPackage("openvswitch-switch"));
+            commands.add(installPackage("bridge-utils"));
         } else if (osDetails.getName().equalsIgnoreCase("centos")) {
             commands.add(ifExecutableElse0("yum", useYum(osVersion, arch, getEpelRelease())));
             commands.add(installPackage(ImmutableMap.of("yum", "docker-io"), null));
@@ -217,7 +223,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         Networking.checkPortsValid(getPortMap());
         List<String> commands = ImmutableList.<String> builder()
                 .add(sudo("service docker stop"))
-                .add(ifExecutableElse0("apt-get", format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%s -H unix:///var/run/docker.sock\"' | sudo tee -a /etc/default/docker", getDockerPort())))
+                .add(ifExecutableElse0("apt-get", format("echo 'DOCKER_OPTS=\"--bridge=%s -H tcp://0.0.0.0:%s -H unix:///var/run/docker.sock\"' | sudo tee -a /etc/default/docker", BRIDGE_NAME, getDockerPort())))
                 .add(ifExecutableElse0("apt-get", sudo("groupadd -f docker")))
                 .add(ifExecutableElse0("apt-get", sudo(format("gpasswd -a %s docker", this.getMachine().getUser()))))
                 .add(ifExecutableElse0("apt-get", sudo(format("newgrp docker", this.getMachine().getUser()))))
@@ -227,6 +233,39 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         newScript(CUSTOMIZING)
                 .failOnNonZeroResultCode()
                 .body.append(commands)
+                .execute();
+
+        String bridgeAddress = this.getAddress() + "/24";
+        String remoteIp = null;
+        DockerInfrastructure infrastructure = getEntity().getConfig(DockerHost.DOCKER_INFRASTRUCTURE);
+        DockerLocation docker = infrastructure.getDynamicLocation();
+        for (Entity dockerHost : docker.getDockerHostList()) {
+            if (!dockerHost.getAttribute(DockerHost.ADDRESS).equalsIgnoreCase(getAddress())) {
+                remoteIp = dockerHost.getAttribute(DockerHost.ADDRESS);
+            }
+        }
+
+        List<String> sharedNetowrkCommands = ImmutableList.<String> builder()
+                .add(sudo(format("ip link set %s down", BRIDGE_NAME))) // Deactivate the docker0 bridge
+                .add(sudo(format("brctl delbr %s", BRIDGE_NAME)))      // Remove the docker0 bridge
+                //.add(sudo("ovs-vsctl del-br br0"))                     // Delete the Open vSwitch bridge
+                .add(sudo(format("brctl addbr %s", BRIDGE_NAME)))      // Add the docker0 bridge
+                .add(sudo(format("ip a add %s dev %s", bridgeAddress, BRIDGE_NAME)))      // Set up the IP for the docker0 bridge
+                .add(sudo(format("ip link set %s up", BRIDGE_NAME)))      // Activate the bridge
+                .add(sudo("ovs-vsctl add-br br0"))                        // Add the br0 Open vSwitch bridge
+                .add(sudo(format("ovs-vsctl add-port br0 gre0 -- set interface gre0 type=gre options:remote_ip=%s", remoteIp)))      // Create the tunnel to the other host and attach it to the br0 bridge
+                .add(sudo(format("brctl addif %s br0", BRIDGE_NAME)))      // Add the br0 bridge to docker0 bridge
+                //iptables rules
+                .add(sudo(format("iptables -t nat -A POSTROUTING -s %s ! -d %s -j MASQUERADE", bridgeAddress,
+                        bridgeAddress))) // Enable NAT
+                .add(sudo(format("iptables -A FORWARD -o %s -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT", BRIDGE_NAME))) // Accept incoming packets for existing connections
+                .add(sudo(format("iptables -A FORWARD -i %s ! -o %s -j ACCEPT", BRIDGE_NAME, BRIDGE_NAME))) // Accept all non-intercontainer outgoing packets
+                .add(sudo(format("iptables -A FORWARD -i %s -o %s -j ACCEPT", BRIDGE_NAME, BRIDGE_NAME))) // By default allow all outgoing traffic
+                .build();
+
+        newScript(CUSTOMIZING+":shared-network")
+                .failOnNonZeroResultCode()
+                .body.append(sharedNetowrkCommands)
                 .execute();
 
         // Configure volume mappings for the host
