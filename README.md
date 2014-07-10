@@ -57,15 +57,18 @@ Build and run the examples as follows:
 
 ```Bash
     % git clone https://github.com/brooklyncentral/clocker.git
+    ...
     % cd clocker
     % mvn clean install
+    ...
     % cd examples
     % mvn assembly:single
-
+    ...
     % cd target
     % tar zxf brooklyn-clocker-examples-0.5.0-SNAPSHOT-dist.tar.gz
     % cd brooklyn-clocker-examples-0.5.0-SNAPSHOT
     % ./clocker.sh launch --cloud --location <location>
+    ...
 ```
 
 ## Getting involved
