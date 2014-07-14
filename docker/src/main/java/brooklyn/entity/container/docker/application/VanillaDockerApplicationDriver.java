@@ -15,6 +15,8 @@
  */
 package brooklyn.entity.container.docker.application;
 
+import java.util.Map;
+
 import brooklyn.entity.basic.VanillaSoftwareProcessDriver;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
@@ -27,5 +29,11 @@ public interface VanillaDockerApplicationDriver extends VanillaSoftwareProcessDr
 	DockerHost getDockerHost();
 
 	DockerContainer getDockerContainer();
+
+    String getLaunchCommand();
+
+    Map<String, String> getShellEnvironment();
+
+    Integer getExposedPort();
 
 }

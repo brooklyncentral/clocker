@@ -18,7 +18,7 @@ package brooklyn.entity.container.docker.application;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.entity.basic.VanillaSoftwareProcessImpl;
+import brooklyn.entity.basic.SoftwareProcessImpl;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.location.docker.DockerContainerLocation;
@@ -26,7 +26,7 @@ import brooklyn.location.docker.DockerContainerLocation;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 
-public class VanillaDockerApplicationImpl extends VanillaSoftwareProcessImpl implements VanillaDockerApplication {
+public class VanillaDockerApplicationImpl extends SoftwareProcessImpl implements VanillaDockerApplication {
 
     private static final Logger log = LoggerFactory.getLogger(VanillaDockerApplicationImpl.class);
 
@@ -42,7 +42,14 @@ public class VanillaDockerApplicationImpl extends VanillaSoftwareProcessImpl imp
 
     @Override
     protected void connectSensors() {
+        super.connectSensors();
         connectServiceUpIsRunning();
+    }
+
+    @Override
+    public void disconnectSensors() {
+        disconnectServiceUpIsRunning();
+        super.disconnectSensors();
     }
 
     public DockerContainer getDockerContainer() {
@@ -55,13 +62,13 @@ public class VanillaDockerApplicationImpl extends VanillaSoftwareProcessImpl imp
     }
 
     @Override
-    public void disconnectSensors() {
-        disconnectServiceUpIsRunning();
+    public Class<? extends VanillaDockerApplicationDriver> getDriverInterface() {
+        return VanillaDockerApplicationDriver.class;
     }
 
     @Override
-    public Class<? extends VanillaDockerApplicationDriver> getDriverInterface() {
-        return VanillaDockerApplicationDriver.class;
+    public VanillaDockerApplicationDriver getDriver() {
+        return (VanillaDockerApplicationDriver) super.getDriver();
     }
 
 }

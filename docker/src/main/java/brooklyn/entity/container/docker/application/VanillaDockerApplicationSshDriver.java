@@ -15,7 +15,8 @@
  */
 package brooklyn.entity.container.docker.application;
 
-import brooklyn.entity.basic.VanillaSoftwareProcessSshDriver;
+import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
+import brooklyn.entity.basic.VanillaSoftwareProcess;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
@@ -25,7 +26,7 @@ import brooklyn.location.docker.DockerContainerLocation;
 /**
  * The SSH implementation of the {@link VanillaDockerApplicationDriver}.
  */
-public class VanillaDockerApplicationSshDriver extends VanillaSoftwareProcessSshDriver implements VanillaDockerApplicationDriver {
+public class VanillaDockerApplicationSshDriver extends AbstractSoftwareProcessSshDriver implements VanillaDockerApplicationDriver {
 
 	public VanillaDockerApplicationSshDriver(VanillaDockerApplicationImpl entity, SshMachineLocation machine) {
         super(entity, machine);
@@ -41,6 +42,45 @@ public class VanillaDockerApplicationSshDriver extends VanillaSoftwareProcessSsh
 
 	public DockerContainer getDockerContainer() {
         return ((DockerContainerLocation) getMachine()).getOwner();
+    }
+
+    @Override
+    public String getLaunchCommand() {
+        return getEntity().getConfig(VanillaSoftwareProcess.LAUNCH_COMMAND);
+    }
+
+    @Override
+    public Integer getExposedPort() {
+        return getEntity().getAttribute(VanillaDockerApplication.EXPOSED_PORT);
+    }
+
+    @Override
+    public void install() {
+        // TODO Auto-generated method stub
+    }
+
+    @Override
+    public void customize() {
+        // TODO Auto-generated method stub
+    }
+
+    @Override
+    public void launch() {
+        newScript(LAUNCHING)
+            .failOnNonZeroResultCode()
+            .body.append(getEntity().getConfig(VanillaSoftwareProcess.LAUNCH_COMMAND))
+            .execute();
+    }
+
+    @Override
+    public boolean isRunning() {
+        return getDockerContainer().getAttribute(DockerContainer.CONTAINER_RUNNING);
+    }
+
+    @Override
+    public void stop() {
+        getDockerContainer().stop();
+
     }
 
 }

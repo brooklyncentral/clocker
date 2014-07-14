@@ -16,28 +16,11 @@
 #
 # sshd and scripts
 #
-# VERSION 0.0.2
+# VERSION 0.0.3
 
-FROM ubuntu:12.04
+FROM brooklyn/default:latest
 MAINTAINER Cloudsoft "brooklyn@cloudsoftcorp.com"
-
-# make sure the package repository is up to date
-RUN echo "deb http://archive.ubuntu.com/ubuntu precise main universe" > /etc/apt/sources.list
-RUN apt-get update
-
-# setup root account
-RUN echo 'root:password' | chpasswd
 
 # run scripts
 ADD scripts /var/run/scripts
 RUN cd /var/run/scripts && sudo chmod +x *.sh && ./vanilla.sh && sudo rm -rf /var/run/scripts
-
-# install sshd
-RUN apt-get install -y openssh-server
-RUN mkdir /var/run/sshd
-RUN chmod 600 /var/run/sshd
-RUN /usr/sbin/sshd
-
-EXPOSE 22
-
-CMD [ "/usr/sbin/sshd", "-D" ]
