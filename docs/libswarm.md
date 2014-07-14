@@ -19,7 +19,8 @@ In fact, a subsequent call like the following:
 will produce the usual list of containers and the following log line:   
 
     Calling GET /containers/json
-    
+
+### Limitations    
 Currently, `swarmd` allows you to `aggregate` multiple docker engines, but the containers created on the aggregated swarmd service will 
 not be able to ping each other, in other words, they won't see each other. 
 
