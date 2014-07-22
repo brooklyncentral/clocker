@@ -53,6 +53,8 @@ import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.flags.SetFromFlag;
+import brooklyn.util.mutex.MutexSupport;
+import brooklyn.util.mutex.WithMutexes;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.os.Os;
 import brooklyn.util.text.Identifiers;
@@ -66,15 +68,17 @@ import com.google.common.collect.Maps;
 import com.google.common.hash.Hashing;
 
 public class DockerHostLocation extends AbstractLocation implements MachineProvisioningLocation<DockerContainerLocation>, DockerVirtualLocation,
-        DynamicLocation<DockerHost, DockerHostLocation>, Closeable {
+        DynamicLocation<DockerHost, DockerHostLocation>, WithMutexes, Closeable {
 
     /** serialVersionUID */
     private static final long serialVersionUID = -1453203257759956820L;
 
     private static final Logger LOG = LoggerFactory.getLogger(DockerHostLocation.class);
 
+    public static final String CONTAINER_MUTEX = "container";
+
     @SetFromFlag("mutex")
-    private Object mutex;
+    private transient WithMutexes mutexSupport;
 
     @SetFromFlag("machine")
     private SshMachineLocation machine;
@@ -102,8 +106,8 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
     @Override
     public void configure(Map properties) {
-        if (mutex == null) {
-            mutex = new Object[0];
+        if (mutexSupport == null) {
+            mutexSupport = new MutexSupport();
         }
         super.configure(properties);
     }
@@ -114,7 +118,9 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
     @Override
     public DockerContainerLocation obtain(Map<?,?> flags) throws NoMachinesAvailableException {
-        synchronized (mutex) {
+        try {
+            acquireMutex(CONTAINER_MUTEX, "Obtaining container");
+
             Integer maxSize = dockerHost.getConfig(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
             Integer currentSize = dockerHost.getAttribute(DockerAttributes.DOCKER_CONTAINER_COUNT);
             if (LOG.isDebugEnabled()) {
@@ -186,6 +192,10 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             ((EntityLocal) dockerContainer).setAttribute(DockerContainer.IMAGE_NAME, imageName);
             ((EntityLocal) dockerContainer).setAttribute(DockerContainer.HARDWARE_ID, hardwareId);
             return dockerContainer.getDynamicLocation();
+        } catch (InterruptedException ie) {
+            throw Exceptions.propagate(ie);
+        } finally {
+            releaseMutex(CONTAINER_MUTEX);
         }
     }
 
@@ -213,8 +223,10 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
     @Override
     public void release(DockerContainerLocation machine) {
-        synchronized (mutex) {
+        try {
+            acquireMutex(CONTAINER_MUTEX, "Releasing container " + machine);
             LOG.info("Releasing {}", machine);
+
             DynamicCluster cluster = dockerHost.getDockerContainerCluster();
             DockerContainer container = machine.getOwner();
             if (cluster.removeMember(container)) {
@@ -233,6 +245,10 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             } finally {
                 Entities.unmanage(container);
             }
+        } catch (InterruptedException ie) {
+            throw Exceptions.propagate(ie);
+        } finally {
+            releaseMutex(CONTAINER_MUTEX);
         }
     }
 
@@ -272,14 +288,6 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
     }
 
     @Override
-    public ToStringHelper string() {
-        return super.string()
-                .add("machine", machine)
-                .add("jcloudsLocation", jcloudsLocation)
-                .add("dockerHost", dockerHost);
-    }
-
-    @Override
     public List<Entity> getDockerContainerList() {
         return dockerHost.getDockerContainerList();
     }
@@ -296,8 +304,43 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
     @Override
     public void close() throws IOException {
-        machine.close();
-        LOG.info("Close called on Docker host location: {}", this);
+        LOG.info("Close called on Docker host {}: {}", machine, this);
+        try {
+            machine.close();
+        } catch (Exception e) {
+            LOG.info("{}: Closing Docker host: {}", e.getMessage(), this);
+            throw Exceptions.propagate(e);
+        } finally {
+            LOG.info("Docker host closed: {}", this);
+        }
+    }
+
+    @Override
+    public void acquireMutex(String mutexId, String description) throws InterruptedException {
+        mutexSupport.acquireMutex(mutexId, description);
+    }
+
+    @Override
+    public boolean tryAcquireMutex(String mutexId, String description) {
+        return mutexSupport.tryAcquireMutex(mutexId, description);
+    }
+
+    @Override
+    public void releaseMutex(String mutexId) {
+        mutexSupport.releaseMutex(mutexId);
+    }
+
+    @Override
+    public boolean hasMutex(String mutexId) {
+        return mutexSupport.hasMutex(mutexId);
+    }
+
+    @Override
+    public ToStringHelper string() {
+        return super.string()
+                .add("machine", machine)
+                .add("jcloudsLocation", jcloudsLocation)
+                .add("dockerHost", dockerHost);
     }
 
 }

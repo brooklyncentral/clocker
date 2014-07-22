@@ -39,6 +39,7 @@ import brooklyn.location.basic.SupportsPortForwarding;
 import brooklyn.location.dynamic.DynamicLocation;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.location.jclouds.JcloudsUtil;
+import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.Protocol;
@@ -160,8 +161,15 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
 
     @Override
     public void close() throws IOException {
-        machine.close();
-        LOG.info("Close called on Docker container location: {}", this);
+        LOG.info("Close called on Docker container {}: {}", machine, this);
+        try {
+            machine.close();
+        } catch (Exception e) {
+            LOG.info("{}: Closing Docker container: {}", e.getMessage(), this);
+            throw Exceptions.propagate(e);
+        } finally {
+            LOG.info("Docker container closed: {}", this);
+        }
     }
 
     @Override

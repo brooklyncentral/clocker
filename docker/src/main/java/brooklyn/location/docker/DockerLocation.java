@@ -15,6 +15,8 @@
  */
 package brooklyn.location.docker;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +45,8 @@ import brooklyn.location.dynamic.DynamicLocation;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.flags.SetFromFlag;
+import brooklyn.util.mutex.MutexSupport;
+import brooklyn.util.mutex.WithMutexes;
 
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.collect.HashMultimap;
@@ -51,15 +55,17 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 
 public class DockerLocation extends AbstractLocation implements DockerVirtualLocation, MachineProvisioningLocation<MachineLocation>,
-        DynamicLocation<DockerInfrastructure, DockerLocation> {
+        DynamicLocation<DockerInfrastructure, DockerLocation>, WithMutexes, Closeable {
 
     /** serialVersionUID */
 	private static final long serialVersionUID = -4562281299895377963L;
 
 	private static final Logger LOG = LoggerFactory.getLogger(DockerLocation.class);
 
+    public static final String DOCKER_HOST_MUTEX = "dockerhost";
+
     @SetFromFlag("mutex")
-    private Object mutex;
+    private transient WithMutexes mutexSupport;
 
     @SetFromFlag("owner")
     private DockerInfrastructure infrastructure;
@@ -104,8 +110,8 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
         if (strategy == null) {
             strategy = new DepthFirstPlacementStrategy();
         }
-        if (mutex == null) {
-            mutex = new Object[0];
+        if (mutexSupport == null) {
+            mutexSupport = new MutexSupport();
         }
         super.configure(properties);
     }
@@ -116,7 +122,9 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
 
     @Override
     public MachineLocation obtain(Map<?,?> flags) throws NoMachinesAvailableException {
-        synchronized (mutex) {
+        try {
+            acquireMutex(DOCKER_HOST_MUTEX, "Obtaining Docker host");
+
             // Check context for entity being deployed
             Object context = flags.get(LocationConfigKeys.CALLER_CONTEXT.getName());
             if (context != null && !(context instanceof Entity)) {
@@ -153,6 +161,10 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
             containers.put(container.getId(), machine);
 
             return container;
+        } catch (InterruptedException ie) {
+            throw Exceptions.propagate(ie);
+        } finally {
+            releaseMutex(DOCKER_HOST_MUTEX);
         }
     }
 
@@ -166,7 +178,9 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
         if (provisioner == null) {
             throw new IllegalStateException("No provisioner available to release "+machine);
         }
-        synchronized (mutex) {
+        try {
+            acquireMutex(DOCKER_HOST_MUTEX, "Releasing Docker host " + machine);
+
             String id = machine.getId();
             DockerHostLocation host = containers.remove(id);
             if (host == null) {
@@ -189,6 +203,10 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
             } else {
                 throw new IllegalArgumentException("Request to release "+machine+", but container mapping not found");
             }
+        } catch (InterruptedException ie) {
+            throw Exceptions.propagate(ie);
+        } finally {
+            releaseMutex(DOCKER_HOST_MUTEX);
         }
     }
 
@@ -219,6 +237,11 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
         return Maps.newLinkedHashMap();
     }
 
+    @Override
+    public DockerInfrastructure getOwner() {
+        return infrastructure;
+    }
+
     public List<Entity> getDockerContainerList() {
         return infrastructure.getDockerContainerList();
     }
@@ -232,17 +255,37 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
     }
 
     @Override
+    public void close() throws IOException {
+        LOG.info("Close called on Docker infrastructure: {}", this);
+    }
+
+    @Override
+    public void acquireMutex(String mutexId, String description) throws InterruptedException {
+        mutexSupport.acquireMutex(mutexId, description);
+    }
+
+    @Override
+    public boolean tryAcquireMutex(String mutexId, String description) {
+        return mutexSupport.tryAcquireMutex(mutexId, description);
+    }
+
+    @Override
+    public void releaseMutex(String mutexId) {
+        mutexSupport.releaseMutex(mutexId);
+    }
+
+    @Override
+    public boolean hasMutex(String mutexId) {
+        return mutexSupport.hasMutex(mutexId);
+    }
+
+    @Override
     public ToStringHelper string() {
         return super.string()
                 .omitNullValues()
                 .add("provisioner", provisioner)
                 .add("infrastructure", infrastructure)
                 .add("strategy", strategy);
-    }
-
-    @Override
-    public DockerInfrastructure getOwner() {
-        return infrastructure;
     }
 
 }
