@@ -32,6 +32,6 @@ if [ -z "$(ls brooklyn-clocker-examples-*.jar 2> /dev/null)" ] ; then
   exit 4
 fi
 
-${JAVA} -Xms256m -Xmx1024m -XX:MaxPermSize=1024m \
+${JAVA} -Xms256m -Xmx1024m -XX:MaxPermSize=1024m  ${CLOCKER_OPTS} \
     -classpath "conf/:patch/*:*:lib/*" brooklyn.clocker.example.ClockerMain "$@"
 
