@@ -99,21 +99,17 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
 
         addExtension(AvailabilityZoneExtension.class, new DockerHostExtension(getManagementContext(), this));
         addExtension(AffinityRuleExtension.class, new DockerAffinityRuleStrategy(getManagementContext(), this));
-    }
 
-    public MachineProvisioningLocation<SshMachineLocation> getProvisioner() {
-        return provisioner;
-    }
-
-    @Override
-    public void configure(Map properties) {
         if (strategy == null) {
             strategy = new DepthFirstPlacementStrategy();
         }
         if (mutexSupport == null) {
             mutexSupport = new MutexSupport();
         }
-        super.configure(properties);
+    }
+
+    public MachineProvisioningLocation<SshMachineLocation> getProvisioner() {
+        return provisioner;
     }
 
     public MachineLocation obtain() throws NoMachinesAvailableException {

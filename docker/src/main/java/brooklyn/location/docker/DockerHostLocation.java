@@ -37,6 +37,7 @@ import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.group.DynamicCluster;
+import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.Sensor;
 import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
@@ -62,7 +63,6 @@ import brooklyn.util.text.Strings;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.hash.Hashing;
@@ -105,11 +105,12 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
     }
 
     @Override
-    public void configure(Map properties) {
+    public void init() {
+        super.init();
+
         if (mutexSupport == null) {
             mutexSupport = new MutexSupport();
         }
-        super.configure(properties);
     }
 
     public DockerContainerLocation obtain() throws NoMachinesAvailableException {
@@ -181,13 +182,14 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                     .putIfNotNull("hardwareId", hardwareId)
                     .build();
             DynamicCluster cluster = dockerHost.getDockerContainerCluster();
-            Optional<Entity> added = cluster.addInSingleLocation(machine, containerFlags);
-            if (!added.isPresent()) {
-                throw new NoMachinesAvailableException(String.format("Failed to create containers. Limit reached at %s", dockerHost.getDockerHostName()));
+            EntitySpec<?> spec = EntitySpec.create(cluster.getConfig(DynamicCluster.MEMBER_SPEC)).configure(containerFlags);
+            Entity added = cluster.addMemberChild(spec);
+            if (added == null) {
+                throw new NoMachinesAvailableException(String.format("Failed to create container at %s", dockerHost.getDockerHostName()));
             }
 
             // Save the container attributes on the entity
-            DockerContainer dockerContainer = (DockerContainer) added.get();
+            DockerContainer dockerContainer = (DockerContainer) added;
             ((EntityLocal) dockerContainer).setAttribute(DockerContainer.IMAGE_ID, imageId);
             ((EntityLocal) dockerContainer).setAttribute(DockerContainer.IMAGE_NAME, imageName);
             ((EntityLocal) dockerContainer).setAttribute(DockerContainer.HARDWARE_ID, hardwareId);
