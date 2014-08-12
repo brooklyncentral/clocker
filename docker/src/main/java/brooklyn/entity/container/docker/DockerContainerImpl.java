@@ -58,15 +58,10 @@ import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.collections.MutableSet;
 import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.file.ArchiveUtils;
 import brooklyn.util.internal.ssh.SshTool;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.Urls;
-import brooklyn.util.os.Os;
-import brooklyn.util.text.Identifiers;
 import brooklyn.util.time.Duration;
-
-import com.google.common.collect.ImmutableMap;
 
 /**
  * A single Docker container.
@@ -237,7 +232,6 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     public DockerContainerLocation createLocation(Map flags) {
         DockerHost dockerHost = getDockerHost();
         DockerHostLocation host = dockerHost.getDynamicLocation();
-        String locationName = host.getId() + "-" + getId();
         SubnetTier subnetTier = dockerHost.getSubnetTier();
 
         // Configure the container options based on the host and the running entity
@@ -273,8 +267,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                     .configure("machine", container) // the underlying JcloudsLocation
                     .configure(container.getAllConfig(true))
                     .configure(SshTool.PROP_PASSWORD, "password") // TODO configure this externally
-                    .displayName(getDockerContainerName())
-                    .id(locationName);
+                    .displayName(getDockerContainerName());
             DockerContainerLocation location = getManagementContext().getLocationManager().createLocation(spec);
 
             setAttribute(DYNAMIC_LOCATION, location);

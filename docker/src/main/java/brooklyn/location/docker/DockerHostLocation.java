@@ -63,6 +63,7 @@ import brooklyn.util.text.Strings;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.hash.Hashing;
@@ -186,6 +187,8 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             Entity added = cluster.addMemberChild(spec);
             if (added == null) {
                 throw new NoMachinesAvailableException(String.format("Failed to create container at %s", dockerHost.getDockerHostName()));
+            } else {
+                Entities.start(added, ImmutableList.of(machine));
             }
 
             // Save the container attributes on the entity
