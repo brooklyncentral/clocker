@@ -123,15 +123,6 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
         try {
             acquireMutex(CONTAINER_MUTEX, "Obtaining container");
 
-            Integer maxSize = dockerHost.getConfig(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
-            Integer currentSize = dockerHost.getAttribute(DockerAttributes.DOCKER_CONTAINER_COUNT);
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Docker host {}: {} containers, max {}", new Object[] { dockerHost.getDockerHostName(), currentSize, maxSize });
-            }
-            if (currentSize != null && currentSize >= maxSize) {
-                throw new NoMachinesAvailableException(String.format("Limit of %d containers reached at %s", maxSize, dockerHost.getDockerHostName()));
-            }
-
             // Lookup entity from context or flags
             Object context = flags.get(LocationConfigKeys.CALLER_CONTEXT.getName());
             if (context != null && !(context instanceof Entity)) {
