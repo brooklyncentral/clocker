@@ -69,11 +69,6 @@ public class ClockerMain extends Main {
         @Override
         protected void populateCatalog(BrooklynCatalog catalog) {
             super.populateCatalog(catalog);
-            catalog.addItem(DockerCloud.class);
-            catalog.addItem(JBossApplication.class);
-            catalog.addItem(ActiveMQApplication.class);
-            catalog.addItem(TomcatApplication.class);
-            catalog.addItem(TomcatClusterWithMySql.class);
         }
 
         @Override
