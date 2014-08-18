@@ -21,13 +21,18 @@ import static brooklyn.util.ssh.BashCommands.chainGroup;
 import static brooklyn.util.ssh.BashCommands.ifExecutableElse0;
 import static brooklyn.util.ssh.BashCommands.installPackage;
 import static brooklyn.util.ssh.BashCommands.sudo;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.format;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+
+import org.jclouds.net.domain.IpPermission;
+import org.jclouds.net.domain.IpProtocol;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableList;
@@ -39,9 +44,13 @@ import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.lifecycle.ScriptHelper;
 import brooklyn.entity.drivers.downloads.DownloadResolver;
+import brooklyn.entity.java.UsesJmx;
 import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.location.OsDetails;
+import brooklyn.location.basic.PortRanges;
 import brooklyn.location.basic.SshMachineLocation;
+import brooklyn.location.jclouds.JcloudsSshMachineLocation;
+import brooklyn.location.jclouds.networking.JcloudsLocationSecurityGroupCustomizer;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.file.ArchiveUtils;
 import brooklyn.util.net.Networking;
@@ -251,6 +260,46 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         String path = Os.mergePaths(getRunDir(), volumeId);
         ArchiveUtils.deploy(url, getMachine(), path);
         return path;
+    }
+
+    @Override
+    public void configureSecurityGroups() {
+        if (!(getLocation() instanceof JcloudsSshMachineLocation)) {
+            log.info("{} not running in a {}, not configuring extra security groups", entity,
+                    JcloudsSshMachineLocation.class.getName());
+            return;
+        }
+        JcloudsSshMachineLocation location = (JcloudsSshMachineLocation) getLocation();
+        Collection<IpPermission> permissions = getIpPermissions();
+        // TODO: This step should be skipped if the customiser was not included in brooklyn.properties.
+        log.debug("Applying custom security groups to {}: {}", location, permissions);
+        JcloudsLocationSecurityGroupCustomizer.getInstance(getEntity().getApplicationId())
+                .addPermissionsToLocation(location, permissions);
+    }
+
+    /**
+     * @return Extra IP permissions to be configured on this entity's location.
+     */
+    protected Collection<IpPermission> getIpPermissions() {
+        IpPermission dockerPort = IpPermission.builder()
+                .ipProtocol(IpProtocol.TCP)
+                .fromPort(getEntity().getAttribute(DockerHost.DOCKER_PORT))
+                .toPort(getEntity().getAttribute(DockerHost.DOCKER_PORT))
+                .cidrBlock(JcloudsLocationSecurityGroupCustomizer.getInstance(getEntity()).getBrooklynCidrBlock())
+                .build();
+        IpPermission dockerSslPort = IpPermission.builder()
+                .ipProtocol(IpProtocol.TCP)
+                .fromPort(getEntity().getAttribute(DockerHost.DOCKER_SSL_PORT))
+                .toPort(getEntity().getAttribute(DockerHost.DOCKER_SSL_PORT))
+                .cidrBlock(JcloudsLocationSecurityGroupCustomizer.getInstance(getEntity()).getBrooklynCidrBlock())
+                .build();
+        IpPermission dockerPortForwarding = IpPermission.builder()
+                .ipProtocol(IpProtocol.TCP)
+                .fromPort(49000)
+                .toPort(49900)
+                .cidrBlock(JcloudsLocationSecurityGroupCustomizer.getInstance(getEntity()).getBrooklynCidrBlock())
+                .build();
+        return ImmutableList.of(dockerPort, dockerSslPort, dockerPortForwarding);
     }
 
     public String getPidFile() { return "/var/run/docker.pid"; }

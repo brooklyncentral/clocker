@@ -150,7 +150,9 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         template.os64Bit(true);
         template.minRam(2048); // TODO from configuration
         flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), template);
-
+        flags.put(JcloudsLocationConfig.JCLOUDS_LOCATION_CUSTOMIZERS_SUPPLIER_TYPE.getName(),
+                "brooklyn.location.docker.customizer.DockerHostCustomizerSupplier");
+        /* TODO shall we support DockerHostCustomizer and this strategy below
         // Configure security groups for host virtual machine
         String securityGroup = getConfig(DockerInfrastructure.SECURITY_GROUP);
         if (securityGroup != null) {
@@ -160,7 +162,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 flags.put("securityGroups", securityGroup);
             }
         }
-
+        */
         return flags;
     }
 
@@ -328,6 +330,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     protected void preStart() {
+        getDriver().configureSecurityGroups();
+
         Maybe<SshMachineLocation> found = Machines.findUniqueSshMachineLocation(getLocations());
         String dockerLocationSpec = String.format("jclouds:docker:http://%s:%s",
                 found.get().getSshHostAndPort().getHostText(), getDockerPort());

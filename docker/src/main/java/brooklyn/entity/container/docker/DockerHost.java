@@ -79,6 +79,10 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
     PortAttributeSensorAndConfigKey DOCKER_PORT = new PortAttributeSensorAndConfigKey("docker.port",
             "Docker port", PortRanges.fromString("2375"));
 
+    @SetFromFlag("dockerSslPort")
+    PortAttributeSensorAndConfigKey DOCKER_SSL_PORT = new PortAttributeSensorAndConfigKey("docker.ssl.port",
+            "Docker port", PortRanges.fromString("2376"));
+
     @SetFromFlag("containerSpec")
     AttributeSensorAndConfigKey<EntitySpec, EntitySpec> DOCKER_CONTAINER_SPEC = ConfigKeys.newSensorAndConfigKey(
             EntitySpec.class, "docker.container.spec", "Specification to use when creating child Docker container",
