@@ -66,6 +66,17 @@
 <p>Once the <code>DockerCloud</code>  application has started, a new location named <code>my-docker-cloud</code> will be available in the Locations drop-down list when adding new applications. Simply start a new application in this location and it will use Docker containers instead of virtual machines.</p>
 
 <h3>
+<a name="deploy-yaml-blueprint" class="anchor" href="#deploy-yaml-blueprint"><span class="octicon octicon-link"></span></a>Deploy a YAML blueprint</h3>
+
+<div class="highlight highlight-Bash"><pre>
+location: my-docker-cloud
+services:
+- type: brooklyn.entity.webapp.jboss.JBoss7Server
+  brooklyn.config:
+    wars.root: http://search.maven.org/remotecontent?filepath=io/brooklyn/example/brooklyn-example-hello-world-sql-webapp//brooklyn-example
+</pre></div>
+
+<h3>
 <a name="building-from-source" class="anchor" href="#building-from-source"><span class="octicon octicon-link"></span></a>Building from source</h3>
 
 <p>Build and run the examples as follows:</p>
