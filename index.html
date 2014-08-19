@@ -69,11 +69,26 @@
 <a name="deploy-yaml-blueprint" class="anchor" href="#deploy-yaml-blueprint"><span class="octicon octicon-link"></span></a>Deploy a YAML blueprint</h3>
 
 <div class="highlight highlight-Bash"><pre>
-location: my-docker-cloud
+id: tomcat-application
+name: "Tomcat Web Application"
+origin: "http://brooklyncentral.github.io/"
+locations:
+id: tomcat-application
+name: "Tomcat Web Application"
+origin: "http://brooklyncentral.github.io/"
+locations:
+- my-docker-cloud
 services:
-- type: brooklyn.entity.webapp.jboss.JBoss7Server
+- serviceType: brooklyn.entity.webapp.tomcat.TomcatServer
   brooklyn.config:
-    wars.root: http://search.maven.org/remotecontent?filepath=io/brooklyn/example/brooklyn-example-hello-world-sql-webapp//brooklyn-example
+    docker.dockerfile.url:
+      "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/UsesJavaDockerfile"
+    wars.root:
+      "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/hello-world.war"
+    version: "7.0.53"
+    jmx.enabled: true
+    jmx.agent.mode: "JMXMP"
+    jmx.direct.port: "30000+"
 </pre></div>
 
 <h3>
