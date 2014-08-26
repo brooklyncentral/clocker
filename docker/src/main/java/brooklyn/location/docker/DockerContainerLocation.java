@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.EntityLocal;
+import brooklyn.entity.container.docker.DockerCommands;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.location.Location;
@@ -155,7 +156,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
 
     @Override
     public int execScript(Map<String,?> props, String summaryForLogging, List<String> commands, Map<String,?> env) {
-        Iterable<String> filtered = Iterables.filter(commands, Predicates.containsPattern("###docker-host-command###"));
+        Iterable<String> filtered = Iterables.filter(commands, DockerCommands.FILTER);
         for (String dockerCommand : filtered) {
             parseDockerCommand(dockerCommand);
         }
@@ -164,7 +165,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
 
     @Override
     public int execCommands(Map<String,?> props, String summaryForLogging, List<String> commands, Map<String,?> env) {
-        Iterable<String> filtered = Iterables.filter(commands, Predicates.containsPattern("###docker-host-command###"));
+        Iterable<String> filtered = Iterables.filter(commands, DockerCommands.FILTER);
         for (String dockerCommand : filtered) {
             parseDockerCommand(dockerCommand);
         }
@@ -172,14 +173,14 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     }
 
     private void parseDockerCommand(String dockerCommand) {
-        List<String> tokens = Splitter.on("###").splitToList(dockerCommand);
-        String command = tokens.get(2);
-        if ("commit".equals(command)) {
+        List<String> tokens = DockerCommands.PARSER.splitToList(dockerCommand);
+        String command = tokens.get(1);
+        if (DockerCommands.COMMIT.equalsIgnoreCase(command)) {
             String containerId = getOwner().getContainerId();
             String imageName = getOwner().getRunningEntity().getAttribute(DockerContainer.IMAGE_NAME);
             String imageId = getOwner().getDockerHost().runDockerCommand(String.format("commit %s %s", containerId, Os.mergePaths("brooklyn", imageName)));
-            ((EntityLocal) getOwner().getRunningEntity()).setAttribute(DockerContainer.IMAGE_ID, imageId);
-        } else if ("push".equals(command)) {
+            ((EntityLocal) getOwner().getRunningEntity()).setAttribute(DockerContainer.IMAGE_ID, DockerCommands.checkId(imageId));
+        } else if (DockerCommands.PUSH.equalsIgnoreCase(command)) {
             String imageName = getOwner().getRunningEntity().getAttribute(DockerContainer.IMAGE_NAME);
             getOwner().getDockerHost().runDockerCommand(String.format("push %s", Os.mergePaths("brooklyn", imageName)));
         } else {

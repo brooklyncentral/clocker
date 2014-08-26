@@ -34,6 +34,7 @@ import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.docker.DockerAttributes;
+import brooklyn.entity.container.docker.DockerCommands;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
@@ -177,7 +178,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             }
 
             // Set commit command at post-install
-            ((AbstractEntity) entity).setConfigEvenIfOwned(SoftwareProcess.POST_INSTALL_COMMAND, "###docker-host-command###commit###");
+            ((AbstractEntity) entity).setConfigEvenIfOwned(SoftwareProcess.POST_INSTALL_COMMAND, DockerCommands.commit());
 
             // Create new Docker container in the host cluster
             LOG.info("Starting container with imageId {} and hardwareId {} at {}", new Object[] { imageId, hardwareId, machine });
