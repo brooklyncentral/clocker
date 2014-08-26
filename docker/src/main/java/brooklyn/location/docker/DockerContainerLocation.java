@@ -23,12 +23,8 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.collect.ImmutableList;
-import com.google.common.net.HostAndPort;
-import com.google.common.net.InetAddresses;
-
 import brooklyn.entity.Entity;
+import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.location.Location;
@@ -43,9 +39,18 @@ import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.Protocol;
+import brooklyn.util.os.Os;
 import brooklyn.util.ssh.IptablesCommands;
 import brooklyn.util.ssh.IptablesCommands.Chain;
 import brooklyn.util.ssh.IptablesCommands.Policy;
+
+import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.base.Predicates;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.net.HostAndPort;
+import com.google.common.net.InetAddresses;
 
 /**
  * A {@link Location} that wraps a Docker container.
@@ -146,6 +151,40 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
         String dockerHost = getOwner().getDockerHost().getDynamicLocation().getMachine().getAddress().getHostAddress();
         int hostPort = getMappedPort(privatePort);
         return HostAndPort.fromParts(dockerHost, hostPort);
+    }
+
+    @Override
+    public int execScript(Map<String,?> props, String summaryForLogging, List<String> commands, Map<String,?> env) {
+        Iterable<String> filtered = Iterables.filter(commands, Predicates.containsPattern("###docker-host-command###"));
+        for (String dockerCommand : filtered) {
+            parseDockerCommand(dockerCommand);
+        }
+        return super.execScript(props, summaryForLogging, commands, env);
+    }
+
+    @Override
+    public int execCommands(Map<String,?> props, String summaryForLogging, List<String> commands, Map<String,?> env) {
+        Iterable<String> filtered = Iterables.filter(commands, Predicates.containsPattern("###docker-host-command###"));
+        for (String dockerCommand : filtered) {
+            parseDockerCommand(dockerCommand);
+        }
+        return super.execCommands(props, summaryForLogging, commands, env);
+    }
+
+    private void parseDockerCommand(String dockerCommand) {
+        List<String> tokens = Splitter.on("###").splitToList(dockerCommand);
+        String command = tokens.get(2);
+        if ("commit".equals(command)) {
+            String containerId = getOwner().getContainerId();
+            String imageName = getOwner().getRunningEntity().getAttribute(DockerContainer.IMAGE_NAME);
+            String imageId = getOwner().getDockerHost().runDockerCommand(String.format("commit %s %s", containerId, Os.mergePaths("brooklyn", imageName)));
+            ((EntityLocal) getOwner().getRunningEntity()).setAttribute(DockerContainer.IMAGE_ID, imageId);
+        } else if ("push".equals(command)) {
+            String imageName = getOwner().getRunningEntity().getAttribute(DockerContainer.IMAGE_NAME);
+            getOwner().getDockerHost().runDockerCommand(String.format("push %s", Os.mergePaths("brooklyn", imageName)));
+        } else {
+            LOG.warn("Unknown Docker host command: {}", command);
+        }
     }
 
     @Override
