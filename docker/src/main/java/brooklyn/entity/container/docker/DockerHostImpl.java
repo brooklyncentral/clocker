@@ -171,15 +171,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     public Integer resize(Integer desiredSize) {
-        Integer maxSize = getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Resize Docker host to {} (max {}) at {}", new Object[] { desiredSize, maxSize, getLocations() });
-        }
-        if (desiredSize > maxSize) {
-            return getDockerContainerCluster().resize(maxSize);
-        } else {
-            return getDockerContainerCluster().resize(desiredSize);
-        }
+        return getDockerContainerCluster().resize(desiredSize);
     }
 
     @Override

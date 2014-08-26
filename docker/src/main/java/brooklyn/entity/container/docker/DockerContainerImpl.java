@@ -33,6 +33,7 @@ import brooklyn.config.render.RendererHints;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.BasicStartableImpl;
+import brooklyn.entity.basic.BrooklynConfigKeys;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.basic.SoftwareProcess;
@@ -220,6 +221,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 volumes.put(dir, dir);
             }
         }
+        // Add brooklyn-managed-processes as volume
+        volumes.put(getDockerHost().getConfig(BrooklynConfigKeys.ONBOX_BASE_DIR), getConfig(BrooklynConfigKeys.ONBOX_BASE_DIR));
         options.volumes(volumes);
 
         return options;

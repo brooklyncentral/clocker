@@ -12,33 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-id: docker-cloud
-name: "Docker Cloud Infrastructure"
+id: docker-localhost
+name: "Docker Localhost Infrastructure"
 origin: "https://github.com/brooklyncentral/clocker/"
 locations:
-- jclouds:aws-ec2:eu-west-1:
-    hardwareId: m1.small
+- localhost
 services:
 - serviceType: brooklyn.entity.container.docker.DockerInfrastructure
   id: infrastructure
   brooklyn.config:
     docker.version: "1.2"
     entity.dynamicLocation.name: "my-docker-cloud"
-    docker.host.securityGroup: "docker"
-    docker.host.initial.size: 2
-    docker.container.cluster.maxSize: 4
+    docker.host.initial.size: 1
+    docker.container.cluster.maxSize: 8
     docker.host.register: false
-    docker.policy.ha.enable: true
-    docker.container.strategy:
-      "brooklyn.location.docker.strategy.CpuUsagePlacementStrategy"
     docker.host.spec:
       $brooklyn:entitySpec:
         type: brooklyn.entity.container.docker.DockerHost
         brooklyn.config:
-          start.timeout: 900
-          docker.host.nameFormat: "docker-%1$s"
-          docker.container.spec:
-            $brooklyn:entitySpec:
-              type: brooklyn.entity.container.docker.DockerContainer
-              brooklyn.config:
-                docker.container.nameFormat: "docker-%2$d"
+          install.skip: true

@@ -36,7 +36,7 @@ import brooklyn.util.time.Duration;
 public class DockerCloud extends AbstractApplication {
 
     @CatalogConfig(label="Docker Version", priority=0)
-    public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "1.1");
+    public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "1.2");
 
     @CatalogConfig(label="Location Name", priority=1)
     public static final ConfigKey<String> LOCATION_NAME = ConfigKeys.newConfigKeyWithDefault(
