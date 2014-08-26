@@ -15,25 +15,13 @@
  */
 package brooklyn.entity.container.docker;
 
-import static brooklyn.util.ssh.BashCommands.INSTALL_CURL;
-import static brooklyn.util.ssh.BashCommands.INSTALL_WGET;
-import static brooklyn.util.ssh.BashCommands.chainGroup;
-import static brooklyn.util.ssh.BashCommands.ifExecutableElse0;
-import static brooklyn.util.ssh.BashCommands.installPackage;
-import static brooklyn.util.ssh.BashCommands.sudo;
+import static brooklyn.util.ssh.BashCommands.*;
 import static java.lang.String.format;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-
-import com.google.common.base.CharMatcher;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.Uninterruptibles;
 
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
@@ -54,6 +42,11 @@ import brooklyn.util.task.system.ProcessTaskWrapper;
 import brooklyn.util.text.Identifiers;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.Uninterruptibles;
 
 public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implements DockerHostDriver {
 
@@ -85,7 +78,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         copyTemplate(dockerFile, Os.mergePaths(name, DOCKERFILE));
 
         // Build an image from the Dockerfile
-        String build = format("docker build --rm -t %s - < %s", Os.mergePaths("brooklyn", name), Os.mergePaths(getRunDir(), name, DOCKERFILE));
+        String build = format("docker -H tcp://0.0.0.0:%d build --rm -t %s - < %s", getDockerPort(), Os.mergePaths("brooklyn", name), Os.mergePaths(getRunDir(), name, DOCKERFILE));
         String stdout = ((DockerHost) getEntity()).execCommandTimeout(sudo(build), Duration.minutes(15));
         String prefix = Strings.getFirstWordAfter(stdout, "Successfully built");
 
@@ -109,7 +102,9 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     @Override
     public boolean isRunning() {
         final ScriptHelper helper = newScript(CHECK_RUNNING)
-                .body.append(sudo("service docker status"))
+                .body.append(BashCommands.alternatives(
+                        BashCommands.ifExecutableElse0("boot2docker", sudo("boot2docker status")),
+                        BashCommands.ifExecutableElse0("service", sudo("service docker status"))))
                 .failOnNonZeroResultCode()
                 .gatherOutput();
         Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
@@ -128,7 +123,9 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     @Override
     public void stop() {
         newScript(STOPPING)
-                .body.append(sudo("service docker stop"))
+                .body.append(BashCommands.alternatives(
+                        BashCommands.ifExecutableElse0("boot2docker", sudo("boot2docker down")),
+                        BashCommands.ifExecutableElse0("service", sudo("service docker stop"))))
                 .failOnNonZeroResultCode()
                 .execute();
     }
@@ -213,16 +210,17 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     @Override
     public void customize() {
-        log.debug("Customizing {}", entity);
         Networking.checkPortsValid(getPortMap());
+
         List<String> commands = ImmutableList.<String> builder()
-                .add(sudo("service docker stop"))
                 .add(ifExecutableElse0("apt-get", format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%s -H unix:///var/run/docker.sock\"' | sudo tee -a /etc/default/docker", getDockerPort())))
                 .add(ifExecutableElse0("apt-get", sudo("groupadd -f docker")))
                 .add(ifExecutableElse0("apt-get", sudo(format("gpasswd -a %s docker", this.getMachine().getUser()))))
                 .add(ifExecutableElse0("apt-get", sudo(format("newgrp docker", this.getMachine().getUser()))))
                 .add(ifExecutableElse0("yum", format("echo 'other_args=\"--selinux-enabled -H tcp://0.0.0.0:%s -H unix:///var/run/docker.sock -e lxc\"' | sudo tee /etc/sysconfig/docker", getDockerPort())))
                 .build();
+
+        stop();
 
         newScript(CUSTOMIZING)
                 .failOnNonZeroResultCode()
@@ -258,7 +256,9 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     @Override
     public void launch() {
         newScript(LAUNCHING)
-                .body.append(sudo("service docker start"))
+                .body.append(BashCommands.alternatives(
+                        BashCommands.ifExecutableElse0("boot2docker", sudo("boot2docker up")),
+                        BashCommands.ifExecutableElse0("service", sudo("service docker start"))))
                 .failOnNonZeroResultCode()
                 .execute();
     }

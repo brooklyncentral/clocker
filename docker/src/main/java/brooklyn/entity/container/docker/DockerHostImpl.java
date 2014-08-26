@@ -64,6 +64,7 @@ import brooklyn.util.net.Cidr;
 import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.task.Tasks;
 import brooklyn.util.text.Strings;
+import brooklyn.util.time.Duration;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -225,7 +226,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     /** {@inheritDoc} */
     @Override
     public String runDockerCommand(String command) {
-       String stdout = execCommand(BashCommands.sudo("docker " + command));
+       String stdout = execCommandTimeout(BashCommands.sudo(String.format("docker -H tcp://0.0.0.0:%d %s", getDockerPort(), command)), Duration.ONE_MINUTE);
        if (LOG.isDebugEnabled()) LOG.debug("Successfully executed Docker {}: {}", Strings.getFirstWord(command), Strings.getFirstLine(stdout));
        return stdout;
     }
