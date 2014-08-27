@@ -36,7 +36,6 @@ import brooklyn.util.net.Networking;
 import brooklyn.util.net.Urls;
 import brooklyn.util.os.Os;
 import brooklyn.util.repeat.Repeater;
-import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.task.DynamicTasks;
 import brooklyn.util.task.system.ProcessTaskWrapper;
 import brooklyn.util.text.Identifiers;
@@ -96,9 +95,9 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     @Override
     public boolean isRunning() {
         final ScriptHelper helper = newScript(CHECK_RUNNING)
-                .body.append(BashCommands.alternatives(
-                        BashCommands.ifExecutableElse1("boot2docker", sudo("boot2docker status")),
-                        BashCommands.ifExecutableElse1("service", sudo("service docker status"))))
+                .body.append(alternatives(
+                        ifExecutableElse1("boot2docker", sudo("boot2docker status")),
+                        ifExecutableElse1("service", sudo("service docker status"))))
                 .failOnNonZeroResultCode()
                 .gatherOutput();
         Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
@@ -117,9 +116,9 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     @Override
     public void stop() {
         newScript(STOPPING)
-                .body.append(BashCommands.alternatives(
-                        BashCommands.ifExecutableElse1("boot2docker", sudo("boot2docker down")),
-                        BashCommands.ifExecutableElse1("service", sudo("service docker stop"))))
+                .body.append(alternatives(
+                        ifExecutableElse1("boot2docker", sudo("boot2docker down")),
+                        ifExecutableElse1("service", sudo("service docker stop"))))
                 .failOnNonZeroResultCode()
                 .execute();
     }
@@ -191,10 +190,9 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
             String osMajorVersion = osVersion.substring(0, osVersion.lastIndexOf("."));
         return chainGroup(
                 INSTALL_WGET,
-                sudo(BashCommands.alternatives(sudo("rpm -qa | grep epel-release"),
-                        sudo(format("rpm -Uvh http://dl.fedoraproject.org/pub/epel/%s/%s/epel-release-%s.noarch.rpm",
-                                osMajorVersion, arch, epelRelease))
-                ))
+                alternatives(
+                        sudo("rpm -qa | grep epel-release"),
+                        sudo(format("rpm -Uvh http://dl.fedoraproject.org/pub/epel/%s/%s/epel-release-%s.noarch.rpm", osMajorVersion, arch, epelRelease)))
         );
     }
 
@@ -206,19 +204,18 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     public void customize() {
         Networking.checkPortsValid(getPortMap());
 
-        List<String> commands = ImmutableList.<String> builder()
-                .add(ifExecutableElse0("apt-get", format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%s -H unix:///var/run/docker.sock\"' | sudo tee -a /etc/default/docker", getDockerPort())))
-                .add(ifExecutableElse0("apt-get", sudo("groupadd -f docker")))
-                .add(ifExecutableElse0("apt-get", sudo(format("gpasswd -a %s docker", this.getMachine().getUser()))))
-                .add(ifExecutableElse0("apt-get", sudo(format("newgrp docker", this.getMachine().getUser()))))
-                .add(ifExecutableElse0("yum", format("echo 'other_args=\"--selinux-enabled -H tcp://0.0.0.0:%s -H unix:///var/run/docker.sock -e lxc\"' | sudo tee /etc/sysconfig/docker", getDockerPort())))
-                .build();
-
         stop();
 
         newScript(CUSTOMIZING)
                 .failOnNonZeroResultCode()
-                .body.append(commands)
+                .body.append(
+                        ifExecutableElse0("apt-get", chainGroup(
+                                executeCommandThenAsUserTeeOutputToFile(format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%s -H unix:///var/run/docker.sock\"'", getDockerPort()), "root", "/etc/default/docker"),
+                                sudo("groupadd -f docker"),
+                                sudo(format("gpasswd -a %s docker", getMachine().getUser())),
+                                sudo("newgrp docker"))),
+                        ifExecutableElse0("yum",
+                                executeCommandThenAsUserTeeOutputToFile(format("echo 'other_args=\"--selinux-enabled -H tcp://0.0.0.0:%s -H unix:///var/run/docker.sock -e lxc\"'", getDockerPort()), "root", "/etc/sysconfig/docker")))
                 .execute();
 
         // Configure volume mappings for the host
@@ -250,9 +247,9 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     @Override
     public void launch() {
         newScript(LAUNCHING)
-                .body.append(BashCommands.alternatives(
-                        BashCommands.ifExecutableElse1("boot2docker", sudo("boot2docker up")),
-                        BashCommands.ifExecutableElse1("service", sudo("service docker start"))))
+                .body.append(alternatives(
+                        ifExecutableElse1("boot2docker", sudo("boot2docker up")),
+                        ifExecutableElse1("service", sudo("service docker start"))))
                 .failOnNonZeroResultCode()
                 .uniqueSshConnection()
                 .execute();
