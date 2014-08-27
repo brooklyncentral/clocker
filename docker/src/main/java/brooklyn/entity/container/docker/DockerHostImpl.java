@@ -218,17 +218,18 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     /** {@inheritDoc} */
     @Override
     public String createSshableImage(String dockerFile, String name) {
-       String imageId = getDriver().buildImage(dockerFile, name);
-       if (LOG.isDebugEnabled()) LOG.debug("Successfully created image {} (brooklyn/{})", imageId, name);
-       return imageId;
+        String imageId = getDriver().buildImage(dockerFile, name);
+        if (LOG.isDebugEnabled()) LOG.debug("Successfully created image {} (brooklyn/{})", imageId, name);
+        return imageId;
     }
 
     /** {@inheritDoc} */
     @Override
     public String runDockerCommand(String command) {
-       String stdout = execCommandTimeout(BashCommands.sudo(String.format("docker -H tcp://0.0.0.0:%d %s", getDockerPort(), command)), Duration.ONE_MINUTE);
-       if (LOG.isDebugEnabled()) LOG.debug("Successfully executed Docker {}: {}", Strings.getFirstWord(command), Strings.getFirstLine(stdout));
-       return stdout;
+        // FIXME Set DOCKER_OPTS values in command-line for when running on localhost
+        String stdout = execCommandTimeout(BashCommands.sudo(String.format("docker %s", command)), Duration.ONE_MINUTE);
+        if (LOG.isDebugEnabled()) LOG.debug("Successfully executed Docker {}: {}", Strings.getFirstWord(command), Strings.getFirstLine(stdout));
+        return stdout;
     }
 
     /** {@inheritDoc} */

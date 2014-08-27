@@ -78,7 +78,8 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         copyTemplate(dockerFile, Os.mergePaths(name, DOCKERFILE));
 
         // Build an image from the Dockerfile
-        String build = format("docker -H tcp://0.0.0.0:%d build --rm -t %s - < %s", getDockerPort(), Os.mergePaths("brooklyn", name), Os.mergePaths(getRunDir(), name, DOCKERFILE));
+        // FIXME Set DOCKER_OPTS values in command-line for when running on localhost
+        String build = format("docker build --rm -t %s - < %s", Os.mergePaths("brooklyn", name), Os.mergePaths(getRunDir(), name, DOCKERFILE));
         String stdout = ((DockerHost) getEntity()).execCommandTimeout(sudo(build), Duration.minutes(15));
         String prefix = Strings.getFirstWordAfter(stdout, "Successfully built");
 
@@ -96,8 +97,8 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     public boolean isRunning() {
         final ScriptHelper helper = newScript(CHECK_RUNNING)
                 .body.append(BashCommands.alternatives(
-                        BashCommands.ifExecutableElse0("boot2docker", sudo("boot2docker status")),
-                        BashCommands.ifExecutableElse0("service", sudo("service docker status"))))
+                        BashCommands.ifExecutableElse1("boot2docker", sudo("boot2docker status")),
+                        BashCommands.ifExecutableElse1("service", sudo("service docker status"))))
                 .failOnNonZeroResultCode()
                 .gatherOutput();
         Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
@@ -117,8 +118,8 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     public void stop() {
         newScript(STOPPING)
                 .body.append(BashCommands.alternatives(
-                        BashCommands.ifExecutableElse0("boot2docker", sudo("boot2docker down")),
-                        BashCommands.ifExecutableElse0("service", sudo("service docker stop"))))
+                        BashCommands.ifExecutableElse1("boot2docker", sudo("boot2docker down")),
+                        BashCommands.ifExecutableElse1("service", sudo("service docker stop"))))
                 .failOnNonZeroResultCode()
                 .execute();
     }
@@ -250,9 +251,10 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     public void launch() {
         newScript(LAUNCHING)
                 .body.append(BashCommands.alternatives(
-                        BashCommands.ifExecutableElse0("boot2docker", sudo("boot2docker up")),
-                        BashCommands.ifExecutableElse0("service", sudo("service docker start"))))
+                        BashCommands.ifExecutableElse1("boot2docker", sudo("boot2docker up")),
+                        BashCommands.ifExecutableElse1("service", sudo("service docker start"))))
                 .failOnNonZeroResultCode()
+                .uniqueSshConnection()
                 .execute();
     }
 

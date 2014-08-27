@@ -22,7 +22,7 @@ services:
 - serviceType: brooklyn.entity.container.docker.DockerInfrastructure
   id: infrastructure
   brooklyn.config:
-    docker.version: "1.2"
+    install.version: "1.2"
     entity.dynamicLocation.name: "my-docker-cloud"
     docker.host.securityGroup: "docker"
     docker.host.initial.size: 2
