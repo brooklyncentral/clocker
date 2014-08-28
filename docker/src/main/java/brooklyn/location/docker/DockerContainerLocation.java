@@ -46,8 +46,6 @@ import brooklyn.util.ssh.IptablesCommands.Chain;
 import brooklyn.util.ssh.IptablesCommands.Policy;
 
 import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.base.Predicates;
-import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.net.HostAndPort;
@@ -177,11 +175,13 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
         String command = tokens.get(1);
         if (DockerCommands.COMMIT.equalsIgnoreCase(command)) {
             String containerId = getOwner().getContainerId();
-            String imageName = getOwner().getRunningEntity().getAttribute(DockerContainer.IMAGE_NAME);
-            String imageId = getOwner().getDockerHost().runDockerCommand(String.format("commit %s %s", containerId, Os.mergePaths("brooklyn", imageName)));
-            ((EntityLocal) getOwner().getRunningEntity()).setAttribute(DockerContainer.IMAGE_ID, DockerCommands.checkId(imageId));
+            String imageName = getOwner().getAttribute(DockerContainer.IMAGE_NAME);
+            String output = getOwner().getDockerHost().runDockerCommand(String.format("commit %s %s", containerId, Os.mergePaths("brooklyn", imageName)));
+            String imageId = DockerCommands.checkId(output);
+            ((EntityLocal) getOwner().getRunningEntity()).setAttribute(DockerContainer.IMAGE_ID, imageId);
+            ((EntityLocal) getOwner()).setAttribute(DockerContainer.IMAGE_ID, imageId);
         } else if (DockerCommands.PUSH.equalsIgnoreCase(command)) {
-            String imageName = getOwner().getRunningEntity().getAttribute(DockerContainer.IMAGE_NAME);
+            String imageName = getOwner().getAttribute(DockerContainer.IMAGE_NAME);
             getOwner().getDockerHost().runDockerCommand(String.format("push %s", Os.mergePaths("brooklyn", imageName)));
         } else {
             LOG.warn("Unknown Docker host command: {}", command);

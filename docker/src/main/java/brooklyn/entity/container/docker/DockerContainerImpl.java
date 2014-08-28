@@ -62,6 +62,7 @@ import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.internal.ssh.SshTool;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.Urls;
+import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 
 /**
@@ -75,6 +76,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     static {
         RendererHints.register(DOCKER_HOST, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(ENTITY, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(CONTAINER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
     }
 
     private transient FunctionFeed sensorFeed;
@@ -108,7 +110,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                                 @Override
                                 public Boolean call() throws Exception {
                                     String running = getDockerHost().runDockerCommand("inspect -f {{.State.Running}} " + getContainerId());
-                                    return Boolean.parseBoolean(running);
+                                    return Boolean.parseBoolean(Strings.trim(running));
                                 }
                         }))
                 .build();

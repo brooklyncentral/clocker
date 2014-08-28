@@ -196,11 +196,12 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                 Entities.start(added, ImmutableList.of(machine));
             }
 
-            // Save the container attributes on the entity
+            // Save the container attributes
             DockerContainer dockerContainer = (DockerContainer) added;
             ((EntityLocal) dockerContainer).setAttribute(DockerContainer.IMAGE_ID, imageId);
             ((EntityLocal) dockerContainer).setAttribute(DockerContainer.IMAGE_NAME, imageName);
             ((EntityLocal) dockerContainer).setAttribute(DockerContainer.HARDWARE_ID, hardwareId);
+            ((EntityLocal) entity).setAttribute(DockerContainer.CONTAINER, dockerContainer);
             return dockerContainer.getDynamicLocation();
         } catch (InterruptedException ie) {
             throw Exceptions.propagate(ie);
