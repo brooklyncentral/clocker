@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.lifecycle.ScriptHelper;
-import brooklyn.entity.drivers.downloads.DownloadResolver;
 import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.location.OsDetails;
 import brooklyn.location.basic.SshMachineLocation;
@@ -94,23 +93,14 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     @Override
     public boolean isRunning() {
-        final ScriptHelper helper = newScript(CHECK_RUNNING)
+        ScriptHelper helper = newScript(CHECK_RUNNING)
                 .body.append(alternatives(
                         ifExecutableElse1("boot2docker", sudo("boot2docker status")),
                         ifExecutableElse1("service", sudo("service docker status"))))
                 .failOnNonZeroResultCode()
                 .gatherOutput();
-        Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
-        return Repeater.create()
-                .every(Duration.ONE_SECOND)
-                .until(new Callable<Boolean>() {
-                    public Boolean call() {
-                        helper.execute();
-                        return helper.getResultStdout().contains("running");
-                    }})
-                .limitTimeTo(Duration.ONE_MINUTE)
-                .rethrowExceptionImmediately()
-                .run();
+        helper.execute();
+        return helper.getResultStdout().contains("running");
     }
 
     @Override
@@ -123,12 +113,15 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .execute();
     }
 
+    @Override
+    public void preInstall() {
+        resolver = Entities.newDownloader(this);
+        setExpandedInstallDir(Os.mergePaths(getInstallDir(), resolver.getUnpackedDirectoryName(format("docker-%s", getVersion()))));
+    }
+
     // TODO consider re-using `curl get.docker.io | bash` to install docker on the platform supported
     @Override
     public void install() {
-        DownloadResolver resolver = Entities.newDownloader(this);
-        setExpandedInstallDir(getInstallDir() + "/" + resolver.getUnpackedDirectoryName(format("docker-%s", getVersion())));
-
         OsDetails osDetails = getMachine().getMachineDetails().getOsDetails();
         String osVersion = osDetails.getVersion();
         String arch = osDetails.getArch();

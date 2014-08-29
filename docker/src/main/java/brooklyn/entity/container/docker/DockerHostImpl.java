@@ -125,16 +125,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     }
 
     @Override
-    protected void connectSensors() {
-        super.connectSensors();
-    }
-
-    @Override
-    public void disconnectSensors() {
-        super.disconnectSensors();
-    }
-
-    @Override
     protected Map<String, Object> obtainProvisioningFlags(MachineProvisioningLocation location) {
         Map<String, Object> flags = super.obtainProvisioningFlags(location);
 

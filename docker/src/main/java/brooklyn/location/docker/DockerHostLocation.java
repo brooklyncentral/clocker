@@ -158,8 +158,13 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             if (Strings.containsLiteral(imageList, imageName)) {
                 imageId = Strings.getFirstWordAfter(imageList, "latest");
                 LOG.info("Found image {} for entity: {}", imageName, imageId);
+
+                // Skip install phase
                 ((AbstractEntity) entity).setConfigEvenIfOwned(SoftwareProcess.SKIP_INSTALLATION, true);
             } else {
+                // Set commit command at post-install
+                ((AbstractEntity) entity).setConfigEvenIfOwned(SoftwareProcess.POST_INSTALL_COMMAND, DockerCommands.commit());
+
                 if (Strings.isNonBlank(dockerfile)) {
                     if (imageId != null) {
                         LOG.warn("Ignoring container imageId {} as dockerfile URL is set: {}", imageId, dockerfile);
@@ -176,9 +181,6 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             if (Strings.isEmpty(hardwareId)) {
                 hardwareId = getOwner().getConfig(DockerAttributes.DOCKER_HARDWARE_ID);
             }
-
-            // Set commit command at post-install
-            ((AbstractEntity) entity).setConfigEvenIfOwned(SoftwareProcess.POST_INSTALL_COMMAND, DockerCommands.commit());
 
             // Create new Docker container in the host cluster
             LOG.info("Starting container with imageId {} and hardwareId {} at {}", new Object[] { imageId, hardwareId, machine });
