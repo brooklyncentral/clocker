@@ -31,6 +31,7 @@ import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.location.Location;
 import brooklyn.location.PortRange;
 import brooklyn.location.access.PortForwardManager;
+import brooklyn.location.basic.HasSubnetHostname;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.basic.SupportsPortForwarding;
 import brooklyn.location.dynamic.DynamicLocation;
@@ -49,14 +50,13 @@ import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.net.HostAndPort;
-import com.google.common.net.InetAddresses;
 
 /**
  * A {@link Location} that wraps a Docker container.
  * <p>
  * The underlying container is presented as an {@link SshMachineLocation} obtained using the jclouds Docker driver.
  */
-public class DockerContainerLocation extends SshMachineLocation implements SupportsPortForwarding, DynamicLocation<DockerContainer, DockerContainerLocation> {
+public class DockerContainerLocation extends SshMachineLocation implements SupportsPortForwarding, HasSubnetHostname, DynamicLocation<DockerContainer, DockerContainerLocation> {
 
     /** serialVersionUID */
     private static final long serialVersionUID = 610389734596906782L;
@@ -138,7 +138,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     }
 
     private void mapPort(int hostPort, int containerPort) {
-        String dockerHost = getOwner().getDockerHost().getDynamicLocation().getMachine().getAddress().getHostAddress();
+        String dockerHost = getAddress().getHostAddress();
         PortForwardManager portForwardManager = getOwner().getDockerHost().getSubnetTier().getPortForwardManager();
         portForwardManager.recordPublicIpHostname(dockerHost, dockerHost);
         portForwardManager.acquirePublicPortExplicit(dockerHost, hostPort);
@@ -147,7 +147,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
 
     @Override
     public HostAndPort getSocketEndpointFor(Cidr accessor, int privatePort) {
-        String dockerHost = getOwner().getDockerHost().getDynamicLocation().getMachine().getAddress().getHostAddress();
+        String dockerHost = getAddress().getHostAddress();
         int hostPort = getMappedPort(privatePort);
         return HostAndPort.fromParts(dockerHost, hostPort);
     }
@@ -195,8 +195,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
 
     @Override
     public InetAddress getAddress() {
-        String containerAddress = getOwner().getDockerHost().runDockerCommand("inspect --format={{.NetworkSettings.IPAddress}} " + getOwner().getContainerId());
-        return InetAddresses.forString(containerAddress.trim());
+        return getOwner().getDockerHost().getDynamicLocation().getMachine().getAddress();
     }
 
     @Override
@@ -218,6 +217,17 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
                 .add("entity", entity)
                 .add("machine", machine)
                 .add("owner", dockerContainer);
+    }
+
+    @Override
+    public String getSubnetHostname() {
+        return getSubnetIp();
+    }
+
+    @Override
+    public String getSubnetIp() {
+        String containerAddress = getOwner().getDockerHost().runDockerCommand("inspect --format={{.NetworkSettings.IPAddress}} " + getOwner().getContainerId());
+        return containerAddress.trim();
     }
 
 }
