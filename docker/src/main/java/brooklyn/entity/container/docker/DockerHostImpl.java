@@ -30,6 +30,7 @@ import brooklyn.enricher.Enrichers;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.ServiceStateLogic;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.machine.MachineEntityImpl;
@@ -98,9 +99,9 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
         EntitySpec<?> dockerContainerSpec = EntitySpec.create(getConfig(DOCKER_CONTAINER_SPEC))
                 .configure(DockerContainer.DOCKER_HOST, this)
-                .configure(DockerContainer.DOCKER_INFRASTRUCTURE, getInfrastructure());
+                .configure(DockerContainer.DOCKER_INFRASTRUCTURE, getInfrastructure())
+                .enricher(ServiceStateLogic.newEnricherForServiceStateFromProblemsAndUp());
         if (getConfig(HA_POLICY_ENABLE)) {
-            dockerContainerSpec.policy(PolicySpec.create(ServiceFailureDetector.class));
             dockerContainerSpec.policy(PolicySpec.create(ServiceRestarter.class)
                     .configure(ServiceRestarter.FAILURE_SENSOR_TO_MONITOR, ServiceFailureDetector.ENTITY_FAILED));
         }

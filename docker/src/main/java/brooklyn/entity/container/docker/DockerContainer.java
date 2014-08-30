@@ -87,7 +87,7 @@ public interface DockerContainer extends BasicStartable, HasShortName, LocationO
 
     AttributeSensor<Boolean> CONTAINER_RUNNING = Sensors.newBooleanSensor("docker.container.running", "The Docker container process status");
 
-    AttributeSensor<Lifecycle> SERVICE_STATE = SoftwareProcess.SERVICE_STATE;
+    AttributeSensor<Lifecycle> SERVICE_STATE_ACTUAL = SoftwareProcess.SERVICE_STATE_ACTUAL;
 
     AttributeSensor<SshMachineLocation> SSH_MACHINE_LOCATION = Sensors.newSensor(SshMachineLocation.class, "docker.container.ssh", "The SSHable machine");
 

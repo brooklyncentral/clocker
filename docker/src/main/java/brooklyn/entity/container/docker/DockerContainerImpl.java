@@ -36,6 +36,7 @@ import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.BrooklynConfigKeys;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Lifecycle;
+import brooklyn.entity.basic.ServiceStateLogic;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.event.feed.ConfigToAttributes;
 import brooklyn.event.feed.function.FunctionFeed;
@@ -315,7 +316,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
     @Override
     public void start(Collection<? extends Location> locations) {
-        setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.STARTING);
+        ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
         setAttribute(SoftwareProcess.SERVICE_UP, Boolean.FALSE);
 
         Map<String, ?> flags = MutableMap.copyOf(getConfig(LOCATION_FLAGS));
@@ -327,12 +328,12 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
         super.start(locations);
 
-        setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.RUNNING);
+        ServiceStateLogic.setExpectedState(this, Lifecycle.RUNNING);
     }
 
     @Override
     public void stop() {
-        setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.STOPPING);
+        ServiceStateLogic.setExpectedState(this, Lifecycle.STOPPING);
 
         super.stop();
 
@@ -343,7 +344,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         deleteLocation();
 
         setAttribute(SoftwareProcess.SERVICE_UP, Boolean.FALSE);
-        setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.STOPPED);
+        ServiceStateLogic.setExpectedState(this, Lifecycle.STOPPED);
     }
 
 }
