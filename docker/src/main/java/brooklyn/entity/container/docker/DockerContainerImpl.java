@@ -33,8 +33,10 @@ import brooklyn.config.render.RendererHints;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.BasicStartableImpl;
+import brooklyn.entity.basic.BrooklynConfigKeys;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Lifecycle;
+import brooklyn.entity.basic.ServiceStateLogic;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.event.feed.ConfigToAttributes;
 import brooklyn.event.feed.function.FunctionFeed;
@@ -61,6 +63,7 @@ import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.internal.ssh.SshTool;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.Urls;
+import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 
 /**
@@ -74,6 +77,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     static {
         RendererHints.register(DOCKER_HOST, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(ENTITY, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(CONTAINER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
     }
 
     private transient FunctionFeed sensorFeed;
@@ -107,7 +111,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                                 @Override
                                 public Boolean call() throws Exception {
                                     String running = getDockerHost().runDockerCommand("inspect -f {{.State.Running}} " + getContainerId());
-                                    return Boolean.parseBoolean(running);
+                                    return Boolean.parseBoolean(Strings.trim(running));
                                 }
                         }))
                 .build();
@@ -220,6 +224,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 volumes.put(dir, dir);
             }
         }
+        // Add brooklyn-managed-processes as volume
+        volumes.put(getDockerHost().getConfig(BrooklynConfigKeys.ONBOX_BASE_DIR), getConfig(BrooklynConfigKeys.ONBOX_BASE_DIR));
         options.volumes(volumes);
 
         return options;
@@ -310,7 +316,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
     @Override
     public void start(Collection<? extends Location> locations) {
-        setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.STARTING);
+        ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
         setAttribute(SoftwareProcess.SERVICE_UP, Boolean.FALSE);
 
         Map<String, ?> flags = MutableMap.copyOf(getConfig(LOCATION_FLAGS));
@@ -322,12 +328,12 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
         super.start(locations);
 
-        setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.RUNNING);
+        ServiceStateLogic.setExpectedState(this, Lifecycle.RUNNING);
     }
 
     @Override
     public void stop() {
-        setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.STOPPING);
+        ServiceStateLogic.setExpectedState(this, Lifecycle.STOPPING);
 
         super.stop();
 
@@ -338,7 +344,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         deleteLocation();
 
         setAttribute(SoftwareProcess.SERVICE_UP, Boolean.FALSE);
-        setAttribute(SoftwareProcess.SERVICE_STATE, Lifecycle.STOPPED);
+        ServiceStateLogic.setExpectedState(this, Lifecycle.STOPPED);
     }
 
 }

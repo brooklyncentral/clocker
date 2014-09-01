@@ -23,17 +23,15 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.collect.ImmutableList;
-import com.google.common.net.HostAndPort;
-import com.google.common.net.InetAddresses;
-
 import brooklyn.entity.Entity;
+import brooklyn.entity.basic.EntityLocal;
+import brooklyn.entity.container.docker.DockerCommands;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.location.Location;
 import brooklyn.location.PortRange;
 import brooklyn.location.access.PortForwardManager;
+import brooklyn.location.basic.HasSubnetHostname;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.basic.SupportsPortForwarding;
 import brooklyn.location.dynamic.DynamicLocation;
@@ -43,16 +41,22 @@ import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.Protocol;
+import brooklyn.util.os.Os;
 import brooklyn.util.ssh.IptablesCommands;
 import brooklyn.util.ssh.IptablesCommands.Chain;
 import brooklyn.util.ssh.IptablesCommands.Policy;
+
+import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.net.HostAndPort;
 
 /**
  * A {@link Location} that wraps a Docker container.
  * <p>
  * The underlying container is presented as an {@link SshMachineLocation} obtained using the jclouds Docker driver.
  */
-public class DockerContainerLocation extends SshMachineLocation implements SupportsPortForwarding, DynamicLocation<DockerContainer, DockerContainerLocation> {
+public class DockerContainerLocation extends SshMachineLocation implements SupportsPortForwarding, HasSubnetHostname, DynamicLocation<DockerContainer, DockerContainerLocation> {
 
     /** serialVersionUID */
     private static final long serialVersionUID = 610389734596906782L;
@@ -134,7 +138,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     }
 
     private void mapPort(int hostPort, int containerPort) {
-        String dockerHost = getOwner().getDockerHost().getDynamicLocation().getMachine().getAddress().getHostAddress();
+        String dockerHost = getAddress().getHostAddress();
         PortForwardManager portForwardManager = getOwner().getDockerHost().getSubnetTier().getPortForwardManager();
         portForwardManager.recordPublicIpHostname(dockerHost, dockerHost);
         portForwardManager.acquirePublicPortExplicit(dockerHost, hostPort);
@@ -143,9 +147,45 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
 
     @Override
     public HostAndPort getSocketEndpointFor(Cidr accessor, int privatePort) {
-        String dockerHost = getOwner().getDockerHost().getDynamicLocation().getMachine().getAddress().getHostAddress();
+        String dockerHost = getAddress().getHostAddress();
         int hostPort = getMappedPort(privatePort);
         return HostAndPort.fromParts(dockerHost, hostPort);
+    }
+
+    @Override
+    public int execScript(Map<String,?> props, String summaryForLogging, List<String> commands, Map<String,?> env) {
+        Iterable<String> filtered = Iterables.filter(commands, DockerCommands.FILTER);
+        for (String dockerCommand : filtered) {
+            parseDockerCommand(dockerCommand);
+        }
+        return super.execScript(props, summaryForLogging, commands, env);
+    }
+
+    @Override
+    public int execCommands(Map<String,?> props, String summaryForLogging, List<String> commands, Map<String,?> env) {
+        Iterable<String> filtered = Iterables.filter(commands, DockerCommands.FILTER);
+        for (String dockerCommand : filtered) {
+            parseDockerCommand(dockerCommand);
+        }
+        return super.execCommands(props, summaryForLogging, commands, env);
+    }
+
+    private void parseDockerCommand(String dockerCommand) {
+        List<String> tokens = DockerCommands.PARSER.splitToList(dockerCommand);
+        String command = tokens.get(1);
+        if (DockerCommands.COMMIT.equalsIgnoreCase(command)) {
+            String containerId = getOwner().getContainerId();
+            String imageName = getOwner().getAttribute(DockerContainer.IMAGE_NAME);
+            String output = getOwner().getDockerHost().runDockerCommand(String.format("commit %s %s", containerId, Os.mergePaths("brooklyn", imageName)));
+            String imageId = DockerCommands.checkId(output);
+            ((EntityLocal) getOwner().getRunningEntity()).setAttribute(DockerContainer.IMAGE_ID, imageId);
+            ((EntityLocal) getOwner()).setAttribute(DockerContainer.IMAGE_ID, imageId);
+        } else if (DockerCommands.PUSH.equalsIgnoreCase(command)) {
+            String imageName = getOwner().getAttribute(DockerContainer.IMAGE_NAME);
+            getOwner().getDockerHost().runDockerCommand(String.format("push %s", Os.mergePaths("brooklyn", imageName)));
+        } else {
+            LOG.warn("Unknown Docker host command: {}", command);
+        }
     }
 
     @Override
@@ -155,8 +195,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
 
     @Override
     public InetAddress getAddress() {
-        String containerAddress = getOwner().getDockerHost().runDockerCommand("inspect --format={{.NetworkSettings.IPAddress}} " + getOwner().getContainerId());
-        return InetAddresses.forString(containerAddress.trim());
+        return getOwner().getDockerHost().getDynamicLocation().getMachine().getAddress();
     }
 
     @Override
@@ -178,6 +217,17 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
                 .add("entity", entity)
                 .add("machine", machine)
                 .add("owner", dockerContainer);
+    }
+
+    @Override
+    public String getSubnetHostname() {
+        return getSubnetIp();
+    }
+
+    @Override
+    public String getSubnetIp() {
+        String containerAddress = getOwner().getDockerHost().runDockerCommand("inspect --format={{.NetworkSettings.IPAddress}} " + getOwner().getContainerId());
+        return containerAddress.trim();
     }
 
 }

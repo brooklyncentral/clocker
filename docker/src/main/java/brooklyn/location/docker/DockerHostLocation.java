@@ -32,12 +32,13 @@ import brooklyn.entity.Entity;
 import brooklyn.entity.basic.AbstractEntity;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityLocal;
+import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.docker.DockerAttributes;
+import brooklyn.entity.container.docker.DockerCommands;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.group.DynamicCluster;
-import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.Sensor;
 import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
@@ -62,6 +63,7 @@ import brooklyn.util.text.Identifiers;
 import brooklyn.util.text.Strings;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -118,6 +120,14 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
         return obtain(Maps.<String,Object>newLinkedHashMap());
     }
 
+    protected String getImageName(Entity entity, String dockerfile) {
+        String simpleName = entity.getEntityType().getSimpleName();
+        String version = entity.getConfig(SoftwareProcess.SUGGESTED_VERSION);
+
+        String label = Joiner.on(":").skipNulls().join(simpleName, version, dockerfile);
+        return Identifiers.makeIdFromHash(Hashing.md5().hashString(label, Charsets.UTF_8).asLong()).toLowerCase();
+    }
+
     @Override
     public DockerContainerLocation obtain(Map<?,?> flags) throws NoMachinesAvailableException {
         try {
@@ -137,25 +147,32 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL);
             configureEnrichers((AbstractEntity) entity);
 
-            // TODO choose Dockerfile based on entity interfaces such as UsesJava
-
             // Add the entity Dockerfile if configured
             String dockerfile = entity.getConfig(DockerAttributes.DOCKERFILE_URL);
             String imageId = entity.getConfig(DockerAttributes.DOCKER_IMAGE_ID);
-            String imageName = null;
-            if (Strings.isNonBlank(dockerfile)) {
-                if (imageId != null) {
-                    LOG.warn("Ignoring container imageId {} as dockerfile URL is set: {}", imageId, dockerfile);
-                }
-                // Lookup image ID or build new image from Dockerfile
-                imageName = Identifiers.makeIdFromHash(Hashing.md5().hashString(dockerfile, Charsets.UTF_8).asLong()).toLowerCase();
-                String imageList = dockerHost.runDockerCommand("images --no-trunc " + Os.mergePaths("brooklyn", imageName));
-                if (Strings.containsLiteral(imageList, imageName)) {
-                    imageId = Strings.getFirstWordAfter(imageList, "latest");
-                } else {
+            String imageName = getImageName(entity, dockerfile);
+
+            // Lookup image ID or build new image from Dockerfile
+            LOG.warn("ImageName for entity {}: {}", entity, imageName);
+            String imageList = dockerHost.runDockerCommand("images --no-trunc " + Os.mergePaths("brooklyn", imageName));
+            if (Strings.containsLiteral(imageList, imageName)) {
+                imageId = Strings.getFirstWordAfter(imageList, "latest");
+                LOG.info("Found image {} for entity: {}", imageName, imageId);
+
+                // Skip install phase
+                ((AbstractEntity) entity).setConfigEvenIfOwned(SoftwareProcess.SKIP_INSTALLATION, true);
+            } else {
+                // Set commit command at post-install
+                ((AbstractEntity) entity).setConfigEvenIfOwned(SoftwareProcess.POST_INSTALL_COMMAND, DockerCommands.commit());
+
+                if (Strings.isNonBlank(dockerfile)) {
+                    if (imageId != null) {
+                        LOG.warn("Ignoring container imageId {} as dockerfile URL is set: {}", imageId, dockerfile);
+                    }
                     imageId = dockerHost.createSshableImage(dockerfile, imageName);
                 }
-            } else if (Strings.isBlank(imageId)) {
+            }
+            if (Strings.isBlank(imageId)) {
                 imageId = getOwner().getAttribute(DockerHost.DOCKER_IMAGE_ID);
             }
 
@@ -174,19 +191,19 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                     .putIfNotNull("hardwareId", hardwareId)
                     .build();
             DynamicCluster cluster = dockerHost.getDockerContainerCluster();
-            EntitySpec<?> spec = EntitySpec.create(cluster.getConfig(DynamicCluster.MEMBER_SPEC)).configure(containerFlags);
-            Entity added = cluster.addMemberChild(spec);
+            Entity added = cluster.addNode(machine, containerFlags);
             if (added == null) {
                 throw new NoMachinesAvailableException(String.format("Failed to create container at %s", dockerHost.getDockerHostName()));
             } else {
                 Entities.start(added, ImmutableList.of(machine));
             }
 
-            // Save the container attributes on the entity
+            // Save the container attributes
             DockerContainer dockerContainer = (DockerContainer) added;
             ((EntityLocal) dockerContainer).setAttribute(DockerContainer.IMAGE_ID, imageId);
             ((EntityLocal) dockerContainer).setAttribute(DockerContainer.IMAGE_NAME, imageName);
             ((EntityLocal) dockerContainer).setAttribute(DockerContainer.HARDWARE_ID, hardwareId);
+            ((EntityLocal) entity).setAttribute(DockerContainer.CONTAINER, dockerContainer);
             return dockerContainer.getDynamicLocation();
         } catch (InterruptedException ie) {
             throw Exceptions.propagate(ie);

@@ -129,7 +129,7 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
             Entity entity = (Entity) context;
 
             // Get the available hosts based on affinity rules
-             List<Location> dockerHosts = getExtension(AffinityRuleExtension.class).filterLocations(entity);
+            List<Location> dockerHosts = getExtension(AffinityRuleExtension.class).filterLocations(entity);
 
             // Use the docker strategy to add a new host
             DockerHostLocation machine = null;

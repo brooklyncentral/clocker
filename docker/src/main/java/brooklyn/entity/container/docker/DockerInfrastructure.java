@@ -61,17 +61,17 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
     @SetFromFlag("minHost")
     ConfigKey<Integer> DOCKER_HOST_CLUSTER_MIN_SIZE = ConfigKeys.newConfigKeyWithPrefix("docker.host.", DynamicCluster.INITIAL_SIZE);
 
+    @SetFromFlag("strategy")
+    ConfigKey<DockerAwarePlacementStrategy> PLACEMENT_STRATEGY = ConfigKeys.newConfigKey(DockerAwarePlacementStrategy.class,
+            "docker.container.strategy", "Placement stratgy for Docker containers");
+
     @SetFromFlag("maxContainer")
     ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = ConfigKeys.newIntegerConfigKey("docker.container.cluster.maxSize",
             "Maximum size of a Docker container cluster", 4);
 
-    @SetFromFlag("strategy")
-    ConfigKey<DockerAwarePlacementStrategy> PLACEMENT_STRATEGY = ConfigKeys.newConfigKey(DockerAwarePlacementStrategy.class,
-            "docker.container.strategye", "Placement stratgy for Docker containers");
-
     @SetFromFlag("maxCpu")
     ConfigKey<Double> DOCKER_CONTAINER_CLUSTER_MAX_CPU = ConfigKeys.newDoubleConfigKey("docker.container.cluster.maxCpu",
-            "Maximum CPU usage across a Docker container cluster", 0.95d);
+            "Maximum CPU usage across a Docker container cluster", 0.5d);
 
     @SetFromFlag("registerHosts")
     ConfigKey<Boolean> REGISTER_DOCKER_HOST_LOCATIONS = ConfigKeys.newBooleanConfigKey("docker.host.register",
