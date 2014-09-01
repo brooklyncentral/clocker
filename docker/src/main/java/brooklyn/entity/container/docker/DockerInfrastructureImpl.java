@@ -95,6 +95,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
     @Override
     public void init() {
+        LOG.info("Starting Docker infrastructure id {}", getId());
         super.init();
 
         int initialSize = getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE);
@@ -266,7 +267,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
             Map<String, ?> flags = MutableMap.<String, Object>builder()
                     .putAll(getConfig(LOCATION_FLAGS))
                     .put("provisioner", provisioner)
-                    .putIfNotNull("strategy", getConfig(PLACEMENT_STRATEGY))
+                    .putIfNotNull("strategy", getConfig(PLACEMENT_STRATEGY)) // TODO support multiple strategies
                     .build();
             createLocation(flags);
 
