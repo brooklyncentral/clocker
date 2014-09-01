@@ -30,6 +30,7 @@ import brooklyn.enricher.Enrichers;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.ServiceStateLogic;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.machine.MachineEntityImpl;
@@ -64,6 +65,7 @@ import brooklyn.util.net.Cidr;
 import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.task.Tasks;
 import brooklyn.util.text.Strings;
+import brooklyn.util.time.Duration;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -97,9 +99,9 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
         EntitySpec<?> dockerContainerSpec = EntitySpec.create(getConfig(DOCKER_CONTAINER_SPEC))
                 .configure(DockerContainer.DOCKER_HOST, this)
-                .configure(DockerContainer.DOCKER_INFRASTRUCTURE, getInfrastructure());
+                .configure(DockerContainer.DOCKER_INFRASTRUCTURE, getInfrastructure())
+                .enricher(ServiceStateLogic.newEnricherForServiceStateFromProblemsAndUp());
         if (getConfig(HA_POLICY_ENABLE)) {
-            dockerContainerSpec.policy(PolicySpec.create(ServiceFailureDetector.class));
             dockerContainerSpec.policy(PolicySpec.create(ServiceRestarter.class)
                     .configure(ServiceRestarter.FAILURE_SENSOR_TO_MONITOR, ServiceFailureDetector.ENTITY_FAILED));
         }
@@ -121,16 +123,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 .propagating(ImmutableMap.of(DynamicCluster.GROUP_SIZE, DockerAttributes.DOCKER_CONTAINER_COUNT))
                 .from(containers)
                 .build());
-    }
-
-    @Override
-    protected void connectSensors() {
-        super.connectSensors();
-    }
-
-    @Override
-    public void disconnectSensors() {
-        super.disconnectSensors();
     }
 
     @Override
@@ -173,15 +165,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     public Integer resize(Integer desiredSize) {
-        Integer maxSize = getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Resize Docker host to {} (max {}) at {}", new Object[] { desiredSize, maxSize, getLocations() });
-        }
-        if (desiredSize > maxSize) {
-            return getDockerContainerCluster().resize(maxSize);
-        } else {
-            return getDockerContainerCluster().resize(desiredSize);
-        }
+        return getDockerContainerCluster().resize(desiredSize);
     }
 
     @Override
@@ -227,17 +211,18 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     /** {@inheritDoc} */
     @Override
     public String createSshableImage(String dockerFile, String name) {
-       String imageId = getDriver().buildImage(dockerFile, name);
-       if (LOG.isDebugEnabled()) LOG.debug("Successfully created image {} (brooklyn/{})", imageId, name);
-       return imageId;
+        String imageId = getDriver().buildImage(dockerFile, name);
+        if (LOG.isDebugEnabled()) LOG.debug("Successfully created image {} (brooklyn/{})", imageId, name);
+        return imageId;
     }
 
     /** {@inheritDoc} */
     @Override
     public String runDockerCommand(String command) {
-       String stdout = execCommand(BashCommands.sudo("docker " + command));
-       if (LOG.isDebugEnabled()) LOG.debug("Successfully executed Docker {}: {}", Strings.getFirstWord(command), Strings.getFirstLine(stdout));
-       return stdout;
+        // FIXME Set DOCKER_OPTS values in command-line for when running on localhost
+        String stdout = execCommandTimeout(BashCommands.sudo(String.format("docker %s", command)), Duration.ONE_MINUTE);
+        if (LOG.isDebugEnabled()) LOG.debug("Successfully executed Docker {}: {}", Strings.getFirstWord(command), Strings.getFirstLine(stdout));
+        return stdout;
     }
 
     /** {@inheritDoc} */

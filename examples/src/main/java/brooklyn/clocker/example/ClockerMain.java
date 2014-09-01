@@ -13,20 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package brooklyn.clocker.example;
+
+import io.airlift.command.Command;
+import io.airlift.command.Option;
 
 import java.util.Arrays;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Objects.ToStringHelper;
-
 import brooklyn.catalog.BrooklynCatalog;
 import brooklyn.cli.Main;
-import io.airlift.command.Command;
-import io.airlift.command.Option;
+import brooklyn.demo.NodeJsTodoApplication;
+
+import com.google.common.base.Objects.ToStringHelper;
 
 /**
  * Launch the Clocker service.
@@ -66,9 +67,16 @@ public class ClockerMain extends Main {
             return super.call();
         }
 
+        @SuppressWarnings("deprecation")
         @Override
         protected void populateCatalog(BrooklynCatalog catalog) {
             super.populateCatalog(catalog);
+            catalog.addItem(DockerCloud.class);
+            catalog.addItem(JBossApplication.class);
+            catalog.addItem(NodeJsTodoApplication.class);
+            catalog.addItem(ActiveMQApplication.class);
+            catalog.addItem(TomcatApplication.class);
+            catalog.addItem(TomcatClusterWithMySql.class);
         }
 
         @Override
