@@ -34,6 +34,8 @@ import brooklyn.event.basic.BasicAttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.location.affinity.AffinityRules;
 import brooklyn.location.docker.DockerLocation;
+import brooklyn.location.docker.strategy.CpuUsagePlacementStrategy;
+import brooklyn.location.docker.strategy.DepthFirstPlacementStrategy;
 import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
 import brooklyn.location.dynamic.LocationOwner;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
@@ -66,12 +68,10 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
             "docker.container.strategy", "Placement stratgy for Docker containers");
 
     @SetFromFlag("maxContainer")
-    ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = ConfigKeys.newIntegerConfigKey("docker.container.cluster.maxSize",
-            "Maximum size of a Docker container cluster", 4);
+    ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = DepthFirstPlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_SIZE;
 
     @SetFromFlag("maxCpu")
-    ConfigKey<Double> DOCKER_CONTAINER_CLUSTER_MAX_CPU = ConfigKeys.newDoubleConfigKey("docker.container.cluster.maxCpu",
-            "Maximum CPU usage across a Docker container cluster", 0.5d);
+    ConfigKey<Double> DOCKER_CONTAINER_CLUSTER_MAX_CPU = CpuUsagePlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_CPU;
 
     @SetFromFlag("registerHosts")
     ConfigKey<Boolean> REGISTER_DOCKER_HOST_LOCATIONS = ConfigKeys.newBooleanConfigKey("docker.host.register",
@@ -88,6 +88,9 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
 
     @SetFromFlag("dockerfileUrl")
     ConfigKey<String> DOCKERFILE_URL = ConfigKeys.newConfigKeyWithDefault(DockerAttributes.DOCKERFILE_URL, DockerAttributes.UBUNTU_DOCKERFILE);
+
+    @SetFromFlag("dockerfileName")
+    ConfigKey<String> DOCKERFILE_NAME = ConfigKeys.newConfigKeyWithDefault(DockerAttributes.DOCKERFILE_NAME, "ubuntu");
 
     @SetFromFlag("imageId")
     ConfigKey<String> DOCKER_IMAGE_ID = DockerAttributes.DOCKER_IMAGE_ID.getConfigKey();

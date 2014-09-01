@@ -22,6 +22,7 @@ services:
   brooklyn.config:
     docker.dockerfile.url:
       "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/UsesJavaDockerfile"
+    docker.dockerfile.name: "ubuntujava"
     docker.host.volumes:
       "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/static.tgz": "/opt/www"
       "/tmp": "/opt/tmp"

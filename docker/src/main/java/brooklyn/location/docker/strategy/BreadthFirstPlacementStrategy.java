@@ -24,10 +24,11 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
+import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.container.docker.DockerHost;
-import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.location.Location;
 import brooklyn.location.docker.DockerHostLocation;
 
@@ -45,11 +46,15 @@ public class BreadthFirstPlacementStrategy extends AbstractDockerPlacementStrate
 
     private static final Logger LOG = LoggerFactory.getLogger(BreadthFirstPlacementStrategy.class);
 
+    public static final ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = ConfigKeys.newIntegerConfigKey(
+            "docker.container.cluster.maxSize",
+            "Maximum size of a Docker container cluster", 4);
+
     @Override
     protected List<Location> getDockerHostLocations(Multimap<Location, Entity> members, List<DockerHostLocation> available, int n) {
         int remaining = n;
         for (DockerHostLocation machine : available) {
-            int maxSize = machine.getOwner().getConfig(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
+            int maxSize = machine.getOwner().getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
             int currentSize = machine.getOwner().getCurrentSize();
             remaining -= (maxSize - currentSize);
         }
@@ -60,7 +65,7 @@ public class BreadthFirstPlacementStrategy extends AbstractDockerPlacementStrate
 
         if (remaining > 0) {
             // Grow the Docker host cluster; based on max number of Docker containers
-            int maxSize = getDockerInfrastructure().getConfig(DockerInfrastructure.DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
+            int maxSize = getDockerInfrastructure().getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
             int delta = (remaining / maxSize) + (remaining % maxSize > 0 ? 1 : 0);
             Collection<Entity> added = getDockerInfrastructure().getDockerHostCluster().resizeByDelta(delta);
             if (LOG.isDebugEnabled()) {

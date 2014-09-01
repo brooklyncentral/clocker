@@ -103,6 +103,7 @@ public class TomcatClusterWithMySql extends AbstractApplication {
                 .configure(DynamicCluster.ZONE_PLACEMENT_STRATEGY, new BreadthFirstPlacementStrategy())
                 .configure(ControlledDynamicWebAppCluster.MEMBER_SPEC, EntitySpec.create(TomcatServer.class)
                         .configure(DockerAttributes.DOCKERFILE_URL, "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/UsesJavaDockerfile")
+                        .configure(DockerAttributes.DOCKERFILE_NAME, "ubuntujava")
                         .configure(WebAppService.HTTP_PORT, PortRanges.fromString("8080+"))
                         .configure(SoftwareProcess.SUGGESTED_VERSION, "7.0.53")
                         .configure(UsesJmx.USE_JMX, Boolean.TRUE)

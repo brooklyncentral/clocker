@@ -68,7 +68,8 @@ public class DockerAttributes {
             .or(CharMatcher.inRange('0', '9'));
     public static final CharMatcher DOCKERFILE_INVALID_CHARACTERS = DOCKERFILE_CHARACTERS.negate();
 
-    public static final ConfigKey<String> DOCKERFILE_URL = ConfigKeys.newStringConfigKey("docker.dockerfile.url", "URL of a DockerFile to use");
+    public static final ConfigKey<String> DOCKERFILE_URL = ConfigKeys.newStringConfigKey("docker.dockerfile.url", "URL of a Dockerfile to use");
+    public static final ConfigKey<String> DOCKERFILE_NAME = ConfigKeys.newStringConfigKey("docker.dockerfile.name", "Name for the image created by the Dockerfile being used");
 
     public static final AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_ID = ConfigKeys.newSensorAndConfigKey(String.class, "docker.imageId", "The ID of a Docker image to use for a container");
 

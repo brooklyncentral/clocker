@@ -226,7 +226,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             }
         }
         // Add brooklyn-managed-processes as volume
-        volumes.put(getDockerHost().getConfig(BrooklynConfigKeys.ONBOX_BASE_DIR), getConfig(BrooklynConfigKeys.ONBOX_BASE_DIR));
+        volumes.put(getDockerHost().getConfig(BrooklynConfigKeys.ONBOX_BASE_DIR), entity.getConfig(BrooklynConfigKeys.ONBOX_BASE_DIR));
         options.volumes(volumes);
 
         return options;

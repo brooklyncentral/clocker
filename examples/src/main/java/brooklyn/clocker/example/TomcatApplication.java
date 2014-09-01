@@ -51,6 +51,7 @@ public class TomcatApplication extends AbstractApplication implements StartableA
         addChild(EntitySpec.create(TomcatServer.class)
                 .displayName("Tomcat Server")
                 .configure(DockerAttributes.DOCKERFILE_URL, "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/UsesJavaDockerfile")
+                .configure(DockerAttributes.DOCKERFILE_NAME, "ubuntujava")
                 .configure(WebAppService.HTTP_PORT, PortRanges.fromString("8080+"))
                 .configure(JavaWebAppService.ROOT_WAR, Entities.getRequiredUrlConfig(this, WAR_PATH))
                 .configure(SoftwareProcess.SUGGESTED_VERSION, "7.0.53")

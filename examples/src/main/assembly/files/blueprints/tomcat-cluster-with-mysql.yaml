@@ -38,6 +38,7 @@ services:
         brooklyn.config:
           docker.dockerfile.url:
             "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/UsesJavaDockerfile"
+          docker.dockerfile.name: "ubuntujava"
           version: "7.0.53"
           jmx.enabled: true
           jmx.agent.mode: "JMXMP"

@@ -69,8 +69,10 @@ import brooklyn.util.text.Identifiers;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 
 /**
  * The host running the Docker service.
@@ -361,7 +363,12 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
         if (Strings.isBlank(imageId)) {
             String dockerfileUrl = getConfig(DockerInfrastructure.DOCKERFILE_URL);
-            imageId = createSshableImage(dockerfileUrl, "default");
+            String dockerfileName = getConfig(DockerInfrastructure.DOCKERFILE_NAME);
+            if (Strings.isBlank(dockerfileName)) {
+                Iterable<String> parts = Splitter.on("/").split(dockerfileUrl);
+                dockerfileName = Iterables.get(parts, Iterables.size(parts) - 2);
+            }
+            imageId = createSshableImage(dockerfileUrl, dockerfileName);
         }
 
         setAttribute(DOCKER_IMAGE_ID, imageId);

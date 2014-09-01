@@ -23,7 +23,9 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
+import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.location.Location;
@@ -43,11 +45,14 @@ public class CpuUsagePlacementStrategy extends AbstractDockerPlacementStrategy {
 
     private static final Logger LOG = LoggerFactory.getLogger(CpuUsagePlacementStrategy.class);
 
+    public static final ConfigKey<Double> DOCKER_CONTAINER_CLUSTER_MAX_CPU = ConfigKeys.newDoubleConfigKey("docker.container.cluster.maxCpu",
+            "Maximum CPU usage across a Docker container cluster", 0.5d);
+
     @Override
     protected List<Location> getDockerHostLocations(Multimap<Location, Entity> members, List<DockerHostLocation> available, int n) {
         // Reject hosts over the allowed maximum CPU
         for (DockerHostLocation machine : ImmutableList.copyOf(available)) {
-            Double maxCpu = machine.getOwner().getConfig(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_CPU);
+            Double maxCpu = machine.getOwner().getConfig(DOCKER_CONTAINER_CLUSTER_MAX_CPU);
             Double currentCpu = machine.getOwner().getAttribute(DockerHost.CPU_USAGE);
             if (currentCpu > maxCpu) available.remove(machine);
         }

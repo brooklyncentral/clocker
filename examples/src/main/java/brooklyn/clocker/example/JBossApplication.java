@@ -45,6 +45,7 @@ public class JBossApplication extends AbstractApplication implements StartableAp
         addChild(EntitySpec.create(JBoss7Server.class)
                 .displayName("JBoss Server")
                 .configure(DockerAttributes.DOCKERFILE_URL, "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/UsesJavaDockerfile")
+                .configure(DockerAttributes.DOCKERFILE_NAME, "ubuntujava")
                 .configure(WebAppService.HTTP_PORT, PortRanges.fromString("8080+"))
                 .configure(JavaWebAppService.ROOT_WAR, Entities.getRequiredUrlConfig(this, WAR_PATH)));
     }
