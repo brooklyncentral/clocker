@@ -249,17 +249,18 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     @Override
     public void configureSecurityGroups() {
-        if (!(getLocation() instanceof JcloudsSshMachineLocation)) {
-            log.info("{} not running in a {}, not configuring extra security groups", entity,
-                    JcloudsSshMachineLocation.class.getName());
-            return;
+        String securityGroup = getEntity().getConfig(DockerInfrastructure.SECURITY_GROUP);
+        if (Strings.isBlank(securityGroup)) {
+            if (!(getLocation() instanceof JcloudsSshMachineLocation)) {
+                log.info("{} not running in a JcloudsSshMachineLocation, not configuring extra security groups", entity);
+                return;
+            }
+            JcloudsSshMachineLocation location = (JcloudsSshMachineLocation) getLocation();
+            Collection<IpPermission> permissions = getIpPermissions();
+            log.debug("Applying custom security groups to {}: {}", location, permissions);
+            JcloudsLocationSecurityGroupCustomizer.getInstance(getEntity().getApplicationId())
+                    .addPermissionsToLocation(location, permissions);
         }
-        JcloudsSshMachineLocation location = (JcloudsSshMachineLocation) getLocation();
-        Collection<IpPermission> permissions = getIpPermissions();
-        // TODO: This step should be skipped if the customiser was not included in brooklyn.properties.
-        log.debug("Applying custom security groups to {}: {}", location, permissions);
-        JcloudsLocationSecurityGroupCustomizer.getInstance(getEntity().getApplicationId())
-                .addPermissionsToLocation(location, permissions);
     }
 
     /**

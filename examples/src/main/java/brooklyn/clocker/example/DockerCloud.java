@@ -42,6 +42,10 @@ public class DockerCloud extends AbstractApplication {
     public static final ConfigKey<String> LOCATION_NAME = ConfigKeys.newConfigKeyWithDefault(
             DockerInfrastructure.LOCATION_NAME.getConfigKey(), "my-docker-cloud");
 
+    @CatalogConfig(label="Security Group (Optional)", priority=1)
+    public static final ConfigKey<String> SECURITY_GROUP = ConfigKeys.newConfigKeyWithDefault(
+            DockerInfrastructure.SECURITY_GROUP, "");
+
     @CatalogConfig(label="Host Cluster Minimum Size", priority=1)
     public static final ConfigKey<Integer> DOCKER_HOST_CLUSTER_MIN_SIZE = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 2);
 
@@ -60,7 +64,7 @@ public class DockerCloud extends AbstractApplication {
 
         addChild(EntitySpec.create(DockerInfrastructure.class)
                 .configure(DockerInfrastructure.DOCKER_VERSION, getConfig(DOCKER_VERSION))
-                .configure(DockerInfrastructure.SECURITY_GROUP, "docker")
+                .configure(DockerInfrastructure.SECURITY_GROUP, getConfig(SECURITY_GROUP))
                 .configure(DockerInfrastructure.OPEN_IPTABLES, true)
                 .configure(DockerInfrastructure.LOCATION_NAME, getConfig(LOCATION_NAME))
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE))

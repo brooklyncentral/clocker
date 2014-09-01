@@ -48,6 +48,7 @@ import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.DockerResolver;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
+import brooklyn.location.jclouds.networking.JcloudsLocationSecurityGroupCustomizer;
 import brooklyn.location.jclouds.templates.PortableTemplateBuilder;
 import brooklyn.management.LocationManager;
 import brooklyn.management.ManagementContext;
@@ -128,6 +129,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     @Override
     protected Map<String, Object> obtainProvisioningFlags(MachineProvisioningLocation location) {
         Map<String, Object> flags = super.obtainProvisioningFlags(location);
+        // TODO set defaults iff not specified in flags already
 
         // Configure template for host virtual machine
         TemplateBuilder template = (TemplateBuilder) flags.get(JcloudsLocationConfig.TEMPLATE_BUILDER.getName());
@@ -140,21 +142,21 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             }
         }
         template.os64Bit(true);
-        template.minRam(2048); // TODO from configuration
+        template.minRam(2048);
         flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), template);
-        flags.put(JcloudsLocationConfig.JCLOUDS_LOCATION_CUSTOMIZERS_SUPPLIER_TYPE.getName(),
-                "brooklyn.location.docker.customizer.DockerHostCustomizerSupplier");
-        /* TODO shall we support DockerHostCustomizer and this strategy below
+
         // Configure security groups for host virtual machine
         String securityGroup = getConfig(DockerInfrastructure.SECURITY_GROUP);
-        if (securityGroup != null) {
+        if (Strings.isNonBlank(securityGroup)) {
             if (isJcloudsLocation(location, "google-compute-engine")) {
                 flags.put("networkName", securityGroup);
             } else {
                 flags.put("securityGroups", securityGroup);
             }
+        } else {
+            flags.put(JcloudsLocationConfig.JCLOUDS_LOCATION_CUSTOMIZER.getName(),
+                    JcloudsLocationSecurityGroupCustomizer.getInstance(getApplicationId()));
         }
-        */
         return flags;
     }
 
