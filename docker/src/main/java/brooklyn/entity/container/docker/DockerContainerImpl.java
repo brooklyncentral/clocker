@@ -35,9 +35,11 @@ import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.BrooklynConfigKeys;
 import brooklyn.entity.basic.DelegateEntity;
+import brooklyn.entity.basic.EntityInternal;
 import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.basic.ServiceStateLogic;
 import brooklyn.entity.basic.SoftwareProcess;
+import brooklyn.entity.software.MachineLifecycleEffectorTasks;
 import brooklyn.event.feed.ConfigToAttributes;
 import brooklyn.event.feed.function.FunctionFeed;
 import brooklyn.event.feed.function.FunctionPollConfig;
@@ -225,8 +227,13 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 volumes.put(dir, dir);
             }
         }
+
         // Add brooklyn-managed-processes as volume
-        volumes.put(getDockerHost().getConfig(BrooklynConfigKeys.ONBOX_BASE_DIR), entity.getConfig(BrooklynConfigKeys.ONBOX_BASE_DIR));
+        String containerbaseDir = "/brooklyn-managed-processes";
+        ((EntityInternal) entity).setConfig(BrooklynConfigKeys.SKIP_ON_BOX_BASE_DIR_RESOLUTION, true);
+        ((EntityInternal) entity).setConfig(BrooklynConfigKeys.ONBOX_BASE_DIR, containerbaseDir);
+        ((EntityInternal) entity).setConfig(MachineLifecycleEffectorTasks.ON_BOX_BASE_DIR_RESOLVED, true);
+        volumes.put(getDockerHost().getConfig(BrooklynConfigKeys.ONBOX_BASE_DIR), containerbaseDir);
         options.volumes(volumes);
 
         return options;

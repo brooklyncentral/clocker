@@ -284,6 +284,8 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         if (started.compareAndSet(true, false)) {
             setAttribute(SERVICE_UP, Boolean.FALSE);
 
+            // TODO stop all applications (from buckets)
+
             super.stop();
 
             deleteLocation();
