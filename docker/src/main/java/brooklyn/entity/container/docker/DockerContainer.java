@@ -35,6 +35,7 @@ import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.location.dynamic.LocationOwner;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.util.flags.SetFromFlag;
+import brooklyn.util.internal.ssh.SshTool;
 
 /**
  * A Docker container.
@@ -51,6 +52,9 @@ public interface DockerContainer extends BasicStartable, HasShortName, LocationO
 
     @SetFromFlag("infrastructure")
     AttributeSensorAndConfigKey<DockerInfrastructure, DockerInfrastructure> DOCKER_INFRASTRUCTURE = DockerHost.DOCKER_INFRASTRUCTURE;
+
+    @SetFromFlag("password")
+    ConfigKey<String> DOCKER_PASSWORD = DockerAttributes.DOCKER_PASSWORD;
 
     @SetFromFlag("imageId")
     ConfigKey<String> DOCKER_IMAGE_ID = DockerAttributes.DOCKER_IMAGE_ID.getConfigKey();

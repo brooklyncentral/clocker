@@ -27,7 +27,7 @@ RUN yum -y install sudo openssh-server openssh-clients openssl-devel
 
 # setup root account
 RUN ssh-keygen -q -N "" -t dsa -f /etc/ssh/ssh_host_dsa_key && ssh-keygen -q -N "" -t rsa -f /etc/ssh/ssh_host_rsa_key && sed -i "s/#UsePrivilegeSeparation.*/UsePrivilegeSeparation no/g" /etc/ssh/sshd_config && sed -i "s/UsePAM.*/UsePAM no/g" /etc/ssh/sshd_config
-RUN echo 'root:password' | chpasswd
+RUN echo 'root:${entity.password}' | chpasswd
 
 # install sshd
 RUN chkconfig sshd on

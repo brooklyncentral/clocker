@@ -57,12 +57,12 @@ import brooklyn.util.time.Duration;
 public interface DockerHost extends MachineEntity, Resizable, HasShortName, LocationOwner<DockerHostLocation, DockerHost> {
 
     @SetFromFlag("version")
-    ConfigKey<String> SUGGESTED_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "1.2");
+    ConfigKey<String> SUGGESTED_VERSION = DockerInfrastructure.DOCKER_VERSION;
 
     @SetFromFlag("startTimeout")
     ConfigKey<Duration> START_TIMEOUT = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.START_TIMEOUT, Duration.FIVE_MINUTES);
 
-    BasicAttributeSensorAndConfigKey<String> DOWNLOAD_URL = new BasicAttributeSensorAndConfigKey<String>(
+    AttributeSensorAndConfigKey<String, String> DOWNLOAD_URL = new BasicAttributeSensorAndConfigKey<String>(
             SoftwareProcess.DOWNLOAD_URL, "https://get.docker.io/builds/Linux/x86_64/docker-latest");
 
     @SetFromFlag("maxSize")
@@ -76,11 +76,11 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
             "Enable high-availability and resilience/restart policies", false);
 
     @SetFromFlag("dockerPort")
-    PortAttributeSensorAndConfigKey DOCKER_PORT = new PortAttributeSensorAndConfigKey("docker.port",
+    PortAttributeSensorAndConfigKey DOCKER_PORT = ConfigKeys.newPortSensorAndConfigKey("docker.port",
             "Docker port", PortRanges.fromString("2375"));
 
     @SetFromFlag("dockerSslPort")
-    PortAttributeSensorAndConfigKey DOCKER_SSL_PORT = new PortAttributeSensorAndConfigKey("docker.ssl.port",
+    PortAttributeSensorAndConfigKey DOCKER_SSL_PORT = ConfigKeys.newPortSensorAndConfigKey("docker.ssl.port",
             "Docker port", PortRanges.fromString("2376"));
 
     @SetFromFlag("containerSpec")
@@ -108,7 +108,12 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
     @SetFromFlag("affinityRules")
     ConfigKey<String> DOCKER_HOST_AFFINITY_RULES = AffinityRules.AFFINITY_RULES;
 
-    AttributeSensor<String> HOST_NAME = Sensors.newStringSensor("docker.host.name", "The name of the Docker host");
+    @SetFromFlag("password")
+    ConfigKey<String> DOCKER_PASSWORD = DockerAttributes.DOCKER_PASSWORD;
+
+    AttributeSensor<String> DOCKER_HOST_NAME = Sensors.newStringSensor("docker.host.name", "The name of the Docker host");
+
+    String getPassword();
 
     Integer getDockerPort();
 

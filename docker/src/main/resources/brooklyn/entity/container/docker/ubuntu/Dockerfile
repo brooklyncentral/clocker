@@ -16,7 +16,7 @@
 #
 # sshd
 #
-# VERSION 0.0.3
+# VERSION 0.0.4
 
 FROM ubuntu:12.04
 MAINTAINER Cloudsoft "brooklyn@cloudsoftcorp.com"
@@ -24,9 +24,10 @@ MAINTAINER Cloudsoft "brooklyn@cloudsoftcorp.com"
 # make sure the package repository is up to date
 RUN ( echo "deb http://archive.ubuntu.com/ubuntu precise main universe" ; echo "deb http://archive.ubuntu.com/ubuntu precise-updates main universe" ) > /etc/apt/sources.list
 RUN apt-get update
+RUN locale-gen en_US.UTF-8
 
 # setup root account
-RUN echo 'root:password' | chpasswd
+RUN echo 'root:${entity.password}' | chpasswd
 
 # install sshd
 RUN apt-get install -y openssh-server

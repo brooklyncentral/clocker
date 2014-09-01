@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jclouds.compute.domain.OsFamily;
 import org.jclouds.compute.domain.TemplateBuilder;
+import org.jclouds.googlecomputeengine.GoogleComputeEngineConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +31,6 @@ import brooklyn.enricher.Enrichers;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
-import brooklyn.entity.basic.ServiceStateLogic;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.machine.MachineEntityImpl;
@@ -65,6 +65,7 @@ import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.task.Tasks;
+import brooklyn.util.text.Identifiers;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 
@@ -95,14 +96,20 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
         String dockerHostName = String.format(getConfig(DockerHost.HOST_NAME_FORMAT), getId(), COUNTER.incrementAndGet());
         setDisplayName(dockerHostName);
-        setAttribute(HOST_NAME, dockerHostName);
+        setAttribute(DOCKER_HOST_NAME, dockerHostName);
+
+        // Set a password for this host's containers
+        String password = getConfig(DOCKER_PASSWORD);
+        if (Strings.isBlank(password)) {
+            password = Identifiers.makeRandomId(8);
+            setConfig(DOCKER_PASSWORD, password);
+        }
 
         ConfigToAttributes.apply(this, DOCKER_INFRASTRUCTURE);
 
         EntitySpec<?> dockerContainerSpec = EntitySpec.create(getConfig(DOCKER_CONTAINER_SPEC))
                 .configure(DockerContainer.DOCKER_HOST, this)
-                .configure(DockerContainer.DOCKER_INFRASTRUCTURE, getInfrastructure())
-                .enricher(ServiceStateLogic.newEnricherForServiceStateFromProblemsAndUp());
+                .configure(DockerContainer.DOCKER_INFRASTRUCTURE, getInfrastructure());
         if (getConfig(HA_POLICY_ENABLE)) {
             dockerContainerSpec.policy(PolicySpec.create(ServiceRestarter.class)
                     .configure(ServiceRestarter.FAILURE_SENSOR_TO_MONITOR, ServiceFailureDetector.ENTITY_FAILED));
@@ -136,7 +143,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         TemplateBuilder template = (TemplateBuilder) flags.get(JcloudsLocationConfig.TEMPLATE_BUILDER.getName());
         if (template == null) {
             template = new PortableTemplateBuilder();
-            if (isJcloudsLocation(location, "google-compute-engine")) {
+            if (isJcloudsLocation(location, GoogleComputeEngineConstants.GCE_PROVIDER_NAME)) {
                 template.osFamily(OsFamily.CENTOS).osVersionMatches("6");
             } else {
                 template.osFamily(OsFamily.UBUNTU).osVersionMatches("12.04");
@@ -149,7 +156,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         // Configure security groups for host virtual machine
         String securityGroup = getConfig(DockerInfrastructure.SECURITY_GROUP);
         if (Strings.isNonBlank(securityGroup)) {
-            if (isJcloudsLocation(location, "google-compute-engine")) {
+            if (isJcloudsLocation(location, GoogleComputeEngineConstants.GCE_PROVIDER_NAME)) {
                 flags.put("networkName", securityGroup);
             } else {
                 flags.put("securityGroups", securityGroup);
@@ -198,7 +205,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     public String getDockerHostName() {
-        return getAttribute(HOST_NAME);
+        return getAttribute(DOCKER_HOST_NAME);
     }
 
     @Override
@@ -209,6 +216,11 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     @Override
     public DockerInfrastructure getInfrastructure() {
         return getConfig(DOCKER_INFRASTRUCTURE);
+    }
+
+    @Override
+    public String getPassword() {
+        return getConfig(DOCKER_PASSWORD);
     }
 
     /** {@inheritDoc} */

@@ -193,8 +193,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
         // Use DockerHost hostname for the container
         Boolean useHostDns = entity.getConfig(DOCKER_USE_HOST_DNS_NAME);
-        if (!useHostDns) useHostDns = getConfig(DOCKER_USE_HOST_DNS_NAME);
-        if (useHostDns) options.hostname(getDockerHost().getAttribute(Attributes.HOSTNAME));
+        if (useHostDns == null || !useHostDns) useHostDns = getConfig(DOCKER_USE_HOST_DNS_NAME);
+        if (useHostDns != null && useHostDns) options.hostname(getDockerHost().getAttribute(Attributes.HOSTNAME));
 
         // CPU shares
         Integer cpuShares = entity.getConfig(DOCKER_CPU_SHARES);
@@ -250,7 +250,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 .put(JcloudsLocationConfig.IMAGE_ID, getConfig(DOCKER_IMAGE_ID))
                 .put(JcloudsLocationConfig.HARDWARE_ID, getConfig(DOCKER_HARDWARE_ID))
                 .put(LocationConfigKeys.USER, "root")
-                .put(LocationConfigKeys.PASSWORD, "password")
+                .put(LocationConfigKeys.PASSWORD, getConfig(DOCKER_PASSWORD))
                 .put(LocationConfigKeys.PRIVATE_KEY_DATA, null)
                 .put(LocationConfigKeys.PRIVATE_KEY_FILE, null)
                 .put(JcloudsLocationConfig.INBOUND_PORTS, getRequiredOpenPorts(getRunningEntity()))
@@ -273,7 +273,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                     .configure(DynamicLocation.OWNER, this)
                     .configure("machine", container) // the underlying JcloudsLocation
                     .configure(container.getAllConfig(true))
-                    .configure(SshTool.PROP_PASSWORD, "password") // TODO configure this externally
+                    .configure(SshTool.PROP_PASSWORD, getConfig(DOCKER_PASSWORD))
                     .displayName(getDockerContainerName());
             DockerContainerLocation location = getManagementContext().getLocationManager().createLocation(spec);
 
