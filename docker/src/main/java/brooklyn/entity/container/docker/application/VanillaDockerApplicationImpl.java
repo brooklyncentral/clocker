@@ -33,6 +33,7 @@ public class VanillaDockerApplicationImpl extends VanillaSoftwareProcessImpl imp
     @Override
     public void init() {
         log.info("Starting Docker application id {}", getId());
+        super.init();
     }
 
     @Override

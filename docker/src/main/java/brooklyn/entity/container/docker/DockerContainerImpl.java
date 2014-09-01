@@ -85,6 +85,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     @Override
     public void init() {
         LOG.info("Starting Docker container id {}", getId());
+        super.init();
 
         String dockerContainerName = format(getConfig(DockerContainer.DOCKER_CONTAINER_NAME_FORMAT), getId(), COUNTER.incrementAndGet());
         setDisplayName(dockerContainerName);

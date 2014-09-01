@@ -95,6 +95,8 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
     @Override
     public void init() {
+        super.init();
+
         int initialSize = getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE);
         EntitySpec<?> dockerHostSpec = EntitySpec.create(getConfig(DOCKER_HOST_SPEC))
                 .configure(DockerHost.DOCKER_INFRASTRUCTURE, this)
