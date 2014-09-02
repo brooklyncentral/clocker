@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jclouds.compute.config.ComputeServiceProperties;
 import org.jclouds.docker.compute.options.DockerTemplateOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -247,6 +248,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         DockerHost dockerHost = getDockerHost();
         DockerHostLocation host = dockerHost.getDynamicLocation();
         SubnetTier subnetTier = dockerHost.getSubnetTier();
+        String password = getConfig(DOCKER_PASSWORD);
 
         // Configure the container options based on the host and the running entity
         DockerTemplateOptions options = getDockerTemplateOptions();
@@ -257,7 +259,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 .put(JcloudsLocationConfig.IMAGE_ID, getConfig(DOCKER_IMAGE_ID))
                 .put(JcloudsLocationConfig.HARDWARE_ID, getConfig(DOCKER_HARDWARE_ID))
                 .put(LocationConfigKeys.USER, "root")
-                .put(LocationConfigKeys.PASSWORD, getConfig(DOCKER_PASSWORD))
+                .put(LocationConfigKeys.PASSWORD, password)
+                .put(ComputeServiceProperties.IMAGE_LOGIN_USER, "root:" + password)
                 .put(LocationConfigKeys.PRIVATE_KEY_DATA, null)
                 .put(LocationConfigKeys.PRIVATE_KEY_FILE, null)
                 .put(JcloudsLocationConfig.INBOUND_PORTS, getRequiredOpenPorts(getRunningEntity()))
@@ -265,7 +268,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 .put(JcloudsLocation.PORT_FORWARDER, subnetTier.getPortForwarderExtension())
                 .put(JcloudsLocation.PORT_FORWARDING_MANAGER, subnetTier.getPortForwardManager())
                 .put(JcloudsPortforwardingSubnetLocation.PORT_FORWARDER, subnetTier.getPortForwarder())
-                .put(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL)
+                .put(SubnetTier.SUBNET_CIDR, Cidr.CLASS_B)
                 .build();
 
         try {
@@ -280,7 +283,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                     .configure(DynamicLocation.OWNER, this)
                     .configure("machine", container) // the underlying JcloudsLocation
                     .configure(container.getAllConfig(true))
-                    .configure(SshTool.PROP_PASSWORD, getConfig(DOCKER_PASSWORD))
+                    .configure(SshTool.PROP_PASSWORD, password)
                     .displayName(getDockerContainerName());
             DockerContainerLocation location = getManagementContext().getLocationManager().createLocation(spec);
 
