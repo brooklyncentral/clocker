@@ -133,6 +133,7 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
 
     MethodEffector<String> CREATE_SSHABLE_IMAGE = new MethodEffector<String>(DockerHost.class, "createSshableImage");
     MethodEffector<String> RUN_DOCKER_COMMAND = new MethodEffector<String>(DockerHost.class, "runDockerCommand");
+    MethodEffector<String> RUN_DOCKER_COMMAND_TIMEOUT = new MethodEffector<String>(DockerHost.class, "runDockerCommandTimeout");
     MethodEffector<String> DEPLOY_ARCHIVE = new MethodEffector<String>(DockerHost.class, "deployArchive");
 
     /**
@@ -153,7 +154,19 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
      * @param command Docker command
      */
     @Effector(description="Execute a Docker command and return the output")
-    String runDockerCommand(@EffectorParam(name="command", description="Docker command") String command);
+    String runDockerCommand(
+            @EffectorParam(name="command", description="Docker command") String command);
+
+    /**
+     * Execute a Docker command and return the output, or throw an exception after a timeout.
+     *
+     * @param command Docker command
+     * @param timeout Timeout
+     */
+    @Effector(description="Execute a Docker command and return the output")
+    String runDockerCommandTimeout(
+            @EffectorParam(name="command", description="Docker command") String command,
+            @EffectorParam(name = "timeout", description = "Timeout") Duration timeout);
 
     /**
      * Upload an archive file to the host and expand it, for export to a container.
