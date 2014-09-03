@@ -21,6 +21,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +37,7 @@ import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.docker.DockerAttributes;
-import brooklyn.entity.container.docker.DockerCommands;
+import brooklyn.entity.container.docker.DockerCallbacks;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
@@ -94,6 +97,9 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
     @SetFromFlag("owner")
     private DockerHost dockerHost;
+
+    @SetFromFlag("images")
+    private ConcurrentMap<String, CountDownLatch> images = Maps.newConcurrentMap();
 
     public DockerHostLocation() {
         this(Maps.newLinkedHashMap());
@@ -159,11 +165,14 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                 imageId = Strings.getFirstWordAfter(imageList, "latest");
                 LOG.info("Found image {} for entity: {}", imageName, imageId);
 
+                // Wait untill committed before continuing
+                ((AbstractEntity) entity).setConfigEvenIfOwned(SoftwareProcess.PRE_INSTALL_COMMAND, DockerCallbacks.image());
+
                 // Skip install phase
                 ((AbstractEntity) entity).setConfigEvenIfOwned(SoftwareProcess.SKIP_INSTALLATION, true);
             } else {
                 // Set commit command at post-install
-                ((AbstractEntity) entity).setConfigEvenIfOwned(SoftwareProcess.POST_INSTALL_COMMAND, DockerCommands.commit());
+                ((AbstractEntity) entity).setConfigEvenIfOwned(SoftwareProcess.POST_INSTALL_COMMAND, DockerCallbacks.commit());
 
                 if (Strings.isNonBlank(dockerfile)) {
                     if (imageId != null) {
@@ -171,9 +180,13 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                     }
                     imageId = dockerHost.createSshableImage(dockerfile, imageName);
                 }
-            }
-            if (Strings.isBlank(imageId)) {
-                imageId = getOwner().getAttribute(DockerHost.DOCKER_IMAGE_ID);
+                if (Strings.isBlank(imageId)) {
+                    imageId = getOwner().getAttribute(DockerHost.DOCKER_IMAGE_ID);
+                }
+
+                // Tag image name and create latch
+                images.putIfAbsent(imageName, new CountDownLatch(1));
+                dockerHost.runDockerCommand(String.format("tag %s %s:latest", imageId, Os.mergePaths("brooklyn", imageName)));
             }
 
             // Look up hardware ID
@@ -210,6 +223,20 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
         } finally {
             releaseMutex(CONTAINER_MUTEX);
         }
+    }
+
+    public void waitForImage(String imageName) {
+        try {
+            CountDownLatch latch = images.get(imageName);
+            if (latch != null) latch.await(15, TimeUnit.MINUTES);
+        } catch (InterruptedException ie) {
+            throw Exceptions.propagate(ie);
+        }
+    }
+
+    public void markImage(String imageName) {
+        CountDownLatch latch = images.get(imageName);
+        if (latch != null) latch.countDown();
     }
 
     private void configureEnrichers(AbstractEntity entity) {
