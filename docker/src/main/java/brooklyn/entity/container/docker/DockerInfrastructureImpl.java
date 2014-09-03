@@ -293,8 +293,8 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
             // Stop all applications (from buckets)
             List<Application> applications = Lists.newArrayList();
             for (Entity bucket : buckets.getMembers()) {
-                Iterable<Entity> members = ((Group) bucket).getMembers();
-                if (Iterables.size(members) > 0) {
+                Iterable<Entity> members = bucket.getAttribute(BasicGroup.GROUP_MEMBERS);
+                if (members != null && Iterables.size(members) > 0) {
                     Entity sample = Iterables.get(members, 0);
                     applications.add(sample.getApplication());
                 }
