@@ -20,9 +20,9 @@ or [docker-cloud.yaml](https://raw.githubusercontent.com/brooklyncentral/clocker
 You can build a *Docker Cloud Infrastructure* running these commands:
 ```Bash
     % wget --no-check-certificate --quiet \
-      -O brooklyn-clocker-examples-0.5.0-dist.tar.gz http://git.io/hxy9fg
-    % tar zxf brooklyn-clocker-examples-0.5.0-dist.tar.gz
-    % cd brooklyn-clocker-examples-0.5.0
+      -O brooklyn-clocker-examples-0.6.0-dist.tar.gz http://git.io/saSbZQ
+    % tar zxf brooklyn-clocker-examples-0.6.0-dist.tar.gz
+    % cd brooklyn-clocker-examples-0.6.0
     % ./clocker.sh launch --cloud --location <location>
 ```
 Where `<location>` can be e.g. `jclouds:softlayer`, or a named location or a fixed IP e.g. `byon:(hosts="1.2.3.4")`.
@@ -31,17 +31,13 @@ Those simple steps will give you a running docker instance on your favourite clo
 For more information on setting up locations, including supplying cloud provider credentials, see the [_Setting up Locations_ section of
 Brooklyn Getting Started](https://brooklyn.incubator.apache.org/quickstart/#configuring-a-location), and the more detailed [locations guide](https://brooklyn.incubator.apache.org/v/0.7.0-M1/use/guide/locations/index.html).
 
-**Important**: Please be sure that the location allows incoming connections on TCP ports *2375-2376* (the Docker daemon) and in
-the range *49000-49900* used by Docker to map container ports onto ports on the host's public IP address. If you create a
-security group on AWS called _docker_ this will be used automatically by the application.
-
 The Brooklyn web-console, which will be deploying and managing your Docker Cloud, can be accessed at [http://localhost:8081](http://localhost:8081) - this URL will have been written to standard out during startup.
 
 Once the `DockerCloud`  application has started, a new location named `my-docker-cloud` will be
 available in the Locations drop-down list when adding new applications. Simply start a new application in this location
 and it will use Docker containers instead of virtual machines.
 
-For more information on deploying applications from the Brooklyn catalog, see [Getting Started - Policies and Catalogs](https://brooklyn.incubator.apache.org/quickstart/policies-and-catalogs.html). You can also paste a YAML blueprint (via "Add Application" -> "YAML"):
+For more information on deploying applications from the Brooklyn catalog, see [Getting Started - Policies and Catalogs](https://brooklyn.incubator.apache.org/quickstart/policies-and-catalogs.html). You can also paste a YAML blueprint into the _YAML_ tab of the _Add Application_ dialog, as follows:
 
 ```Yaml
 location: my-docker-cloud
@@ -65,8 +61,8 @@ Build and run the examples as follows:
     % mvn assembly:single
     ...
     % cd target
-    % tar zxf brooklyn-clocker-examples-0.6.0-SNAPSHOT-dist.tar.gz
-    % cd brooklyn-clocker-examples-0.6.0-SNAPSHOT
+    % tar zxf brooklyn-clocker-examples-0.7.0-SNAPSHOT-dist.tar.gz
+    % cd brooklyn-clocker-examples-0.7.0-SNAPSHOT
     % ./clocker.sh launch --cloud --location <location>
     ...
 ```
