@@ -52,6 +52,9 @@ public class DockerCloud extends AbstractApplication {
     @CatalogConfig(label="Container Cluster Maximum Size", priority=2)
     public static final ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = ConfigKeys.newConfigKeyWithDefault(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_SIZE, 4);
 
+    @CatalogConfig(label="Container Cluster Maximum CPU Usage", priority=2)
+    public static final ConfigKey<Double> DOCKER_CONTAINER_CLUSTER_MAX_CPU = ConfigKeys.newConfigKeyWithDefault(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_CPU, 0.5d);
+
     @CatalogConfig(label="Enable Host HA Policies", priority=2)
     public static final ConfigKey<Boolean> HA_POLICY_ENABLE = DockerHost.HA_POLICY_ENABLE;
 
@@ -60,7 +63,8 @@ public class DockerCloud extends AbstractApplication {
         EntitySpec dockerSpec = EntitySpec.create(DockerHost.class)
                 .configure(SoftwareProcess.START_TIMEOUT, Duration.minutes(15))
                 .configure(DockerHost.HA_POLICY_ENABLE, getConfig(HA_POLICY_ENABLE))
-                .configure(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_SIZE, getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE));
+                .configure(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_SIZE, getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE))
+                .configure(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_CPU, getConfig(DOCKER_CONTAINER_CLUSTER_MAX_CPU));
 
         addChild(EntitySpec.create(DockerInfrastructure.class)
                 .configure(DockerInfrastructure.DOCKER_VERSION, getConfig(DOCKER_VERSION))
