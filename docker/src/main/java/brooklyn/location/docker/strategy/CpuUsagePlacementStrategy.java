@@ -51,54 +51,31 @@ public class CpuUsagePlacementStrategy extends AbstractDockerPlacementStrategy {
     @Override
     protected List<Location> getDockerHostLocations(Multimap<Location, Entity> members, List<DockerHostLocation> available, int n) {
         // Reject hosts over the allowed maximum CPU
+        List<DockerHostLocation> chosen = Lists.newArrayList();
         for (DockerHostLocation machine : ImmutableList.copyOf(available)) {
             Double maxCpu = machine.getOwner().getConfig(DOCKER_CONTAINER_CLUSTER_MAX_CPU);
             Double currentCpu = machine.getOwner().getAttribute(DockerHost.CPU_USAGE);
-            if (currentCpu > maxCpu) available.remove(machine);
+            if (currentCpu < maxCpu) chosen.add(machine);
         }
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Available Docker hosts: {}", Iterables.toString(available));
+            LOG.debug("Available Docker hosts: {}", Iterables.toString(chosen));
         }
 
-        DockerHost host = null;
-        if (available.isEmpty()) {
+        if (chosen.isEmpty()) {
             // Grow the Docker host cluster
             Collection<Entity> added = getDockerInfrastructure().getDockerHostCluster().resizeByDelta(1);
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Added Docker host: {}", Iterables.toString(added));
             }
-            host = (DockerHost) Iterables.getOnlyElement(added);
+            DockerHost host = (DockerHost) Iterables.getOnlyElement(added);
 
             // Wait until new Docker host has started up
             Entities.waitForServiceUp(host);
-        } else {
-            // Choose the lowest CPU usage from available
-            Map<DockerHostLocation, Integer> sizes = toAvailableLocationSizes(available);
-            int minCpu = 100;
-            for (DockerHostLocation loc : sizes.keySet()) {
-                int usage = sizes.get(loc);
-                if (host == null || usage < minCpu) {
-                    host = loc.getOwner();
-                    minCpu = usage;
-                }
-            }
-        }
-        Preconditions.checkState(host != null, "Chosen Docker host was null; locs=%s", available);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Placement for {} nodes in: {}", n, host);
+            chosen.add(host.getDynamicLocation());
         }
 
         // Add the newly created locations for each Docker host
-        List<Location> result = Lists.newArrayList();
-        result.addAll(Collections.<Location>nCopies(n, host.getDynamicLocation()));
-        return result;
-    }
-
-    public Map<DockerHostLocation, Integer> toAvailableLocationSizes(Iterable<DockerHostLocation> locations) {
-        Map<DockerHostLocation, Integer> result = Maps.newLinkedHashMap();
-        for (DockerHostLocation host : locations) {
-            result.put(host, host.getOwner().getAttribute(DockerHost.CPU_USAGE).intValue());
-        }
+        List<Location> result = ImmutableList.<Location>copyOf(Iterables.limit(Iterables.cycle(chosen), n));
         return result;
     }
 
