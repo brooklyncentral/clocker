@@ -25,9 +25,13 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.beust.jcommander.internal.Lists;
+
 import brooklyn.config.render.RendererHints;
 import brooklyn.enricher.Enrichers;
+import brooklyn.entity.Application;
 import brooklyn.entity.Entity;
+import brooklyn.entity.Group;
 import brooklyn.entity.basic.BasicGroup;
 import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.DelegateEntity;
@@ -41,6 +45,8 @@ import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.group.DynamicMultiGroup;
 import brooklyn.entity.machine.MachineAttributes;
 import brooklyn.entity.proxying.EntitySpec;
+import brooklyn.entity.trait.Startable;
+import brooklyn.entity.trait.StartableMethods;
 import brooklyn.location.Location;
 import brooklyn.location.LocationDefinition;
 import brooklyn.location.basic.BasicLocationDefinition;
@@ -284,7 +290,16 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         if (started.compareAndSet(true, false)) {
             setAttribute(SERVICE_UP, Boolean.FALSE);
 
-            // TODO stop all applications (from buckets)
+            // Stop all applications (from buckets)
+            List<Application> applications = Lists.newArrayList();
+            for (Entity bucket : buckets.getMembers()) {
+                Iterable<Entity> members = ((Group) bucket).getMembers();
+                if (Iterables.size(members) > 0) {
+                    Entity sample = Iterables.get(members, 0);
+                    applications.add(sample.getApplication());
+                }
+            }
+            Entities.invokeEffectorList(this, applications, Startable.STOP);
 
             super.stop();
 
