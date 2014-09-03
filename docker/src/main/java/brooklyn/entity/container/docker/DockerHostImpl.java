@@ -236,8 +236,14 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     /** {@inheritDoc} */
     @Override
     public String runDockerCommand(String command) {
+        return runDockerCommandTimeout(command, Duration.ONE_MINUTE);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public String runDockerCommandTimeout(String command, Duration timeout) {
         // FIXME Set DOCKER_OPTS values in command-line for when running on localhost
-        String stdout = execCommandTimeout(BashCommands.sudo(String.format("docker %s", command)), Duration.ONE_MINUTE);
+        String stdout = execCommandTimeout(BashCommands.sudo(String.format("docker %s", command)), timeout);
         if (LOG.isDebugEnabled()) LOG.debug("Successfully executed Docker {}: {}", Strings.getFirstWord(command), Strings.getFirstLine(stdout));
         return stdout;
     }

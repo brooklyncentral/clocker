@@ -45,6 +45,7 @@ import brooklyn.util.os.Os;
 import brooklyn.util.ssh.IptablesCommands;
 import brooklyn.util.ssh.IptablesCommands.Chain;
 import brooklyn.util.ssh.IptablesCommands.Policy;
+import brooklyn.util.time.Duration;
 
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.collect.ImmutableList;
@@ -176,7 +177,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
         if (DockerCommands.COMMIT.equalsIgnoreCase(command)) {
             String containerId = getOwner().getContainerId();
             String imageName = getOwner().getAttribute(DockerContainer.IMAGE_NAME);
-            String output = getOwner().getDockerHost().runDockerCommand(String.format("commit %s %s", containerId, Os.mergePaths("brooklyn", imageName)));
+            String output = getOwner().getDockerHost().runDockerCommandTimeout(String.format("commit %s %s", containerId, Os.mergePaths("brooklyn", imageName)), Duration.minutes(15));
             String imageId = DockerCommands.checkId(output);
             ((EntityLocal) getOwner().getRunningEntity()).setAttribute(DockerContainer.IMAGE_ID, imageId);
             ((EntityLocal) getOwner()).setAttribute(DockerContainer.IMAGE_ID, imageId);

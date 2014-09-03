@@ -88,9 +88,8 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         copyTemplate(dockerFile, Os.mergePaths(name, DOCKERFILE));
 
         // Build an image from the Dockerfile
-        // FIXME Set DOCKER_OPTS values in command-line for when running on localhost
-        String build = format("docker build --rm -t %s - < %s", Os.mergePaths("brooklyn", name), Os.mergePaths(getRunDir(), name, DOCKERFILE));
-        String stdout = ((DockerHost) getEntity()).execCommandTimeout(sudo(build), Duration.minutes(15));
+        String build = format("build --rm -t %s - < %s", Os.mergePaths("brooklyn", name), Os.mergePaths(getRunDir(), name, DOCKERFILE));
+        String stdout = ((DockerHost) getEntity()).runDockerCommandTimeout(build, Duration.minutes(15));
         String prefix = Strings.getFirstWordAfter(stdout, "Successfully built");
 
         // Inspect the Docker image with this prefix
