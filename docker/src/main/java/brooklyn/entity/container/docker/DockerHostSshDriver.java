@@ -95,7 +95,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         // Inspect the Docker image with this prefix
         String inspect = format("inspect --format={{.Id}} %s", prefix);
         String imageId = ((DockerHost) getEntity()).runDockerCommand(inspect);
-        return DockerCommands.checkId(imageId);
+        return DockerCallbacks.checkId(imageId);
     }
 
     public String getEpelRelease() {

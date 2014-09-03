@@ -25,18 +25,23 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.base.Splitter;
 
-public class DockerCommands {
+public class DockerCallbacks {
 
     /** Do not instantiate. */
-    private DockerCommands() { }
+    private DockerCallbacks() { }
 
     public static final String SEPARATOR = "###";
-    public static final String DOCKER_HOST_COMMAND = "docker-host-command";
+    public static final String DOCKER_HOST_CALLBACK = "docker-host-callback";
     public static final String COMMIT = "commit";
     public static final String PUSH = "push";
+    public static final String IMAGE = "image";
 
-    public static final Predicate<CharSequence> FILTER = Predicates.containsPattern(SEPARATOR + DOCKER_HOST_COMMAND);
+    public static final Predicate<CharSequence> FILTER = Predicates.containsPattern(SEPARATOR + DOCKER_HOST_CALLBACK);
     public static final Splitter PARSER = Splitter.on(SEPARATOR).omitEmptyStrings();
+
+    public static final String image() {
+        return command(IMAGE);
+    }
 
     public static final String commit() {
         return command(COMMIT);
@@ -47,7 +52,7 @@ public class DockerCommands {
     }
 
     private static final String command(String command, Object...rest) {
-        return SEPARATOR + Joiner.on(SEPARATOR).join(DOCKER_HOST_COMMAND, command, rest);
+        return SEPARATOR + Joiner.on(SEPARATOR).join(DOCKER_HOST_CALLBACK, command, rest);
     }
 
     /** Parse and return the ID returned from a Docker command. */

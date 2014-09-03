@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.EntityLocal;
-import brooklyn.entity.container.docker.DockerCommands;
+import brooklyn.entity.container.docker.DockerCallbacks;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.location.Location;
@@ -155,33 +155,37 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
 
     @Override
     public int execScript(Map<String,?> props, String summaryForLogging, List<String> commands, Map<String,?> env) {
-        Iterable<String> filtered = Iterables.filter(commands, DockerCommands.FILTER);
+        Iterable<String> filtered = Iterables.filter(commands, DockerCallbacks.FILTER);
         for (String dockerCommand : filtered) {
-            parseDockerCommand(dockerCommand);
+            parseDockerCallback(dockerCommand);
         }
         return super.execScript(props, summaryForLogging, commands, env);
     }
 
     @Override
     public int execCommands(Map<String,?> props, String summaryForLogging, List<String> commands, Map<String,?> env) {
-        Iterable<String> filtered = Iterables.filter(commands, DockerCommands.FILTER);
+        Iterable<String> filtered = Iterables.filter(commands, DockerCallbacks.FILTER);
         for (String dockerCommand : filtered) {
-            parseDockerCommand(dockerCommand);
+            parseDockerCallback(dockerCommand);
         }
         return super.execCommands(props, summaryForLogging, commands, env);
     }
 
-    private void parseDockerCommand(String dockerCommand) {
-        List<String> tokens = DockerCommands.PARSER.splitToList(dockerCommand);
+    private void parseDockerCallback(String dockerCommand) {
+        List<String> tokens = DockerCallbacks.PARSER.splitToList(dockerCommand);
         String command = tokens.get(1);
-        if (DockerCommands.COMMIT.equalsIgnoreCase(command)) {
+        if (DockerCallbacks.COMMIT.equalsIgnoreCase(command)) {
             String containerId = getOwner().getContainerId();
             String imageName = getOwner().getAttribute(DockerContainer.IMAGE_NAME);
             String output = getOwner().getDockerHost().runDockerCommandTimeout(String.format("commit %s %s", containerId, Os.mergePaths("brooklyn", imageName)), Duration.minutes(15));
-            String imageId = DockerCommands.checkId(output);
+            String imageId = DockerCallbacks.checkId(output);
             ((EntityLocal) getOwner().getRunningEntity()).setAttribute(DockerContainer.IMAGE_ID, imageId);
             ((EntityLocal) getOwner()).setAttribute(DockerContainer.IMAGE_ID, imageId);
-        } else if (DockerCommands.PUSH.equalsIgnoreCase(command)) {
+            getOwner().getDockerHost().getDynamicLocation().markImage(imageName);
+        } else if (DockerCallbacks.IMAGE.equalsIgnoreCase(command)) {
+            String imageName = getOwner().getAttribute(DockerContainer.IMAGE_NAME);
+            getOwner().getDockerHost().getDynamicLocation().waitForImage(imageName);
+        } else if (DockerCallbacks.PUSH.equalsIgnoreCase(command)) {
             String imageName = getOwner().getAttribute(DockerContainer.IMAGE_NAME);
             getOwner().getDockerHost().runDockerCommand(String.format("push %s", Os.mergePaths("brooklyn", imageName)));
         } else {
