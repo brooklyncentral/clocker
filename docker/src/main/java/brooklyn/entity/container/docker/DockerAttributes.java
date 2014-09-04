@@ -16,9 +16,12 @@
 package brooklyn.entity.container.docker;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.annotation.Nullable;
 
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
@@ -28,16 +31,21 @@ import brooklyn.entity.nosql.couchbase.CouchbaseNode;
 import brooklyn.entity.webapp.WebAppServiceConstants;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
+import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
 import brooklyn.util.flags.TypeCoercions;
 import brooklyn.util.internal.ssh.SshTool;
 import brooklyn.util.javalang.Reflections;
+import brooklyn.util.text.Strings;
 
+import com.google.api.client.repackaged.com.google.common.base.Joiner;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.reflect.TypeToken;
 
 public class DockerAttributes {
@@ -48,6 +56,10 @@ public class DockerAttributes {
     /*
      * Configuration and constants.
      */
+
+    public static final String MAPPED = "mapped";
+    public static final String ENDPOINT = "endpoint";
+    public static final String PORT = "port";
 
     public static final Set<String> URL_SENSOR_NAMES = ImmutableSet.<String>of(
             WebAppServiceConstants.ROOT_URL.getName(),
@@ -94,6 +106,32 @@ public class DockerAttributes {
     public static final AttributeSensor<Integer> DOCKER_CONTAINER_COUNT = Sensors.newIntegerSensor("docker.containerCount", "Number of Docker containers");
     public static final AttributeSensor<Integer> DOCKER_IDLE_HOST_COUNT = Sensors.newIntegerSensor("docker.hostCount.idle", "Number of idle Docker hosts");
     public static final AttributeSensor<Integer> DOCKER_IDLE_CONTAINER_COUNT = Sensors.newIntegerSensor("docker.containerCount.idle", "Number of idle Docker containers");
+
+    public static <T> AttributeSensor<T> mappedSensor(AttributeSensor<?> source) {
+        return (AttributeSensor<T>) Sensors.newSensorWithPrefix(MAPPED + ".", source);
+    }
+    public static AttributeSensor<String> mappedPortSensor(PortAttributeSensorAndConfigKey source) {
+        return Sensors.newStringSensor(MAPPED + "." + source.getName(), source.getDescription() + " (Docker mapping)");
+    }
+    public static AttributeSensor<String> endpointSensor(PortAttributeSensorAndConfigKey source) {
+        List<String> name = Lists.transform(source.getNameParts(), new Function<String, String>() {
+            @Override
+            public String apply(@Nullable String input) {
+                String target = PORT;
+                if (input.equals(target)) return ENDPOINT;
+                if (input.endsWith(target)) {
+                    return input.replace(target, ENDPOINT);
+                }
+                target = Strings.toInitialCapOnly(PORT);
+                if (input.endsWith(target)) {
+                    return input.replace(target, Strings.toInitialCapOnly(ENDPOINT));
+                }
+                return input;
+            }
+        });
+        if (!name.contains(ENDPOINT)) name.add(ENDPOINT);
+        return Sensors.newStringSensor(Joiner.on(".").join(name), source.getDescription() + " (Docker mapping)");
+    }
 
     private static AtomicBoolean initialized = new AtomicBoolean(false);
 
