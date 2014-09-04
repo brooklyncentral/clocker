@@ -34,6 +34,7 @@ import brooklyn.config.render.RendererHints.NamedActionWithUrl;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.AbstractEntity;
 import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.EntityAndAttribute;
 import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.docker.DockerAttributes;
@@ -69,6 +70,7 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.hash.Hashing;
@@ -240,22 +242,21 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
     }
 
     private void configureEnrichers(AbstractEntity entity) {
-        for (Sensor<?> sensor : entity.getEntityType().getSensors()) {
+        for (AttributeSensor sensor : Iterables.filter(entity.getEntityType().getSensors(), AttributeSensor.class)) {
             if (DockerAttributes.URL_SENSOR_NAMES.contains(sensor.getName())) {
-                AttributeSensor<String> original = Sensors.newStringSensor(sensor.getName(), sensor.getDescription());
-                AttributeSensor<String> target = Sensors.newSensorWithPrefix("mapped.", original);
-                entity.addEnricher(dockerHost.getSubnetTier().uriTransformingEnricher(original, target));
-
+                AttributeSensor<String> target = DockerAttributes.<String>mappedSensor(sensor);
+                entity.addEnricher(dockerHost.getSubnetTier().uriTransformingEnricher(
+                        EntityAndAttribute.supplier(entity, sensor), target));
                 Set<Hint<?>> hints = RendererHints.getHintsFor(sensor, NamedActionWithUrl.class);
                 for (Hint<?> hint : hints) {
                     RendererHints.register(target, (NamedActionWithUrl) hint);
                 }
             } else if (PortAttributeSensorAndConfigKey.class.isAssignableFrom(sensor.getClass())) {
-                AttributeSensor<Integer> original = Sensors.newIntegerSensor(sensor.getName());
-                AttributeSensor<String> target = Sensors.newStringSensor("mapped." + sensor.getName(), sensor.getDescription() + " (Docker mapping)");
-                entity.addEnricher(dockerHost.getSubnetTier().hostAndPortTransformingEnricher(original, target));
+                AttributeSensor<String> target = DockerAttributes.mappedPortSensor((PortAttributeSensorAndConfigKey) sensor);
+                entity.addEnricher(dockerHost.getSubnetTier().hostAndPortTransformingEnricher(
+                        EntityAndAttribute.supplier(entity, sensor), target));
                 if (LOG.isDebugEnabled()) {
-                    LOG.debug("Mapped port sensor: origin={}, mapped={}", original.getName(), target.getName());
+                    LOG.debug("Mapped port sensor: origin={}, mapped={}", sensor.getName(), target.getName());
                 }
             }
         }
