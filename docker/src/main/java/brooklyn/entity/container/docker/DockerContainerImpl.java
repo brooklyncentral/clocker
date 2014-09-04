@@ -25,6 +25,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jclouds.compute.config.ComputeServiceProperties;
+import org.jclouds.compute.domain.Processor;
+import org.jclouds.compute.domain.TemplateBuilder;
 import org.jclouds.docker.compute.options.DockerTemplateOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -197,16 +199,65 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         // Use DockerHost hostname for the container
         Boolean useHostDns = entity.getConfig(DOCKER_USE_HOST_DNS_NAME);
         if (useHostDns == null || !useHostDns) useHostDns = getConfig(DOCKER_USE_HOST_DNS_NAME);
-        if (useHostDns != null && useHostDns) options.hostname(getDockerHost().getAttribute(Attributes.HOSTNAME));
+        if (useHostDns != null && useHostDns) {
+            String hostname = getDockerHost().getAttribute(Attributes.HOSTNAME);
+            String address = getDockerHost().getAttribute(Attributes.ADDRESS);
+            if (hostname.equalsIgnoreCase(address)) {
+                options.hostname(getDockerContainerName());
+            } else {
+                options.hostname(hostname);
+            }
+        }
 
         // CPU shares
         Integer cpuShares = entity.getConfig(DOCKER_CPU_SHARES);
         if (cpuShares == null) cpuShares = getConfig(DOCKER_CPU_SHARES);
+        if (cpuShares == null) {
+            // TODO set based on number of cores available in host divided by cores requested in flags
+            Integer hostCores = (int) getDockerHost().getDynamicLocation().getMachine().getMachineDetails().getHardwareDetails().getCpuCount();
+            Integer minCores = (Integer) entity.getConfig(JcloudsLocationConfig.MIN_CORES);
+            Map flags = entity.getConfig(SoftwareProcess.PROVISIONING_PROPERTIES);
+            if (minCores == null && flags != null) {
+                minCores = (Integer) flags.get(JcloudsLocationConfig.MIN_CORES.getName());
+            }
+            if (minCores == null && flags != null) {
+                TemplateBuilder template = (TemplateBuilder) flags.get(JcloudsLocationConfig.TEMPLATE_BUILDER.getName());
+                if (template != null) {
+                    minCores = 0;
+                    for (Processor cpu : template.build().getHardware().getProcessors()) {
+                        minCores = minCores + (int) cpu.getCores();
+                    }
+                }
+            }
+            if (minCores != null) {
+                double ratio = (double) minCores / (double) hostCores;
+                LOG.info("Cores: host {}, min {}, ratio {}", new Object[] { hostCores, minCores, ratio });
+            }
+        }
         if (cpuShares != null) options.cpuShares(cpuShares);
 
         // Memory
         Integer memory = entity.getConfig(DOCKER_MEMORY);
         if (memory == null) memory = getConfig(DOCKER_MEMORY);
+        if (memory == null) {
+            // TODO set based on memory available in host divided by memory requested in flags
+            Integer hostRam = getDockerHost().getDynamicLocation().getMachine().getMachineDetails().getHardwareDetails().getRam();
+            Integer minRam = entity.getConfig(JcloudsLocationConfig.MIN_RAM);
+            Map flags = entity.getConfig(SoftwareProcess.PROVISIONING_PROPERTIES);
+            if (minRam == null && flags != null) {
+                minRam = (Integer) flags.get(JcloudsLocationConfig.MIN_RAM.getName());
+            }
+            if (minRam == null && flags != null) {
+                TemplateBuilder template = (TemplateBuilder) flags.get(JcloudsLocationConfig.TEMPLATE_BUILDER.getName());
+                if (template != null) {
+                    minRam = template.build().getHardware().getRam();
+                }
+            }
+            if (minRam != null) {
+                double ratio = (double) minRam / (double) hostRam;
+                LOG.info("Memory: host {}, min {}, ratio {}", new Object[] { hostRam, minRam, ratio });
+            }
+        }
         if (memory != null) options.memory(memory);
 
         // Volumes
