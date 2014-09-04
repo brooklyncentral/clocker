@@ -41,7 +41,7 @@ public class JBossApplication extends AbstractApplication implements StartableAp
             "app.war", "URL to the application archive which should be deployed", DEFAULT_WAR_PATH);
 
     @Override
-    public void init() {
+    public void initApp() {
         addChild(EntitySpec.create(JBoss7Server.class)
                 .displayName("JBoss Server")
                 .configure(DockerAttributes.DOCKERFILE_URL, "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/UsesJavaDockerfile")

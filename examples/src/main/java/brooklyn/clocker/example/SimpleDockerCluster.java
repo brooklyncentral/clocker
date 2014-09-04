@@ -42,7 +42,7 @@ public class SimpleDockerCluster extends AbstractApplication {
     ConfigKey<String> DOCKERFILE_URL = DockerAttributes.DOCKERFILE_URL;
 
     @Override
-    public void init() {
+    public void initApp() {
         addChild(EntitySpec.create(DynamicCluster.class)
                 .displayName("Docker Application Cluster")
                 .configure(DynamicCluster.INITIAL_SIZE, getConfig(INITIAL_SIZE))

@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import brooklyn.catalog.BrooklynCatalog;
 import brooklyn.cli.Main;
-import brooklyn.demo.NodeJsTodoApplication;
 
 import com.google.common.base.Objects.ToStringHelper;
 
