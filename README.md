@@ -20,9 +20,9 @@ or [docker-cloud.yaml](https://raw.githubusercontent.com/brooklyncentral/clocker
 You can build a *Docker Cloud Infrastructure* running these commands:
 ```Bash
     % wget --no-check-certificate --quiet \
-      -O brooklyn-clocker-examples-0.5.0-dist.tar.gz http://git.io/hxy9fg
-    % tar zxf brooklyn-clocker-examples-0.5.0-dist.tar.gz
-    % cd brooklyn-clocker-examples-0.5.0
+      -O brooklyn-clocker-examples-0.6.1-dist.tar.gz http://git.io/hxy9fg
+    % tar zxf brooklyn-clocker-examples-0.6.1-dist.tar.gz
+    % cd brooklyn-clocker-examples-0.6.1
     % ./clocker.sh launch --cloud --location <location>
 ```
 Where `<location>` can be e.g. `jclouds:softlayer`, or a named location or a fixed IP e.g. `byon:(hosts="1.2.3.4")`.
@@ -65,8 +65,8 @@ Build and run the examples as follows:
     % mvn assembly:single
     ...
     % cd target
-    % tar zxf brooklyn-clocker-examples-0.6.0-SNAPSHOT-dist.tar.gz
-    % cd brooklyn-clocker-examples-0.6.0-SNAPSHOT
+    % tar zxf brooklyn-clocker-examples-0.7.0-SNAPSHOT-dist.tar.gz
+    % cd brooklyn-clocker-examples-0.7.0-SNAPSHOT
     % ./clocker.sh launch --cloud --location <location>
     ...
 ```
