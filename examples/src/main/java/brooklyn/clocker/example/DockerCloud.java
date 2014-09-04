@@ -59,7 +59,7 @@ public class DockerCloud extends AbstractApplication {
     public static final ConfigKey<Boolean> HA_POLICY_ENABLE = DockerHost.HA_POLICY_ENABLE;
 
     @Override
-    public void init() {
+    public void initApp() {
         EntitySpec dockerSpec = EntitySpec.create(DockerHost.class)
                 .configure(SoftwareProcess.START_TIMEOUT, Duration.minutes(15))
                 .configure(DockerHost.HA_POLICY_ENABLE, getConfig(HA_POLICY_ENABLE))

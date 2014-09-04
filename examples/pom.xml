@@ -38,11 +38,6 @@
             <artifactId>brooklyn-clocker-docker</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
-        <dependency>
-            <groupId>io.brooklyn.example</groupId>
-            <artifactId>brooklyn-example-simple-web-cluster</artifactId>
-            <version>${brooklyn.version}</version>
-        </dependency>
     </dependencies>
 
     <build>

@@ -38,7 +38,7 @@ public class ActiveMQApplication extends AbstractApplication {
     public static final PortAttributeSensorAndConfigKey AMQ_JETTY_PORT = ActiveMQBroker.AMQ_JETTY_PORT;
 
     @Override
-    public void init() {
+    public void initApp() {
         addChild(EntitySpec.create(ActiveMQBroker.class)
                 .displayName("ActiveMQ Broker")
                 .configure(DockerAttributes.DOCKERFILE_URL, "https://s3-eu-west-1.amazonaws.com/brooklyn-docker/UsesJavaDockerfile")

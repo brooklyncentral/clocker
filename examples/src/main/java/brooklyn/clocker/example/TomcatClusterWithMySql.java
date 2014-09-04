@@ -89,10 +89,10 @@ public class TomcatClusterWithMySql extends AbstractApplication {
     public static final AttributeSensor<Integer> APPSERVERS_COUNT = Sensors.newIntegerSensor("appservers.count", "Number of app servers deployed");
 
     @Override
-    public void init() {
-        AttributeSensor<String> mappedWebUrl = Sensors.newSensorWithPrefix("mapped.", WebAppService.ROOT_URL);
-        AttributeSensor<String> mappedDatastoreUrl = Sensors.newSensorWithPrefix("mapped.", DatastoreMixins.DATASTORE_URL);
-        AttributeSensor<String> mappedHostAndPortAttribute = Sensors.newStringSensor("mapped." + Attributes.HTTP_PORT.getName(), "Docker HTTP port mapping");
+    public void initApp() {
+        AttributeSensor<String> mappedWebUrl = DockerAttributes.mappedSensor(WebAppService.ROOT_URL);
+        AttributeSensor<String> mappedDatastoreUrl = DockerAttributes.mappedSensor(DatastoreMixins.DATASTORE_URL);
+        AttributeSensor<String> mappedHostAndPortAttribute = DockerAttributes.mappedPortSensor(Attributes.HTTP_PORT);
 
         MySqlNode mysql = addChild(EntitySpec.create(MySqlNode.class)
                 .configure("creationScriptUrl", Entities.getRequiredUrlConfig(this, DB_SETUP_SQL_URL)));

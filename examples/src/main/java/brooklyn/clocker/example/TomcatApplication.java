@@ -47,7 +47,7 @@ public class TomcatApplication extends AbstractApplication implements StartableA
             "app.war", "URL to the application archive which should be deployed", DEFAULT_WAR_PATH);
 
     @Override
-    public void init() {
+    public void initApp() {
         addChild(EntitySpec.create(TomcatServer.class)
                 .displayName("Tomcat Server")
                 .configure(DockerAttributes.DOCKERFILE_URL, "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/UsesJavaDockerfile")
