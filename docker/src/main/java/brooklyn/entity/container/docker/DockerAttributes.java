@@ -16,7 +16,6 @@
 package brooklyn.entity.container.docker;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,12 +38,11 @@ import brooklyn.util.internal.ssh.SshTool;
 import brooklyn.util.javalang.Reflections;
 import brooklyn.util.text.Strings;
 
-import com.google.api.client.repackaged.com.google.common.base.Joiner;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
+import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.reflect.TypeToken;
 

@@ -86,7 +86,7 @@ public class ContainerToNodeMetadata implements Function<Container, NodeMetadata
       builder.publicAddresses(getPublicIpAddresses());
       builder.privateAddresses(getPrivateIpAddresses(container));
       builder.location(Iterables.getOnlyElement(locations.get()));
-      String imageId = container.getContainerConfig().getImageId();
+      String imageId = container.getImage();
       builder.imageId(imageId);
       if (images.get().containsKey(imageId)) {
           Image image = images.get().get(imageId);

@@ -21,6 +21,7 @@ import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.VanillaSoftwareProcess;
 import brooklyn.entity.container.docker.DockerAttributes;
 import brooklyn.entity.proxying.ImplementedBy;
+import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.time.Duration;
 
@@ -32,5 +33,8 @@ public interface VanillaDockerApplication extends VanillaSoftwareProcess {
 
     @SetFromFlag("dockerfileUrl")
     ConfigKey<String> DOCKERFILE_URL = DockerAttributes.DOCKERFILE_URL;
+
+    @SetFromFlag("port")
+    PortAttributeSensorAndConfigKey APPLICATION_PORT = ConfigKeys.newPortSensorAndConfigKey("docker.application.port", "The port exposed in the Dockerfile for the application");
 
 }

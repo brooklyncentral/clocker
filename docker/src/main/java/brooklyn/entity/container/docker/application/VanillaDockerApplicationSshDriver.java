@@ -15,6 +15,9 @@
  */
 package brooklyn.entity.container.docker.application;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import brooklyn.entity.basic.VanillaSoftwareProcessSshDriver;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
@@ -26,15 +29,17 @@ import brooklyn.location.docker.DockerContainerLocation;
  */
 public class VanillaDockerApplicationSshDriver extends VanillaSoftwareProcessSshDriver implements VanillaDockerApplicationDriver {
 
+    private static final Logger LOG = LoggerFactory.getLogger(VanillaDockerApplication.class);
+
     public VanillaDockerApplicationSshDriver(VanillaDockerApplicationImpl entity, SshMachineLocation machine) {
         super(entity, machine);
     }
 
-    private DockerHost getDockerHost() {
+    public DockerHost getDockerHost() {
         return getDockerContainer().getDockerHost();
     }
 
-    private DockerContainer getDockerContainer() {
+    public DockerContainer getDockerContainer() {
         return ((DockerContainerLocation) getMachine()).getOwner();
     }
 

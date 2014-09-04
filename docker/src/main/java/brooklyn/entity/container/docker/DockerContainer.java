@@ -35,7 +35,6 @@ import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.location.dynamic.LocationOwner;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.util.flags.SetFromFlag;
-import brooklyn.util.internal.ssh.SshTool;
 
 /**
  * A Docker container.
