@@ -28,22 +28,22 @@ import com.google.common.collect.Iterables;
 
 public class VanillaDockerApplicationImpl extends VanillaSoftwareProcessImpl implements VanillaDockerApplication {
 
-    private static final Logger log = LoggerFactory.getLogger(VanillaDockerApplicationImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(VanillaDockerApplication.class);
 
     @Override
     public void init() {
-        log.info("Starting Docker application id {}", getId());
+        LOG.info("Starting Docker application id {}", getId());
         super.init();
+    }
+
+    @Override
+    public Class<? extends VanillaDockerApplicationDriver> getDriverInterface() {
+        return VanillaDockerApplicationDriver.class;
     }
 
     @Override
     protected void preStart() {
         setAttribute(DockerContainer.CONTAINER_ID, getDockerContainer().getContainerId());
-    }
-
-    @Override
-    protected void connectSensors() {
-        connectServiceUpIsRunning();
     }
 
     public DockerContainer getDockerContainer() {
@@ -53,16 +53,6 @@ public class VanillaDockerApplicationImpl extends VanillaSoftwareProcessImpl imp
 
     public DockerHost getDockerHost() {
         return getDockerContainer().getDockerHost();
-    }
-
-    @Override
-    public void disconnectSensors() {
-        disconnectServiceUpIsRunning();
-    }
-
-    @Override
-    public Class<? extends VanillaDockerApplicationDriver> getDriverInterface() {
-        return VanillaDockerApplicationDriver.class;
     }
 
 }

@@ -25,13 +25,10 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.beust.jcommander.internal.Lists;
-
 import brooklyn.config.render.RendererHints;
 import brooklyn.enricher.Enrichers;
 import brooklyn.entity.Application;
 import brooklyn.entity.Entity;
-import brooklyn.entity.Group;
 import brooklyn.entity.basic.BasicGroup;
 import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.DelegateEntity;
@@ -46,7 +43,6 @@ import brooklyn.entity.group.DynamicMultiGroup;
 import brooklyn.entity.machine.MachineAttributes;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.entity.trait.Startable;
-import brooklyn.entity.trait.StartableMethods;
 import brooklyn.location.Location;
 import brooklyn.location.LocationDefinition;
 import brooklyn.location.basic.BasicLocationDefinition;
@@ -56,6 +52,8 @@ import brooklyn.location.docker.DockerResolver;
 import brooklyn.management.LocationManager;
 import brooklyn.management.ManagementContext;
 import brooklyn.util.collections.MutableMap;
+
+import com.beust.jcommander.internal.Lists;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;

@@ -30,8 +30,8 @@ import brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy;
 /**
  * Brooklyn managed {@link VanillaDockerApplication} cluster
  */
-@Catalog(name="Docker Cluster",
-        description="Simple Docker application cluster.",
+@Catalog(name="Application Cluster",
+        description="Simple cluster of applications defined by a Dockerfile.",
         iconUrl="classpath://glossy-3d-blue-web-icon.png")
 public class SimpleDockerCluster extends AbstractApplication {
 
