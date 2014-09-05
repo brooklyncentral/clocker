@@ -16,6 +16,7 @@
 package brooklyn.entity.container.docker;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -55,6 +56,8 @@ public class DockerAttributes {
      * Configuration and constants.
      */
 
+    public static final String DOCKERFILE = "Dockerfile";
+
     public static final String MAPPED = "mapped";
     public static final String ENDPOINT = "endpoint";
     public static final String PORT = "port";
@@ -69,11 +72,15 @@ public class DockerAttributes {
     public static final String DEFAULT_DOCKER_HOST_NAME_FORMAT = "docker-host-brooklyn-%1$s";
 
     public static final String UBUNTU_DOCKERFILE = "classpath://brooklyn/entity/container/docker/ubuntu/Dockerfile";
+    public static final String UBUNTU_USES_JAVA_DOCKERFILE = "classpath://brooklyn/entity/container/docker/ubuntu/UsesJavaDockerfile";
+
     public static final String CENTOS_DOCKERFILE = "classpath://brooklyn/entity/container/docker/centos/Dockerfile";
     public static final String COREOS_DOCKERFILE = "classpath://brooklyn/entity/container/docker/coreos/Dockerfile";
 
+    public static final String SSHD_DOCKERFILE = "classpath://brooklyn/entity/container/docker/SshdDockerfile";
+
     /** Valid characters for the Dockerfile location. */
-    public static final CharMatcher DOCKERFILE_CHARACTERS = CharMatcher.anyOf("-_.")
+    public static final CharMatcher DOCKERFILE_CHARACTERS = CharMatcher.anyOf("_")
             .or(CharMatcher.inRange('a', 'z'))
             .or(CharMatcher.inRange('0', '9'));
     public static final CharMatcher DOCKERFILE_INVALID_CHARACTERS = DOCKERFILE_CHARACTERS.negate();
@@ -81,7 +88,9 @@ public class DockerAttributes {
     public static final ConfigKey<String> DOCKERFILE_URL = ConfigKeys.newStringConfigKey("docker.dockerfile.url", "URL of a Dockerfile to use");
     public static final ConfigKey<String> DOCKERFILE_NAME = ConfigKeys.newStringConfigKey("docker.dockerfile.name", "Name for the image created by the Dockerfile being used");
 
-    public static final AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_ID = ConfigKeys.newSensorAndConfigKey(String.class, "docker.imageId", "The ID of a Docker image to use for a container");
+    public static final AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_ID = ConfigKeys.newStringSensorAndConfigKey("docker.imageId", "The ID of a Docker image to use for a container");
+
+    public static final AttributeSensor<String> DOCKER_IMAGE_NAME = Sensors.newStringSensor("docker.imageName", "The name of the Docker image use used by a container");
 
     public static final AttributeSensorAndConfigKey<String, String> DOCKER_HARDWARE_ID = ConfigKeys.newSensorAndConfigKey(String.class, "docker.hardwareId", "The ID of a Docker hardware type to use for a container", "small");
 
@@ -90,6 +99,8 @@ public class DockerAttributes {
     public static final ConfigKey<Boolean> DOCKER_USE_HOST_DNS_NAME = ConfigKeys.newBooleanConfigKey("docker.useHostDnsName", "Container uses same DNS hostname as Docker host", Boolean.TRUE);
     public static final ConfigKey<Integer> DOCKER_CPU_SHARES = ConfigKeys.newIntegerConfigKey("docker.cpuShares", "Container CPU shares configuration");
     public static final ConfigKey<Integer> DOCKER_MEMORY = ConfigKeys.newIntegerConfigKey("docker.memory", "Container memory configuration");
+
+    public static final ConfigKey<Boolean> SHARED_ONBOX_BASE_DIR = ConfigKeys.newBooleanConfigKey("brooklyn.shared.baseDir", "Share the Brooklyn base directory between all containers on a host", Boolean.TRUE);
 
     public static final AttributeSensorAndConfigKey<Map<String, String>, Map<String, String>> DOCKER_HOST_VOLUME_MAPPING = ConfigKeys.newSensorAndConfigKey(
             new TypeToken<Map<String, String>>() { }, "docker.host.volumes", "Host volume mapping configuration");
@@ -129,6 +140,28 @@ public class DockerAttributes {
         });
         if (!name.contains(ENDPOINT)) name.add(ENDPOINT);
         return Sensors.newStringSensor(Joiner.on(".").join(name), source.getDescription() + " (Docker mapping)");
+    }
+
+    public static String allowed(String input) {
+        return ALLOWED.apply(input);
+    }
+
+    public static final Function<String, String> ALLOWED = new Function<String, String>() {
+        @Override
+        public String apply(@Nullable String input) {
+            if (input == null) return null;
+            return DOCKERFILE_INVALID_CHARACTERS.collapseFrom(input.toLowerCase(Locale.ENGLISH), '_');
+        }
+    };
+
+    /** Parse and return the ID returned from a Docker command. */
+    public static String checkId(String input) {
+        String imageId = Strings.trim(input).toLowerCase(Locale.ENGLISH);
+        if (imageId.length() == 64 && DOCKERFILE_CHARACTERS.matchesAllOf(imageId)) {
+            return imageId;
+        } else {
+            throw new IllegalStateException("Invalid image ID returned: " + imageId);
+        }
     }
 
     private static AtomicBoolean initialized = new AtomicBoolean(false);

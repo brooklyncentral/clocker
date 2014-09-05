@@ -14,17 +14,25 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-# base ubuntu 12.04 and scripts
+# sshd
 #
 # VERSION 0.0.4
 
-FROM ubuntu:12.04
+FROM ${repository}/${imageName}
 MAINTAINER Cloudsoft "brooklyn@cloudsoftcorp.com"
 
-# make sure the package repository is up to date
-RUN ( echo "deb http://archive.ubuntu.com/ubuntu precise main universe" ; echo "deb http://archive.ubuntu.com/ubuntu precise-updates main universe" ) > /etc/apt/sources.list
-RUN apt-get update
+# setup locale
+RUN locale-gen en_US.UTF-8
 
-# run scripts
-ADD scripts /var/run/scripts
-RUN cd /var/run/scripts && sudo chmod +x *.sh && ./vanilla.sh && sudo rm -rf /var/run/scripts
+# setup root account
+RUN echo 'root:${entity.password}' | chpasswd
+
+# install sshd
+RUN apt-get install -y openssh-server
+RUN mkdir /var/run/sshd
+RUN chmod 600 /var/run/sshd
+RUN /usr/sbin/sshd
+
+EXPOSE 22
+
+CMD [ "/usr/sbin/sshd", "-D" ]

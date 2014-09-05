@@ -15,11 +15,6 @@
  */
 package brooklyn.entity.container.docker;
 
-import java.util.Locale;
-
-import brooklyn.util.text.Strings;
-
-import com.google.common.base.CharMatcher;
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -53,15 +48,5 @@ public class DockerCallbacks {
 
     private static final String command(String command, Object...rest) {
         return SEPARATOR + Joiner.on(SEPARATOR).join(DOCKER_HOST_CALLBACK, command, rest);
-    }
-
-    /** Parse and return the ID returned from a Docker command. */
-    public static String checkId(String input) {
-        String imageId = Strings.trim(input).toLowerCase(Locale.ENGLISH);
-        if (imageId.length() == 64 && CharMatcher.anyOf("0123456789abcdef").matchesAllOf(imageId)) {
-            return imageId;
-        } else {
-            throw new IllegalStateException("Invalid image ID returned: " + imageId);
-        }
     }
 }

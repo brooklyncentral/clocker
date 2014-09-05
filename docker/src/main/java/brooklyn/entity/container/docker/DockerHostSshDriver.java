@@ -15,15 +15,7 @@
  */
 package brooklyn.entity.container.docker;
 
-import static brooklyn.util.ssh.BashCommands.INSTALL_CURL;
-import static brooklyn.util.ssh.BashCommands.INSTALL_WGET;
-import static brooklyn.util.ssh.BashCommands.alternatives;
-import static brooklyn.util.ssh.BashCommands.chainGroup;
-import static brooklyn.util.ssh.BashCommands.executeCommandThenAsUserTeeOutputToFile;
-import static brooklyn.util.ssh.BashCommands.ifExecutableElse0;
-import static brooklyn.util.ssh.BashCommands.ifExecutableElse1;
-import static brooklyn.util.ssh.BashCommands.installPackage;
-import static brooklyn.util.ssh.BashCommands.sudo;
+import static brooklyn.util.ssh.BashCommands.*;
 import static java.lang.String.format;
 
 import java.util.Collection;
@@ -33,10 +25,6 @@ import java.util.concurrent.Callable;
 
 import org.jclouds.net.domain.IpPermission;
 import org.jclouds.net.domain.IpProtocol;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
@@ -58,9 +46,11 @@ import brooklyn.util.text.Identifiers;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 
-public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implements DockerHostDriver {
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 
-    public static final String DOCKERFILE = "Dockerfile";
+public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implements DockerHostDriver {
 
     public DockerHostSshDriver(DockerHostImpl entity, SshMachineLocation machine) {
         super(entity, machine);
@@ -75,6 +65,11 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         return getEntity().getAttribute(DockerHost.DOCKER_PORT);
     }
 
+    @Override
+    public String getRepository() {
+        return getEntity().getAttribute(DockerHost.DOCKER_REPOSITORY);
+    }
+
     /** {@inheritDoc} */
     @Override
     public String buildImage(String dockerFile, String name) {
@@ -85,17 +80,28 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         int result = task.get();
         if (result != 0) throw new IllegalStateException("Error creating image directory: " + name);
 
-        copyTemplate(dockerFile, Os.mergePaths(name, DOCKERFILE));
+        // Build an image from the base Dockerfile
+        copyTemplate(dockerFile, Os.mergePaths(name, "Base" + DockerAttributes.DOCKERFILE));
+        String baseImageId = getImageId("Base" + DockerAttributes.DOCKERFILE, name);
+        log.info("Created base Dockerfile image with ID {}", baseImageId);
 
-        // Build an image from the Dockerfile
-        String build = format("build --rm -t %s - < %s", Os.mergePaths("brooklyn", name), Os.mergePaths(getRunDir(), name, DOCKERFILE));
+        // Update the image with the Clocker sshd Dockerfile
+        copyTemplate(DockerAttributes.SSHD_DOCKERFILE, Os.mergePaths(name, "Sshd" + DockerAttributes.DOCKERFILE), MutableMap.of("repository", getRepository(), "imageName", name));
+        String sshdImageId = getImageId("Sshd" + DockerAttributes.DOCKERFILE, name);
+        log.info("Created SSHable Dockerfile image with ID {}", sshdImageId);
+
+        return sshdImageId;
+    }
+
+    private String getImageId(String dockerfile, String name) {
+        String build = format("build --rm -t %s - < %s", Os.mergePaths(getRepository(), name), Os.mergePaths(getRunDir(), name, dockerfile));
         String stdout = ((DockerHost) getEntity()).runDockerCommandTimeout(build, Duration.minutes(15));
         String prefix = Strings.getFirstWordAfter(stdout, "Successfully built");
 
         // Inspect the Docker image with this prefix
         String inspect = format("inspect --format={{.Id}} %s", prefix);
         String imageId = ((DockerHost) getEntity()).runDockerCommand(inspect);
-        return DockerCallbacks.checkId(imageId);
+        return DockerAttributes.checkId(imageId);
     }
 
     public String getEpelRelease() {

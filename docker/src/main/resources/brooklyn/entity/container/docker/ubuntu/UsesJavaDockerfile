@@ -14,12 +14,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-# java and sshd
+# base ubuntu 12.04 with java
 #
 # VERSION 0.0.5
 
-FROM brooklyn/ubuntu
+FROM ubuntu:12.04
 MAINTAINER Cloudsoft "brooklyn@cloudsoftcorp.com"
+
+# make sure the package repository is up to date
+RUN ( echo "deb http://archive.ubuntu.com/ubuntu precise main universe" ; echo "deb http://archive.ubuntu.com/ubuntu precise-updates main universe" ) > /etc/apt/sources.list
+RUN apt-get update
 
 # install openjdk 1.7.0
 RUN apt-get -y --force-yes install tzdata=2012b-1 # 2013g-0ubuntu0.12.04
