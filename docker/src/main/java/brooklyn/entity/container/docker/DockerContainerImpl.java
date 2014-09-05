@@ -24,7 +24,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.jclouds.compute.config.ComputeServiceProperties;
 import org.jclouds.compute.domain.Processor;
 import org.jclouds.compute.domain.TemplateBuilder;
 import org.jclouds.docker.compute.options.DockerTemplateOptions;
@@ -280,13 +279,19 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             }
         }
 
-        // Add brooklyn-managed-processes as volume
-        String containerbaseDir = "/brooklyn-managed-processes";
-        ((EntityInternal) entity).setConfig(BrooklynConfigKeys.SKIP_ON_BOX_BASE_DIR_RESOLUTION, true);
-        ((EntityInternal) entity).setConfig(BrooklynConfigKeys.ONBOX_BASE_DIR, containerbaseDir);
-        ((EntityInternal) entity).setConfig(MachineLifecycleEffectorTasks.ON_BOX_BASE_DIR_RESOLVED, true);
-        volumes.put(getDockerHost().getConfig(BrooklynConfigKeys.ONBOX_BASE_DIR), containerbaseDir);
+        // Add brooklyn-managed-processes as volume unless entity configuration disables
+        Boolean sharedBaseDir = entity.getConfig(DockerAttributes.SHARED_ONBOX_BASE_DIR);
+        if (sharedBaseDir == null || sharedBaseDir.equals(Boolean.TRUE)) {
+            String containerbaseDir = "/brooklyn-managed-processes";
+            ((EntityInternal) entity).setConfig(BrooklynConfigKeys.SKIP_ON_BOX_BASE_DIR_RESOLUTION, true);
+            ((EntityInternal) entity).setConfig(BrooklynConfigKeys.ONBOX_BASE_DIR, containerbaseDir);
+            ((EntityInternal) entity).setConfig(MachineLifecycleEffectorTasks.ON_BOX_BASE_DIR_RESOLVED, true);
+            volumes.put(getDockerHost().getConfig(BrooklynConfigKeys.ONBOX_BASE_DIR), containerbaseDir);
+        }
         options.volumes(volumes);
+
+        // Set login password from the Docker host
+        options.overrideLoginPassword(getDockerHost().getPassword());
 
         return options;
     }
@@ -311,7 +316,6 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 .put(JcloudsLocationConfig.HARDWARE_ID, getConfig(DOCKER_HARDWARE_ID))
                 .put(LocationConfigKeys.USER, "root")
                 .put(LocationConfigKeys.PASSWORD, password)
-                .put(ComputeServiceProperties.IMAGE_LOGIN_USER, "root:" + password)
                 .put(LocationConfigKeys.PRIVATE_KEY_DATA, null)
                 .put(LocationConfigKeys.PRIVATE_KEY_FILE, null)
                 .put(JcloudsLocationConfig.INBOUND_PORTS, getRequiredOpenPorts(getRunningEntity()))

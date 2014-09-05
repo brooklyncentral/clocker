@@ -14,7 +14,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-# sshd
+# base ubuntu 12.04
 #
 # VERSION 0.0.4
 
@@ -24,17 +24,3 @@ MAINTAINER Cloudsoft "brooklyn@cloudsoftcorp.com"
 # make sure the package repository is up to date
 RUN ( echo "deb http://archive.ubuntu.com/ubuntu precise main universe" ; echo "deb http://archive.ubuntu.com/ubuntu precise-updates main universe" ) > /etc/apt/sources.list
 RUN apt-get update
-RUN locale-gen en_US.UTF-8
-
-# setup root account
-RUN echo 'root:${entity.password}' | chpasswd
-
-# install sshd
-RUN apt-get install -y openssh-server
-RUN mkdir /var/run/sshd
-RUN chmod 600 /var/run/sshd
-RUN /usr/sbin/sshd
-
-EXPOSE 22
-
-CMD [ "/usr/sbin/sshd", "-D" ]

@@ -19,6 +19,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
@@ -98,6 +99,9 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
     @SetFromFlag("owner")
     private DockerHost dockerHost;
 
+    @SetFromFlag("repository")
+    private String repository;
+
     @SetFromFlag("images")
     private ConcurrentMap<String, CountDownLatch> images = Maps.newConcurrentMap();
 
@@ -120,6 +124,10 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
         if (mutexSupport == null) {
             mutexSupport = new MutexSupport();
         }
+
+        if (repository == null) {
+            repository = machine.getId();
+        }
     }
 
     public DockerContainerLocation obtain() throws NoMachinesAvailableException {
@@ -130,8 +138,8 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
         String simpleName = entity.getEntityType().getSimpleName();
         String version = entity.getConfig(SoftwareProcess.SUGGESTED_VERSION);
 
-        String label = Joiner.on(":").skipNulls().join(simpleName, version, dockerfile);
-        return Identifiers.makeIdFromHash(Hashing.md5().hashString(label, Charsets.UTF_8).asLong()).toLowerCase();
+        String label = Joiner.on(":").skipNulls().join(simpleName, version, dockerfile, repository);
+        return Identifiers.makeIdFromHash(Hashing.md5().hashString(label, Charsets.UTF_8).asLong()).toLowerCase(Locale.ENGLISH);
     }
 
     @Override
@@ -160,7 +168,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
             // Lookup image ID or build new image from Dockerfile
             LOG.warn("ImageName for entity {}: {}", entity, imageName);
-            String imageList = dockerHost.runDockerCommand("images --no-trunc " + Os.mergePaths("brooklyn", imageName));
+            String imageList = dockerHost.runDockerCommand("images --no-trunc " + Os.mergePaths(repository, imageName));
             if (Strings.containsLiteral(imageList, imageName)) {
                 imageId = Strings.getFirstWordAfter(imageList, "latest");
                 LOG.info("Found image {} for entity: {}", imageName, imageId);
@@ -186,7 +194,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
                 // Tag image name and create latch
                 images.putIfAbsent(imageName, new CountDownLatch(1));
-                dockerHost.runDockerCommand(String.format("tag %s %s:latest", imageId, Os.mergePaths("brooklyn", imageName)));
+                dockerHost.runDockerCommand(String.format("tag %s %s:latest", imageId, Os.mergePaths(repository, imageName)));
             }
 
             // Look up hardware ID
@@ -299,6 +307,10 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
     @Override
     public DockerHost getOwner() {
         return dockerHost;
+    }
+
+    public String getRepository() {
+        return repository;
     }
 
     public SshMachineLocation getMachine() {

@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jclouds.compute.config.ComputeServiceProperties;
 import org.jclouds.compute.domain.OsFamily;
 import org.jclouds.compute.domain.TemplateBuilder;
 import org.jclouds.googlecomputeengine.GoogleComputeEngineConstants;
@@ -99,6 +100,12 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         String dockerHostName = String.format(getConfig(DockerHost.HOST_NAME_FORMAT), getId(), COUNTER.incrementAndGet());
         setDisplayName(dockerHostName);
         setAttribute(DOCKER_HOST_NAME, dockerHostName);
+        String repository = getConfig(DOCKER_REPOSITORY);
+        if (Strings.isBlank(repository)) {
+            repository = getId();
+        }
+        repository = DockerAttributes.allowed(repository);
+        setAttribute(DOCKER_REPOSITORY, repository);
 
         // Set a password for this host's containers
         String password = getConfig(DOCKER_PASSWORD);
@@ -225,11 +232,16 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         return getConfig(DOCKER_PASSWORD);
     }
 
+    @Override
+    public String getRepository() {
+        return getAttribute(DOCKER_REPOSITORY);
+    }
+
     /** {@inheritDoc} */
     @Override
     public String createSshableImage(String dockerFile, String name) {
         String imageId = getDriver().buildImage(dockerFile, name);
-        if (LOG.isDebugEnabled()) LOG.debug("Successfully created image {} (brooklyn/{})", imageId, name);
+        if (LOG.isDebugEnabled()) LOG.debug("Successfully created image {} ({}/{})", new Object[] { imageId, getRepository(), name });
         return imageId;
     }
 
@@ -344,7 +356,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         String dockerLocationSpec = String.format("jclouds:docker:http://%s:%s",
                 found.get().getSshHostAndPort().getHostText(), getDockerPort());
         jcloudsLocation = (JcloudsLocation) getManagementContext().getLocationRegistry()
-                .resolve(dockerLocationSpec, MutableMap.of("identity", "docker", "credential", "docker"));
+                .resolve(dockerLocationSpec, MutableMap.of("identity", "docker", "credential", "docker", ComputeServiceProperties.IMAGE_LOGIN_USER, "root:" + getPassword()));
 
         portForwarder = new DockerPortForwarder(new PortForwardManagerAuthority(this));
         portForwarder.init(URI.create(jcloudsLocation.getEndpoint()));
@@ -359,6 +371,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 .put("machine", found.get())
                 .put("jcloudsLocation", jcloudsLocation)
                 .put("portForwarder", portForwarder)
+                .put("repository", getRepository())
                 .build();
         createLocation(flags);
     }
@@ -372,9 +385,15 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             String dockerfileName = getConfig(DockerInfrastructure.DOCKERFILE_NAME);
             if (Strings.isBlank(dockerfileName)) {
                 Iterable<String> parts = Splitter.on("/").split(dockerfileUrl);
-                dockerfileName = Iterables.get(parts, Iterables.size(parts) - 2);
+                dockerfileName = Iterables.getLast(parts);
+                dockerfileName = dockerfileName.replaceAll(DockerAttributes.DOCKERFILE, "");
+                if (Strings.isBlank(dockerfileName)) {
+                    dockerfileName = Iterables.get(parts, Iterables.size(parts) - 2);
+                }
+                dockerfileName = DockerAttributes.allowed(dockerfileName);
             }
             imageId = createSshableImage(dockerfileUrl, dockerfileName);
+            setAttribute(DOCKER_IMAGE_NAME, dockerfileName);
         }
 
         setAttribute(DOCKER_IMAGE_ID, imageId);

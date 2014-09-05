@@ -95,10 +95,16 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
     ConfigKey<String> HOST_NAME_FORMAT = ConfigKeys.newStringConfigKey("docker.host.nameFormat",
             "Format for generating Docker host names", DockerAttributes.DEFAULT_DOCKER_HOST_NAME_FORMAT);
 
+    @SetFromFlag("repository")
+    AttributeSensorAndConfigKey<String, String>  DOCKER_REPOSITORY = ConfigKeys.newStringSensorAndConfigKey("docker.repository",
+            "The name of the Docker repository for images");
+
     ConfigKey<? extends String> EPEL_RELEASE = ConfigKeys.newStringConfigKey("docker.host.epel.release",
             "EPEL release for yum based OS", "6-8");
 
     AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_ID = DockerAttributes.DOCKER_IMAGE_ID;
+
+    AttributeSensor<String> DOCKER_IMAGE_NAME = DockerAttributes.DOCKER_IMAGE_NAME;
 
     AttributeSensorAndConfigKey<String, String> DOCKER_HARDWARE_ID = DockerAttributes.DOCKER_HARDWARE_ID;
 
@@ -112,6 +118,8 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
     ConfigKey<String> DOCKER_PASSWORD = DockerAttributes.DOCKER_PASSWORD;
 
     AttributeSensor<String> DOCKER_HOST_NAME = Sensors.newStringSensor("docker.host.name", "The name of the Docker host");
+
+    String getRepository();
 
     String getPassword();
 
