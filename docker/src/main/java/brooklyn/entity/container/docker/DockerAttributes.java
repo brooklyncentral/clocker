@@ -102,6 +102,8 @@ public class DockerAttributes {
 
     public static final ConfigKey<Boolean> SHARED_ONBOX_BASE_DIR = ConfigKeys.newBooleanConfigKey("brooklyn.shared.baseDir", "Share the Brooklyn base directory between all containers on a host", Boolean.TRUE);
 
+    public static final ConfigKey<Boolean> MANAGED = ConfigKeys.newBooleanConfigKey("docker.container.managed", "Set to false if the container is not managed by Brooklyn and Clocker", Boolean.TRUE);
+
     public static final AttributeSensorAndConfigKey<Map<String, String>, Map<String, String>> DOCKER_HOST_VOLUME_MAPPING = ConfigKeys.newSensorAndConfigKey(
             new TypeToken<Map<String, String>>() { }, "docker.host.volumes", "Host volume mapping configuration");
     public static final ConfigKey<List<String>> DOCKER_CONTAINER_VOLUME_EXPORT = ConfigKeys.newConfigKey(
