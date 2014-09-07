@@ -318,11 +318,13 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         getManagementContext().addPropertiesReloadListener(new ManagementContext.PropertiesReloadListener() {
             @Override
             public void reloaded() {
-                Location resolved = getManagementContext().getLocationRegistry().resolve(definition);
-                if (getConfig(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS)) {
-                    getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
+                if (getInfrastructure().isLocationAvailable()) {
+                    Location resolved = getManagementContext().getLocationRegistry().resolve(definition);
+                    if (getConfig(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS)) {
+                        getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
+                    }
+                    getManagementContext().getLocationManager().manage(resolved);
                 }
-                getManagementContext().getLocationManager().manage(resolved);
             }
         });
 

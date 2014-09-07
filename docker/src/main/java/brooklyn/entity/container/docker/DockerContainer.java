@@ -52,6 +52,9 @@ public interface DockerContainer extends BasicStartable, HasShortName, LocationO
     @SetFromFlag("infrastructure")
     AttributeSensorAndConfigKey<DockerInfrastructure, DockerInfrastructure> DOCKER_INFRASTRUCTURE = DockerHost.DOCKER_INFRASTRUCTURE;
 
+    @SetFromFlag("managed")
+    ConfigKey<Boolean> MANAGED = DockerAttributes.MANAGED;
+
     @SetFromFlag("password")
     ConfigKey<String> DOCKER_PASSWORD = DockerAttributes.DOCKER_PASSWORD;
 

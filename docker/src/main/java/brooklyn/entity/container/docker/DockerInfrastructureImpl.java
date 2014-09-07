@@ -18,6 +18,7 @@ package brooklyn.entity.container.docker;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
@@ -52,8 +53,7 @@ import brooklyn.location.docker.DockerResolver;
 import brooklyn.management.LocationManager;
 import brooklyn.management.ManagementContext;
 import brooklyn.util.collections.MutableMap;
-
-import com.beust.jcommander.internal.Lists;
+import brooklyn.util.time.Duration;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
@@ -62,7 +62,9 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 
 public class DockerInfrastructureImpl extends BasicStartableImpl implements DockerInfrastructure {
 
@@ -80,7 +82,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
     private DynamicGroup fabric;
     private DynamicMultiGroup buckets;
 
-    private transient AtomicBoolean started = new AtomicBoolean(false);
+    private transient final AtomicBoolean started = new AtomicBoolean(false);
 
     private Predicate<Entity> sameInfrastructure = new Predicate<Entity>() {
         @Override
@@ -209,7 +211,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
     @Override
     public boolean isLocationAvailable() {
-        return getDynamicLocation() != null;
+        return started.get() && getDynamicLocation() != null;
     }
 
     @Override
@@ -231,9 +233,11 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         getManagementContext().addPropertiesReloadListener(new ManagementContext.PropertiesReloadListener() {
             @Override
             public void reloaded() {
-                Location resolved = getManagementContext().getLocationRegistry().resolve(definition);
-                getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
-                getManagementContext().getLocationManager().manage(resolved);
+                if (started.get()) {
+                    Location resolved = getManagementContext().getLocationRegistry().resolve(definition);
+                    getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
+                    getManagementContext().getLocationManager().manage(resolved);
+                }
             }
         });
 
@@ -246,12 +250,12 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
     @Override
     public void deleteLocation() {
-        DockerLocation host = getDynamicLocation();
+        DockerLocation location = getDynamicLocation();
 
-        if (host != null) {
+        if (location != null) {
             LocationManager mgr = getManagementContext().getLocationManager();
-            if (mgr.isManaged(host)) {
-                mgr.unmanage(host);
+            if (mgr.isManaged(location)) {
+                mgr.unmanage(location);
             }
         }
 
@@ -284,20 +288,29 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
     /**
      * De-register our {@link DockerLocation} and its children.
      */
+    @Override
     public void stop() {
         if (started.compareAndSet(true, false)) {
             setAttribute(SERVICE_UP, Boolean.FALSE);
 
-            // Stop all applications (from buckets)
-            List<Application> applications = Lists.newArrayList();
-            for (Entity bucket : buckets.getMembers()) {
-                Iterable<Entity> members = bucket.getAttribute(BasicGroup.GROUP_MEMBERS);
-                if (members != null && Iterables.size(members) > 0) {
-                    Entity sample = Iterables.get(members, 0);
-                    applications.add(sample.getApplication());
-                }
+            // Find all applications and stop, blocking for up to five minutes until ended
+            try {
+                Iterable<Entity> entities = Iterables.filter(getManagementContext().getEntityManager().getEntities(), new Predicate<Entity>() {
+                    @Override
+                    public boolean apply(Entity input) {
+                        Optional<Location> infrastructure = Iterables.tryFind(input.getLocations(), Predicates.instanceOf(DockerLocation.class));
+                        return infrastructure.isPresent() && getId().equals(infrastructure.get().getId());
+                    }
+                });
+                Set<Application> applications = ImmutableSet.copyOf(Iterables.transform(entities, new Function<Entity, Application>() {
+                    @Override
+                    public Application apply(Entity input) { return input.getApplication(); }
+                }));
+                Entities.invokeEffectorList(this, applications, Startable.STOP)
+                        .get(Duration.FIVE_MINUTES);
+            } catch (Exception e) {
+                LOG.warn("Error stopping applications: {}", e);
             }
-            Entities.invokeEffectorList(this, applications, Startable.STOP);
 
             super.stop();
 
