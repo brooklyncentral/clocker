@@ -295,13 +295,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
             // Find all applications and stop, blocking for up to five minutes until ended
             try {
-                Iterable<Entity> entities = Iterables.filter(getManagementContext().getEntityManager().getEntities(), new Predicate<Entity>() {
-                    @Override
-                    public boolean apply(Entity input) {
-                        Optional<Location> infrastructure = Iterables.tryFind(input.getLocations(), Predicates.instanceOf(DockerLocation.class));
-                        return infrastructure.isPresent() && getId().equals(infrastructure.get().getId());
-                    }
-                });
+                Iterable<Entity> entities = Iterables.filter(getManagementContext().getEntityManager().getEntities(), sameInfrastructure);
                 Set<Application> applications = ImmutableSet.copyOf(Iterables.transform(entities, new Function<Entity, Application>() {
                     @Override
                     public Application apply(Entity input) { return input.getApplication(); }
