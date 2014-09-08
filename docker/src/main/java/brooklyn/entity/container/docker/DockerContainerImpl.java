@@ -199,6 +199,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         Boolean useHostDns = entity.getConfig(DOCKER_USE_HOST_DNS_NAME);
         if (useHostDns == null || !useHostDns) useHostDns = getConfig(DOCKER_USE_HOST_DNS_NAME);
         if (useHostDns != null && useHostDns) {
+            // FIXME does not seem to work on Softlayer, should set HOSTNAME or SUBNET_HOSTNAME
             String hostname = getDockerHost().getAttribute(Attributes.HOSTNAME);
             String address = getDockerHost().getAttribute(Attributes.ADDRESS);
             if (hostname.equalsIgnoreCase(address)) {
@@ -277,16 +278,6 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             for (String dir : exports) {
                 volumes.put(dir, dir);
             }
-        }
-
-        // Add brooklyn-managed-processes as volume unless entity configuration disables
-        Boolean sharedBaseDir = entity.getConfig(DockerAttributes.SHARED_ONBOX_BASE_DIR);
-        if (sharedBaseDir == null || sharedBaseDir.equals(Boolean.TRUE)) {
-            String containerbaseDir = "/brooklyn-managed-processes";
-            ((EntityInternal) entity).setConfig(BrooklynConfigKeys.SKIP_ON_BOX_BASE_DIR_RESOLUTION, true);
-            ((EntityInternal) entity).setConfig(BrooklynConfigKeys.ONBOX_BASE_DIR, containerbaseDir);
-            ((EntityInternal) entity).setConfig(MachineLifecycleEffectorTasks.ON_BOX_BASE_DIR_RESOLVED, true);
-            volumes.put(getDockerHost().getConfig(BrooklynConfigKeys.ONBOX_BASE_DIR), containerbaseDir);
         }
         options.volumes(volumes);
 
