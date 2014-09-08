@@ -187,9 +187,6 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
             ((EntityLocal) getOwner().getRunningEntity()).setAttribute(DockerContainer.IMAGE_ID, imageId);
             ((EntityLocal) getOwner()).setAttribute(DockerContainer.IMAGE_ID, imageId);
             getOwner().getDockerHost().getDynamicLocation().markImage(imageName);
-        } else if (DockerCallbacks.IMAGE.equalsIgnoreCase(command)) {
-            String imageName = getOwner().getAttribute(DockerContainer.IMAGE_NAME);
-            getOwner().getDockerHost().getDynamicLocation().waitForImage(imageName);
         } else if (DockerCallbacks.PUSH.equalsIgnoreCase(command)) {
             String imageName = getOwner().getAttribute(DockerContainer.IMAGE_NAME);
             getOwner().getDockerHost().runDockerCommand(String.format("push %s", Os.mergePaths(getRepository(), imageName)));

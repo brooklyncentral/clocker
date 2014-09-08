@@ -29,14 +29,9 @@ public class DockerCallbacks {
     public static final String DOCKER_HOST_CALLBACK = "docker-host-callback";
     public static final String COMMIT = "commit";
     public static final String PUSH = "push";
-    public static final String IMAGE = "image";
 
     public static final Predicate<CharSequence> FILTER = Predicates.containsPattern(SEPARATOR + DOCKER_HOST_CALLBACK);
     public static final Splitter PARSER = Splitter.on(SEPARATOR).omitEmptyStrings();
-
-    public static final String image() {
-        return command(IMAGE);
-    }
 
     public static final String commit() {
         return command(COMMIT);

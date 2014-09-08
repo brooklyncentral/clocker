@@ -162,11 +162,13 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             LOG.warn("ImageName for entity {}: {}", entity, imageName);
             String imageList = dockerHost.runDockerCommand("images --no-trunc " + Os.mergePaths(repository, imageName));
             if (Strings.containsLiteral(imageList, imageName)) {
+                // Wait until committed before continuing
+                waitForImage(imageName);
+
+                // Look up imageId again
+                imageList = dockerHost.runDockerCommand("images --no-trunc " + Os.mergePaths(repository, imageName));
                 imageId = Strings.getFirstWordAfter(imageList, "latest");
                 LOG.info("Found image {} for entity: {}", imageName, imageId);
-
-                // Wait untill committed before continuing
-                ((AbstractEntity) entity).setConfigEvenIfOwned(SoftwareProcess.PRE_INSTALL_COMMAND, DockerCallbacks.image());
 
                 // Skip install phase
                 ((AbstractEntity) entity).setConfigEvenIfOwned(SoftwareProcess.SKIP_INSTALLATION, true);
