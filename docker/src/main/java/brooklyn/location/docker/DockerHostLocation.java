@@ -134,14 +134,6 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
         return obtain(Maps.<String,Object>newLinkedHashMap());
     }
 
-    protected String getImageName(Entity entity, String dockerfile) {
-        String simpleName = entity.getEntityType().getSimpleName();
-        String version = entity.getConfig(SoftwareProcess.SUGGESTED_VERSION);
-
-        String label = Joiner.on(":").skipNulls().join(simpleName, version, dockerfile, repository);
-        return Identifiers.makeIdFromHash(Hashing.md5().hashString(label, Charsets.UTF_8).asLong()).toLowerCase(Locale.ENGLISH);
-    }
-
     @Override
     public DockerContainerLocation obtain(Map<?,?> flags) throws NoMachinesAvailableException {
         try {
@@ -164,7 +156,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             // Add the entity Dockerfile if configured
             String dockerfile = entity.getConfig(DockerAttributes.DOCKERFILE_URL);
             String imageId = entity.getConfig(DockerAttributes.DOCKER_IMAGE_ID);
-            String imageName = getImageName(entity, dockerfile);
+            String imageName = DockerAttributes.imageName(entity, dockerfile, repository);
 
             // Lookup image ID or build new image from Dockerfile
             LOG.warn("ImageName for entity {}: {}", entity, imageName);

@@ -384,18 +384,9 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
         if (Strings.isBlank(imageId)) {
             String dockerfileUrl = getConfig(DockerInfrastructure.DOCKERFILE_URL);
-            String dockerfileName = getConfig(DockerInfrastructure.DOCKERFILE_NAME);
-            if (Strings.isBlank(dockerfileName)) {
-                Iterable<String> parts = Splitter.on("/").split(dockerfileUrl);
-                dockerfileName = Iterables.getLast(parts);
-                dockerfileName = dockerfileName.replaceAll(DockerAttributes.DOCKERFILE, "");
-                if (Strings.isBlank(dockerfileName)) {
-                    dockerfileName = Iterables.get(parts, Iterables.size(parts) - 2);
-                }
-                dockerfileName = DockerAttributes.allowed(dockerfileName);
-            }
-            imageId = createSshableImage(dockerfileUrl, dockerfileName);
-            setAttribute(DOCKER_IMAGE_NAME, dockerfileName);
+            String imageName = DockerAttributes.imageName(this, dockerfileUrl, getRepository());
+            imageId = createSshableImage(dockerfileUrl, imageName);
+            setAttribute(DOCKER_IMAGE_NAME, imageName);
         }
 
         setAttribute(DOCKER_IMAGE_ID, imageId);

@@ -24,7 +24,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nullable;
 
 import brooklyn.config.ConfigKey;
+import brooklyn.entity.Entity;
 import brooklyn.entity.basic.ConfigKeys;
+import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.database.DatastoreMixins;
 import brooklyn.entity.messaging.MessageBroker;
 import brooklyn.entity.nosql.couchbase.CouchbaseNode;
@@ -37,14 +39,17 @@ import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
 import brooklyn.util.flags.TypeCoercions;
 import brooklyn.util.internal.ssh.SshTool;
 import brooklyn.util.javalang.Reflections;
+import brooklyn.util.text.Identifiers;
 import brooklyn.util.text.Strings;
 
 import com.google.common.base.CharMatcher;
+import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.hash.Hashing;
 import com.google.common.reflect.TypeToken;
 
 public class DockerAttributes {
@@ -162,6 +167,14 @@ public class DockerAttributes {
         } else {
             throw new IllegalStateException("Invalid image ID returned: " + imageId);
         }
+    }
+
+    public static String imageName(Entity entity, String dockerfile, String repository) {
+        String simpleName = entity.getEntityType().getSimpleName();
+        String version = entity.getConfig(SoftwareProcess.SUGGESTED_VERSION);
+
+        String label = Joiner.on(":").skipNulls().join(simpleName, version, dockerfile, repository);
+        return Identifiers.makeIdFromHash(Hashing.md5().hashString(label, Charsets.UTF_8).asLong()).toLowerCase(Locale.ENGLISH);
     }
 
     private static AtomicBoolean initialized = new AtomicBoolean(false);
