@@ -198,7 +198,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
         // Use DockerHost hostname for the container
         Boolean useHostDns = entity.getConfig(DOCKER_USE_HOST_DNS_NAME);
-        if (useHostDns == null || !useHostDns) useHostDns = getConfig(DOCKER_USE_HOST_DNS_NAME);
+        if (useHostDns == null) useHostDns = getConfig(DOCKER_USE_HOST_DNS_NAME);
         if (useHostDns != null && useHostDns) {
             // FIXME does not seem to work on Softlayer, should set HOSTNAME or SUBNET_HOSTNAME
             String hostname = getDockerHost().getAttribute(Attributes.HOSTNAME);
@@ -213,7 +213,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         // CPU shares
         Integer cpuShares = entity.getConfig(DOCKER_CPU_SHARES);
         if (cpuShares == null) cpuShares = getConfig(DOCKER_CPU_SHARES);
-        if (cpuShares == null) {
+        if (cpuShares != null) {
             // TODO set based on number of cores available in host divided by cores requested in flags
             Integer hostCores = (int) getDockerHost().getDynamicLocation().getMachine().getMachineDetails().getHardwareDetails().getCpuCount();
             Integer minCores = (Integer) entity.getConfig(JcloudsLocationConfig.MIN_CORES);
@@ -240,7 +240,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         // Memory
         Integer memory = entity.getConfig(DOCKER_MEMORY);
         if (memory == null) memory = getConfig(DOCKER_MEMORY);
-        if (memory == null) {
+        if (memory != null) {
             // TODO set based on memory available in host divided by memory requested in flags
             Integer hostRam = getDockerHost().getDynamicLocation().getMachine().getMachineDetails().getHardwareDetails().getRam();
             Integer minRam = entity.getConfig(JcloudsLocationConfig.MIN_RAM);
