@@ -20,9 +20,9 @@ or [docker-cloud.yaml](https://raw.githubusercontent.com/brooklyncentral/clocker
 You can build a *Docker Cloud Infrastructure* running these commands:
 ```Bash
     % wget --no-check-certificate --quiet \
-      -O brooklyn-clocker-examples-0.6.1-dist.tar.gz http://git.io/hxy9fg
-    % tar zxf brooklyn-clocker-examples-0.6.1-dist.tar.gz
-    % cd brooklyn-clocker-examples-0.6.1
+      -O brooklyn-clocker-examples-0.6.2-dist.tar.gz http://git.io/O--JKw
+    % tar zxf brooklyn-clocker-examples-0.6.2-dist.tar.gz
+    % cd brooklyn-clocker-examples-0.6.2
     % ./clocker.sh launch --cloud --location <location>
 ```
 Where `<location>` can be e.g. `jclouds:softlayer`, or a named location or a fixed IP e.g. `byon:(hosts="1.2.3.4")`.
@@ -48,7 +48,7 @@ location: my-docker-cloud
 services:
 - type: brooklyn.entity.webapp.jboss.JBoss7Server
   brooklyn.config:
-    wars.root: http://search.maven.org/remotecontent?filepath=io/brooklyn/example/brooklyn-example-hello-world-sql-webapp//brooklyn-example
+    wars.root: http://search.maven.org/remotecontent?filepath=io/brooklyn/example/brooklyn-example-hello-world-sql-webapp/0.6.0-M2/brooklyn-example-hello-world-sql-webapp-0.6.0-M2.war
 ```
 
 ### Building from source
