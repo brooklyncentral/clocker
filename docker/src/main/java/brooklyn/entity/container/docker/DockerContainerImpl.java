@@ -51,6 +51,7 @@ import brooklyn.location.NoMachinesAvailableException;
 import brooklyn.location.PortRange;
 import brooklyn.location.basic.LocationConfigKeys;
 import brooklyn.location.basic.SshMachineLocation;
+import brooklyn.location.cloud.CloudLocationConfig;
 import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.dynamic.DynamicLocation;
@@ -309,6 +310,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 .put(LocationConfigKeys.PASSWORD, password)
                 .put(LocationConfigKeys.PRIVATE_KEY_DATA, null)
                 .put(LocationConfigKeys.PRIVATE_KEY_FILE, null)
+                .put(CloudLocationConfig.WAIT_FOR_SSHABLE, false)
                 .put(JcloudsLocationConfig.INBOUND_PORTS, getRequiredOpenPorts(getRunningEntity()))
                 .put(JcloudsLocation.USE_PORT_FORWARDING, true)
                 .put(JcloudsLocation.PORT_FORWARDER, subnetTier.getPortForwarderExtension())
