@@ -243,13 +243,16 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
     private void configureEnrichers(AbstractEntity entity) {
         for (AttributeSensor sensor : Iterables.filter(entity.getEntityType().getSensors(), AttributeSensor.class)) {
-            if (DockerAttributes.URL_SENSOR_NAMES.contains(sensor.getName())) {
+            if (DockerAttributes.URL_SENSOR_NAMES.contains(sensor.getName()) || sensor.getName().endsWith(".url")) {
                 AttributeSensor<String> target = DockerAttributes.<String>mappedSensor(sensor);
                 entity.addEnricher(dockerHost.getSubnetTier().uriTransformingEnricher(
                         EntityAndAttribute.supplier(entity, sensor), target));
                 Set<Hint<?>> hints = RendererHints.getHintsFor(sensor, NamedActionWithUrl.class);
                 for (Hint<?> hint : hints) {
                     RendererHints.register(target, (NamedActionWithUrl) hint);
+                }
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Mapped URL sensor: origin={}, mapped={}", sensor.getName(), target.getName());
                 }
             } else if (PortAttributeSensorAndConfigKey.class.isAssignableFrom(sensor.getClass())) {
                 AttributeSensor<String> target = DockerAttributes.mappedPortSensor((PortAttributeSensorAndConfigKey) sensor);
