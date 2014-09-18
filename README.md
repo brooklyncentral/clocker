@@ -103,7 +103,8 @@ Build and run the examples as follows:
 
 Clocker is Apache 2.0 licensed, and builds on Apache Brooklyn. Please get involved and join the 
 discussion on [Freenode](http://freenode.net/), IRC `#brooklyncentral` or the Apache Brooklyn 
-community [mailing list](https://brooklyn.incubator.apache.org/community/).
+community [mailing list](https://brooklyn.incubator.apache.org/community/). We also maintain a
+[Trello](https://trello.com/b/lhS7ltyi/clocker) board with the current roadmap and active tasks.
 
 
 ### Documentation
