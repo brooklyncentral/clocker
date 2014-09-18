@@ -33,19 +33,31 @@
         <h1>
 <a name="clocker" class="anchor" href="#clocker"><span class="octicon octicon-link"></span></a>Clocker</h1>
 
-<p>Clocker contains <a href="http://brooklyn.io/">Brooklyn</a> entities, locations and examples that create a <a href="http://docker.io">Docker</a> cloud infrastructure.</p>
+<p>Clocker creates and manages a <a href="http://docker.io">Docker</a> cloud infrastructure. Clocker support 
+single-click deployment and runtime management of multi-node applications that can run on
+containers distributed across docker hosts. Application blueprints written for 
+<a href="https://brooklyn.incubator.apache.org/">Brooklyn</a> can thus be deployed to a Docker cloud 
+infrastructure.</p>
 
-<iframe width="640" height="480" src="//www.youtube.com/embed/i2Nhg2J8puM" frameborder="0" allowfullscreen></iframe>
+<p>This repo contains the required Brooklyn entities, locations and examples.</p>
 
 <h2>
 <a name="getting-started" class="anchor" href="#getting-started"><span class="octicon octicon-link"></span></a>Getting started</h2>
 
-<p>This project requires a Docker instance that Brooklyn will use as a target location when deploying application blueprints.</p>
+<p>To get started, you just have to download Clocker, deploy the DockerCloud blueprint to the 
+cloud or machines of your choice, and then use Clocker to deploy your applications. This will 
+automatically create the required Docker containers.</p>
 
-<p>You can use Brooklyn to install Docker onto a single existing machine, or create a Docker based cloud infrastructure on your favourite cloud provider or on a private cloud using any of the jclouds supported APIs.</p>
 
-<p>To install a Docker cloud infrastucture using the Clocker Brooklyn entities, there is an example blueprint at
-<a href="https://raw.githubusercontent.com/brooklyncentral/clocker/master/examples/src/main/java/brooklyn/clocker/example/DockerCloud.java">DockerCloud</a> or <a href="https://raw.githubusercontent.com/brooklyncentral/clocker/master/examples/src/main/assembly/files/blueprints/docker-cloud.yaml">docker-cloud.yaml</a>.</p>
+
+<p>You can create a Docker based cloud infrastructure on your favourite cloud provider or on a 
+private cloud using any of the jclouds supported APIs. Alternatively you can target one or 
+more existing machines for running Docker.</p>
+
+<p>If you are keen to peek under the covers, you can find the Clocker Infrastructure blueprint at 
+<a href="https://raw.githubusercontent.com/brooklyncentral/clocker/master/examples/src/main/assembly/files/blueprints/docker-cloud.yaml">docker-cloud.yaml</a>. 
+Or if you prefer Java take a look at 
+<a href="https://raw.githubusercontent.com/brooklyncentral/clocker/master/examples/src/main/java/brooklyn/clocker/example/DockerCloud.java">DockerCloud</a>.</p>
 
 <h3>
 <a name="using-the-latest-clocker-release" class="anchor" href="#using-the-latest-clocker-release"><span class="octicon octicon-link"></span></a>Using the latest Clocker release</h3>
@@ -53,46 +65,53 @@
 <p>You can build a <em>Docker Cloud Infrastructure</em> running these commands:</p>
 
 <div class="highlight highlight-Bash"><pre>% wget --no-check-certificate --quiet <span class="se">\</span>
-    -O brooklyn-clocker-examples-0.5.0-dist.tar.gz http://git.io/hxy9fg
-% tar zxf brooklyn-clocker-examples-0.5.0-dist.tar.gz
-% <span class="nb">cd </span>brooklyn-clocker-examples-0.5.0
+    -O brooklyn-clocker-examples-0.6.2-dist.tar.gz http://git.io/O--JKw
+% tar zxf brooklyn-clocker-examples-0.6.2-dist.tar.gz
+% <span class="nb">cd </span>brooklyn-clocker-examples-0.6.2
 % ./clocker.sh launch --cloud --location &lt;location&gt;
 </pre></div>
 
-<p>Where <code>&lt;location&gt;</code> can be e.g. <code>jclouds:softlayer</code>, or a named location or a fixed IP e.g. <code>byon:(hosts="1.2.3.4")</code>. Those simple steps will give you a running docker instance on your favourite cloud.</p>
+<p>Where <code>&lt;location&gt;</code> can be e.g. <code>jclouds:softlayer</code>, or a named location or a fixed IP e.g. <code>byon:(hosts="1.2.3.4")</code>.
+Those simple steps will give you a running docker instance on your favourite cloud.</p>
 
-<p><strong>Important</strong>: Please be sure that the location allows incoming connections on TCP ports <em>2375-2376</em> (the Docker daemon) and in the range <em>49000-49900</em> used by Docker to map container ports onto ports on the hosts public IP address. If you create a security group on AWS called <em>docker</em> this will be used automatically by the application.</p>
+<p>For anything other than a localhost or bring-your-own-nodes location, it is vital that you 
+first configure a <code>~/.brooklyn/brooklyn.properties</code> file with cloud credentials and security 
+details, and create an SSH key (defaulting to <code>~/.ssh/id_rsa</code>). A simple example 
+<code>brooklyn.properties</code> file would be:</p>
 
-<p>For more information on setting up locations, see the <em>Setting up Locations</em> section of <a href="http://brooklyncentral.github.io/use/guide/quickstart/index.html">Brooklyn Getting Started</a>, and the "Off-the-shelf Locations" section of <a href="http://brooklyncentral.github.io/use/guide/defining-applications/common-usage.html">Brooklyn Common Usage</a>.</p>
+<pre><code># Sets up a user with credentials admin:password for accessing the Brooklyn web-console.
+# To genreate the hashed password, see `brooklyn generate-password --user admin`
+brooklyn.webconsole.security.users=admin
+brooklyn.webconsole.security.user.admin.salt=DOp5
+brooklyn.webconsole.security.user.admin.sha256=ffc241eae74cd035fdab353229d53c20943d0c1b6a0a8972a4f24769d99a6826
 
-<p>Once the <code>DockerCloud</code>  application has started, a new location named <code>my-docker-cloud</code> will be available in the Locations drop-down list when adding new applications. Simply start a new application in this location and it will use Docker containers instead of virtual machines.</p>
+# Credentials to use in your favourite cloud
+brooklyn.location.jclouds.softlayer.identity=SL123456
+brooklyn.location.jclouds.softlayer.credential=&lt;private-key&gt;
 
-<h3>
-<a name="deploy-yaml-blueprint" class="anchor" href="#deploy-yaml-blueprint"><span class="octicon octicon-link"></span></a>Deploy a YAML blueprint</h3>
+brooklyn.location.jclouds.aws-ec2.identity=AKA_YOUR_ACCESS_KEY_ID
+brooklyn.location.jclouds.aws-ec2.credential=YourSecretKeyWhichIsABase64EncodedString
+</code></pre>
 
-<p>This is a simple YAML blueprint that will deploy a Tomacat server on a container with <em>an Hello World</em> web application.</p>
+<p>For more information on setting up locations, including supplying cloud provider credentials, see the <a href="https://brooklyn.incubator.apache.org/quickstart/#configuring-a-location"><em>Setting up Locations</em> section of
+Brooklyn Getting Started</a>, and the more detailed <a href="https://brooklyn.incubator.apache.org/v/0.7.0-M1/use/guide/locations/index.html">locations guide</a>.</p>
 
-<div class="highlight highlight-Bash"><pre>
-id: tomcat-application
-name: "Tomcat Web Application"
-origin: "http://brooklyncentral.github.io/"
-locations:
-id: tomcat-application
-name: "Tomcat Web Application"
-origin: "http://brooklyncentral.github.io/"
-locations:
-- my-docker-cloud
-services:
-- serviceType: brooklyn.entity.webapp.tomcat.TomcatServer
-  brooklyn.config:
-    docker.dockerfile.url:
-      "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/UsesJavaDockerfile"
-    wars.root:
-      "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/hello-world.war"
-    version: "7.0.53"
-    jmx.enabled: true
-    jmx.agent.mode: "JMXMP"
-    jmx.direct.port: "30000+"
+<p>The Brooklyn web-console, which will be deploying and managing your Docker Cloud, can be accessed at 
+<a href="http://localhost:8081">http://localhost:8081</a> - this URL will have been written to standard out during startup.</p>
+
+<p>Once the <code>DockerCloud</code>  application has started, a new location named <code>my-docker-cloud</code> will be
+available in the Locations drop-down list when adding new applications. Simply start a new application in this location
+and it will use Docker containers instead of virtual machines.</p>
+
+<p>For more information on deploying applications from the Brooklyn catalog, see
+<a href="https://brooklyn.incubator.apache.org/quickstart/policies-and-catalogs.html">Getting Started - Policies and Catalogs</a>.
+You can also paste a YAML blueprint into the <em>YAML</em> tab of the <em>Add Application</em> dialog, as follows:</p>
+
+<div class="highlight highlight-Yaml"><pre><span class="l-Scalar-Plain">location</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">my-docker-cloud</span>
+<span class="l-Scalar-Plain">services</span><span class="p-Indicator">:</span>
+<span class="p-Indicator">-</span> <span class="l-Scalar-Plain">type</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">brooklyn.entity.webapp.jboss.JBoss7Server</span>
+  <span class="l-Scalar-Plain">brooklyn.config</span><span class="p-Indicator">:</span>
+    <span class="l-Scalar-Plain">wars.root</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">http://search.maven.org/remotecontent?filepath=io/brooklyn/example/brooklyn-example-hello-world-sql-webapp//brooklyn-example</span>
 </pre></div>
 
 <h3>
@@ -100,24 +119,33 @@ services:
 
 <p>Build and run the examples as follows:</p>
 
-<div class="highlight highlight-Bash"><pre>% git clone https://github.com/brooklyncentral/clocker.git
-...
-% <span class="nb">cd </span>clocker
-% mvn clean install
-...
-% <span class="nb">cd </span>examples
-% mvn assembly:single
-...
-% tar zxf target/brooklyn-clocker-examples-0.5.0-SNAPSHOT-dist.tar.gz
-% <span class="nb">cd </span>brooklyn-clocker-examples-0.5.0-SNAPSHOT
-% ./clocker.sh launch --cloud --location &lt;location&gt;
-...
+<div class="highlight highlight-Bash"><pre>    % git clone https://github.com/brooklyncentral/clocker.git
+    ...
+    % <span class="nb">cd </span>clocker
+    % mvn clean install
+    ...
+    % <span class="nb">cd </span>examples
+    % mvn assembly:single
+    ...
+    % <span class="nb">cd </span>target
+    % tar zxf brooklyn-clocker-examples-0.7.0-SNAPSHOT-dist.tar.gz
+    % <span class="nb">cd </span>brooklyn-clocker-examples-0.7.0-SNAPSHOT
+    % ./clocker.sh launch --cloud --location &lt;location&gt;
+    ...
 </pre></div>
 
 <h2>
 <a name="getting-involved" class="anchor" href="#getting-involved"><span class="octicon octicon-link"></span></a>Getting involved</h2>
 
-<p>Clocker is Apache 2.0 licensed and the intention is to contribute it to Apache Brooklyn project so please get involved and join the discussion on <a href="http://freenode.net/">Freenode</a> IRC <code>#brooklyncentral</code> or the Apache Brooklyn community <a href="https://brooklyn.incubator.apache.org/community/">mailing list</a>.</p>
+<p>Clocker is Apache 2.0 licensed, and builds on Apache Brooklyn. Please get involved and join the 
+discussion on <a href="http://freenode.net/">Freenode</a>, IRC <code>#brooklyncentral</code> or the Apache Brooklyn 
+community <a href="https://brooklyn.incubator.apache.org/community/">mailing list</a>. We also maintain a
+<a href="https://trello.com/b/lhS7ltyi/clocker">Trello</a> board with the current roadmap and active tasks.</p>
+
+<h3>
+<a name="documentation" class="anchor" href="#documentation"><span class="octicon octicon-link"></span></a>Documentation</h3>
+
+<p>Please visit the <a href="https://github.com/brooklyncentral/clocker/wiki">wiki</a> for more details.</p>
 
 <hr><p>Copyright 2014 by Cloudsoft Corporation Limited</p>
 
