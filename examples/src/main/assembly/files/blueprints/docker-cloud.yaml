@@ -29,8 +29,9 @@ services:
     docker.container.cluster.maxSize: 4
     docker.host.register: false
     docker.policy.ha.enable: true
-    docker.container.strategy:
-      "brooklyn.location.docker.strategy.CpuUsagePlacementStrategy"
+    docker.container.strategies:
+    - "brooklyn.location.docker.strategy.CpuUsagePlacementStrategy"
+    - "brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy"
     docker.host.spec:
       $brooklyn:entitySpec:
         type: brooklyn.entity.container.docker.DockerHost

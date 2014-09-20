@@ -19,7 +19,7 @@ import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.BrooklynConfigKeys;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.VanillaSoftwareProcess;
-import brooklyn.entity.container.docker.DockerAttributes;
+import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
 import brooklyn.util.flags.SetFromFlag;

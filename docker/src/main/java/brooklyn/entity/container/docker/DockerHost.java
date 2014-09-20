@@ -25,6 +25,8 @@ import brooklyn.entity.annotation.EffectorParam;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.MethodEffector;
 import brooklyn.entity.basic.SoftwareProcess;
+import brooklyn.entity.container.DockerAttributes;
+import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.machine.MachineEntity;
 import brooklyn.entity.proxying.EntitySpec;
@@ -36,9 +38,9 @@ import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.BasicAttributeSensorAndConfigKey;
 import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
-import brooklyn.location.affinity.AffinityRules;
 import brooklyn.location.basic.PortRanges;
 import brooklyn.location.docker.DockerHostLocation;
+import brooklyn.location.docker.strategy.affinity.AffinityRules;
 import brooklyn.location.dynamic.LocationOwner;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.networking.subnet.PortForwarder;
@@ -93,7 +95,7 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
             "docker.infrastructure", "The parent Docker infrastructure");
 
     ConfigKey<String> HOST_NAME_FORMAT = ConfigKeys.newStringConfigKey("docker.host.nameFormat",
-            "Format for generating Docker host names", DockerAttributes.DEFAULT_DOCKER_HOST_NAME_FORMAT);
+            "Format for generating Docker host names", DockerUtils.DEFAULT_DOCKER_HOST_NAME_FORMAT);
 
     @SetFromFlag("repository")
     AttributeSensorAndConfigKey<String, String>  DOCKER_REPOSITORY = ConfigKeys.newStringSensorAndConfigKey("docker.repository",

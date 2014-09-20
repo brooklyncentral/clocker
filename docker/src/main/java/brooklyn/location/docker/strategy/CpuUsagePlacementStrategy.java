@@ -15,29 +15,18 @@
  */
 package brooklyn.location.docker.strategy;
 
-import java.util.Collection;
-import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import brooklyn.config.ConfigKey;
-import brooklyn.entity.Entity;
 import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.entity.basic.Entities;
 import brooklyn.entity.container.docker.DockerHost;
-import brooklyn.location.Location;
 import brooklyn.location.docker.DockerHostLocation;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
 
 /**
  * Placement strategy that selects the Docker host with the lowest CPU usage.
  */
-public class CpuUsagePlacementStrategy extends AbstractDockerPlacementStrategy {
+public class CpuUsagePlacementStrategy extends BasicDockerPlacementStrategy {
 
     private static final Logger LOG = LoggerFactory.getLogger(CpuUsagePlacementStrategy.class);
 
@@ -45,34 +34,17 @@ public class CpuUsagePlacementStrategy extends AbstractDockerPlacementStrategy {
             "Maximum CPU usage across a Docker container cluster", 0.5d);
 
     @Override
-    protected List<Location> getDockerHostLocations(Multimap<Location, Entity> members, List<DockerHostLocation> available, int n) {
-        // Reject hosts over the allowed maximum CPU
-        List<DockerHostLocation> chosen = Lists.newArrayList();
-        for (DockerHostLocation machine : ImmutableList.copyOf(available)) {
-            Double maxCpu = machine.getOwner().getConfig(DOCKER_CONTAINER_CLUSTER_MAX_CPU);
-            Double currentCpu = machine.getOwner().getAttribute(DockerHost.CPU_USAGE);
-            if (currentCpu < maxCpu) chosen.add(machine);
-        }
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Available Docker hosts: {}", Iterables.toString(chosen));
-        }
+    public boolean apply(DockerHostLocation input) {
+        Double maxCpu = input.getOwner().getConfig(DOCKER_CONTAINER_CLUSTER_MAX_CPU);
+        Double currentCpu = input.getOwner().getAttribute(DockerHost.CPU_USAGE);
+        return currentCpu < maxCpu;
+    }
 
-        if (chosen.isEmpty()) {
-            // Grow the Docker host cluster
-            Collection<Entity> added = getDockerInfrastructure().getDockerHostCluster().resizeByDelta(1);
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Added Docker host: {}", Iterables.toString(added));
-            }
-            DockerHost host = (DockerHost) Iterables.getOnlyElement(added);
-
-            // Wait until new Docker host has started up
-            Entities.waitForServiceUp(host);
-            chosen.add(host.getDynamicLocation());
-        }
-
-        // Add the newly created locations for each Docker host
-        List<Location> result = ImmutableList.<Location>copyOf(Iterables.limit(Iterables.cycle(chosen), n));
-        return result;
+    @Override
+    public int compare(DockerHostLocation l1, DockerHostLocation l2) {
+        Double cpu1 = l1.getOwner().getAttribute(DockerHost.CPU_USAGE);
+        Double cpu2 = l2.getOwner().getAttribute(DockerHost.CPU_USAGE);
+        return Double.compare(cpu1, cpu2);
     }
 
 }

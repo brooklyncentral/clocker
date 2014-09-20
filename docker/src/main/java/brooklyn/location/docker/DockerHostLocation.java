@@ -19,7 +19,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
@@ -38,8 +37,9 @@ import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityAndAttribute;
 import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.basic.SoftwareProcess;
-import brooklyn.entity.container.docker.DockerAttributes;
-import brooklyn.entity.container.docker.DockerCallbacks;
+import brooklyn.entity.container.DockerAttributes;
+import brooklyn.entity.container.DockerCallbacks;
+import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
@@ -62,17 +62,13 @@ import brooklyn.util.mutex.MutexSupport;
 import brooklyn.util.mutex.WithMutexes;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.os.Os;
-import brooklyn.util.text.Identifiers;
 import brooklyn.util.text.Strings;
 
-import com.google.common.base.Charsets;
-import com.google.common.base.Joiner;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.hash.Hashing;
 
 public class DockerHostLocation extends AbstractLocation implements MachineProvisioningLocation<DockerContainerLocation>, DockerVirtualLocation,
         DynamicLocation<DockerHost, DockerHostLocation>, WithMutexes, Closeable {
@@ -156,7 +152,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             // Add the entity Dockerfile if configured
             String dockerfile = entity.getConfig(DockerAttributes.DOCKERFILE_URL);
             String imageId = entity.getConfig(DockerAttributes.DOCKER_IMAGE_ID);
-            String imageName = DockerAttributes.imageName(entity, dockerfile, repository);
+            String imageName = DockerUtils.imageName(entity, dockerfile, repository);
 
             // Lookup image ID or build new image from Dockerfile
             LOG.warn("ImageName for entity {}: {}", entity, imageName);
@@ -243,8 +239,8 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
     private void configureEnrichers(AbstractEntity entity) {
         for (AttributeSensor sensor : Iterables.filter(entity.getEntityType().getSensors(), AttributeSensor.class)) {
-            if (DockerAttributes.URL_SENSOR_NAMES.contains(sensor.getName()) || sensor.getName().endsWith(".url")) {
-                AttributeSensor<String> target = DockerAttributes.<String>mappedSensor(sensor);
+            if (DockerUtils.URL_SENSOR_NAMES.contains(sensor.getName()) || sensor.getName().endsWith(".url")) {
+                AttributeSensor<String> target = DockerUtils.<String>mappedSensor(sensor);
                 entity.addEnricher(dockerHost.getSubnetTier().uriTransformingEnricher(
                         EntityAndAttribute.supplier(entity, sensor), target));
                 Set<Hint<?>> hints = RendererHints.getHintsFor(sensor, NamedActionWithUrl.class);
@@ -255,7 +251,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                     LOG.debug("Mapped URL sensor: origin={}, mapped={}", sensor.getName(), target.getName());
                 }
             } else if (PortAttributeSensorAndConfigKey.class.isAssignableFrom(sensor.getClass())) {
-                AttributeSensor<String> target = DockerAttributes.mappedPortSensor((PortAttributeSensorAndConfigKey) sensor);
+                AttributeSensor<String> target = DockerUtils.mappedPortSensor((PortAttributeSensorAndConfigKey) sensor);
                 entity.addEnricher(dockerHost.getSubnetTier().hostAndPortTransformingEnricher(
                         EntityAndAttribute.supplier(entity, sensor), target));
                 if (LOG.isDebugEnabled()) {

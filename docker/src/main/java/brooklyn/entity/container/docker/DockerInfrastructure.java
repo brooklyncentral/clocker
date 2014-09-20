@@ -24,6 +24,8 @@ import brooklyn.entity.basic.BasicStartable;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.DynamicGroup;
 import brooklyn.entity.basic.SoftwareProcess;
+import brooklyn.entity.container.DockerAttributes;
+import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.group.DynamicMultiGroup;
 import brooklyn.entity.proxying.EntitySpec;
@@ -32,13 +34,14 @@ import brooklyn.entity.trait.Resizable;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.BasicAttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
-import brooklyn.location.affinity.AffinityRules;
 import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.strategy.CpuUsagePlacementStrategy;
 import brooklyn.location.docker.strategy.DepthFirstPlacementStrategy;
 import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
+import brooklyn.location.docker.strategy.affinity.AffinityRules;
 import brooklyn.location.dynamic.LocationOwner;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
+import brooklyn.util.collections.MutableList;
 import brooklyn.util.flags.SetFromFlag;
 
 /**
@@ -63,9 +66,9 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
     @SetFromFlag("minHost")
     ConfigKey<Integer> DOCKER_HOST_CLUSTER_MIN_SIZE = ConfigKeys.newConfigKeyWithPrefix("docker.host.", DynamicCluster.INITIAL_SIZE);
 
-    @SetFromFlag("strategy")
-    ConfigKey<DockerAwarePlacementStrategy> PLACEMENT_STRATEGY = ConfigKeys.newConfigKey(DockerAwarePlacementStrategy.class,
-            "docker.container.strategy", "Placement stratgy for Docker containers");
+    @SetFromFlag("strategies")
+    ConfigKey<List<DockerAwarePlacementStrategy>> PLACEMENT_STRATEGIES = ConfigKeys.newConfigKeyWithDefault(DockerAttributes.PLACEMENT_STRATEGIES,
+            MutableList.<DockerAwarePlacementStrategy>of(new DepthFirstPlacementStrategy()));
 
     @SetFromFlag("maxContainer")
     ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = DepthFirstPlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_SIZE;
@@ -87,7 +90,7 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
             EntitySpec.create(DockerHost.class));
 
     @SetFromFlag("dockerfileUrl")
-    ConfigKey<String> DOCKERFILE_URL = ConfigKeys.newConfigKeyWithDefault(DockerAttributes.DOCKERFILE_URL, DockerAttributes.UBUNTU_DOCKERFILE);
+    ConfigKey<String> DOCKERFILE_URL = ConfigKeys.newConfigKeyWithDefault(DockerAttributes.DOCKERFILE_URL, DockerUtils.UBUNTU_DOCKERFILE);
 
     @SetFromFlag("dockerfileName")
     ConfigKey<String> DOCKERFILE_NAME = ConfigKeys.newConfigKeyWithDefault(DockerAttributes.DOCKERFILE_NAME, "ubuntu");

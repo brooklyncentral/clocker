@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.entity.container.docker;
+package brooklyn.entity.container;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicate;

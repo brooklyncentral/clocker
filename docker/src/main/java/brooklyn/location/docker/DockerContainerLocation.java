@@ -25,8 +25,8 @@ import org.slf4j.LoggerFactory;
 
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.EntityLocal;
-import brooklyn.entity.container.docker.DockerAttributes;
-import brooklyn.entity.container.docker.DockerCallbacks;
+import brooklyn.entity.container.DockerCallbacks;
+import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.location.Location;
@@ -183,7 +183,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
             String containerId = getOwner().getContainerId();
             String imageName = getOwner().getAttribute(DockerContainer.IMAGE_NAME);
             String output = getOwner().getDockerHost().runDockerCommandTimeout(String.format("commit %s %s", containerId, Os.mergePaths(getRepository(), imageName)), Duration.minutes(15));
-            String imageId = DockerAttributes.checkId(output);
+            String imageId = DockerUtils.checkId(output);
             ((EntityLocal) getOwner().getRunningEntity()).setAttribute(DockerContainer.IMAGE_ID, imageId);
             ((EntityLocal) getOwner()).setAttribute(DockerContainer.IMAGE_ID, imageId);
             getOwner().getDockerHost().getDynamicLocation().markImage(imageName);
