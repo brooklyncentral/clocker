@@ -76,7 +76,8 @@ location: my-docker-cloud
 services:
 - type: brooklyn.entity.webapp.jboss.JBoss7Server
   brooklyn.config:
-    wars.root: http://search.maven.org/remotecontent?filepath=io/brooklyn/example/brooklyn-example-hello-world-sql-webapp//brooklyn-example
+    wars.root:
+    - http://search.maven.org/remotecontent?filepath=io/brooklyn/example/brooklyn-example-hello-world-sql-webapp/0.6.0-M2/brooklyn-example-hello-world-sql-webapp-0.6.0-M2.war
 ```
 
 ### Building from source
