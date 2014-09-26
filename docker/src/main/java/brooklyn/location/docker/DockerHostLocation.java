@@ -132,9 +132,8 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
     @Override
     public DockerContainerLocation obtain(Map<?,?> flags) throws NoMachinesAvailableException {
+        acquireMutex(CONTAINER_MUTEX, "Obtaining container");
         try {
-            acquireMutex(CONTAINER_MUTEX, "Obtaining container");
-
             // Lookup entity from context or flags
             Object context = flags.get(LocationConfigKeys.CALLER_CONTEXT.getName());
             if (context != null && !(context instanceof Entity)) {
@@ -216,8 +215,6 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             ((EntityLocal) dockerContainer).setAttribute(DockerContainer.HARDWARE_ID, hardwareId);
             ((EntityLocal) entity).setAttribute(DockerContainer.CONTAINER, dockerContainer);
             return dockerContainer.getDynamicLocation();
-        } catch (InterruptedException ie) {
-            throw Exceptions.propagate(ie);
         } finally {
             releaseMutex(CONTAINER_MUTEX);
         }
@@ -263,8 +260,8 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
     @Override
     public void release(DockerContainerLocation machine) {
+        acquireMutex(CONTAINER_MUTEX, "Releasing container " + machine);
         try {
-            acquireMutex(CONTAINER_MUTEX, "Releasing container " + machine);
             LOG.info("Releasing {}", machine);
 
             DynamicCluster cluster = dockerHost.getDockerContainerCluster();
@@ -285,8 +282,6 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             } finally {
                 Entities.unmanage(container);
             }
-        } catch (InterruptedException ie) {
-            throw Exceptions.propagate(ie);
         } finally {
             releaseMutex(CONTAINER_MUTEX);
         }
@@ -360,8 +355,12 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
     }
 
     @Override
-    public void acquireMutex(String mutexId, String description) throws InterruptedException {
-        mutexSupport.acquireMutex(mutexId, description);
+    public void acquireMutex(String mutexId, String description) {
+        try {
+            mutexSupport.acquireMutex(mutexId, description);
+        } catch (InterruptedException ie) {
+            throw Exceptions.propagate(ie);
+        }
     }
 
     @Override
