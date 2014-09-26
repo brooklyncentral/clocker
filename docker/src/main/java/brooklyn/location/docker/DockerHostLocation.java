@@ -19,7 +19,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
@@ -62,17 +61,13 @@ import brooklyn.util.mutex.MutexSupport;
 import brooklyn.util.mutex.WithMutexes;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.os.Os;
-import brooklyn.util.text.Identifiers;
 import brooklyn.util.text.Strings;
 
-import com.google.common.base.Charsets;
-import com.google.common.base.Joiner;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.hash.Hashing;
 
 public class DockerHostLocation extends AbstractLocation implements MachineProvisioningLocation<DockerContainerLocation>, DockerVirtualLocation,
         DynamicLocation<DockerHost, DockerHostLocation>, WithMutexes, Closeable {
@@ -136,9 +131,8 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
     @Override
     public DockerContainerLocation obtain(Map<?,?> flags) throws NoMachinesAvailableException {
+        acquireMutex(CONTAINER_MUTEX, "Obtaining container");
         try {
-            acquireMutex(CONTAINER_MUTEX, "Obtaining container");
-
             // Lookup entity from context or flags
             Object context = flags.get(LocationConfigKeys.CALLER_CONTEXT.getName());
             if (context != null && !(context instanceof Entity)) {
@@ -220,8 +214,6 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             ((EntityLocal) dockerContainer).setAttribute(DockerContainer.HARDWARE_ID, hardwareId);
             ((EntityLocal) entity).setAttribute(DockerContainer.CONTAINER, dockerContainer);
             return dockerContainer.getDynamicLocation();
-        } catch (InterruptedException ie) {
-            throw Exceptions.propagate(ie);
         } finally {
             releaseMutex(CONTAINER_MUTEX);
         }
@@ -267,8 +259,8 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
     @Override
     public void release(DockerContainerLocation machine) {
+        acquireMutex(CONTAINER_MUTEX, "Releasing container " + machine);
         try {
-            acquireMutex(CONTAINER_MUTEX, "Releasing container " + machine);
             LOG.info("Releasing {}", machine);
 
             DynamicCluster cluster = dockerHost.getDockerContainerCluster();
@@ -289,8 +281,6 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             } finally {
                 Entities.unmanage(container);
             }
-        } catch (InterruptedException ie) {
-            throw Exceptions.propagate(ie);
         } finally {
             releaseMutex(CONTAINER_MUTEX);
         }
@@ -364,8 +354,12 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
     }
 
     @Override
-    public void acquireMutex(String mutexId, String description) throws InterruptedException {
-        mutexSupport.acquireMutex(mutexId, description);
+    public void acquireMutex(String mutexId, String description) {
+        try {
+            mutexSupport.acquireMutex(mutexId, description);
+        } catch (InterruptedException ie) {
+            throw Exceptions.propagate(ie);
+        }
     }
 
     @Override

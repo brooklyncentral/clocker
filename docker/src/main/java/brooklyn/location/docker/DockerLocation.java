@@ -118,9 +118,8 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
 
     @Override
     public MachineLocation obtain(Map<?,?> flags) throws NoMachinesAvailableException {
+        acquireMutex(DOCKER_HOST_MUTEX, "Obtaining Docker host");
         try {
-            acquireMutex(DOCKER_HOST_MUTEX, "Obtaining Docker host");
-
             // Check context for entity being deployed
             Object context = flags.get(LocationConfigKeys.CALLER_CONTEXT.getName());
             if (context != null && !(context instanceof Entity)) {
@@ -157,8 +156,6 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
             containers.put(container.getId(), machine);
 
             return container;
-        } catch (InterruptedException ie) {
-            throw Exceptions.propagate(ie);
         } finally {
             releaseMutex(DOCKER_HOST_MUTEX);
         }
@@ -174,9 +171,8 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
         if (provisioner == null) {
             throw new IllegalStateException("No provisioner available to release "+machine);
         }
+        acquireMutex(DOCKER_HOST_MUTEX, "Releasing Docker host " + machine);
         try {
-            acquireMutex(DOCKER_HOST_MUTEX, "Releasing Docker host " + machine);
-
             String id = machine.getId();
             DockerHostLocation host = containers.remove(id);
             if (host == null) {
@@ -199,8 +195,6 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
             } else {
                 throw new IllegalArgumentException("Request to release "+machine+", but container mapping not found");
             }
-        } catch (InterruptedException ie) {
-            throw Exceptions.propagate(ie);
         } finally {
             releaseMutex(DOCKER_HOST_MUTEX);
         }
@@ -256,8 +250,12 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
     }
 
     @Override
-    public void acquireMutex(String mutexId, String description) throws InterruptedException {
-        mutexSupport.acquireMutex(mutexId, description);
+    public void acquireMutex(String mutexId, String description) {
+        try {
+            mutexSupport.acquireMutex(mutexId, description);
+        } catch (InterruptedException ie) {
+            throw Exceptions.propagate(ie);
+        }
     }
 
     @Override
