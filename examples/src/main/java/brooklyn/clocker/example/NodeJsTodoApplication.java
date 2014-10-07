@@ -34,7 +34,7 @@ import com.google.common.collect.ImmutableMap;
  * Node.JS Todo Application
  */
 @Catalog(name="NodeJS Todo",
-        description="Node.JS Todo Application, configured for Docker.",
+        description="Node.JS Todo Application, with a Redis store",
         iconUrl="classpath://nodejs-logo.png")
 public class NodeJsTodoApplication extends AbstractApplication implements StartableApplication {
 

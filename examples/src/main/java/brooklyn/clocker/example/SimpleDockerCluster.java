@@ -30,7 +30,7 @@ import brooklyn.entity.proxying.EntitySpec;
  * Brooklyn managed {@link VanillaDockerApplication} cluster
  */
 @Catalog(name="Application Cluster",
-        description="Simple cluster of applications defined by a Dockerfile.",
+        description="Simple cluster of applications defined by a Dockerfile",
         iconUrl="classpath://glossy-3d-blue-web-icon.png")
 public class SimpleDockerCluster extends AbstractApplication {
 

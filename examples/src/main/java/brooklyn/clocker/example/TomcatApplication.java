@@ -35,8 +35,8 @@ import brooklyn.location.basic.PortRanges;
 /**
  * Single-node Tomcat server instance.
  */
-@Catalog(name="Tomcat",
-        description="Single Tomcat server.",
+@Catalog(name="Tomcat Server",
+        description="Single Tomcat web application server",
         iconUrl="classpath://tomcat-logo.png")
 public class TomcatApplication extends AbstractApplication implements StartableApplication {
 

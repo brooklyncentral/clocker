@@ -30,7 +30,7 @@ import brooklyn.entity.webapp.jboss.JBoss7Server;
 import brooklyn.location.basic.PortRanges;
 
 @Catalog(name="JBoss",
-        description="Single JBoss server.",
+        description="Single JBoss web application server",
         iconUrl="classpath://jboss_logo.png")
 public class JBossApplication extends AbstractApplication implements StartableApplication {
 

@@ -1,21 +1,40 @@
 Clocker
-=======
+====
 
-Entities and sample code to allow Brooklyn to deploy and manage
-a Docker cloud infrastructure.
+Entities and sample code to allow Brooklyn to deploy and manage a Docker cloud infrastructure.
 
-# Getting Started
+## Getting Started
 
-    % ./clocker.sh launch --cloud --location jclouds:aws-ec2:us-east-1
+To get started, run the `clocker.sh` script. This will launch Brooklyn automatically.
+You can also use the `brooklyn.sh`, `item-lister.sh` and `cloud-explorer.sh` scripts
+as you would in any other Brooklyn installation.
+
+    % ./bin/clocker.sh
+
+The Clocker catalog contains a blueprint for a simple Docker cloud and some example
+applications. To start a Docker cloud using the provided `docker-cloud.yaml` blueprint
+and its default options, use the following command:
+
+    % ./bin/clocker.sh jclouds:aws-ec2:us-east-1
+
+Other blueprints are provided in the `blueprints` directory to illustrate different
+application configuration mechanisms.
+
+## More Information
+
+More details are available at the Clocker website and GitHub repository.
+
+- http://clocker.io/
+- http://github.com/brooklyncentral/clocker/
 
 ----
-Copyright 2014 by Cloudsoft Corporation Limited
+Copyright 2014 by Cloudsoft Corp[oration Limited
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-http://www.apache.org/licenses/LICENSE-2.0
+   http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,

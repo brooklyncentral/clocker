@@ -60,8 +60,8 @@ import com.google.common.collect.ImmutableMap;
  * Launches a 3-tier app with nginx, clustered jboss, and mysql.
  */
 @Catalog(name="Elastic Web Application",
-        description="Deploys a WAR to an Nginx load-balanced Tomcat cluster, " +
-                "with an auto-scaling policy, wired to a MySQL database.",
+        description="Nginx load-balanced Tomcat web application cluster, " +
+                "with an auto-scaling policy, wired to a MySQL database",
         iconUrl="classpath://glossy-3d-blue-web-icon.png")
 public class TomcatClusterWithMySql extends AbstractApplication {
 

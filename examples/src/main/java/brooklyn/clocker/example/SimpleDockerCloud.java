@@ -34,9 +34,9 @@ import com.google.common.collect.ImmutableList;
  * Brooklyn managed Docker cloud infrastructure.
  */
 @Catalog(name="Docker Cloud",
-        description="Deploys a Docker cloud infrastructure.",
+        description="Simple Clocker infrastructure for Docker cloud",
         iconUrl="classpath://docker-top-logo.png")
-public class DockerCloud extends AbstractApplication {
+public class SimpleDockerCloud extends AbstractApplication {
 
     @CatalogConfig(label="Docker Version", priority=90)
     public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "1.2");
@@ -55,19 +55,14 @@ public class DockerCloud extends AbstractApplication {
     @CatalogConfig(label="Maximum Containers per Host", priority=50)
     public static final ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = ConfigKeys.newConfigKeyWithDefault(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_SIZE, 4);
 
-    @CatalogConfig(label="Maximum CPU Usage per Host", priority=40)
-    public static final ConfigKey<Double> DOCKER_CONTAINER_CLUSTER_MAX_CPU = ConfigKeys.newConfigKeyWithDefault(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_CPU, 0.5d);
-
-    @CatalogConfig(label="Enable Host HA Policies", priority=30)
-    public static final ConfigKey<Boolean> HA_POLICY_ENABLE = DockerHost.HA_POLICY_ENABLE;
-
     @Override
     public void initApp() {
         EntitySpec dockerSpec = EntitySpec.create(DockerHost.class)
-                .configure(SoftwareProcess.START_TIMEOUT, Duration.minutes(15))
-                .configure(DockerHost.HA_POLICY_ENABLE, getConfig(HA_POLICY_ENABLE))
-                .configure(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_SIZE, getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE))
-                .configure(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_CPU, getConfig(DOCKER_CONTAINER_CLUSTER_MAX_CPU));
+                .configure(SoftwareProcess.START_TIMEOUT, Duration.minutes(15));
+
+        BreadthFirstPlacementStrategy strategy = new BreadthFirstPlacementStrategy();
+        strategy.injectManagementContext(getManagementContext());
+        strategy.setConfig(BreadthFirstPlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_SIZE, getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE));
 
         addChild(EntitySpec.create(DockerInfrastructure.class)
                 .configure(DockerInfrastructure.DOCKER_VERSION, getConfig(DOCKER_VERSION))
@@ -76,8 +71,7 @@ public class DockerCloud extends AbstractApplication {
                 .configure(DockerInfrastructure.LOCATION_NAME, getConfig(LOCATION_NAME))
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE))
                 .configure(DockerInfrastructure.DOCKER_HOST_SPEC, dockerSpec)
-                .configure(DockerInfrastructure.PLACEMENT_STRATEGIES,
-                        ImmutableList.<DockerAwarePlacementStrategy>of(new BreadthFirstPlacementStrategy())) // TODO make configurable
+                .configure(DockerInfrastructure.PLACEMENT_STRATEGIES, ImmutableList.<DockerAwarePlacementStrategy>of(strategy))
                 .displayName("Docker Infrastructure"));
     }
 }
