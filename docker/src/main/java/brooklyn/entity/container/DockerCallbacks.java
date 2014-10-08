@@ -25,7 +25,7 @@ public class DockerCallbacks {
     /** Do not instantiate. */
     private DockerCallbacks() { }
 
-    public static final String SEPARATOR = "###";
+    public static final String SEPARATOR = " : ";
     public static final String DOCKER_HOST_CALLBACK = "docker-host-callback";
     public static final String COMMIT = "commit";
     public static final String PUSH = "push";
@@ -42,6 +42,6 @@ public class DockerCallbacks {
     }
 
     private static final String command(String command, Object...rest) {
-        return SEPARATOR + Joiner.on(SEPARATOR).join(DOCKER_HOST_CALLBACK, command, rest);
+        return SEPARATOR + Joiner.on(SEPARATOR).join(DOCKER_HOST_CALLBACK, command, rest) + SEPARATOR;
     }
 }

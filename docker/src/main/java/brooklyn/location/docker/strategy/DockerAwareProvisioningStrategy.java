@@ -15,19 +15,16 @@
  */
 package brooklyn.location.docker.strategy;
 
-import java.util.List;
+import java.util.Map;
 
-import brooklyn.entity.Entity;
-import brooklyn.entity.container.docker.DockerInfrastructure;
-import brooklyn.location.docker.DockerHostLocation;
+import com.google.common.base.Function;
 
 /**
- * Placement strategy for Docker containers in host clusters.
+ * Provisioning strategy for new Docker hosts.
  */
-public interface DockerAwarePlacementStrategy {
+public interface DockerAwareProvisioningStrategy extends Function<Map<String,Object>,Map<String,Object>> {
 
-    DockerInfrastructure getDockerInfrastructure();
-
-    List<DockerHostLocation> filterLocations(List<DockerHostLocation> locations, Entity context);
+    @Override
+    Map<String,Object> apply(Map<String,Object> context);
 
 }

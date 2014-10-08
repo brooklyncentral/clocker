@@ -51,7 +51,7 @@ public class DockerAffinityRuleStrategy extends AbstractDockerPlacementStrategy 
             String combined = Joiner.on('\n').join(Optional.presentInstances(ImmutableList.of(entityRules, hostRules, infrastructureRules)));
             AffinityRules rules = AffinityRules.rulesFor(entity).parse(combined);
 
-            Iterable<Entity> entities = managementContext.getEntityManager().findEntities(EntityPredicates.withLocation(machine));
+            Iterable<Entity> entities = getManagementContext().getEntityManager().findEntities(EntityPredicates.withLocation(machine));
             if (Iterables.isEmpty(entities)) {
                 if (rules.allowEmptyLocations()) {
                     available.add(machine);

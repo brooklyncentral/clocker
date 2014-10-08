@@ -49,6 +49,7 @@ import brooklyn.util.ssh.IptablesCommands.Policy;
 import brooklyn.util.time.Duration;
 
 import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.net.HostAndPort;
@@ -161,8 +162,8 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     @Override
     public int execScript(Map<String,?> props, String summaryForLogging, List<String> commands, Map<String,?> env) {
         Iterable<String> filtered = Iterables.filter(commands, DockerCallbacks.FILTER);
-        for (String dockerCommand : filtered) {
-            parseDockerCallback(dockerCommand);
+        for (String commandString : filtered) {
+            parseDockerCallback(commandString);
         }
         return super.execScript(props, summaryForLogging, commands, env);
     }
@@ -170,15 +171,20 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     @Override
     public int execCommands(Map<String,?> props, String summaryForLogging, List<String> commands, Map<String,?> env) {
         Iterable<String> filtered = Iterables.filter(commands, DockerCallbacks.FILTER);
-        for (String dockerCommand : filtered) {
-            parseDockerCallback(dockerCommand);
+        for (String commandString : filtered) {
+            parseDockerCallback(commandString);
         }
         return super.execCommands(props, summaryForLogging, commands, env);
     }
 
-    private void parseDockerCallback(String dockerCommand) {
-        List<String> tokens = DockerCallbacks.PARSER.splitToList(dockerCommand);
-        String command = tokens.get(1);
+    private void parseDockerCallback(String commandString) {
+        List<String> tokens = DockerCallbacks.PARSER.splitToList(commandString);
+        int callback = Iterables.indexOf(tokens, Predicates.equalTo(DockerCallbacks.DOCKER_HOST_CALLBACK));
+        if (callback == -1) {
+            LOG.warn("Could not find callback token: {}", commandString);
+            throw new IllegalStateException("Cannot find callback token in command line");
+        }
+        String command = tokens.get(callback + 1);
         if (DockerCallbacks.COMMIT.equalsIgnoreCase(command)) {
             String containerId = getOwner().getContainerId();
             String imageName = getOwner().getAttribute(DockerContainer.IMAGE_NAME);

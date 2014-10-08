@@ -15,20 +15,21 @@
  */
 package brooklyn.location.docker.strategy;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import javax.annotation.Nullable;
 
+import brooklyn.basic.BasicConfigurableObject;
+import brooklyn.config.ConfigKey;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.trait.Identifiable;
-import brooklyn.management.ManagementContext;
+import brooklyn.location.docker.DockerVirtualLocation;
+import brooklyn.util.flags.SetFromFlag;
 
 import com.google.common.base.Function;
 
 /**
  * Placement strategy for Docker containers.
  */
-public abstract class AbstractDockerPlacementStrategy implements DockerAwarePlacementStrategy {
+public abstract class AbstractDockerPlacementStrategy extends BasicConfigurableObject implements DockerAwarePlacementStrategy {
 
     public static final Function<Identifiable, String> identity() { return identity; }
 
@@ -39,17 +40,11 @@ public abstract class AbstractDockerPlacementStrategy implements DockerAwarePlac
         }
     };
 
-    protected ManagementContext managementContext;
-    protected DockerInfrastructure infrastructure;
+    @SetFromFlag("infrastructure")
+    public static final ConfigKey<DockerInfrastructure> DOCKER_INFRASTRUCTURE = DockerVirtualLocation.INFRASTRUCTURE;
 
     @Override
-    public void init(ManagementContext managementContext, DockerInfrastructure infrastructure) {
-        this.managementContext = checkNotNull(managementContext, "managementContext");
-        this.infrastructure = checkNotNull(infrastructure, "infrastructure");
-    }
-
-    @Override
-    public DockerInfrastructure getDockerInfrastructure() { return infrastructure; }
+    public DockerInfrastructure getDockerInfrastructure() { return getConfig(DOCKER_INFRASTRUCTURE); }
 
     @Override
     public String toString() {

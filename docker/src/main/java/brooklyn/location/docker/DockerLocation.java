@@ -24,19 +24,25 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
+import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.group.DynamicCluster;
+import brooklyn.event.basic.BasicConfigKey;
 import brooklyn.location.MachineLocation;
 import brooklyn.location.MachineProvisioningLocation;
 import brooklyn.location.NoMachinesAvailableException;
 import brooklyn.location.basic.AbstractLocation;
 import brooklyn.location.basic.LocationConfigKeys;
 import brooklyn.location.basic.SshMachineLocation;
+import brooklyn.location.cloud.CloudLocationConfig;
 import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
+import brooklyn.location.docker.strategy.DockerAwareProvisioningStrategy;
 import brooklyn.location.dynamic.DynamicLocation;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.exceptions.Exceptions;
@@ -124,13 +130,11 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
             // Get the available hosts based on placement strategies
             List<DockerHostLocation> available = getDockerHostLocations();
             for (DockerAwarePlacementStrategy strategy : strategies) {
-                strategy.init(getManagementContext(), getDockerInfrastructure());
                 available = strategy.filterLocations(available, entity);
             }
             List<DockerAwarePlacementStrategy> entityStrategies = entity.getConfig(DockerAttributes.PLACEMENT_STRATEGIES);
             if (entityStrategies != null && entityStrategies.size() > 0) {
                 for (DockerAwarePlacementStrategy strategy : entityStrategies) {
-                    strategy.init(getManagementContext(), getDockerInfrastructure());
                     available = strategy.filterLocations(available, entity);
                 }
             }
@@ -142,8 +146,15 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
                 machine = available.get(0);
                 dockerHost = machine.getOwner();
             } else {
-                Collection<Entity> added = getDockerInfrastructure().getDockerHostCluster().resizeByDelta(1);
-                dockerHost = (DockerHost) Iterables.getOnlyElement(added);
+                Iterable<DockerAwareProvisioningStrategy> provisioningStrategies = Iterables.filter(Iterables.concat(strategies,  entityStrategies), DockerAwareProvisioningStrategy.class);
+                Map<String,Object> provisioningFlags = getDockerInfrastructure().getConfig(SoftwareProcess.PROVISIONING_PROPERTIES);
+                for (DockerAwareProvisioningStrategy strategy : provisioningStrategies) {
+                    provisioningFlags = strategy.apply(provisioningFlags);
+                }
+
+                LOG.info("Provisioning new host with flags: {}", provisioningFlags);
+                Entity added = getDockerInfrastructure().getDockerHostCluster().addNode(getProvisioner(), provisioningFlags);
+                dockerHost = (DockerHost) added;
                 machine = dockerHost.getDynamicLocation();
             }
 

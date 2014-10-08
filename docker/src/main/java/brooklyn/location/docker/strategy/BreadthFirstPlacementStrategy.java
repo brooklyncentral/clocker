@@ -19,8 +19,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import brooklyn.config.ConfigKey;
-import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.location.docker.DockerHostLocation;
+import brooklyn.util.flags.SetFromFlag;
 
 /**
  * Placement strategy that adds containers to the smallest Docker host.
@@ -29,13 +29,12 @@ public class BreadthFirstPlacementStrategy extends BasicDockerPlacementStrategy 
 
     private static final Logger LOG = LoggerFactory.getLogger(BreadthFirstPlacementStrategy.class);
 
-    public static final ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = ConfigKeys.newIntegerConfigKey(
-            "docker.container.cluster.maxSize",
-            "Maximum size of a Docker container cluster", 4);
+    @SetFromFlag("maxContainers")
+    public static final ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = DepthFirstPlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_SIZE;
 
     @Override
     public boolean apply(DockerHostLocation input) {
-        Integer maxSize = input.getOwner().getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
+        Integer maxSize = getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
         Integer currentSize = input.getOwner().getCurrentSize();
         return currentSize < maxSize;
     }

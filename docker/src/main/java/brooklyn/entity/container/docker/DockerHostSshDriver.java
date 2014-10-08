@@ -87,7 +87,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         log.info("Created base Dockerfile image with ID {}", baseImageId);
 
         // Update the image with the Clocker sshd Dockerfile
-        copyTemplate(DockerUtils.SSHD_DOCKERFILE, Os.mergePaths(name, "Sshd" + DockerUtils.DOCKERFILE), MutableMap.of("repository", getRepository(), "imageName", name));
+        copyTemplate(DockerUtils.SSHD_DOCKERFILE, Os.mergePaths(name, "Sshd" + DockerUtils.DOCKERFILE), false, MutableMap.of("repository", getRepository(), "imageName", name));
         String sshdImageId = getImageId("Sshd" + DockerUtils.DOCKERFILE, name);
         log.info("Created SSHable Dockerfile image with ID {}", sshdImageId);
 

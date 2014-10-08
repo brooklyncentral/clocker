@@ -17,6 +17,7 @@ package brooklyn.location.docker;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +63,7 @@ import brooklyn.util.mutex.MutexSupport;
 import brooklyn.util.mutex.WithMutexes;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.os.Os;
+import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.text.Strings;
 
 import com.google.common.base.Objects.ToStringHelper;
@@ -169,7 +171,13 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                 ((AbstractEntity) entity).setConfigEvenIfOwned(SoftwareProcess.SKIP_INSTALLATION, true);
             } else {
                 // Set commit command at post-install
-                ((AbstractEntity) entity).setConfigEvenIfOwned(SoftwareProcess.POST_INSTALL_COMMAND, DockerCallbacks.commit());
+                String postInstall = entity.getConfig(SoftwareProcess.POST_INSTALL_COMMAND);
+                if (Strings.isNonBlank(postInstall)) {
+                    postInstall = BashCommands.chain(postInstall, DockerCallbacks.commit());
+                } else {
+                    postInstall = DockerCallbacks.commit();
+                }
+                ((AbstractEntity) entity).setConfigEvenIfOwned(SoftwareProcess.POST_INSTALL_COMMAND, postInstall);
 
                 if (Strings.isNonBlank(dockerfile)) {
                     if (imageId != null) {
@@ -236,11 +244,13 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
     private void configureEnrichers(AbstractEntity entity) {
         for (AttributeSensor sensor : Iterables.filter(entity.getEntityType().getSensors(), AttributeSensor.class)) {
-            if (DockerUtils.URL_SENSOR_NAMES.contains(sensor.getName()) || sensor.getName().endsWith(".url")) {
-                AttributeSensor<String> target = DockerUtils.<String>mappedSensor(sensor);
+            if (DockerUtils.URL_SENSOR_NAMES.contains(sensor.getName()) ||
+                    sensor.getName().endsWith(".url") ||
+                    URI.class.isAssignableFrom(sensor.getType())) {
+                AttributeSensor<URI> target = DockerUtils.<URI>mappedSensor(sensor);
                 entity.addEnricher(dockerHost.getSubnetTier().uriTransformingEnricher(
                         EntityAndAttribute.supplier(entity, sensor), target));
-                Set<Hint<?>> hints = RendererHints.getHintsFor(sensor, NamedActionWithUrl.class);
+                Set<Hint<?>> hints = RendererHints.getHintsFor(sensor);
                 for (Hint<?> hint : hints) {
                     RendererHints.register(target, (NamedActionWithUrl) hint);
                 }
