@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.entity.container.docker;
+package brooklyn.entity.container;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicate;
@@ -25,7 +25,7 @@ public class DockerCallbacks {
     /** Do not instantiate. */
     private DockerCallbacks() { }
 
-    public static final String SEPARATOR = "###";
+    public static final String SEPARATOR = " : ";
     public static final String DOCKER_HOST_CALLBACK = "docker-host-callback";
     public static final String COMMIT = "commit";
     public static final String PUSH = "push";
@@ -42,6 +42,6 @@ public class DockerCallbacks {
     }
 
     private static final String command(String command, Object...rest) {
-        return SEPARATOR + Joiner.on(SEPARATOR).join(DOCKER_HOST_CALLBACK, command, rest);
+        return SEPARATOR + Joiner.on(SEPARATOR).join(DOCKER_HOST_CALLBACK, command, rest) + SEPARATOR;
     }
 }

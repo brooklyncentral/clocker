@@ -32,6 +32,8 @@ import brooklyn.enricher.Enrichers;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
+import brooklyn.entity.container.DockerAttributes;
+import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.machine.MachineEntityImpl;
@@ -70,10 +72,8 @@ import brooklyn.util.text.Identifiers;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 
-import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 
 /**
  * The host running the Docker service.
@@ -104,7 +104,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         if (Strings.isBlank(repository)) {
             repository = getId();
         }
-        repository = DockerAttributes.allowed(repository);
+        repository = DockerUtils.allowed(repository);
         setAttribute(DOCKER_REPOSITORY, repository);
 
         // Set a password for this host's containers
@@ -384,7 +384,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
         if (Strings.isBlank(imageId)) {
             String dockerfileUrl = getConfig(DockerInfrastructure.DOCKERFILE_URL);
-            String imageName = DockerAttributes.imageName(this, dockerfileUrl, getRepository());
+            String imageName = DockerUtils.imageName(this, dockerfileUrl, getRepository());
             imageId = createSshableImage(dockerfileUrl, imageName);
             setAttribute(DOCKER_IMAGE_NAME, imageName);
         }

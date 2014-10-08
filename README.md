@@ -1,17 +1,17 @@
 Clocker
 =======
 
-Clocker creates and manages a [Docker](http://docker.io) cloud infrastructure. Clocker support 
+Clocker creates and manages a [Docker](http://docker.io/) cloud infrastructure. Clocker support 
 single-click deployment and runtime management of multi-node applications that can run on
 containers distributed across docker hosts. Application blueprints written for 
 [Brooklyn](https://brooklyn.incubator.apache.org/) can thus be deployed to a Docker cloud 
 infrastructure.
 
-This repo contains the required Brooklyn entities, locations and examples.
+This repository contains the required Brooklyn entities, locations and examples.
 
 ## Getting started
 
-To get started, you just have to download Clocker, deploy the DockerCloud blueprint to the 
+To get started, you just have to download Clocker, deploy the _Docker Cloud_ blueprint to the 
 cloud or machines of your choice, and then use Clocker to deploy your applications. This will 
 automatically create the required Docker containers.
 
@@ -19,10 +19,8 @@ You can create a Docker based cloud infrastructure on your favourite cloud provi
 private cloud using any of the jclouds supported APIs. Alternatively you can target one or 
 more existing machines for running Docker.
 
-If you are keen to peek under the covers, you can find the Clocker Infrastructure blueprint at 
+If you are keen to peek under the covers, you can find the Docker cloud infrastructure blueprint at 
 [docker-cloud.yaml](https://raw.githubusercontent.com/brooklyncentral/clocker/master/examples/src/main/assembly/files/blueprints/docker-cloud.yaml). 
-Or if you prefer Java take a look at 
-[DockerCloud](https://raw.githubusercontent.com/brooklyncentral/clocker/master/examples/src/main/java/brooklyn/clocker/example/DockerCloud.java).
 
 ### Using the latest Clocker release
 
@@ -32,9 +30,9 @@ You can build a *Docker Cloud Infrastructure* running these commands:
     -O brooklyn-clocker-examples-0.6.2-dist.tar.gz http://git.io/O--JKw
 % tar zxf brooklyn-clocker-examples-0.6.2-dist.tar.gz
 % cd brooklyn-clocker-examples-0.6.2
-% ./clocker.sh launch --cloud --location <location>
+% ./clocker.sh launch --cloud --location location
 ```
-Where `<location>` can be e.g. `jclouds:softlayer`, or a named location or a fixed IP e.g. `byon:(hosts="1.2.3.4")`.
+Where _location_ can be e.g. _jclouds:softlayer:sjc01_, or a named location or a fixed IP e.g. _byon:(hosts="10.1.2.3,10.1.2.4")_.
 Those simple steps will give you a running docker instance on your favourite cloud.
 
 For anything other than a localhost or bring-your-own-nodes location, it is vital that you 
@@ -71,13 +69,14 @@ For more information on deploying applications from the Brooklyn catalog, see
 [Getting Started - Policies and Catalogs](https://brooklyn.incubator.apache.org/quickstart/policies-and-catalogs.html).
 You can also paste a YAML blueprint into the _YAML_ tab of the _Add Application_ dialog, as follows:
 
-```Yaml
+```JS
 location: my-docker-cloud
 services:
 - type: brooklyn.entity.webapp.jboss.JBoss7Server
   brooklyn.config:
     wars.root:
-    - http://search.maven.org/remotecontent?filepath=io/brooklyn/example/brooklyn-example-hello-world-sql-webapp/0.6.0-M2/brooklyn-example-hello-world-sql-webapp-0.6.0-M2.war
+    - "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/hello-world.war"
+>>>>>>> Updated examples with new object syntax and added better startup script and archive creation
 ```
 
 ### Building from source
@@ -96,7 +95,7 @@ Build and run the examples as follows:
     % cd target
     % tar zxf brooklyn-clocker-examples-0.7.0-SNAPSHOT-dist.tar.gz
     % cd brooklyn-clocker-examples-0.7.0-SNAPSHOT
-    % ./clocker.sh launch --cloud --location <location>
+    % ./bin/clocker.sh location
     ...
 ```
 
@@ -106,7 +105,6 @@ Clocker is Apache 2.0 licensed, and builds on Apache Brooklyn. Please get involv
 discussion on [Freenode](http://freenode.net/), IRC `#brooklyncentral` or the Apache Brooklyn 
 community [mailing list](https://brooklyn.incubator.apache.org/community/). We also maintain a
 [Trello](https://trello.com/b/lhS7ltyi/clocker) board with the current roadmap and active tasks.
-
 
 ### Documentation
 
@@ -119,7 +117,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-http://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,

@@ -17,9 +17,9 @@ package brooklyn.location.docker;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.URI;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
@@ -38,8 +38,9 @@ import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityAndAttribute;
 import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.basic.SoftwareProcess;
-import brooklyn.entity.container.docker.DockerAttributes;
-import brooklyn.entity.container.docker.DockerCallbacks;
+import brooklyn.entity.container.DockerAttributes;
+import brooklyn.entity.container.DockerCallbacks;
+import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
@@ -62,17 +63,14 @@ import brooklyn.util.mutex.MutexSupport;
 import brooklyn.util.mutex.WithMutexes;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.os.Os;
-import brooklyn.util.text.Identifiers;
+import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.text.Strings;
 
-import com.google.common.base.Charsets;
-import com.google.common.base.Joiner;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.hash.Hashing;
 
 public class DockerHostLocation extends AbstractLocation implements MachineProvisioningLocation<DockerContainerLocation>, DockerVirtualLocation,
         DynamicLocation<DockerHost, DockerHostLocation>, WithMutexes, Closeable {
@@ -136,9 +134,8 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
     @Override
     public DockerContainerLocation obtain(Map<?,?> flags) throws NoMachinesAvailableException {
+        acquireMutex(CONTAINER_MUTEX, "Obtaining container");
         try {
-            acquireMutex(CONTAINER_MUTEX, "Obtaining container");
-
             // Lookup entity from context or flags
             Object context = flags.get(LocationConfigKeys.CALLER_CONTEXT.getName());
             if (context != null && !(context instanceof Entity)) {
@@ -156,7 +153,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             // Add the entity Dockerfile if configured
             String dockerfile = entity.getConfig(DockerAttributes.DOCKERFILE_URL);
             String imageId = entity.getConfig(DockerAttributes.DOCKER_IMAGE_ID);
-            String imageName = DockerAttributes.imageName(entity, dockerfile, repository);
+            String imageName = DockerUtils.imageName(entity, dockerfile, repository);
 
             // Lookup image ID or build new image from Dockerfile
             LOG.warn("ImageName for entity {}: {}", entity, imageName);
@@ -174,7 +171,13 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                 ((AbstractEntity) entity).setConfigEvenIfOwned(SoftwareProcess.SKIP_INSTALLATION, true);
             } else {
                 // Set commit command at post-install
-                ((AbstractEntity) entity).setConfigEvenIfOwned(SoftwareProcess.POST_INSTALL_COMMAND, DockerCallbacks.commit());
+                String postInstall = entity.getConfig(SoftwareProcess.POST_INSTALL_COMMAND);
+                if (Strings.isNonBlank(postInstall)) {
+                    postInstall = BashCommands.chain(postInstall, DockerCallbacks.commit());
+                } else {
+                    postInstall = DockerCallbacks.commit();
+                }
+                ((AbstractEntity) entity).setConfigEvenIfOwned(SoftwareProcess.POST_INSTALL_COMMAND, postInstall);
 
                 if (Strings.isNonBlank(dockerfile)) {
                     if (imageId != null) {
@@ -220,8 +223,6 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             ((EntityLocal) dockerContainer).setAttribute(DockerContainer.HARDWARE_ID, hardwareId);
             ((EntityLocal) entity).setAttribute(DockerContainer.CONTAINER, dockerContainer);
             return dockerContainer.getDynamicLocation();
-        } catch (InterruptedException ie) {
-            throw Exceptions.propagate(ie);
         } finally {
             releaseMutex(CONTAINER_MUTEX);
         }
@@ -243,11 +244,13 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
     private void configureEnrichers(AbstractEntity entity) {
         for (AttributeSensor sensor : Iterables.filter(entity.getEntityType().getSensors(), AttributeSensor.class)) {
-            if (DockerAttributes.URL_SENSOR_NAMES.contains(sensor.getName()) || sensor.getName().endsWith(".url")) {
-                AttributeSensor<String> target = DockerAttributes.<String>mappedSensor(sensor);
+            if (DockerUtils.URL_SENSOR_NAMES.contains(sensor.getName()) ||
+                    sensor.getName().endsWith(".url") ||
+                    URI.class.isAssignableFrom(sensor.getType())) {
+                AttributeSensor<URI> target = DockerUtils.<URI>mappedSensor(sensor);
                 entity.addEnricher(dockerHost.getSubnetTier().uriTransformingEnricher(
                         EntityAndAttribute.supplier(entity, sensor), target));
-                Set<Hint<?>> hints = RendererHints.getHintsFor(sensor, NamedActionWithUrl.class);
+                Set<Hint<?>> hints = RendererHints.getHintsFor(sensor);
                 for (Hint<?> hint : hints) {
                     RendererHints.register(target, (NamedActionWithUrl) hint);
                 }
@@ -255,7 +258,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                     LOG.debug("Mapped URL sensor: origin={}, mapped={}", sensor.getName(), target.getName());
                 }
             } else if (PortAttributeSensorAndConfigKey.class.isAssignableFrom(sensor.getClass())) {
-                AttributeSensor<String> target = DockerAttributes.mappedPortSensor((PortAttributeSensorAndConfigKey) sensor);
+                AttributeSensor<String> target = DockerUtils.mappedPortSensor((PortAttributeSensorAndConfigKey) sensor);
                 entity.addEnricher(dockerHost.getSubnetTier().hostAndPortTransformingEnricher(
                         EntityAndAttribute.supplier(entity, sensor), target));
                 if (LOG.isDebugEnabled()) {
@@ -267,8 +270,8 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
     @Override
     public void release(DockerContainerLocation machine) {
+        acquireMutex(CONTAINER_MUTEX, "Releasing container " + machine);
         try {
-            acquireMutex(CONTAINER_MUTEX, "Releasing container " + machine);
             LOG.info("Releasing {}", machine);
 
             DynamicCluster cluster = dockerHost.getDockerContainerCluster();
@@ -289,8 +292,6 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             } finally {
                 Entities.unmanage(container);
             }
-        } catch (InterruptedException ie) {
-            throw Exceptions.propagate(ie);
         } finally {
             releaseMutex(CONTAINER_MUTEX);
         }
@@ -364,8 +365,12 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
     }
 
     @Override
-    public void acquireMutex(String mutexId, String description) throws InterruptedException {
-        mutexSupport.acquireMutex(mutexId, description);
+    public void acquireMutex(String mutexId, String description) {
+        try {
+            mutexSupport.acquireMutex(mutexId, description);
+        } catch (InterruptedException ie) {
+            throw Exceptions.propagate(ie);
+        }
     }
 
     @Override

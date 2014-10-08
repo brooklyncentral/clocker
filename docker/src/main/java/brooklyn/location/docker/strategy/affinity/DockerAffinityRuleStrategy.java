@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.location.affinity;
-
-import static com.google.common.base.Preconditions.checkNotNull;
+package brooklyn.location.docker.strategy.affinity;
 
 import java.util.List;
 
@@ -25,15 +23,11 @@ import org.slf4j.LoggerFactory;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.EntityPredicates;
 import brooklyn.entity.container.docker.DockerHost;
-import brooklyn.location.Location;
-import brooklyn.location.cloud.AvailabilityZoneExtension;
 import brooklyn.location.docker.DockerHostLocation;
-import brooklyn.location.docker.DockerLocation;
-import brooklyn.management.ManagementContext;
+import brooklyn.location.docker.strategy.AbstractDockerPlacementStrategy;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -41,32 +35,23 @@ import com.google.common.collect.Lists;
 /**
  * Docker host selection strategy using affinity rules to filter available hosts.
  */
-public class DockerAffinityRuleStrategy implements AffinityRuleExtension {
+public class DockerAffinityRuleStrategy extends AbstractDockerPlacementStrategy {
 
     private static final Logger LOG = LoggerFactory.getLogger(DockerAffinityRuleStrategy.class);
 
-    private final ManagementContext managementContext;
-    private final DockerLocation location;
-
-    public DockerAffinityRuleStrategy(ManagementContext managementContext, DockerLocation location) {
-        this.managementContext = checkNotNull(managementContext, "managementContext");
-        this.location = Preconditions.checkNotNull(location, "location");
-    }
-
     @Override
-    public List<Location> filterLocations(Entity entity) {
-        List<Location> hosts = location.getExtension(AvailabilityZoneExtension.class).getAllSubLocations();
+    public List<DockerHostLocation> filterLocations(List<DockerHostLocation> locations, Entity entity) {
         List<DockerHostLocation> available = Lists.newArrayList();
 
         // Select hosts that satisfy the affinity rules
-        for (DockerHostLocation machine : Iterables.filter(hosts, DockerHostLocation.class)) {
+        for (DockerHostLocation machine : locations) {
             Optional<String> entityRules = Optional.fromNullable(entity.getConfig(DockerHost.DOCKER_HOST_AFFINITY_RULES));
             Optional<String> hostRules = Optional.fromNullable(machine.getOwner().getConfig(DockerHost.DOCKER_HOST_AFFINITY_RULES));
             Optional<String> infrastructureRules = Optional.fromNullable(machine.getOwner().getInfrastructure().getConfig(DockerHost.DOCKER_HOST_AFFINITY_RULES));
             String combined = Joiner.on('\n').join(Optional.presentInstances(ImmutableList.of(entityRules, hostRules, infrastructureRules)));
             AffinityRules rules = AffinityRules.rulesFor(entity).parse(combined);
 
-            Iterable<Entity> entities = managementContext.getEntityManager().findEntities(EntityPredicates.withLocation(machine));
+            Iterable<Entity> entities = getManagementContext().getEntityManager().findEntities(EntityPredicates.withLocation(machine));
             if (Iterables.isEmpty(entities)) {
                 if (rules.allowEmptyLocations()) {
                     available.add(machine);
@@ -82,7 +67,7 @@ public class DockerAffinityRuleStrategy implements AffinityRuleExtension {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Available Docker hosts: {}", Iterables.toString(available));
         }
-        return ImmutableList.<Location>copyOf(available);
+        return available;
     }
 
 }

@@ -25,8 +25,8 @@ import org.slf4j.LoggerFactory;
 
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.EntityLocal;
-import brooklyn.entity.container.docker.DockerAttributes;
-import brooklyn.entity.container.docker.DockerCallbacks;
+import brooklyn.entity.container.DockerCallbacks;
+import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.location.Location;
@@ -49,6 +49,7 @@ import brooklyn.util.ssh.IptablesCommands.Policy;
 import brooklyn.util.time.Duration;
 
 import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.net.HostAndPort;
@@ -161,8 +162,8 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     @Override
     public int execScript(Map<String,?> props, String summaryForLogging, List<String> commands, Map<String,?> env) {
         Iterable<String> filtered = Iterables.filter(commands, DockerCallbacks.FILTER);
-        for (String dockerCommand : filtered) {
-            parseDockerCallback(dockerCommand);
+        for (String commandString : filtered) {
+            parseDockerCallback(commandString);
         }
         return super.execScript(props, summaryForLogging, commands, env);
     }
@@ -170,20 +171,25 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     @Override
     public int execCommands(Map<String,?> props, String summaryForLogging, List<String> commands, Map<String,?> env) {
         Iterable<String> filtered = Iterables.filter(commands, DockerCallbacks.FILTER);
-        for (String dockerCommand : filtered) {
-            parseDockerCallback(dockerCommand);
+        for (String commandString : filtered) {
+            parseDockerCallback(commandString);
         }
         return super.execCommands(props, summaryForLogging, commands, env);
     }
 
-    private void parseDockerCallback(String dockerCommand) {
-        List<String> tokens = DockerCallbacks.PARSER.splitToList(dockerCommand);
-        String command = tokens.get(1);
+    private void parseDockerCallback(String commandString) {
+        List<String> tokens = DockerCallbacks.PARSER.splitToList(commandString);
+        int callback = Iterables.indexOf(tokens, Predicates.equalTo(DockerCallbacks.DOCKER_HOST_CALLBACK));
+        if (callback == -1) {
+            LOG.warn("Could not find callback token: {}", commandString);
+            throw new IllegalStateException("Cannot find callback token in command line");
+        }
+        String command = tokens.get(callback + 1);
         if (DockerCallbacks.COMMIT.equalsIgnoreCase(command)) {
             String containerId = getOwner().getContainerId();
             String imageName = getOwner().getAttribute(DockerContainer.IMAGE_NAME);
             String output = getOwner().getDockerHost().runDockerCommandTimeout(String.format("commit %s %s", containerId, Os.mergePaths(getRepository(), imageName)), Duration.minutes(15));
-            String imageId = DockerAttributes.checkId(output);
+            String imageId = DockerUtils.checkId(output);
             ((EntityLocal) getOwner().getRunningEntity()).setAttribute(DockerContainer.IMAGE_ID, imageId);
             ((EntityLocal) getOwner()).setAttribute(DockerContainer.IMAGE_ID, imageId);
             getOwner().getDockerHost().getDynamicLocation().markImage(imageName);

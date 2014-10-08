@@ -18,6 +18,7 @@ package org.jclouds.docker.compute.functions;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Iterables.getOnlyElement;
+
 import java.net.URI;
 import java.util.List;
 import java.util.Map;

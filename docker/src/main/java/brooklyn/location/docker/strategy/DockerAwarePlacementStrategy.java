@@ -16,21 +16,18 @@
 package brooklyn.location.docker.strategy;
 
 import java.util.List;
-import java.util.Map;
 
+import brooklyn.entity.Entity;
 import brooklyn.entity.container.docker.DockerInfrastructure;
-import brooklyn.entity.group.DynamicCluster.NodePlacementStrategy;
 import brooklyn.location.docker.DockerHostLocation;
 
 /**
  * Placement strategy for Docker containers in host clusters.
  */
-public interface DockerAwarePlacementStrategy extends NodePlacementStrategy {
-
-    void init(List<DockerHostLocation> locations);
+public interface DockerAwarePlacementStrategy {
 
     DockerInfrastructure getDockerInfrastructure();
 
-    Map<DockerHostLocation, Integer> toAvailableLocationSizes(Iterable<DockerHostLocation> locations);
+    List<DockerHostLocation> filterLocations(List<DockerHostLocation> locations, Entity context);
 
 }

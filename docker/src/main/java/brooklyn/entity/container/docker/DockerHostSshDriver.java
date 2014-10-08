@@ -29,6 +29,7 @@ import org.jclouds.net.domain.IpProtocol;
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.lifecycle.ScriptHelper;
+import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.location.OsDetails;
 import brooklyn.location.basic.SshMachineLocation;
@@ -81,13 +82,13 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         if (result != 0) throw new IllegalStateException("Error creating image directory: " + name);
 
         // Build an image from the base Dockerfile
-        copyTemplate(dockerFile, Os.mergePaths(name, "Base" + DockerAttributes.DOCKERFILE));
-        String baseImageId = getImageId("Base" + DockerAttributes.DOCKERFILE, name);
+        copyTemplate(dockerFile, Os.mergePaths(name, "Base" + DockerUtils.DOCKERFILE));
+        String baseImageId = getImageId("Base" + DockerUtils.DOCKERFILE, name);
         log.info("Created base Dockerfile image with ID {}", baseImageId);
 
         // Update the image with the Clocker sshd Dockerfile
-        copyTemplate(DockerAttributes.SSHD_DOCKERFILE, Os.mergePaths(name, "Sshd" + DockerAttributes.DOCKERFILE), MutableMap.of("repository", getRepository(), "imageName", name));
-        String sshdImageId = getImageId("Sshd" + DockerAttributes.DOCKERFILE, name);
+        copyTemplate(DockerUtils.SSHD_DOCKERFILE, Os.mergePaths(name, "Sshd" + DockerUtils.DOCKERFILE), false, MutableMap.of("repository", getRepository(), "imageName", name));
+        String sshdImageId = getImageId("Sshd" + DockerUtils.DOCKERFILE, name);
         log.info("Created SSHable Dockerfile image with ID {}", sshdImageId);
 
         return sshdImageId;
@@ -101,7 +102,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         // Inspect the Docker image with this prefix
         String inspect = format("inspect --format={{.Id}} %s", prefix);
         String imageId = ((DockerHost) getEntity()).runDockerCommand(inspect);
-        return DockerAttributes.checkId(imageId);
+        return DockerUtils.checkId(imageId);
     }
 
     public String getEpelRelease() {

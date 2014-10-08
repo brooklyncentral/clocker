@@ -20,7 +20,7 @@ import brooklyn.catalog.Catalog;
 import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.basic.StartableApplication;
-import brooklyn.entity.container.docker.DockerAttributes;
+import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.nosql.redis.RedisStore;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.entity.trait.Startable;
@@ -34,7 +34,7 @@ import com.google.common.collect.ImmutableMap;
  * Node.JS Todo Application
  */
 @Catalog(name="NodeJS Todo",
-        description="Node.JS Todo Application, configured for Docker.",
+        description="Node.JS Todo Application, with a Redis store",
         iconUrl="classpath://nodejs-logo.png")
 public class NodeJsTodoApplication extends AbstractApplication implements StartableApplication {
 
@@ -46,9 +46,10 @@ public class NodeJsTodoApplication extends AbstractApplication implements Starta
                 .configure(NodeJsWebAppService.APP_GIT_REPOSITORY_URL, "https://github.com/grkvlt/nodejs-todo/")
                 .configure(NodeJsWebAppService.APP_FILE, "server.js")
                 .configure(NodeJsWebAppService.APP_NAME, "nodejs-todo")
-                .configure(NodeJsWebAppService.NODE_PACKAGE_LIST, ImmutableList.of("express", "ejs", "jasmine-node", "underscore", "method-override", "cookie-parser", "express-session", "body-parser", "cookie-session", "redis", "redis-url", "connect"))
-                .configure(SoftwareProcess.SHELL_ENVIRONMENT, ImmutableMap.<String, Object>of(
-                        "REDISTOGO_URL", DependentConfiguration.formatString("redis://%s/", attributeWhenReady(redis, DockerAttributes.mappedPortSensor(RedisStore.REDIS_PORT)))))
+                .configure(NodeJsWebAppService.NODE_PACKAGE_LIST,
+                        ImmutableList.of("express", "ejs", "jasmine-node", "underscore", "method-override", "cookie-parser", "express-session", "body-parser", "cookie-session", "redis", "redis-url", "connect"))
+                .configure(SoftwareProcess.SHELL_ENVIRONMENT,
+                        ImmutableMap.<String, Object>of("REDISTOGO_URL", DependentConfiguration.formatString("redis://%s/", attributeWhenReady(redis, DockerUtils.mappedPortSensor(RedisStore.REDIS_PORT)))))
                 .configure(SoftwareProcess.LAUNCH_LATCH, attributeWhenReady(redis, Startable.SERVICE_UP)));
     }
 

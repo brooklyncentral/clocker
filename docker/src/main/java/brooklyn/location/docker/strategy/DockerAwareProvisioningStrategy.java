@@ -13,24 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.location.affinity;
+package brooklyn.location.docker.strategy;
 
-import java.util.List;
+import java.util.Map;
 
-import brooklyn.entity.Entity;
-import brooklyn.location.Location;
-
-import com.google.common.annotations.Beta;
+import com.google.common.base.Function;
 
 /**
- * A location extension that filters available locations based on a set of {@link AffinityRules affinity rules} that relate to the
- * entity currently being deployed.
- * <p>
- * Currently only Docker based locations can take advantage of the {@link AffinityRuleExtension}.
+ * Provisioning strategy for new Docker hosts.
  */
-@Beta
-public interface AffinityRuleExtension {
+public interface DockerAwareProvisioningStrategy extends Function<Map<String,Object>,Map<String,Object>> {
 
-    List<Location> filterLocations(Entity entity);
+    @Override
+    Map<String,Object> apply(Map<String,Object> context);
 
 }

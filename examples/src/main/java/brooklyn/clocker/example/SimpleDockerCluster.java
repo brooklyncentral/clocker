@@ -21,17 +21,16 @@ import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.Entities;
-import brooklyn.entity.container.docker.DockerAttributes;
+import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.docker.application.VanillaDockerApplication;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.proxying.EntitySpec;
-import brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy;
 
 /**
  * Brooklyn managed {@link VanillaDockerApplication} cluster
  */
 @Catalog(name="Application Cluster",
-        description="Simple cluster of applications defined by a Dockerfile.",
+        description="Simple cluster of applications defined by a Dockerfile",
         iconUrl="classpath://glossy-3d-blue-web-icon.png")
 public class SimpleDockerCluster extends AbstractApplication {
 
@@ -46,8 +45,6 @@ public class SimpleDockerCluster extends AbstractApplication {
         addChild(EntitySpec.create(DynamicCluster.class)
                 .displayName("Docker Application Cluster")
                 .configure(DynamicCluster.INITIAL_SIZE, getConfig(INITIAL_SIZE))
-                .configure(DynamicCluster.ENABLE_AVAILABILITY_ZONES, true)
-                .configure(DynamicCluster.ZONE_PLACEMENT_STRATEGY, new BreadthFirstPlacementStrategy())
                 .configure(DynamicCluster.MEMBER_SPEC, EntitySpec.create(VanillaDockerApplication.class)
                         .configure(VanillaDockerApplication.DOCKERFILE_URL, Entities.getRequiredUrlConfig(this, DOCKERFILE_URL))));
     }

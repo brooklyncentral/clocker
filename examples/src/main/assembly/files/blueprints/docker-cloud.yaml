@@ -15,9 +15,6 @@
 id: docker-cloud
 name: "Docker Cloud Infrastructure"
 origin: "https://github.com/brooklyncentral/clocker/"
-locations:
-- jclouds:aws-ec2:eu-west-1:
-    hardwareId: m1.small
 services:
 - serviceType: brooklyn.entity.container.docker.DockerInfrastructure
   id: infrastructure
@@ -25,17 +22,26 @@ services:
     install.version: "1.2"
     entity.dynamicLocation.name: "my-docker-cloud"
     docker.host.securityGroup: "docker"
-    docker.host.initial.size: 2
-    docker.container.cluster.maxSize: 4
+    docker.host.cluster.initial.size: 1
     docker.host.register: false
     docker.policy.ha.enable: true
-    docker.container.strategy:
-      "brooklyn.location.docker.strategy.CpuUsagePlacementStrategy"
+    provisioning.properties:
+      minRam: 3000
+      minCores: 2
+    docker.container.strategies:
+    - $brooklyn:object:
+        type: "brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy"
+        brooklyn.config:
+          maxContainers: 16
+    - $brooklyn:object:
+        type: "brooklyn.location.docker.strategy.CpuUsagePlacementStrategy"
+        brooklyn.config:
+          maxCpuUsage: 0.75
     docker.host.spec:
       $brooklyn:entitySpec:
         type: brooklyn.entity.container.docker.DockerHost
         brooklyn.config:
-          start.timeout: 900
+          start.timeout: 15m
           docker.host.nameFormat: "docker-%1$s"
           docker.container.spec:
             $brooklyn:entitySpec:

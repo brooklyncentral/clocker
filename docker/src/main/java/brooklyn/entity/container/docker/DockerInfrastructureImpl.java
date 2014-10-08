@@ -38,6 +38,7 @@ import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityPredicates;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.basic.SoftwareProcess.ChildStartableMode;
+import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.group.DynamicMultiGroup;
@@ -64,7 +65,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 
 public class DockerInfrastructureImpl extends BasicStartableImpl implements DockerInfrastructure {
 
@@ -275,7 +275,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
             Map<String, ?> flags = MutableMap.<String, Object>builder()
                     .putAll(getConfig(LOCATION_FLAGS))
                     .put("provisioner", provisioner)
-                    .putIfNotNull("strategy", getConfig(PLACEMENT_STRATEGY)) // TODO support multiple strategies
+                    .putIfNotNull("strategies", getConfig(PLACEMENT_STRATEGIES))
                     .build();
             createLocation(flags);
 

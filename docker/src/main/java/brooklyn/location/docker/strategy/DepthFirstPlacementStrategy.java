@@ -15,105 +15,38 @@
  */
 package brooklyn.location.docker.strategy;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
-import javax.annotation.Nullable;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import brooklyn.config.ConfigKey;
-import brooklyn.entity.Entity;
 import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.entity.basic.Entities;
-import brooklyn.entity.container.docker.DockerHost;
-import brooklyn.location.Location;
 import brooklyn.location.docker.DockerHostLocation;
-
-import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Collections2;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
+import brooklyn.util.flags.SetFromFlag;
 
 /**
  * Placement strategy that adds containers to Docker hosts until they run out of capacity.
  */
-public class DepthFirstPlacementStrategy extends AbstractDockerPlacementStrategy {
+public class DepthFirstPlacementStrategy extends BasicDockerPlacementStrategy {
 
     private static final Logger LOG = LoggerFactory.getLogger(DepthFirstPlacementStrategy.class);
 
+    @SetFromFlag("maxContainers")
     public static final ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = ConfigKeys.newIntegerConfigKey(
             "docker.container.cluster.maxSize",
             "Maximum size of a Docker container cluster", 4);
 
     @Override
-    protected List<Location> getDockerHostLocations(Multimap<Location, Entity> members, List<DockerHostLocation> available, int n) {
-        int remaining = n;
-        for (DockerHostLocation machine : available) {
-            int maxSize = machine.getOwner().getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
-            int currentSize = machine.getOwner().getCurrentSize();
-            remaining -= (maxSize - currentSize);
-        }
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Requested {}, Need {} more from new Docker hosts, current hosts {}",
-                    new Object[] { n, remaining, Iterables.toString(Iterables.transform(available, identity())) });
-        }
+    public boolean apply(DockerHostLocation input) {
+        Integer maxSize = getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
+        Integer currentSize = input.getOwner().getCurrentSize();
+        return currentSize < maxSize;
+    }
 
-        if (remaining > 0) {
-            // Grow the Docker host cluster; based on max number of Docker containers
-            int maxSize = getDockerInfrastructure().getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
-            int delta = (remaining / maxSize) + (remaining % maxSize > 0 ? 1 : 0);
-            Collection<Entity> added = getDockerInfrastructure().getDockerHostCluster().resizeByDelta(delta);
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Added {} Docker hosts: {}", delta, Iterables.toString(Iterables.transform(added, identity())));
-            }
-
-            // Wait until all new Docker hosts have started up
-            for (Entity each : added) Entities.waitForServiceUp(each);
-
-            // Add the newly created locations for each Docker host
-            Collection<DockerHostLocation> dockerHosts = Collections2.transform(added, new Function<Entity, DockerHostLocation>() {
-                @Override
-                public DockerHostLocation apply(@Nullable Entity input) {
-                    return ((DockerHost) input).getDynamicLocation();
-                }
-            });
-            available.addAll(dockerHosts);
-        }
-
-        // Logic from parent, with enhancements and types
-        List<Location> result = Lists.newArrayList();
-        Map<DockerHostLocation, Integer> sizes = toAvailableLocationSizes(available);
-        for (int i = 0; i < n; i++) {
-            DockerHostLocation largest = null;
-            int maxSize = 0;
-            for (DockerHostLocation loc : sizes.keySet()) {
-                int size = sizes.get(loc);
-                if (largest == null || size > maxSize) {
-                    largest = loc;
-                    maxSize = size;
-                }
-            }
-            Preconditions.checkState(largest != null, "Largest was null; locs=%s", sizes.keySet());
-            result.add(largest);
-
-            // Update population in locations, removing if maximum reached
-            int currentSize = sizes.get(largest) + 1;
-            if (currentSize < largest.getMaxSize()) {
-                sizes.put(largest, currentSize);
-            } else {
-                sizes.remove(largest);
-            }
-        }
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Placement for {} nodes: {}", n, Iterables.toString(Iterables.transform(result, identity())));
-        }
-        return result;
+    @Override
+    public int compare(DockerHostLocation l1, DockerHostLocation l2) {
+        Integer size1 = l1.getOwner().getCurrentSize();
+        Integer size2 = l2.getOwner().getCurrentSize();
+        return Integer.compare(size2, size1);
     }
 
 }
