@@ -17,6 +17,8 @@ package brooklyn.location.docker.strategy;
 
 import java.util.Map;
 
+import brooklyn.entity.basic.SoftwareProcess;
+
 import com.google.common.base.Function;
 
 /**
@@ -24,6 +26,10 @@ import com.google.common.base.Function;
  */
 public interface DockerAwareProvisioningStrategy extends Function<Map<String,Object>,Map<String,Object>> {
 
+    /**
+     * Transform a set of {@link SoftwareProcess#PROVISIONING_PROPERTIES provisioning flags} to
+     * implement a particular provisioning strategy.
+     */
     @Override
     Map<String,Object> apply(Map<String,Object> context);
 

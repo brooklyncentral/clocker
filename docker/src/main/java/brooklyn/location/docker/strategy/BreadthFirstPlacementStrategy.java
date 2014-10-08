@@ -36,7 +36,11 @@ public class BreadthFirstPlacementStrategy extends BasicDockerPlacementStrategy 
     public boolean apply(DockerHostLocation input) {
         Integer maxSize = getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
         Integer currentSize = input.getOwner().getCurrentSize();
-        return currentSize < maxSize;
+        boolean accept = currentSize < maxSize;
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Location {} size is {}: {}", new Object[] { input, currentSize, accept ? "accepted" : "rejected" });
+        }
+        return accept;
     }
 
     @Override

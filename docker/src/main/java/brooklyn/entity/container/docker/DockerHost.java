@@ -114,7 +114,7 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
     AttributeSensorAndConfigKey<Map<String, String>, Map<String, String>> DOCKER_HOST_VOLUME_MAPPING = DockerAttributes.DOCKER_HOST_VOLUME_MAPPING;
 
     @SetFromFlag("affinityRules")
-    ConfigKey<String> DOCKER_HOST_AFFINITY_RULES = AffinityRules.AFFINITY_RULES;
+    ConfigKey<List<String>> DOCKER_HOST_AFFINITY_RULES = AffinityRules.AFFINITY_RULES;
 
     @SetFromFlag("password")
     ConfigKey<String> DOCKER_PASSWORD = DockerAttributes.DOCKER_PASSWORD;

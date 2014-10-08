@@ -19,6 +19,7 @@ import static brooklyn.entity.java.JavaEntityMethods.javaSysProp;
 import static brooklyn.event.basic.DependentConfiguration.attributeWhenReady;
 import static brooklyn.event.basic.DependentConfiguration.formatString;
 
+import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -55,6 +56,7 @@ import brooklyn.policy.autoscaling.AutoScalerPolicy;
 import brooklyn.util.time.Duration;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.net.HostAndPort;
 
 /**
  * Launches a 3-tier app with nginx, clustered jboss, and mysql.

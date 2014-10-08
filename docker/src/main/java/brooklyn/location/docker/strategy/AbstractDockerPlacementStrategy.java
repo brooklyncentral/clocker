@@ -15,30 +15,16 @@
  */
 package brooklyn.location.docker.strategy;
 
-import javax.annotation.Nullable;
-
 import brooklyn.basic.BasicConfigurableObject;
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.container.docker.DockerInfrastructure;
-import brooklyn.entity.trait.Identifiable;
 import brooklyn.location.docker.DockerVirtualLocation;
 import brooklyn.util.flags.SetFromFlag;
-
-import com.google.common.base.Function;
 
 /**
  * Placement strategy for Docker containers.
  */
 public abstract class AbstractDockerPlacementStrategy extends BasicConfigurableObject implements DockerAwarePlacementStrategy {
-
-    public static final Function<Identifiable, String> identity() { return identity; }
-
-    private static final Function<Identifiable, String> identity = new Function<Identifiable, String>() {
-        @Override
-        public String apply(@Nullable Identifiable input) {
-            return input.getClass().getSimpleName() + ":" + input.getId();
-        }
-    };
 
     @SetFromFlag("infrastructure")
     public static final ConfigKey<DockerInfrastructure> DOCKER_INFRASTRUCTURE = DockerVirtualLocation.INFRASTRUCTURE;
