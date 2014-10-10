@@ -22,20 +22,20 @@ import brooklyn.config.ConfigKey;
 import brooklyn.entity.Group;
 import brooklyn.entity.basic.BasicStartable;
 import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.group.DynamicCluster;
+import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.BasicAttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
-import brooklyn.location.PortRange;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
 
 import com.google.common.base.Supplier;
+import com.google.common.reflect.TypeToken;
 
 /**
  * A collection of machines running Weave.
@@ -53,14 +53,18 @@ public interface WeaveInfrastructure extends BasicStartable, Supplier<InetAddres
     ConfigKey<Cidr> WEAVE_CIDR = WeaveContainer.WEAVE_CIDR;
 
     @SetFromFlag("weavePort")
-    ConfigKey<PortRange> WEAVE_PORT = WeaveContainer.WEAVE_PORT.getConfigKey();
+    ConfigKey<Integer> WEAVE_PORT = WeaveContainer.WEAVE_PORT;
 
     @SetFromFlag("downloadUrl")
     BasicAttributeSensorAndConfigKey<String> WEAVE_DOWNLOAD_URL = WeaveContainer.DOWNLOAD_URL;
 
     AttributeSensor<Group> WEAVE_SERVICES = Sensors.newSensor(Group.class, "weave.services", "Group of Weave services");
-
     AttributeSensor<Integer> ALLOCATED_IPS = Sensors.newIntegerSensor("weave.ips", "Number of allocated IPs");
+
+    @SetFromFlag("weaveContainerSpec")
+    AttributeSensorAndConfigKey<EntitySpec<WeaveContainer>,EntitySpec<WeaveContainer>> WEAVE_CONTAINER_SPEC = ConfigKeys.newSensorAndConfigKey(
+            new TypeToken<EntitySpec<WeaveContainer>>() { },
+            "weave.container.spec", "Weave container specification", EntitySpec.create(WeaveContainer.class));
 
     AttributeSensorAndConfigKey<DockerInfrastructure, DockerInfrastructure> DOCKER_INFRASTRUCTURE = DockerHost.DOCKER_INFRASTRUCTURE;
 

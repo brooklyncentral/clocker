@@ -30,7 +30,6 @@ import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.lifecycle.ScriptHelper;
 import brooklyn.entity.container.DockerUtils;
-import brooklyn.entity.container.weave.WeaveContainer;
 import brooklyn.entity.container.weave.WeaveInfrastructure;
 import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.location.OsDetails;
@@ -51,7 +50,6 @@ import brooklyn.util.time.Duration;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implements DockerHostDriver {
@@ -65,10 +63,10 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         ports.put("dockerPort", getDockerPort());
         if (getEntity().getConfig(DockerInfrastructure.WEAVE_ENABLED)) {
             // Best guess at available port, as Weave is started _after_ the DockerHost
-            Integer weavePort = Iterables.getFirst(getEntity()
+            Integer weavePort = getEntity()
                     .getAttribute(DockerHost.DOCKER_INFRASTRUCTURE)
                     .getAttribute(DockerInfrastructure.WEAVE_INFRASTRUCTURE)
-                    .getConfig(WeaveInfrastructure.WEAVE_PORT), WeaveContainer.DEFAULT_WEAVE_PORT);
+                    .getConfig(WeaveInfrastructure.WEAVE_PORT);
             ports.put("weavePort", weavePort);
         }
         return ports;

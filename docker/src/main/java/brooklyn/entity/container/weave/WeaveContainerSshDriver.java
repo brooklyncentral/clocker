@@ -22,6 +22,7 @@ import brooklyn.util.net.Cidr;
 import brooklyn.util.net.Networking;
 import brooklyn.util.os.Os;
 import brooklyn.util.ssh.BashCommands;
+import brooklyn.util.task.Tasks;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -47,7 +48,7 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
     }
 
     protected Map<String, Integer> getPortMap() {
-        return MutableMap.of("weave", getEntity().getAttribute(WeaveContainer.WEAVE_PORT));
+        return MutableMap.of("weave", getEntity().getConfig(WeaveContainer.WEAVE_PORT));
     }
 
     public String getWeaveCommand() {
@@ -75,9 +76,7 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
     public void customize() {
         Networking.checkPortsValid(getPortMap());
 
-        newScript(CUSTOMIZING)
-                .updateTaskAndFailOnNonZeroResultCode()
-                .execute();
+        newScript(CUSTOMIZING).execute();
     }
 
     @Override
@@ -110,11 +109,16 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
 
     @Override
     public InetAddress attachNetwork(String containerId) {
-        Cidr cidr = getEntity().getConfig(WeaveInfrastructure.WEAVE_CIDR);
-        InetAddress address = getEntity().getConfig(WeaveContainer.WEAVE_INFRASTRUCTURE).get();
-        ((WeaveContainer) getEntity()).getDockerHost().execCommand(BashCommands.sudo(String.format("%s attach %s/%d %s",
-                getWeaveCommand(), address.getHostAddress(), cidr.getLength(), containerId)));
-        return address;
+        Tasks.setBlockingDetails("Attach Weave to " + containerId);
+        try {
+            Cidr cidr = getEntity().getConfig(WeaveInfrastructure.WEAVE_CIDR);
+            InetAddress address = getEntity().getConfig(WeaveContainer.WEAVE_INFRASTRUCTURE).get();
+            ((WeaveContainer) getEntity()).getDockerHost().execCommand(BashCommands.sudo(String.format("%s attach %s/%d %s",
+                    getWeaveCommand(), address.getHostAddress(), cidr.getLength(), containerId)));
+            return address;
+        } finally {
+            Tasks.resetBlockingDetails();
+        }
     }
 
 }

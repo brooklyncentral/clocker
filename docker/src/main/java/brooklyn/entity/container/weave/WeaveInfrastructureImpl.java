@@ -38,7 +38,6 @@ import brooklyn.event.feed.ConfigToAttributes;
 import brooklyn.location.Location;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.docker.DockerHostLocation;
-import brooklyn.location.docker.DockerLocation;
 import brooklyn.policy.PolicySpec;
 import brooklyn.util.net.Cidr;
 
@@ -55,10 +54,7 @@ public class WeaveInfrastructureImpl extends BasicStartableImpl implements Weave
         RendererHints.register(DOCKER_INFRASTRUCTURE, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
     }
 
-    private AbstractMembershipTrackingPolicy hostTrackerPolicy;
-    private BasicGroup services;
     private Object mutex = new Object[0];
-    private EntitySpec<WeaveContainer> weaveSpec;
 
     @Override
     public void init() {
@@ -66,20 +62,21 @@ public class WeaveInfrastructureImpl extends BasicStartableImpl implements Weave
         super.init();
         ConfigToAttributes.apply(this, DOCKER_INFRASTRUCTURE);
 
-        weaveSpec = EntitySpec.create(WeaveContainer.class)
+        EntitySpec<WeaveContainer> weaveSpec = EntitySpec.create(getConfig(WEAVE_CONTAINER_SPEC))
                 .configure(SoftwareProcess.SUGGESTED_VERSION, getConfig(WEAVE_VERSION))
                 .configure(SoftwareProcess.DOWNLOAD_URL, getConfig(WEAVE_DOWNLOAD_URL))
                 .configure(WeaveContainer.WEAVE_CIDR, getConfig(WEAVE_CIDR))
                 .configure(WeaveContainer.WEAVE_PORT, getConfig(WEAVE_PORT))
                 .configure(WeaveContainer.WEAVE_INFRASTRUCTURE, this);
 
-        services = addChild(EntitySpec.create(BasicGroup.class)
+        BasicGroup services = addChild(EntitySpec.create(BasicGroup.class)
                 .displayName("Weave Services"));
 
         if (Entities.isManaged(this)) {
             Entities.manage(services);
         }
 
+        setAttribute(WEAVE_CONTAINER_SPEC, weaveSpec);
         setAttribute(WEAVE_SERVICES, services);
         setAttribute(ALLOCATED_IPS, 0);
     }
@@ -99,7 +96,7 @@ public class WeaveInfrastructureImpl extends BasicStartableImpl implements Weave
     }
 
     @Override
-    public Group getWeaveServices() { return services; }
+    public Group getWeaveServices() { return getAttribute(WEAVE_SERVICES); }
 
     public static class MemberTrackingPolicy extends AbstractMembershipTrackingPolicy {
         @Override protected void onEntityEvent(EventType type, Entity member) {
@@ -117,37 +114,27 @@ public class WeaveInfrastructureImpl extends BasicStartableImpl implements Weave
         setAttribute(SERVICE_UP, Boolean.TRUE);
     }
 
-    /**
-     * De-register our {@link DockerLocation} and its children.
-     */
     @Override
     public void stop() {
         setAttribute(SERVICE_UP, Boolean.FALSE);
 
-        removeHostTrackerPolicy();
         super.stop();
     }
 
     protected void addHostTrackerPolicy() {
         Group hosts = getDockerHostCluster();
         if (hosts != null) {
-            hostTrackerPolicy = addPolicy(PolicySpec.create(MemberTrackingPolicy.class)
+            MemberTrackingPolicy hostTrackerPolicy = addPolicy(PolicySpec.create(MemberTrackingPolicy.class)
                     .displayName("Docker host tracker")
                     .configure("group", hosts));
             LOG.info("Added policy {} to {}, during start", hostTrackerPolicy, this);
-        }
-    }
-    
-    protected void removeHostTrackerPolicy() {
-        if (hostTrackerPolicy != null) {
-            removePolicy(hostTrackerPolicy);
         }
     }
 
     protected void onHostAdded(Entity item) {
         synchronized (mutex) {
             SshMachineLocation machine = ((DockerHost) item).getDynamicLocation().getMachine();
-            EntitySpec<WeaveContainer> spec = EntitySpec.create(weaveSpec)
+            EntitySpec<WeaveContainer> spec = EntitySpec.create(getAttribute(WEAVE_CONTAINER_SPEC))
                     .configure(WeaveContainer.DOCKER_HOST, (DockerHost) item);
             WeaveContainer weave = getWeaveServices().addChild(spec);
             Entities.manage(weave);
@@ -159,14 +146,14 @@ public class WeaveInfrastructureImpl extends BasicStartableImpl implements Weave
 
     protected void onHostRemoved(Entity item) {
         synchronized (mutex) {
-            SshMachineLocation machine = ((DockerHostLocation) item).getMachine();
-            Optional<Entity> service = Iterables.tryFind(services.getMembers(), EntityPredicates.withLocation(machine));
-            if (service.isPresent()) {
-                WeaveContainer weave = (WeaveContainer) service.get();
-                weave.stop();
-                services.removeChild(weave);
-                if (LOG.isDebugEnabled()) LOG.debug("{} removed weave service {}", this, weave);
+            WeaveContainer weave = item.getAttribute(WeaveContainer.WEAVE_CONTAINER);
+            if (weave == null) {
+                LOG.warn("{} cannot find weave service: {}", this, item);
+                return;
             }
+            weave.stop();
+            getWeaveServices().removeMember(weave);
+            if (LOG.isDebugEnabled()) LOG.debug("{} removed weave service {}", this, weave);
         }
     }
 

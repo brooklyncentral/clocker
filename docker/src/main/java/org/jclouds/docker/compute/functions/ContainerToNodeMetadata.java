@@ -114,7 +114,7 @@ public class ContainerToNodeMetadata implements Function<Container, NodeMetadata
    protected static int getLoginPort(Container container) {
       if (container.getNetworkSettings() != null) {
           Map<String, List<Map<String, String>>> ports = container.getNetworkSettings().getPorts();
-          if (ports != null) {
+          if (ports != null && ports.containsKey("22/tcp")) {
             return Integer.parseInt(getOnlyElement(ports.get("22/tcp")).get("HostPort"));
           }
       // this is needed in case the container list is coming from listContainers
@@ -125,6 +125,6 @@ public class ContainerToNodeMetadata implements Function<Container, NodeMetadata
             }
          }
       }
-      throw new IllegalStateException("Cannot determine the login port for " + container.getId());
+      return -1;
    }
 }

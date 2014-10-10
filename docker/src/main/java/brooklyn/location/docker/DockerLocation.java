@@ -79,7 +79,10 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
 
     /* Mappings for provisioned locations */
 
+    @SetFromFlag("machines")
     private final Multimap<SshMachineLocation, String> machines = HashMultimap.create();
+
+    @SetFromFlag("containers")
     private final Map<String, DockerHostLocation> containers = Maps.newHashMap();
 
     public DockerLocation() {

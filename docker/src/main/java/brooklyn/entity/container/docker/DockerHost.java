@@ -43,7 +43,6 @@ import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.docker.strategy.affinity.AffinityRules;
 import brooklyn.location.dynamic.LocationOwner;
 import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.networking.subnet.PortForwarder;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.time.Duration;
@@ -73,11 +72,11 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
 
     @SetFromFlag("dockerPort")
     PortAttributeSensorAndConfigKey DOCKER_PORT = ConfigKeys.newPortSensorAndConfigKey("docker.port",
-            "Docker port", PortRanges.fromString("2375"));
+            "Docker port", PortRanges.fromInteger(2375));
 
     @SetFromFlag("dockerSslPort")
     PortAttributeSensorAndConfigKey DOCKER_SSL_PORT = ConfigKeys.newPortSensorAndConfigKey("docker.ssl.port",
-            "Docker port", PortRanges.fromString("2376"));
+            "Docker port", PortRanges.fromInteger(2376));
 
     @SetFromFlag("containerSpec")
     AttributeSensorAndConfigKey<EntitySpec, EntitySpec> DOCKER_CONTAINER_SPEC = ConfigKeys.newSensorAndConfigKey(
@@ -120,6 +119,13 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
             "docker.host.scanInterval", "Interval between scans of Docker containers", Duration.TEN_SECONDS);
     AttributeSensor<Void> SCAN = Sensors.newSensor(Void.class, "docker.host.scan", "Notification of host scan");
 
+    AttributeSensor<DynamicCluster> DOCKER_CONTAINER_CLUSTER = Sensors.newSensor(DynamicCluster.class,
+            "docker.container.cluster", "The cluster of Docker containers");
+    AttributeSensor<JcloudsLocation> JCLOUDS_DOCKER_LOCATION = Sensors.newSensor(JcloudsLocation.class,
+            "docker.jclouds.location", "The location used for provisioning Docker containers");
+    AttributeSensor<SubnetTier> DOCKER_HOST_SUBNET_TIER = Sensors.newSensor(SubnetTier.class,
+            "docker.subnetTier", "The SubnetTier for Docker port mapping");
+
     String getRepository();
 
     String getPassword();
@@ -127,8 +133,6 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
     Integer getDockerPort();
 
     JcloudsLocation getJcloudsLocation();
-
-    PortForwarder getPortForwarder();
 
     SubnetTier getSubnetTier();
 

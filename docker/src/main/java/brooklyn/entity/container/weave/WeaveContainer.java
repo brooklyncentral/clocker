@@ -28,9 +28,7 @@ import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.BasicAttributeSensorAndConfigKey;
-import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
-import brooklyn.location.basic.PortRanges;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
@@ -41,8 +39,6 @@ import brooklyn.util.net.Cidr;
 @ImplementedBy(WeaveContainerImpl.class)
 public interface WeaveContainer extends SoftwareProcess {
 
-    Integer DEFAULT_WEAVE_PORT = 6783;
-
     @SetFromFlag("version")
     ConfigKey<String> SUGGESTED_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "master");
 
@@ -50,7 +46,7 @@ public interface WeaveContainer extends SoftwareProcess {
     ConfigKey<Cidr> WEAVE_CIDR = ConfigKeys.newConfigKey(Cidr.class, "weave.cidr", "Weave CIDR for address allocation", Cidr.LINK_LOCAL);
 
     @SetFromFlag("weavePort")
-    PortAttributeSensorAndConfigKey WEAVE_PORT = ConfigKeys.newPortSensorAndConfigKey("weave.port", "Weave port", PortRanges.fromInteger(DEFAULT_WEAVE_PORT));
+    ConfigKey<Integer> WEAVE_PORT = ConfigKeys.newIntegerConfigKey("weave.port", "Weave port", 6783);
 
     @SetFromFlag("downloadUrl")
     BasicAttributeSensorAndConfigKey<String> DOWNLOAD_URL = new BasicAttributeSensorAndConfigKey<String>(
