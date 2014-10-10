@@ -247,7 +247,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             if (DockerUtils.URL_SENSOR_NAMES.contains(sensor.getName()) ||
                     sensor.getName().endsWith(".url") ||
                     URI.class.isAssignableFrom(sensor.getType())) {
-                AttributeSensor<URI> target = DockerUtils.<URI>mappedSensor(sensor);
+                AttributeSensor<String> target = DockerUtils.<String>mappedSensor(sensor);
                 entity.addEnricher(dockerHost.getSubnetTier().uriTransformingEnricher(
                         EntityAndAttribute.supplier(entity, sensor), target));
                 Set<Hint<?>> hints = RendererHints.getHintsFor(sensor);
