@@ -100,26 +100,15 @@ Build and run the examples as follows:
 
 ## Getting involved
 
-Clocker is Apache 2.0 licensed, and builds on Apache Brooklyn. Please get involved and join the 
+Clocker is [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0) licensed, and builds on  the
+[Apache Brooklyn](http://brooklyn.incubator.apache.org/) project. Please get involved and join the 
 discussion on [Freenode](http://freenode.net/), IRC `#brooklyncentral` or the Apache Brooklyn 
 community [mailing list](https://brooklyn.incubator.apache.org/community/). We also maintain a
 [Trello](https://trello.com/b/lhS7ltyi/clocker) board with the current roadmap and active tasks.
 
 ### Documentation
 
-Please visit the [wiki](https://github.com/brooklyncentral/clocker/wiki) for more details.
+Please visit the [Wiki](https://github.com/brooklyncentral/clocker/wiki) for more details.
 
 ----
-Copyright 2014 by Cloudsoft Corporation Limited
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Copyright 2014 by Cloudsoft Corporation Limited and Licensed with [CC-BY-SA 4.0i](http://creativecommons.org/licenses/by-sa/4.0/)
