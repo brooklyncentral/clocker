@@ -35,8 +35,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 /**
- * Placement strategy that selects a Docker host that satisfies the RAM and cores limitations
- * required by the configuration and the entity.
+ * Placement strategy that selects the Docker host with the lowest CPU usage.
  */
 public class ProvisioningFlagsPlacementStrategy extends AbstractDockerPlacementStrategy implements DockerAwareProvisioningStrategy {
 
@@ -72,33 +71,23 @@ public class ProvisioningFlagsPlacementStrategy extends AbstractDockerPlacementS
                 int ramUsed = 0, coresUsed = 0;
                 for (Entity entity : entities) {
                     Map<String,Object> entityFlags = entity.getConfig(SoftwareProcess.PROVISIONING_PROPERTIES);
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("Checking provisioning flags on {}: {}", entity, entityFlags);
-                    }
+                    LOG.info("Checking provisioning flags on {}: {}", entity, entityFlags);
                     if (entityFlags == null || entityFlags.isEmpty()) continue;
                     Integer entityMinRam = (Integer) entityFlags.get("minRam");
                     Integer entityMinCores = (Integer) entityFlags.get("minCores");
                     ramUsed += entityMinRam == null ? 0 : entityMinRam;
                     coresUsed += entityMinCores == null ? 0 : entityMinCores;
                 }
-                boolean accept = (details.getCpuCount() - coresUsed) > minCores && (details.getRam() - ramUsed) > minRam;
-                if (accept) available.add(location);
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Location {} {}: {} cores of {}, {} RAM of {}",
-                            new Object[] { location, accept ? "accepted" : "rejected", coresUsed, details.getCpuCount(), ramUsed, details.getRam() });
+                if ((details.getCpuCount() - coresUsed) > minCores && (details.getRam() - ramUsed) > minRam) {
+                    available.add(location);
                 }
             }
         }
-
         return available;
     }
 
-    private Integer max(Integer one, Integer two) {
-        return Math.max(one == null ? 0 : one, two == null ? 0 : two);
-    }
-
     @Override
-    public Map<String, Object> apply(Map<String, Object> contextFlags) {
+    public Map<String,Object> apply(Map<String,Object> contextFlags) {
         Integer strategyMinRam = getConfig(MIN_RAM);
         Integer strategyMinCores = getConfig(MIN_CORES);
 
@@ -117,6 +106,10 @@ public class ProvisioningFlagsPlacementStrategy extends AbstractDockerPlacementS
         provisioningFlags.put("minRam", minRam);
         provisioningFlags.put("minCores", minCores);
         return provisioningFlags;
+    }
+
+    private Integer max(Integer one, Integer two) {
+        return Math.max(one == null ? 0 : one, two == null ? 0 : two);
     }
 
 }

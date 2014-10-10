@@ -125,7 +125,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 .configure(DynamicMultiGroup.BUCKET_FUNCTION, new Function<Entity, String>() {
                         @Override
                         public String apply(@Nullable Entity input) {
-                            return input.getApplication().getDisplayName();
+                            return input.getApplication().getDisplayName() + ":" + input.getApplicationId();
                         }
                     })
                 .configure(DynamicMultiGroup.BUCKET_SPEC, EntitySpec.create(BasicGroup.class)

@@ -28,7 +28,6 @@ import brooklyn.entity.basic.BasicGroup;
 import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
-import brooklyn.entity.basic.EntityPredicates;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.group.AbstractMembershipTrackingPolicy;
@@ -37,13 +36,10 @@ import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.event.feed.ConfigToAttributes;
 import brooklyn.location.Location;
 import brooklyn.location.basic.SshMachineLocation;
-import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.policy.PolicySpec;
 import brooklyn.util.net.Cidr;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 
 public class WeaveInfrastructureImpl extends BasicStartableImpl implements WeaveInfrastructure {
 
@@ -161,7 +157,7 @@ public class WeaveInfrastructureImpl extends BasicStartableImpl implements Weave
         synchronized (mutex) {
             boolean exists = getDockerHostCluster().hasMember(item);
             Boolean running = item.getAttribute(SERVICE_UP);
-            if (exists && running) {
+            if (exists && running && item.getAttribute(WeaveContainer.WEAVE_CONTAINER) == null) {
                 onHostAdded(item);
             } else if (!exists) {
                 onHostRemoved(item);

@@ -44,8 +44,11 @@ import brooklyn.location.docker.strategy.affinity.AffinityRules;
 import brooklyn.location.dynamic.LocationOwner;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.networking.subnet.SubnetTier;
+import brooklyn.util.collections.MutableMap;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.time.Duration;
+
+import com.google.common.reflect.TypeToken;
 
 /**
  * A single machine running Docker.
@@ -113,6 +116,10 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
     ConfigKey<String> DOCKER_PASSWORD = DockerAttributes.DOCKER_PASSWORD;
 
     AttributeSensor<String> DOCKER_HOST_NAME = Sensors.newStringSensor("docker.host.name", "The name of the Docker host");
+
+    @SetFromFlag("provisioningFlags")
+    ConfigKey<Map<String,Object>> PROVISIONING_FLAGS = ConfigKeys.newConfigKey(new TypeToken<Map<String,Object>>() { },
+            "docker.host.flags", "Provisioning flags for the Docker hosts", MutableMap.<String,Object>of());
 
     @SetFromFlag("scanInterval")
     ConfigKey<Duration> SCAN_INTERVAL = ConfigKeys.newConfigKey(Duration.class,

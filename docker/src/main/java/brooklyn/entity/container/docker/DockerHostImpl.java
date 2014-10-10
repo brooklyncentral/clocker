@@ -97,7 +97,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
     private volatile FunctionFeed scan;
-    private final Object mutex = new Object();
 
     static {
         RendererHints.register(DOCKER_INFRASTRUCTURE, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
@@ -159,7 +158,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     @Override
     protected Map<String, Object> obtainProvisioningFlags(MachineProvisioningLocation location) {
         Map<String, Object> flags = super.obtainProvisioningFlags(location);
-        // TODO set defaults iff not specified in flags already
+        flags.putAll(getConfig(PROVISIONING_FLAGS));
 
         // Configure template for host virtual machine
         TemplateBuilder template = (TemplateBuilder) flags.get(JcloudsLocationConfig.TEMPLATE_BUILDER.getName());
@@ -172,7 +171,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             }
         }
         template.os64Bit(true);
-        template.minRam(2048);
         flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), template);
 
         // Configure security groups for host virtual machine
@@ -430,7 +428,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     }
 
     public void scanContainers() {
-        synchronized (mutex) {
+        getDynamicLocation().acquireMutex(DockerHostLocation.CONTAINER_MUTEX, "Scanning containers");
+        try {
             String output = runDockerCommand("ps");
             List<String> ps = Splitter.on(CharMatcher.anyOf("\r\n")).omitEmptyStrings().splitToList(output);
             if (ps.size() > 1) {
@@ -461,6 +460,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                     added.start(ImmutableList.of(getDynamicLocation().getMachine()));
                 }
             }
+        } finally {
+            getDynamicLocation().releaseMutex(DockerHostLocation.CONTAINER_MUTEX);
         }
     }
 

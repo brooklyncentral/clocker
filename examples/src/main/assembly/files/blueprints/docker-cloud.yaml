@@ -25,7 +25,7 @@ services:
     docker.host.cluster.initial.size: 1
     docker.host.register: false
     docker.policy.ha.enable: true
-    provisioning.properties:
+    docker.host.flags:
       minRam: 3000
       minCores: 2
     docker.container.strategies:

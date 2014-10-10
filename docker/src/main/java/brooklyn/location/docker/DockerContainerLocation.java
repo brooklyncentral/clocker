@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import brooklyn.entity.Entity;
+import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.container.DockerCallbacks;
 import brooklyn.entity.container.DockerUtils;
@@ -185,6 +186,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
             throw new IllegalStateException("Cannot find callback token in command line");
         }
         String command = tokens.get(callback + 1);
+        LOG.info("Executing callback for {}: {}", getOwner(), command);
         if (DockerCallbacks.COMMIT.equalsIgnoreCase(command)) {
             String containerId = getOwner().getContainerId();
             String imageName = getOwner().getAttribute(DockerContainer.IMAGE_NAME);
@@ -196,6 +198,10 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
         } else if (DockerCallbacks.PUSH.equalsIgnoreCase(command)) {
             String imageName = getOwner().getAttribute(DockerContainer.IMAGE_NAME);
             getOwner().getDockerHost().runDockerCommand(String.format("push %s", Os.mergePaths(getRepository(), imageName)));
+        } else if (DockerCallbacks.SUBNET_ADDRESS.equalsIgnoreCase(command)) {
+            String address = getOwner().getAttribute(Attributes.SUBNET_ADDRESS);
+            ((EntityLocal) getOwner().getRunningEntity()).setAttribute(Attributes.SUBNET_ADDRESS, address);
+            ((EntityLocal) getOwner().getRunningEntity()).setAttribute(Attributes.SUBNET_HOSTNAME, address);
         } else {
             LOG.warn("Unknown Docker host command: {}", command);
         }

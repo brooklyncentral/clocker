@@ -29,6 +29,7 @@ public class DockerCallbacks {
     public static final String DOCKER_HOST_CALLBACK = "docker-host-callback";
     public static final String COMMIT = "commit";
     public static final String PUSH = "push";
+    public static final String SUBNET_ADDRESS = "subnet-address";
 
     public static final Predicate<CharSequence> FILTER = Predicates.containsPattern(SEPARATOR + DOCKER_HOST_CALLBACK);
     public static final Splitter PARSER = Splitter.on(SEPARATOR).omitEmptyStrings();
@@ -39,6 +40,10 @@ public class DockerCallbacks {
 
     public static final String push() {
         return command(PUSH);
+    }
+
+    public static final String subnetAddress() {
+        return command(SUBNET_ADDRESS);
     }
 
     private static final String command(String command, Object...rest) {

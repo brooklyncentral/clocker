@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Entities;
-import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
@@ -146,13 +145,13 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
                 dockerHost = machine.getOwner();
             } else {
                 Iterable<DockerAwareProvisioningStrategy> provisioningStrategies = Iterables.filter(Iterables.concat(strategies,  entityStrategies), DockerAwareProvisioningStrategy.class);
-                Map<String,Object> provisioningFlags = getDockerInfrastructure().getConfig(SoftwareProcess.PROVISIONING_PROPERTIES);
                 for (DockerAwareProvisioningStrategy strategy : provisioningStrategies) {
-                    provisioningFlags = strategy.apply(provisioningFlags);
+                    flags = strategy.apply((Map<String,Object>) flags);
                 }
 
-                LOG.info("Provisioning new host with flags: {}", provisioningFlags);
-                Entity added = getDockerInfrastructure().getDockerHostCluster().addNode(getProvisioner(), provisioningFlags);
+                LOG.info("Provisioning new host with flags: {}", flags);
+                SshMachineLocation provisioned = getProvisioner().obtain(flags);
+                Entity added = getDockerInfrastructure().getDockerHostCluster().addNode(provisioned, MutableMap.of());
                 dockerHost = (DockerHost) added;
                 machine = dockerHost.getDynamicLocation();
             }

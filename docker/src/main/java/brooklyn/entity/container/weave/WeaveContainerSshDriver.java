@@ -85,6 +85,7 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
         InetAddress address = getEntity().getAttribute(WeaveContainer.WEAVE_ADDRESS);
         Boolean firstMember = getEntity().getAttribute(AbstractGroup.FIRST_MEMBER);
         Entity first = getEntity().getAttribute(AbstractGroup.FIRST);
+        LOG.info("Launching {} Weave service at {}", Boolean.TRUE.equals(firstMember) ? "first" : "next", address.getHostAddress());
 
         newScript(MutableMap.of(USE_PID_FILE, false), LAUNCHING)
                 .updateTaskAndFailOnNonZeroResultCode()
