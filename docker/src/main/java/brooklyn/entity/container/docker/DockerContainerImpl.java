@@ -17,6 +17,7 @@ package brooklyn.entity.container.docker;
 
 import static java.lang.String.format;
 
+import java.net.InetAddress;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -36,9 +37,11 @@ import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.DelegateEntity;
+import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.basic.ServiceStateLogic;
 import brooklyn.entity.basic.SoftwareProcess;
+import brooklyn.entity.container.weave.WeaveContainer;
 import brooklyn.event.feed.ConfigToAttributes;
 import brooklyn.event.feed.function.FunctionFeed;
 import brooklyn.event.feed.function.FunctionPollConfig;
@@ -293,53 +296,61 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         DockerHost dockerHost = getDockerHost();
         DockerHostLocation host = dockerHost.getDynamicLocation();
         SubnetTier subnetTier = dockerHost.getSubnetTier();
-        String password = getConfig(DOCKER_PASSWORD);
+        JcloudsSshMachineLocation container = (JcloudsSshMachineLocation) flags.get("container");
+        if (container == null) {
+            // Configure the container options based on the host and the running entity
+            DockerTemplateOptions options = getDockerTemplateOptions();
 
-        // Configure the container options based on the host and the running entity
-        DockerTemplateOptions options = getDockerTemplateOptions();
+            // put these fields on the location so it has the info it needs to create the subnet
+            Map<?, ?> dockerFlags = MutableMap.<Object, Object>builder()
+                    .put(JcloudsLocationConfig.TEMPLATE_BUILDER, new PortableTemplateBuilder().options(options))
+                    .put(JcloudsLocationConfig.IMAGE_ID, getConfig(DOCKER_IMAGE_ID))
+                    .put(JcloudsLocationConfig.HARDWARE_ID, getConfig(DOCKER_HARDWARE_ID))
+                    .put(LocationConfigKeys.USER, "root")
+                    .put(LocationConfigKeys.PASSWORD, getConfig(DOCKER_PASSWORD))
+                    .put(SshTool.PROP_PASSWORD, getConfig(DOCKER_PASSWORD))
+                    .put(LocationConfigKeys.PRIVATE_KEY_DATA, null)
+                    .put(LocationConfigKeys.PRIVATE_KEY_FILE, null)
+                    .put(CloudLocationConfig.WAIT_FOR_SSHABLE, false)
+                    .put(JcloudsLocationConfig.INBOUND_PORTS, getRequiredOpenPorts(getRunningEntity()))
+                    .put(JcloudsLocation.USE_PORT_FORWARDING, true)
+                    .put(JcloudsLocation.PORT_FORWARDER, subnetTier.getPortForwarderExtension())
+                    .put(JcloudsLocation.PORT_FORWARDING_MANAGER, subnetTier.getPortForwardManager())
+                    .put(JcloudsPortforwardingSubnetLocation.PORT_FORWARDER, subnetTier.getPortForwarder())
+                    .put(SubnetTier.SUBNET_CIDR, Cidr.CLASS_B)
+                    .build();
 
-        // put these fields on the location so it has the info it needs to create the subnet
-        Map<?, ?> dockerFlags = MutableMap.<Object, Object>builder()
-                .put(JcloudsLocationConfig.TEMPLATE_BUILDER, new PortableTemplateBuilder().options(options))
-                .put(JcloudsLocationConfig.IMAGE_ID, getConfig(DOCKER_IMAGE_ID))
-                .put(JcloudsLocationConfig.HARDWARE_ID, getConfig(DOCKER_HARDWARE_ID))
-                .put(LocationConfigKeys.USER, "root")
-                .put(LocationConfigKeys.PASSWORD, password)
-                .put(LocationConfigKeys.PRIVATE_KEY_DATA, null)
-                .put(LocationConfigKeys.PRIVATE_KEY_FILE, null)
-                .put(CloudLocationConfig.WAIT_FOR_SSHABLE, false)
-                .put(JcloudsLocationConfig.INBOUND_PORTS, getRequiredOpenPorts(getRunningEntity()))
-                .put(JcloudsLocation.USE_PORT_FORWARDING, true)
-                .put(JcloudsLocation.PORT_FORWARDER, subnetTier.getPortForwarderExtension())
-                .put(JcloudsLocation.PORT_FORWARDING_MANAGER, subnetTier.getPortForwardManager())
-                .put(JcloudsPortforwardingSubnetLocation.PORT_FORWARDER, subnetTier.getPortForwarder())
-                .put(SubnetTier.SUBNET_CIDR, Cidr.CLASS_B)
-                .build();
+            try {
+                // Create a new container using jclouds Docker driver
+                container = host.getJcloudsLocation().obtain(dockerFlags);
+                setAttribute(CONTAINER_ID, container.getNode().getId());
 
-        try {
-            // Create a new container using jclouds Docker driver
-            JcloudsSshMachineLocation container = host.getJcloudsLocation().obtain(dockerFlags);
-            setAttribute(CONTAINER_ID, container.getNode().getId());
-
-            // Create our wrapper location around the container
-            LocationSpec<DockerContainerLocation> spec = LocationSpec.create(DockerContainerLocation.class)
-                    .parent(host)
-                    .configure(flags)
-                    .configure(DynamicLocation.OWNER, this)
-                    .configure("machine", container) // the underlying JcloudsLocation
-                    .configure(container.getAllConfig(true))
-                    .configure(SshTool.PROP_PASSWORD, password)
-                    .displayName(getDockerContainerName());
-            DockerContainerLocation location = getManagementContext().getLocationManager().createLocation(spec);
-
-            setAttribute(DYNAMIC_LOCATION, location);
-            setAttribute(LOCATION_NAME, location.getId());
-
-            LOG.info("New Docker container location {} created", location);
-            return location;
-        } catch (NoMachinesAvailableException e) {
-            throw Exceptions.propagate(e);
+                // If Weave is enabled, attach to the network
+                if (getConfig(DockerInfrastructure.WEAVE_ENABLED)) {
+                    WeaveContainer weave = Entities.attributeSupplierWhenReady(this, WeaveContainer.WEAVE_CONTAINER).get();
+                    InetAddress subnetAddress = weave.attachNetwork(getAttribute(CONTAINER_ID));
+                    setAttribute(Attributes.SUBNET_ADDRESS, subnetAddress.getHostAddress());
+                }
+            } catch (NoMachinesAvailableException e) {
+                throw Exceptions.propagate(e);
+            }
         }
+
+        // Create our wrapper location around the container
+        LocationSpec<DockerContainerLocation> spec = LocationSpec.create(DockerContainerLocation.class)
+                .parent(host)
+                .configure(flags)
+                .configure(DynamicLocation.OWNER, this)
+                .configure("machine", container) // the underlying JcloudsLocation
+                .configure(container.getAllConfig(true))
+                .displayName(getDockerContainerName());
+        DockerContainerLocation location = getManagementContext().getLocationManager().createLocation(spec);
+
+        setAttribute(DYNAMIC_LOCATION, location);
+        setAttribute(LOCATION_NAME, location.getId());
+
+        LOG.info("New Docker container location {} created", location);
+        return location;
     }
 
     @Override

@@ -26,6 +26,7 @@ import brooklyn.entity.basic.DynamicGroup;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
+import brooklyn.entity.container.weave.WeaveInfrastructure;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.group.DynamicMultiGroup;
 import brooklyn.entity.proxying.EntitySpec;
@@ -35,7 +36,6 @@ import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.BasicAttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.location.docker.DockerLocation;
-import brooklyn.location.docker.strategy.CpuUsagePlacementStrategy;
 import brooklyn.location.docker.strategy.DepthFirstPlacementStrategy;
 import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
 import brooklyn.location.docker.strategy.affinity.AffinityRules;
@@ -70,12 +70,6 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
     ConfigKey<List<DockerAwarePlacementStrategy>> PLACEMENT_STRATEGIES = ConfigKeys.newConfigKeyWithDefault(DockerAttributes.PLACEMENT_STRATEGIES,
             MutableList.<DockerAwarePlacementStrategy>of(new DepthFirstPlacementStrategy()));
 
-    @SetFromFlag("maxContainer")
-    ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = DepthFirstPlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_SIZE;
-
-    @SetFromFlag("maxCpu")
-    ConfigKey<Double> DOCKER_CONTAINER_CLUSTER_MAX_CPU = CpuUsagePlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_CPU;
-
     @SetFromFlag("registerHosts")
     ConfigKey<Boolean> REGISTER_DOCKER_HOST_LOCATIONS = ConfigKeys.newBooleanConfigKey("docker.host.register",
             "Register new Docker Host locations for deployment", Boolean.FALSE);
@@ -83,6 +77,9 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
     @SetFromFlag("removeEmptyHosts")
     ConfigKey<Boolean> REMOVE_EMPTY_DOCKER_HOSTS = ConfigKeys.newBooleanConfigKey("docker.host.removeEmpty",
             "Remove empty Docker Hosts with no containers", Boolean.FALSE);
+
+    @SetFromFlag("enableWeave")
+    ConfigKey<Boolean> WEAVE_ENABLED = WeaveInfrastructure.ENABLED;
 
     @SetFromFlag("hostSpec")
     BasicAttributeSensorAndConfigKey<EntitySpec> DOCKER_HOST_SPEC = new BasicAttributeSensorAndConfigKey<EntitySpec>(
@@ -107,6 +104,7 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
     AttributeSensor<DynamicCluster> DOCKER_HOST_CLUSTER = Sensors.newSensor(DynamicCluster.class, "docker.hosts", "Docker host cluster");
     AttributeSensor<DynamicGroup> DOCKER_CONTAINER_FABRIC = Sensors.newSensor(DynamicGroup.class, "docker.fabric", "Docker container fabric");
     AttributeSensor<DynamicMultiGroup> DOCKER_APPLICATIONS = Sensors.newSensor(DynamicMultiGroup.class, "docker.buckets", "Docker applications");
+    AttributeSensor<WeaveInfrastructure> WEAVE_INFRASTRUCTURE = Sensors.newSensor(WeaveInfrastructure.class, "weave.infrastructure", "Weave infrastructure");
 
     AttributeSensor<Integer> DOCKER_HOST_COUNT = DockerAttributes.DOCKER_HOST_COUNT;
     AttributeSensor<Integer> DOCKER_CONTAINER_COUNT = DockerAttributes.DOCKER_CONTAINER_COUNT;

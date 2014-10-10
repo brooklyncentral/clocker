@@ -18,6 +18,7 @@ package brooklyn.entity.container.docker;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jclouds.compute.config.ComputeServiceProperties;
@@ -32,6 +33,8 @@ import brooklyn.enricher.Enrichers;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.EntityFunctions;
+import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.group.Cluster;
@@ -39,6 +42,8 @@ import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.machine.MachineEntityImpl;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.event.feed.ConfigToAttributes;
+import brooklyn.event.feed.function.FunctionFeed;
+import brooklyn.event.feed.function.FunctionPollConfig;
 import brooklyn.location.Location;
 import brooklyn.location.LocationDefinition;
 import brooklyn.location.MachineProvisioningLocation;
@@ -51,6 +56,7 @@ import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.DockerResolver;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
+import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.location.jclouds.networking.JcloudsLocationSecurityGroupCustomizer;
 import brooklyn.location.jclouds.templates.PortableTemplateBuilder;
 import brooklyn.management.LocationManager;
@@ -69,11 +75,17 @@ import brooklyn.util.net.Cidr;
 import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.task.Tasks;
 import brooklyn.util.text.Identifiers;
+import brooklyn.util.text.StringPredicates;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Optional;
+import com.google.common.base.Predicates;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 
 /**
  * The host running the Docker service.
@@ -82,6 +94,9 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     private static final Logger LOG = LoggerFactory.getLogger(DockerHostImpl.class);
     private static final AtomicInteger COUNTER = new AtomicInteger(0);
+
+    private volatile FunctionFeed scan;
+    private final Object mutex = new Object();
 
     static {
         RendererHints.register(DOCKER_INFRASTRUCTURE, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
@@ -390,13 +405,59 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         }
 
         setAttribute(DOCKER_IMAGE_ID, imageId);
+
+        Duration interval = getConfig(SCAN_INTERVAL);
+        scan = FunctionFeed.builder()
+                .entity(this)
+                .poll(new FunctionPollConfig<Object, Void>(SCAN)
+                        .period(interval)
+                        .callable(new Callable<Void>() {
+                                @Override
+                                public Void call() throws Exception {
+                                    scanContainers();
+                                    return null;
+                                }
+                            }))
+                .build();
     }
 
     @Override
     public void doStop() {
         super.doStop();
+        if (scan != null && scan.isActivated()) scan.stop();
 
         deleteLocation();
+    }
+
+    public void scanContainers() {
+        synchronized (mutex) {
+            String output = runDockerCommand("ps");
+            List<String> ps = Splitter.on(CharMatcher.anyOf("\r\n")).omitEmptyStrings().splitToList(output);
+            if (ps.size() > 1) {
+                for (int i = 1; i < ps.size(); i++) {
+                    String line = ps.get(i);
+                    String id = Strings.getFirstWord(line);
+                    Optional<Entity> container = Iterables.tryFind(getDockerContainerCluster().getMembers(),
+                            Predicates.compose(StringPredicates.startsWith(id), EntityFunctions.attribute(DockerContainer.CONTAINER_ID)));
+                    if (container.isPresent()) {
+                        continue;
+                    } else {
+                        String containerId = Strings.getFirstWord(runDockerCommand("inspect --format {{.Id}} " + id));
+                        String imageId = Strings.getFirstWord(runDockerCommand("inspect --format {{.Image}} " + id));
+                        String imageName = Strings.getFirstWord(runDockerCommand("inspect --format {{.Config.Image}} " + id));
+                        EntitySpec<DockerContainer> containerSpec = EntitySpec.create(getConfig(DOCKER_CONTAINER_SPEC))
+                                .configure(DockerContainer.DOCKER_HOST, this)
+                                .configure(DockerContainer.DOCKER_INFRASTRUCTURE, getInfrastructure())
+                                .configure(DockerContainer.DOCKER_IMAGE_ID, imageId)
+                                .configure(DockerAttributes.DOCKER_IMAGE_NAME, imageName)
+                                .configure(DockerContainer.LOCATION_FLAGS, MutableMap.of("container", (JcloudsSshMachineLocation) getMachine()));
+                        DockerContainer added = containers.addMemberChild(containerSpec);
+                        ((EntityLocal) added).setAttribute(DockerContainer.CONTAINER_ID, containerId);
+                        added.start(ImmutableList.of(getDynamicLocation()));
+                    }
+                }
+            }
+        }
     }
 
 }

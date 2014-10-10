@@ -39,6 +39,7 @@ import brooklyn.entity.basic.EntityPredicates;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.basic.SoftwareProcess.ChildStartableMode;
 import brooklyn.entity.container.DockerAttributes;
+import brooklyn.entity.container.weave.WeaveInfrastructure;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.group.DynamicMultiGroup;
@@ -74,6 +75,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         RendererHints.register(DOCKER_HOST_CLUSTER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(DOCKER_CONTAINER_FABRIC, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(DOCKER_APPLICATIONS, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(WEAVE_INFRASTRUCTURE, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(DockerInfrastructureImpl.class);
@@ -81,6 +83,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
     private DynamicCluster hosts;
     private DynamicGroup fabric;
     private DynamicMultiGroup buckets;
+    private WeaveInfrastructure weave;
 
     private transient final AtomicBoolean started = new AtomicBoolean(false);
 
@@ -134,14 +137,21 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                         .configure(BasicGroup.MEMBER_DELEGATE_CHILDREN, true))
                 .displayName("Docker Applications"));
 
+        if (getConfig(WEAVE_ENABLED)) {
+            weave = addChild(EntitySpec.create(WeaveInfrastructure.class)
+                    .configure(WeaveInfrastructure.DOCKER_INFRASTRUCTURE, this));
+        }
+
         if (Entities.isManaged(this)) {
             Entities.manage(hosts);
             Entities.manage(fabric);
             Entities.manage(buckets);
+            if (weave != null) Entities.manage(weave);
         }
         setAttribute(DOCKER_HOST_CLUSTER, hosts);
         setAttribute(DOCKER_CONTAINER_FABRIC, fabric);
         setAttribute(DOCKER_APPLICATIONS, buckets);
+        setAttribute(WEAVE_INFRASTRUCTURE, weave);
 
         hosts.addEnricher(Enrichers.builder()
                 .aggregating(DockerHost.CPU_USAGE)

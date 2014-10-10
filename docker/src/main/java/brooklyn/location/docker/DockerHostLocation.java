@@ -327,10 +327,6 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
         return dockerHost.getCurrentSize();
     }
 
-    public int getMaxSize() {
-        return dockerHost.getConfig(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
-    }
-
     @Override
     public MachineProvisioningLocation<DockerContainerLocation> newSubLocation(Map<?, ?> newFlags) {
         throw new UnsupportedOperationException();

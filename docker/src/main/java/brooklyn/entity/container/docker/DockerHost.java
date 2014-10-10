@@ -67,12 +67,6 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
     AttributeSensorAndConfigKey<String, String> DOWNLOAD_URL = new BasicAttributeSensorAndConfigKey<String>(
             SoftwareProcess.DOWNLOAD_URL, "https://get.docker.io/builds/Linux/x86_64/docker-latest");
 
-    @SetFromFlag("maxSize")
-    ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = DockerInfrastructure.DOCKER_CONTAINER_CLUSTER_MAX_SIZE;
-
-    @SetFromFlag("maxCpu")
-    ConfigKey<Double> DOCKER_CONTAINER_CLUSTER_MAX_CPU = DockerInfrastructure.DOCKER_CONTAINER_CLUSTER_MAX_CPU;
-
     @SetFromFlag("highAvailabilty")
     ConfigKey<Boolean> HA_POLICY_ENABLE = ConfigKeys.newBooleanConfigKey("docker.policy.ha.enable",
             "Enable high-availability and resilience/restart policies", false);
@@ -120,6 +114,11 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
     ConfigKey<String> DOCKER_PASSWORD = DockerAttributes.DOCKER_PASSWORD;
 
     AttributeSensor<String> DOCKER_HOST_NAME = Sensors.newStringSensor("docker.host.name", "The name of the Docker host");
+
+    @SetFromFlag("scanInterval")
+    ConfigKey<Duration> SCAN_INTERVAL = ConfigKeys.newConfigKey(Duration.class,
+            "docker.host.scanInterval", "Interval between scans of Docker containers", Duration.TEN_SECONDS);
+    AttributeSensor<Void> SCAN = Sensors.newSensor(Void.class, "docker.host.scan", "Notification of host scan");
 
     String getRepository();
 
