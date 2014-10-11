@@ -292,10 +292,10 @@ public class Config {
       private boolean attachStdout;
       private boolean attachStderr;
       private Map<String, ?> exposedPorts = ImmutableMap.of();
+      private List<String> env = ImmutableList.of();
       private boolean tty;
       private boolean openStdin;
       private boolean stdinOnce;
-      private List<String> env = ImmutableList.of();
       private List<String> cmd = ImmutableList.of();
       private List<String> dns = ImmutableList.of();
       private String imageId;

@@ -72,7 +72,9 @@ import brooklyn.util.net.Urls;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 
+import com.google.api.client.repackaged.com.google.common.base.Joiner;
 import com.google.common.base.Functions;
+import com.google.common.collect.ImmutableList;
 
 /**
  * A single Docker container.
@@ -289,6 +291,13 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
         // Set login password from the Docker host
         options.overrideLoginPassword(getDockerHost().getPassword());
+
+        // Look for environment variables configured on the entity
+        Map<String, Object> shellEnv = entity.getConfig(SoftwareProcess.SHELL_ENVIRONMENT);
+        if (shellEnv != null && !shellEnv.isEmpty()) {
+            String env = Joiner.on(':').withKeyValueSeparator("=").join(shellEnv);
+            options.env(ImmutableList.of(env));
+        }
 
         return options;
     }
