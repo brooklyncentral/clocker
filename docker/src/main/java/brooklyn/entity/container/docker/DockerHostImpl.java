@@ -18,6 +18,7 @@ package brooklyn.entity.container.docker;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jclouds.compute.config.ComputeServiceProperties;
@@ -32,6 +33,9 @@ import brooklyn.enricher.Enrichers;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.EntityFunctions;
+import brooklyn.entity.basic.EntityLocal;
+import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.group.Cluster;
@@ -39,6 +43,8 @@ import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.machine.MachineEntityImpl;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.event.feed.ConfigToAttributes;
+import brooklyn.event.feed.function.FunctionFeed;
+import brooklyn.event.feed.function.FunctionPollConfig;
 import brooklyn.location.Location;
 import brooklyn.location.LocationDefinition;
 import brooklyn.location.MachineProvisioningLocation;
@@ -51,12 +57,12 @@ import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.DockerResolver;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
+import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.location.jclouds.networking.JcloudsLocationSecurityGroupCustomizer;
 import brooklyn.location.jclouds.templates.PortableTemplateBuilder;
 import brooklyn.management.LocationManager;
 import brooklyn.management.ManagementContext;
 import brooklyn.networking.portforwarding.DockerPortForwarder;
-import brooklyn.networking.subnet.PortForwarder;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.networking.subnet.SubnetTierImpl;
 import brooklyn.policy.PolicySpec;
@@ -69,11 +75,18 @@ import brooklyn.util.net.Cidr;
 import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.task.Tasks;
 import brooklyn.util.text.Identifiers;
+import brooklyn.util.text.StringPredicates;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Functions;
+import com.google.common.base.Optional;
+import com.google.common.base.Predicates;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 
 /**
  * The host running the Docker service.
@@ -83,14 +96,12 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     private static final Logger LOG = LoggerFactory.getLogger(DockerHostImpl.class);
     private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
+    private volatile FunctionFeed scan;
+
     static {
         RendererHints.register(DOCKER_INFRASTRUCTURE, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(DOCKER_CONTAINER_CLUSTER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
     }
-
-    private DynamicCluster containers;
-    private JcloudsLocation jcloudsLocation;
-    private DockerPortForwarder portForwarder;
-    private SubnetTier subnetTier;
 
     @Override
     public void init() {
@@ -125,7 +136,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         }
         setAttribute(DOCKER_CONTAINER_SPEC, dockerContainerSpec);
 
-        containers = addChild(EntitySpec.create(DynamicCluster.class)
+        DynamicCluster containers = addChild(EntitySpec.create(DynamicCluster.class)
                 .configure(Cluster.INITIAL_SIZE, 0)
                 .configure(DynamicCluster.QUARANTINE_FAILED_ENTITIES, false)
                 .configure(DynamicCluster.MEMBER_SPEC, dockerContainerSpec)
@@ -134,6 +145,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             containers.addPolicy(PolicySpec.create(ServiceReplacer.class)
                     .configure(ServiceReplacer.FAILURE_SENSOR_TO_MONITOR, ServiceRestarter.ENTITY_RESTART_FAILED));
         }
+        setAttribute(DOCKER_CONTAINER_CLUSTER, containers);
 
         if (Entities.isManaged(this)) Entities.manage(containers);
 
@@ -146,7 +158,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     @Override
     protected Map<String, Object> obtainProvisioningFlags(MachineProvisioningLocation location) {
         Map<String, Object> flags = super.obtainProvisioningFlags(location);
-        // TODO set defaults iff not specified in flags already
+        flags.putAll(getConfig(PROVISIONING_FLAGS));
 
         // Configure template for host virtual machine
         TemplateBuilder template = (TemplateBuilder) flags.get(JcloudsLocationConfig.TEMPLATE_BUILDER.getName());
@@ -159,7 +171,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             }
         }
         template.os64Bit(true);
-        template.minRam(2048);
         flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), template);
 
         // Configure security groups for host virtual machine
@@ -171,8 +182,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 flags.put("securityGroups", securityGroup);
             }
         } else {
-            flags.put(JcloudsLocationConfig.JCLOUDS_LOCATION_CUSTOMIZER.getName(),
-                    JcloudsLocationSecurityGroupCustomizer.getInstance(getApplicationId()));
+            flags.put(JcloudsLocationConfig.JCLOUDS_LOCATION_CUSTOMIZERS.getName(),
+                    ImmutableList.of(JcloudsLocationSecurityGroupCustomizer.getInstance(getApplicationId())));
         }
         return flags;
     }
@@ -219,7 +230,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     public List<Entity> getDockerContainerList() {
-        return ImmutableList.copyOf(containers.getMembers());
+        return ImmutableList.copyOf(getDockerContainerCluster().getMembers());
     }
 
     @Override
@@ -282,16 +293,13 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     }
 
     @Override
-    public DynamicCluster getDockerContainerCluster() { return containers; }
+    public DynamicCluster getDockerContainerCluster() { return getAttribute(DOCKER_CONTAINER_CLUSTER); }
 
     @Override
-    public JcloudsLocation getJcloudsLocation() { return jcloudsLocation; }
+    public JcloudsLocation getJcloudsLocation() { return getAttribute(JCLOUDS_DOCKER_LOCATION); }
 
     @Override
-    public PortForwarder getPortForwarder() { return portForwarder; }
-
-    @Override
-    public SubnetTier getSubnetTier() { return subnetTier; }
+    public SubnetTier getSubnetTier() { return getAttribute(DOCKER_HOST_SUBNET_TIER); }
 
     /**
      * Create a new {@link DockerHostLocation} wrapping the machine we are starting in.
@@ -357,16 +365,18 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         Maybe<SshMachineLocation> found = Machines.findUniqueSshMachineLocation(getLocations());
         String dockerLocationSpec = String.format("jclouds:docker:http://%s:%s",
                 found.get().getSshHostAndPort().getHostText(), getDockerPort());
-        jcloudsLocation = (JcloudsLocation) getManagementContext().getLocationRegistry()
+        JcloudsLocation jcloudsLocation = (JcloudsLocation) getManagementContext().getLocationRegistry()
                 .resolve(dockerLocationSpec, MutableMap.of("identity", "docker", "credential", "docker", ComputeServiceProperties.IMAGE_LOGIN_USER, "root:" + getPassword()));
+        setAttribute(JCLOUDS_DOCKER_LOCATION, jcloudsLocation);
 
-        portForwarder = new DockerPortForwarder(new PortForwardManagerAuthority(this));
+        DockerPortForwarder portForwarder = new DockerPortForwarder(new PortForwardManagerAuthority(this));
         portForwarder.init(URI.create(jcloudsLocation.getEndpoint()));
-
-        subnetTier = addChild(EntitySpec.create(SubnetTier.class, SubnetTierImpl.class)
+        SubnetTier subnetTier = addChild(EntitySpec.create(SubnetTier.class, SubnetTierImpl.class)
                 .configure(SubnetTier.PORT_FORWARDER, portForwarder)
                 .configure(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL));
+        Entities.manage(subnetTier);
         subnetTier.start(ImmutableList.of(found.get()));
+        setAttribute(DOCKER_HOST_SUBNET_TIER, subnetTier);
 
         Map<String, ?> flags = MutableMap.<String, Object>builder()
                 .putAll(getConfig(LOCATION_FLAGS))
@@ -390,13 +400,69 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         }
 
         setAttribute(DOCKER_IMAGE_ID, imageId);
+
+        Duration interval = getConfig(SCAN_INTERVAL);
+        scan = FunctionFeed.builder()
+                .entity(this)
+                .poll(new FunctionPollConfig<Object, Void>(SCAN)
+                        .period(interval)
+                        .description("Scan Containers")
+                        .callable(new Callable<Void>() {
+                                @Override
+                                public Void call() throws Exception {
+                                    scanContainers();
+                                    return null;
+                                }
+                            })
+                        .onFailureOrException(Functions.<Void>constant(null)))
+                .build();
     }
 
     @Override
     public void doStop() {
+        if (scan != null && scan.isActivated()) scan.stop();
+
         super.doStop();
 
         deleteLocation();
+    }
+
+    public void scanContainers() {
+        getDynamicLocation().acquireMutex(DockerHostLocation.CONTAINER_MUTEX, "Scanning containers");
+        try {
+            String output = runDockerCommand("ps");
+            List<String> ps = Splitter.on(CharMatcher.anyOf("\r\n")).omitEmptyStrings().splitToList(output);
+            if (ps.size() > 1) {
+                for (int i = 1; i < ps.size(); i++) {
+                    String line = ps.get(i);
+                    String id = Strings.getFirstWord(line);
+                    Optional<Entity> container = Iterables.tryFind(getDockerContainerCluster().getMembers(),
+                            Predicates.compose(StringPredicates.startsWith(id), EntityFunctions.attribute(DockerContainer.CONTAINER_ID)));
+                    if (container.isPresent()) continue;
+
+                    // Build a DockerContainer without a locations, as it may not be SSHable
+                    String containerId = Strings.getFirstWord(runDockerCommand("inspect --format {{.Id}} " + id));
+                    String imageId = Strings.getFirstWord(runDockerCommand("inspect --format {{.Image}} " + id));
+                    String imageName = Strings.getFirstWord(runDockerCommand("inspect --format {{.Config.Image}} " + id));
+                    EntitySpec<DockerContainer> containerSpec = EntitySpec.create(getConfig(DOCKER_CONTAINER_SPEC))
+                            .configure(SoftwareProcess.ENTITY_STARTED, Boolean.TRUE)
+                            .configure(DockerContainer.DOCKER_HOST, this)
+                            .configure(DockerContainer.DOCKER_INFRASTRUCTURE, getInfrastructure())
+                            .configure(DockerContainer.DOCKER_IMAGE_ID, imageId)
+                            .configure(DockerAttributes.DOCKER_IMAGE_NAME, imageName)
+                            .configure(DockerContainer.LOCATION_FLAGS, MutableMap.of("container", (JcloudsSshMachineLocation) getMachine()));
+
+                    // Create, manage and start the container
+                    DockerContainer added = getDockerContainerCluster().addChild(containerSpec);
+                    Entities.manage(added);
+                    getDockerContainerCluster().addMember(added);
+                    ((EntityLocal) added).setAttribute(DockerContainer.CONTAINER_ID, containerId);
+                    added.start(ImmutableList.of(getDynamicLocation().getMachine()));
+                }
+            }
+        } finally {
+            getDynamicLocation().releaseMutex(DockerHostLocation.CONTAINER_MUTEX);
+        }
     }
 
 }

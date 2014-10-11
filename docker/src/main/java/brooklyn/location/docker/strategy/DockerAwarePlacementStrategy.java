@@ -28,6 +28,10 @@ public interface DockerAwarePlacementStrategy {
 
     DockerInfrastructure getDockerInfrastructure();
 
+    /**
+     * Filters a list of {@link DockerHostLocation locations} to determine if the given {@link Entity} can be
+     * deployed into a new container there.
+     */
     List<DockerHostLocation> filterLocations(List<DockerHostLocation> locations, Entity context);
 
 }

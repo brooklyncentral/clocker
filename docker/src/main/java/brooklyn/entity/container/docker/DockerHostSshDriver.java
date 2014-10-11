@@ -30,6 +30,7 @@ import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.lifecycle.ScriptHelper;
 import brooklyn.entity.container.DockerUtils;
+import brooklyn.entity.container.weave.WeaveInfrastructure;
 import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.location.OsDetails;
 import brooklyn.location.basic.SshMachineLocation;
@@ -58,7 +59,17 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     protected Map<String, Integer> getPortMap() {
-        return MutableMap.of("dockerPort", getDockerPort());
+        Map<String, Integer> ports = MutableMap.of();
+        ports.put("dockerPort", getDockerPort());
+        if (getEntity().getConfig(DockerInfrastructure.WEAVE_ENABLED)) {
+            // Best guess at available port, as Weave is started _after_ the DockerHost
+            Integer weavePort = getEntity()
+                    .getAttribute(DockerHost.DOCKER_INFRASTRUCTURE)
+                    .getAttribute(DockerInfrastructure.WEAVE_INFRASTRUCTURE)
+                    .getConfig(WeaveInfrastructure.WEAVE_PORT);
+            ports.put("weavePort", weavePort);
+        }
+        return ports;
     }
 
     @Override

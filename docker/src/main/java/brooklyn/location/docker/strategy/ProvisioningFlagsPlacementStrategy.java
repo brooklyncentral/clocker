@@ -83,16 +83,11 @@ public class ProvisioningFlagsPlacementStrategy extends AbstractDockerPlacementS
                 }
             }
         }
-        
         return available;
     }
 
-    private Integer max(Integer one, Integer two) {
-        return Math.max(one == null ? 0 : one, two == null ? 0 : two);
-    }
-
     @Override
-    public Map<String, Object> apply(Map<String, Object> contextFlags) {
+    public Map<String,Object> apply(Map<String,Object> contextFlags) {
         Integer strategyMinRam = getConfig(MIN_RAM);
         Integer strategyMinCores = getConfig(MIN_CORES);
 
@@ -111,6 +106,10 @@ public class ProvisioningFlagsPlacementStrategy extends AbstractDockerPlacementS
         provisioningFlags.put("minRam", minRam);
         provisioningFlags.put("minCores", minCores);
         return provisioningFlags;
+    }
+
+    private Integer max(Integer one, Integer two) {
+        return Math.max(one == null ? 0 : one, two == null ? 0 : two);
     }
 
 }

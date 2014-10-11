@@ -33,13 +33,17 @@ public class DepthFirstPlacementStrategy extends BasicDockerPlacementStrategy {
     @SetFromFlag("maxContainers")
     public static final ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = ConfigKeys.newIntegerConfigKey(
             "docker.container.cluster.maxSize",
-            "Maximum size of a Docker container cluster", 4);
+            "Maximum size of a Docker container cluster", 8);
 
     @Override
     public boolean apply(DockerHostLocation input) {
         Integer maxSize = getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
         Integer currentSize = input.getOwner().getCurrentSize();
-        return currentSize < maxSize;
+        boolean accept = currentSize < maxSize;
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Location {} size is {}: {}", new Object[] { input, currentSize, accept ? "accepted" : "rejected" });
+        }
+        return accept;
     }
 
     @Override

@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.config.ConfigKey;
 import brooklyn.config.render.RendererHints;
 import brooklyn.config.render.RendererHints.Hint;
 import brooklyn.config.render.RendererHints.NamedActionWithUrl;
@@ -44,6 +45,8 @@ import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
+import brooklyn.entity.container.weave.WeaveContainer;
+import brooklyn.entity.container.weave.WeaveInfrastructure;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
@@ -147,7 +150,12 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             LOG.info("Configuring entity {} via subnet {}", entity, dockerHost.getSubnetTier());
             ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.PORT_FORWARDING_MANAGER, dockerHost.getSubnetTier().getPortForwardManager());
             ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.PORT_FORWARDER, portForwarder);
-            ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL);
+            if (getOwner().getConfig(WeaveInfrastructure.ENABLED)) {
+                WeaveContainer weave = getOwner().getAttribute(WeaveContainer.WEAVE_CONTAINER);
+                ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, weave.getConfig(WeaveContainer.WEAVE_CIDR));
+            } else {
+                ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL);
+            }
             configureEnrichers((AbstractEntity) entity);
 
             // Add the entity Dockerfile if configured
@@ -171,13 +179,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                 ((AbstractEntity) entity).setConfigEvenIfOwned(SoftwareProcess.SKIP_INSTALLATION, true);
             } else {
                 // Set commit command at post-install
-                String postInstall = entity.getConfig(SoftwareProcess.POST_INSTALL_COMMAND);
-                if (Strings.isNonBlank(postInstall)) {
-                    postInstall = BashCommands.chain(postInstall, DockerCallbacks.commit());
-                } else {
-                    postInstall = DockerCallbacks.commit();
-                }
-                ((AbstractEntity) entity).setConfigEvenIfOwned(SoftwareProcess.POST_INSTALL_COMMAND, postInstall);
+                insertCallback(entity, SoftwareProcess.POST_INSTALL_COMMAND, DockerCallbacks.commit());
 
                 if (Strings.isNonBlank(dockerfile)) {
                     if (imageId != null) {
@@ -193,6 +195,9 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                 images.putIfAbsent(imageName, new CountDownLatch(1));
                 dockerHost.runDockerCommand(String.format("tag %s %s:latest", imageId, Os.mergePaths(repository, imageName)));
             }
+
+            // Set subnet address pre install
+            insertCallback(entity, SoftwareProcess.PRE_INSTALL_COMMAND, DockerCallbacks.subnetAddress());
 
             // Look up hardware ID
             String hardwareId = entity.getConfig(DockerAttributes.DOCKER_HARDWARE_ID);
@@ -215,17 +220,31 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             } else {
                 Entities.start(added, ImmutableList.of(machine));
             }
+            DockerContainer dockerContainer = (DockerContainer) added;
 
             // Save the container attributes
-            DockerContainer dockerContainer = (DockerContainer) added;
             ((EntityLocal) dockerContainer).setAttribute(DockerContainer.IMAGE_ID, imageId);
             ((EntityLocal) dockerContainer).setAttribute(DockerContainer.IMAGE_NAME, imageName);
             ((EntityLocal) dockerContainer).setAttribute(DockerContainer.HARDWARE_ID, hardwareId);
+
+            // Link the container to the entity
             ((EntityLocal) entity).setAttribute(DockerContainer.CONTAINER, dockerContainer);
+            ((EntityLocal) entity).setAttribute(DockerContainer.CONTAINER_ID, dockerContainer.getContainerId());
+
             return dockerContainer.getDynamicLocation();
         } finally {
             releaseMutex(CONTAINER_MUTEX);
         }
+    }
+
+    private void insertCallback(Entity entity, ConfigKey<String> commandKey, String callback) {
+        String command = entity.getConfig(commandKey);
+        if (Strings.isNonBlank(command)) {
+            command = BashCommands.chain(command, callback);
+        } else {
+            command = DockerCallbacks.subnetAddress();
+        }
+        ((AbstractEntity) entity).setConfigEvenIfOwned(commandKey, command);
     }
 
     public void waitForImage(String imageName) {
@@ -325,10 +344,6 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
     public int getCurrentSize() {
         return dockerHost.getCurrentSize();
-    }
-
-    public int getMaxSize() {
-        return dockerHost.getConfig(DockerHost.DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
     }
 
     @Override

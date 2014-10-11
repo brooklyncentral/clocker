@@ -43,10 +43,12 @@ import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.docker.strategy.affinity.AffinityRules;
 import brooklyn.location.dynamic.LocationOwner;
 import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.networking.subnet.PortForwarder;
 import brooklyn.networking.subnet.SubnetTier;
+import brooklyn.util.collections.MutableMap;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.time.Duration;
+
+import com.google.common.reflect.TypeToken;
 
 /**
  * A single machine running Docker.
@@ -67,23 +69,17 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
     AttributeSensorAndConfigKey<String, String> DOWNLOAD_URL = new BasicAttributeSensorAndConfigKey<String>(
             SoftwareProcess.DOWNLOAD_URL, "https://get.docker.io/builds/Linux/x86_64/docker-latest");
 
-    @SetFromFlag("maxSize")
-    ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = DockerInfrastructure.DOCKER_CONTAINER_CLUSTER_MAX_SIZE;
-
-    @SetFromFlag("maxCpu")
-    ConfigKey<Double> DOCKER_CONTAINER_CLUSTER_MAX_CPU = DockerInfrastructure.DOCKER_CONTAINER_CLUSTER_MAX_CPU;
-
     @SetFromFlag("highAvailabilty")
     ConfigKey<Boolean> HA_POLICY_ENABLE = ConfigKeys.newBooleanConfigKey("docker.policy.ha.enable",
             "Enable high-availability and resilience/restart policies", false);
 
     @SetFromFlag("dockerPort")
     PortAttributeSensorAndConfigKey DOCKER_PORT = ConfigKeys.newPortSensorAndConfigKey("docker.port",
-            "Docker port", PortRanges.fromString("2375"));
+            "Docker port", PortRanges.fromInteger(2375));
 
     @SetFromFlag("dockerSslPort")
     PortAttributeSensorAndConfigKey DOCKER_SSL_PORT = ConfigKeys.newPortSensorAndConfigKey("docker.ssl.port",
-            "Docker port", PortRanges.fromString("2376"));
+            "Docker port", PortRanges.fromInteger(2376));
 
     @SetFromFlag("containerSpec")
     AttributeSensorAndConfigKey<EntitySpec, EntitySpec> DOCKER_CONTAINER_SPEC = ConfigKeys.newSensorAndConfigKey(
@@ -114,12 +110,28 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
     AttributeSensorAndConfigKey<Map<String, String>, Map<String, String>> DOCKER_HOST_VOLUME_MAPPING = DockerAttributes.DOCKER_HOST_VOLUME_MAPPING;
 
     @SetFromFlag("affinityRules")
-    ConfigKey<String> DOCKER_HOST_AFFINITY_RULES = AffinityRules.AFFINITY_RULES;
+    ConfigKey<List<String>> DOCKER_HOST_AFFINITY_RULES = AffinityRules.AFFINITY_RULES;
 
     @SetFromFlag("password")
     ConfigKey<String> DOCKER_PASSWORD = DockerAttributes.DOCKER_PASSWORD;
 
     AttributeSensor<String> DOCKER_HOST_NAME = Sensors.newStringSensor("docker.host.name", "The name of the Docker host");
+
+    @SetFromFlag("provisioningFlags")
+    ConfigKey<Map<String,Object>> PROVISIONING_FLAGS = ConfigKeys.newConfigKey(new TypeToken<Map<String,Object>>() { },
+            "docker.host.flags", "Provisioning flags for the Docker hosts", MutableMap.<String,Object>of());
+
+    @SetFromFlag("scanInterval")
+    ConfigKey<Duration> SCAN_INTERVAL = ConfigKeys.newConfigKey(Duration.class,
+            "docker.host.scanInterval", "Interval between scans of Docker containers", Duration.TEN_SECONDS);
+    AttributeSensor<Void> SCAN = Sensors.newSensor(Void.class, "docker.host.scan", "Notification of host scan");
+
+    AttributeSensor<DynamicCluster> DOCKER_CONTAINER_CLUSTER = Sensors.newSensor(DynamicCluster.class,
+            "docker.container.cluster", "The cluster of Docker containers");
+    AttributeSensor<JcloudsLocation> JCLOUDS_DOCKER_LOCATION = Sensors.newSensor(JcloudsLocation.class,
+            "docker.jclouds.location", "The location used for provisioning Docker containers");
+    AttributeSensor<SubnetTier> DOCKER_HOST_SUBNET_TIER = Sensors.newSensor(SubnetTier.class,
+            "docker.subnetTier", "The SubnetTier for Docker port mapping");
 
     String getRepository();
 
@@ -128,8 +140,6 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
     Integer getDockerPort();
 
     JcloudsLocation getJcloudsLocation();
-
-    PortForwarder getPortForwarder();
 
     SubnetTier getSubnetTier();
 

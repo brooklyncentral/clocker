@@ -39,6 +39,7 @@ import brooklyn.entity.basic.EntityPredicates;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.basic.SoftwareProcess.ChildStartableMode;
 import brooklyn.entity.container.DockerAttributes;
+import brooklyn.entity.container.weave.WeaveInfrastructure;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.group.DynamicMultiGroup;
@@ -74,13 +75,10 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         RendererHints.register(DOCKER_HOST_CLUSTER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(DOCKER_CONTAINER_FABRIC, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(DOCKER_APPLICATIONS, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(WEAVE_INFRASTRUCTURE, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(DockerInfrastructureImpl.class);
-
-    private DynamicCluster hosts;
-    private DynamicGroup fabric;
-    private DynamicMultiGroup buckets;
 
     private transient final AtomicBoolean started = new AtomicBoolean(false);
 
@@ -110,29 +108,39 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 .configure(SoftwareProcess.SUGGESTED_VERSION, getConfig(DOCKER_VERSION))
                 .configure(SoftwareProcess.CHILDREN_STARTABLE_MODE, ChildStartableMode.BACKGROUND_LATE);
 
-        hosts = addChild(EntitySpec.create(DynamicCluster.class)
+        DynamicCluster hosts = addChild(EntitySpec.create(DynamicCluster.class)
                 .configure(Cluster.INITIAL_SIZE, initialSize)
                 .configure(DynamicCluster.QUARANTINE_FAILED_ENTITIES, true)
                 .configure(DynamicCluster.MEMBER_SPEC, dockerHostSpec)
                 .displayName("Docker Hosts"));
 
-        fabric = addChild(EntitySpec.create(DynamicGroup.class)
+        DynamicGroup fabric = addChild(EntitySpec.create(DynamicGroup.class)
                 .configure(DynamicGroup.ENTITY_FILTER, Predicates.and(Predicates.instanceOf(DockerContainer.class), EntityPredicates.attributeEqualTo(DockerContainer.DOCKER_INFRASTRUCTURE, this)))
                 .configure(DynamicGroup.MEMBER_DELEGATE_CHILDREN, true)
                 .displayName("All Docker Containers"));
 
-        buckets = addChild(EntitySpec.create(DynamicMultiGroup.class)
+        DynamicMultiGroup buckets = addChild(EntitySpec.create(DynamicMultiGroup.class)
                 .configure(DynamicMultiGroup.ENTITY_FILTER, sameInfrastructure)
                 .configure(DynamicMultiGroup.RESCAN_INTERVAL, 15L)
                 .configure(DynamicMultiGroup.BUCKET_FUNCTION, new Function<Entity, String>() {
                         @Override
                         public String apply(@Nullable Entity input) {
-                            return input.getApplication().getDisplayName();
+                            return input.getApplication().getDisplayName() + ":" + input.getApplicationId();
                         }
                     })
                 .configure(DynamicMultiGroup.BUCKET_SPEC, EntitySpec.create(BasicGroup.class)
                         .configure(BasicGroup.MEMBER_DELEGATE_CHILDREN, true))
                 .displayName("Docker Applications"));
+
+        if (getConfig(WEAVE_ENABLED)) {
+            WeaveInfrastructure weave = addChild(EntitySpec.create(WeaveInfrastructure.class)
+                    .configure(WeaveInfrastructure.DOCKER_INFRASTRUCTURE, this));
+            setAttribute(WEAVE_INFRASTRUCTURE, weave);
+
+            if (Entities.isManaged(this)) {
+                Entities.manage(weave);
+            }
+        }
 
         if (Entities.isManaged(this)) {
             Entities.manage(hosts);
@@ -169,39 +177,39 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
     @Override
     public List<Entity> getDockerHostList() {
-        if (hosts == null) {
+        if (getDockerHostCluster() == null) {
             return ImmutableList.of();
         } else {
-            return ImmutableList.copyOf(hosts.getMembers());
+            return ImmutableList.copyOf(getDockerHostCluster().getMembers());
         }
     }
 
     @Override
-    public DynamicCluster getDockerHostCluster() { return hosts; }
+    public DynamicCluster getDockerHostCluster() { return getAttribute(DOCKER_HOST_CLUSTER); }
 
     @Override
     public List<Entity> getDockerContainerList() {
-        if (fabric == null) {
+        if (getContainerFabric() == null) {
             return ImmutableList.of();
         } else {
-            return ImmutableList.copyOf(fabric.getMembers());
+            return ImmutableList.copyOf(getContainerFabric().getMembers());
         }
     }
 
     @Override
-    public DynamicGroup getContainerFabric() { return fabric; }
+    public DynamicGroup getContainerFabric() { return getAttribute(DOCKER_CONTAINER_FABRIC); }
 
     @Override
     public Integer resize(Integer desiredSize) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Resize Docker infrastructure to {} at {}", new Object[] { desiredSize, getLocations() });
         }
-        return hosts.resize(desiredSize);
+        return getDockerHostCluster().resize(desiredSize);
     }
 
     @Override
     public Integer getCurrentSize() {
-        return hosts.getCurrentSize();
+        return getDockerHostCluster().getCurrentSize();
     }
 
     @Override

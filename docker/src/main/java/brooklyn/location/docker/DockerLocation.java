@@ -24,23 +24,18 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
-import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.Entities;
-import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.group.DynamicCluster;
-import brooklyn.event.basic.BasicConfigKey;
 import brooklyn.location.MachineLocation;
 import brooklyn.location.MachineProvisioningLocation;
 import brooklyn.location.NoMachinesAvailableException;
 import brooklyn.location.basic.AbstractLocation;
 import brooklyn.location.basic.LocationConfigKeys;
 import brooklyn.location.basic.SshMachineLocation;
-import brooklyn.location.cloud.CloudLocationConfig;
 import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
 import brooklyn.location.docker.strategy.DockerAwareProvisioningStrategy;
 import brooklyn.location.dynamic.DynamicLocation;
@@ -83,7 +78,10 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
 
     /* Mappings for provisioned locations */
 
+    @SetFromFlag("machines")
     private final Multimap<SshMachineLocation, String> machines = HashMultimap.create();
+
+    @SetFromFlag("containers")
     private final Map<String, DockerHostLocation> containers = Maps.newHashMap();
 
     public DockerLocation() {
@@ -147,13 +145,13 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
                 dockerHost = machine.getOwner();
             } else {
                 Iterable<DockerAwareProvisioningStrategy> provisioningStrategies = Iterables.filter(Iterables.concat(strategies,  entityStrategies), DockerAwareProvisioningStrategy.class);
-                Map<String,Object> provisioningFlags = getDockerInfrastructure().getConfig(SoftwareProcess.PROVISIONING_PROPERTIES);
                 for (DockerAwareProvisioningStrategy strategy : provisioningStrategies) {
-                    provisioningFlags = strategy.apply(provisioningFlags);
+                    flags = strategy.apply((Map<String,Object>) flags);
                 }
 
-                LOG.info("Provisioning new host with flags: {}", provisioningFlags);
-                Entity added = getDockerInfrastructure().getDockerHostCluster().addNode(getProvisioner(), provisioningFlags);
+                LOG.info("Provisioning new host with flags: {}", flags);
+                SshMachineLocation provisioned = getProvisioner().obtain(flags);
+                Entity added = getDockerInfrastructure().getDockerHostCluster().addNode(provisioned, MutableMap.of());
                 dockerHost = (DockerHost) added;
                 machine = dockerHost.getDynamicLocation();
             }

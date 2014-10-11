@@ -37,6 +37,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
+import com.google.common.reflect.TypeToken;
 
 /**
  * Affinity rules for Docker hosts.
@@ -68,15 +69,17 @@ import com.google.common.collect.Queues;
  * <pre>
  * - serviceType: brooklyn.entity.webapp.tomcat.TomcatServer
  *   brooklyn.config:
- *   affinity.rules: |
- *     NOT TYPE
- *     TYPE brooklyn.entity.nosql.solr.SolrServer
- *     SAME APPLICATION
+ *     affinity.rules:
+ *     - "NOT TYPE"
+ *     - "TYPE brooklyn.entity.nosql.solr.SolrServer"
+ *     - "APPLICATION"
+ *     - $brooklyn:formatString("NOT ID %s", $brooklyn:entity("name"))
  * </pre>
  */
 public class AffinityRules implements Predicate<Entity> {
 
-    public static final ConfigKey<String> AFFINITY_RULES = ConfigKeys.newStringConfigKey("affinity.rules", "Affinity rules for entity placemnent");
+    public static final ConfigKey<List<String>> AFFINITY_RULES = ConfigKeys.newConfigKey(
+            new TypeToken<List<String>>() { }, "affinity.rules", "Affinity rules for entity placemnent");
 
     public static final String NOT = "NOT";
     public static final String TYPE = "TYPE";

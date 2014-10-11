@@ -26,7 +26,6 @@ import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.docker.strategy.AbstractDockerPlacementStrategy;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -45,10 +44,10 @@ public class DockerAffinityRuleStrategy extends AbstractDockerPlacementStrategy 
 
         // Select hosts that satisfy the affinity rules
         for (DockerHostLocation machine : locations) {
-            Optional<String> entityRules = Optional.fromNullable(entity.getConfig(DockerHost.DOCKER_HOST_AFFINITY_RULES));
-            Optional<String> hostRules = Optional.fromNullable(machine.getOwner().getConfig(DockerHost.DOCKER_HOST_AFFINITY_RULES));
-            Optional<String> infrastructureRules = Optional.fromNullable(machine.getOwner().getInfrastructure().getConfig(DockerHost.DOCKER_HOST_AFFINITY_RULES));
-            String combined = Joiner.on('\n').join(Optional.presentInstances(ImmutableList.of(entityRules, hostRules, infrastructureRules)));
+            Optional<List<String>> entityRules = Optional.fromNullable(entity.getConfig(DockerHost.DOCKER_HOST_AFFINITY_RULES));
+            Optional<List<String>> hostRules = Optional.fromNullable(machine.getOwner().getConfig(DockerHost.DOCKER_HOST_AFFINITY_RULES));
+            Optional<List<String>> infrastructureRules = Optional.fromNullable(machine.getOwner().getInfrastructure().getConfig(DockerHost.DOCKER_HOST_AFFINITY_RULES));
+            Iterable<String> combined = Iterables.concat(Optional.presentInstances(ImmutableList.of(entityRules, hostRules, infrastructureRules)));
             AffinityRules rules = AffinityRules.rulesFor(entity).parse(combined);
 
             Iterable<Entity> entities = getBrooklynManagementContext().getEntityManager().findEntities(EntityPredicates.withLocation(machine));
