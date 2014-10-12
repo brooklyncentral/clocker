@@ -85,32 +85,50 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     /** {@inheritDoc} */
     @Override
     public String buildImage(String dockerFile, String name) {
-        ProcessTaskWrapper<Integer> task = SshEffectorTasks.ssh(format("mkdir -p %s", Os.mergePaths(getRunDir(), name)))
-                .machine(getMachine())
-                .newTask();
-        DynamicTasks.queueIfPossible(task).executionContext(getEntity()).orSubmitAndBlock();
-        int result = task.get();
-        if (result != 0) throw new IllegalStateException("Error creating image directory: " + name);
+        if (ArchiveUtils.ArchiveType.UNKNOWN != ArchiveUtils.ArchiveType.of(dockerFile) || Urls.isDirectory(dockerFile)) {
+            ArchiveUtils.deploy(dockerFile, getMachine(), Os.mergePaths(getRunDir(), name));
+            String baseImageId = buildDockerfileDirectory(name);
+            log.info("Created base Dockerfile image with ID {}", baseImageId);
+        } else {
+            ProcessTaskWrapper<Integer> task = SshEffectorTasks.ssh(format("mkdir -p %s", Os.mergePaths(getRunDir(), name)))
+                    .machine(getMachine())
+                    .newTask();
+            DynamicTasks.queueIfPossible(task).executionContext(getEntity()).orSubmitAndBlock();
+            int result = task.get();
+            if (result != 0) throw new IllegalStateException("Error creating image directory: " + name);
 
-        // Build an image from the base Dockerfile
-        copyTemplate(dockerFile, Os.mergePaths(name, "Base" + DockerUtils.DOCKERFILE));
-        String baseImageId = getImageId("Base" + DockerUtils.DOCKERFILE, name);
-        log.info("Created base Dockerfile image with ID {}", baseImageId);
+            // Build an image from the base Dockerfile
+            copyTemplate(dockerFile, Os.mergePaths(name, "Base" + DockerUtils.DOCKERFILE));
+            String baseImageId = buildDockerfile("Base" + DockerUtils.DOCKERFILE, name);
+            log.info("Created base Dockerfile image with ID {}", baseImageId);
+        }
 
         // Update the image with the Clocker sshd Dockerfile
         copyTemplate(DockerUtils.SSHD_DOCKERFILE, Os.mergePaths(name, "Sshd" + DockerUtils.DOCKERFILE), false, MutableMap.of("repository", getRepository(), "imageName", name));
-        String sshdImageId = getImageId("Sshd" + DockerUtils.DOCKERFILE, name);
+        String sshdImageId = buildDockerfile("Sshd" + DockerUtils.DOCKERFILE, name);
         log.info("Created SSHable Dockerfile image with ID {}", sshdImageId);
 
         return sshdImageId;
     }
 
-    private String getImageId(String dockerfile, String name) {
+    private String buildDockerfileDirectory(String name) {
+        String build = format("build --rm -t %s %s", Os.mergePaths(getRepository(), name), Os.mergePaths(getRunDir(), name));
+        String stdout = ((DockerHost) getEntity()).runDockerCommandTimeout(build, Duration.minutes(15));
+        String prefix = Strings.getFirstWordAfter(stdout, "Successfully built");
+
+        return getImageId(prefix, name);
+    }
+
+    private String buildDockerfile(String dockerfile, String name) {
         String build = format("build --rm -t %s - < %s", Os.mergePaths(getRepository(), name), Os.mergePaths(getRunDir(), name, dockerfile));
         String stdout = ((DockerHost) getEntity()).runDockerCommandTimeout(build, Duration.minutes(15));
         String prefix = Strings.getFirstWordAfter(stdout, "Successfully built");
 
-        // Inspect the Docker image with this prefix
+        return getImageId(prefix, name);
+    }
+
+    // Inspect the Docker image with this prefix
+    private String getImageId(String prefix, String name) {
         String inspect = format("inspect --format={{.Id}} %s", prefix);
         String imageId = ((DockerHost) getEntity()).runDockerCommand(inspect);
         return DockerUtils.checkId(imageId);

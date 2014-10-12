@@ -108,6 +108,10 @@ public class DockerComputeServiceAdapter implements
          containerConfigBuilder.cpuShares(templateOptions.getCpuShares().get());
       }
 
+      if (templateOptions.getEnv().isPresent()) {
+         containerConfigBuilder.env(templateOptions.getEnv().get());
+      }
+
       if (templateOptions.getVolumes().isPresent()) {
          Map<String, Object> volumes = Maps.newLinkedHashMap();
          for (String containerDir : templateOptions.getVolumes().get().values()) {

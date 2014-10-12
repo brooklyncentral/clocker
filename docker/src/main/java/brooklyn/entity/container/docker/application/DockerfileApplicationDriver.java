@@ -15,8 +15,8 @@
  */
 package brooklyn.entity.container.docker.application;
 
-import brooklyn.entity.basic.VanillaSoftwareProcessDriver;
+import brooklyn.entity.basic.SoftwareProcessDriver;
 
-public interface VanillaDockerApplicationDriver extends VanillaSoftwareProcessDriver {
+public interface DockerfileApplicationDriver extends SoftwareProcessDriver {
 
 }

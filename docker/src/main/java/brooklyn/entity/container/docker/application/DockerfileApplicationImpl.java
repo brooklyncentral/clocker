@@ -18,29 +18,44 @@ package brooklyn.entity.container.docker.application;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.entity.basic.VanillaSoftwareProcessSshDriver;
+import brooklyn.entity.basic.SoftwareProcessImpl;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
-import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.docker.DockerContainerLocation;
 
-/**
- * The SSH implementation of the {@link VanillaDockerApplicationDriver}.
- */
-public class VanillaDockerApplicationSshDriver extends VanillaSoftwareProcessSshDriver implements VanillaDockerApplicationDriver {
+import com.google.common.base.Predicates;
+import com.google.common.collect.Iterables;
 
-    private static final Logger LOG = LoggerFactory.getLogger(VanillaDockerApplication.class);
+public class DockerfileApplicationImpl extends SoftwareProcessImpl implements DockerfileApplication {
 
-    public VanillaDockerApplicationSshDriver(VanillaDockerApplicationImpl entity, SshMachineLocation machine) {
-        super(entity, machine);
+    private static final Logger LOG = LoggerFactory.getLogger(DockerfileApplication.class);
+
+    @Override
+    public void init() {
+        LOG.info("Starting Dockerfile {}", getDockerfile());
+        super.init();
+    }
+
+    @Override
+    public Class<? extends DockerfileApplicationDriver> getDriverInterface() {
+        return DockerfileApplicationDriver.class;
+    }
+
+    @Override
+    protected void preStart() {
+    }
+
+    public DockerContainer getDockerContainer() {
+        DockerContainerLocation location = (DockerContainerLocation) Iterables.find(getLocations(), Predicates.instanceOf(DockerContainerLocation.class));
+        return location.getOwner();
     }
 
     public DockerHost getDockerHost() {
         return getDockerContainer().getDockerHost();
     }
 
-    public DockerContainer getDockerContainer() {
-        return ((DockerContainerLocation) getMachine()).getOwner();
+    public String getDockerfile() {
+        return getConfig(DOCKERFILE_URL);
     }
 
 }
