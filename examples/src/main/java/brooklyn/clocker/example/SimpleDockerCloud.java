@@ -56,7 +56,7 @@ public class SimpleDockerCloud extends AbstractApplication {
     @CatalogConfig(label="Maximum Containers per Host", priority=50)
     public static final ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = ConfigKeys.newConfigKeyWithDefault(BreadthFirstPlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_SIZE, 4);
 
-    @CatalogConfig(label="Weave enabled", priority=50)
+    @CatalogConfig(label="Enable Weave SDN", priority=50)
     public static final ConfigKey<Boolean> WEAVE_ENABLED = ConfigKeys.newConfigKeyWithDefault(WeaveInfrastructure.ENABLED, false);
 
     @Override
