@@ -23,6 +23,7 @@ import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
+import brooklyn.entity.container.weave.WeaveInfrastructure;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy;
 import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
@@ -55,6 +56,9 @@ public class SimpleDockerCloud extends AbstractApplication {
     @CatalogConfig(label="Maximum Containers per Host", priority=50)
     public static final ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = ConfigKeys.newConfigKeyWithDefault(BreadthFirstPlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_SIZE, 4);
 
+    @CatalogConfig(label="Weave enabled", priority=50)
+    public static final ConfigKey<Boolean> WEAVE_ENABLED = ConfigKeys.newConfigKeyWithDefault(WeaveInfrastructure.ENABLED, false);
+
     @Override
     public void initApp() {
         EntitySpec dockerSpec = EntitySpec.create(DockerHost.class)
@@ -72,6 +76,7 @@ public class SimpleDockerCloud extends AbstractApplication {
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE))
                 .configure(DockerInfrastructure.DOCKER_HOST_SPEC, dockerSpec)
                 .configure(DockerInfrastructure.PLACEMENT_STRATEGIES, ImmutableList.<DockerAwarePlacementStrategy>of(strategy))
+                .configure(WeaveInfrastructure.ENABLED, getConfig(WEAVE_ENABLED))
                 .displayName("Docker Infrastructure"));
     }
 }
