@@ -30,14 +30,17 @@ import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.lifecycle.ScriptHelper;
 import brooklyn.entity.container.DockerUtils;
+import brooklyn.entity.container.weave.WeaveContainer;
 import brooklyn.entity.container.weave.WeaveInfrastructure;
 import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.location.OsDetails;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.location.jclouds.networking.JcloudsLocationSecurityGroupCustomizer;
+import brooklyn.util.collections.MutableList;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.file.ArchiveUtils;
+import brooklyn.util.net.Cidr;
 import brooklyn.util.net.Networking;
 import brooklyn.util.net.Urls;
 import brooklyn.util.os.Os;
@@ -291,36 +294,56 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 return;
             }
             JcloudsSshMachineLocation location = (JcloudsSshMachineLocation) getLocation();
-            Collection<IpPermission> permissions = getIpPermissions();
+            JcloudsLocationSecurityGroupCustomizer customizer = JcloudsLocationSecurityGroupCustomizer.getInstance(getEntity().getApplicationId());
+            Collection<IpPermission> permissions = getIpPermissions(customizer);
             log.debug("Applying custom security groups to {}: {}", location, permissions);
-            JcloudsLocationSecurityGroupCustomizer.getInstance(getEntity().getApplicationId())
-                    .addPermissionsToLocation(location, permissions);
+            customizer.addPermissionsToLocation(location, permissions);
         }
     }
 
     /**
      * @return Extra IP permissions to be configured on this entity's location.
      */
-    protected Collection<IpPermission> getIpPermissions() {
+    protected Collection<IpPermission> getIpPermissions(JcloudsLocationSecurityGroupCustomizer customizer) {
         IpPermission dockerPort = IpPermission.builder()
                 .ipProtocol(IpProtocol.TCP)
                 .fromPort(getEntity().getAttribute(DockerHost.DOCKER_PORT))
                 .toPort(getEntity().getAttribute(DockerHost.DOCKER_PORT))
-                .cidrBlock(JcloudsLocationSecurityGroupCustomizer.getInstance(getEntity()).getBrooklynCidrBlock())
+                .cidrBlock(customizer.getBrooklynCidrBlock())
                 .build();
         IpPermission dockerSslPort = IpPermission.builder()
                 .ipProtocol(IpProtocol.TCP)
                 .fromPort(getEntity().getAttribute(DockerHost.DOCKER_SSL_PORT))
                 .toPort(getEntity().getAttribute(DockerHost.DOCKER_SSL_PORT))
-                .cidrBlock(JcloudsLocationSecurityGroupCustomizer.getInstance(getEntity()).getBrooklynCidrBlock())
+                .cidrBlock(customizer.getBrooklynCidrBlock())
                 .build();
         IpPermission dockerPortForwarding = IpPermission.builder()
                 .ipProtocol(IpProtocol.TCP)
                 .fromPort(49000)
                 .toPort(49900)
-                .cidrBlock(JcloudsLocationSecurityGroupCustomizer.getInstance(getEntity()).getBrooklynCidrBlock())
+                .cidrBlock(Cidr.UNIVERSAL.toString())
                 .build();
-        return ImmutableList.of(dockerPort, dockerSslPort, dockerPortForwarding);
+        List<IpPermission> permissions = MutableList.of(dockerPort, dockerSslPort, dockerPortForwarding);
+
+        if (getEntity().getConfig(DockerInfrastructure.WEAVE_ENABLED)) {
+            Integer weavePort = getEntity().getAttribute(WeaveContainer.WEAVE_CONTAINER).getConfig(WeaveContainer.WEAVE_PORT);
+            IpPermission weaveTcpPort = IpPermission.builder()
+                    .ipProtocol(IpProtocol.TCP)
+                    .fromPort(weavePort)
+                    .toPort(weavePort)
+                    .cidrBlock(Cidr.UNIVERSAL.toString()) // TODO could be tighter restricted?
+                    .build();
+            permissions.add(weaveTcpPort);
+            IpPermission weaveUdpPort = IpPermission.builder()
+                    .ipProtocol(IpProtocol.UDP)
+                    .fromPort(weavePort)
+                    .toPort(weavePort)
+                    .cidrBlock(Cidr.UNIVERSAL.toString()) // TODO could be tighter restricted?
+                    .build();
+            permissions.add(weaveUdpPort);
+        }
+
+        return permissions;
     }
 
     public String getPidFile() { return "/var/run/docker.pid"; }

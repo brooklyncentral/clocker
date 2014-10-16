@@ -316,7 +316,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
             super.stop();
 
-            deleteLocation();
+            deleteLocation(); // be more resilient to errors earlier
         }
     }
 
