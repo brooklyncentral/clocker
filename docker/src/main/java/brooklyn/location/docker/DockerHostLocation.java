@@ -242,7 +242,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
         if (Strings.isNonBlank(command)) {
             command = BashCommands.chain(command, callback);
         } else {
-            command = DockerCallbacks.subnetAddress();
+            command = callback;
         }
         ((AbstractEntity) entity).setConfigEvenIfOwned(commandKey, command);
     }
