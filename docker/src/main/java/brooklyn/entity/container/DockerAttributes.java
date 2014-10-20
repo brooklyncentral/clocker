@@ -66,7 +66,7 @@ public class DockerAttributes {
 
     public static final ConfigKey<List<DockerAwarePlacementStrategy>> PLACEMENT_STRATEGIES = ConfigKeys.newConfigKey(
             new TypeToken<List<DockerAwarePlacementStrategy>>() { },
-            "docker.container.strategy", "Placement strategy list for Docker containers");
+            "docker.container.strategies", "Placement strategy list for Docker containers");
 
     /*
      * Counter attributes.

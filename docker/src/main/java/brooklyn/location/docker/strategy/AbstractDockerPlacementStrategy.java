@@ -34,7 +34,7 @@ public abstract class AbstractDockerPlacementStrategy extends BasicConfigurableO
 
     @Override
     public String toString() {
-        return String.format("DockerAwarePlacementStrategy(%s)", getClass().getSimpleName());
+        return String.format("DockerAwarePlacementStrategy(%s@%s)", getClass().getSimpleName(), getId());
     }
 
 }
