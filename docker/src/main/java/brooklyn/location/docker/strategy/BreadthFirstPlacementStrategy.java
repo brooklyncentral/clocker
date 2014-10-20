@@ -38,7 +38,7 @@ public class BreadthFirstPlacementStrategy extends BasicDockerPlacementStrategy 
         Integer currentSize = input.getOwner().getCurrentSize();
         boolean accept = currentSize < maxSize;
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Location {} size is {}: {}", new Object[] { input, currentSize, accept ? "accepted" : "rejected" });
+            LOG.debug("Location {} size is {}/{}: {}", new Object[] { input, currentSize, maxSize, accept ? "accepted" : "rejected" });
         }
         return accept;
     }
