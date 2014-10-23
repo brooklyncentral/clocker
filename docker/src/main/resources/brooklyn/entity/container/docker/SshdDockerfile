@@ -22,18 +22,18 @@ FROM ${repository}/${imageName}
 MAINTAINER Cloudsoft "brooklyn@cloudsoftcorp.com"
 
 # setup locale
-RUN type locale-gen ; if [[ $? == 0 ]] ; then en_US.UTF-8 ; fi
+RUN type locale-gen ; if [ "$?" -eq "0" ] ; then locale-gen en_US.UTF-8 ; fi
 
 # setup root account
 RUN echo 'root:${entity.password}' | chpasswd
 
 # install sshd
 RUN type apt-get ; \
-  if [[ $? == 0 ]] ; then \
+  if [ "$?" -eq "0" ] ; then \
     apt-get install -y openssh-server ; \
   else \
     yum -y install openssh-server ; \
-  fi \
+  fi ; \
   mkdir /var/run/sshd ; \
   chmod 600 /var/run/sshd ; \
   /usr/sbin/sshd ;
