@@ -22,13 +22,13 @@ FROM ${repository}/${imageName}
 MAINTAINER Cloudsoft "brooklyn@cloudsoftcorp.com"
 
 # setup locale
-RUN locale-gen en_US.UTF-8
+RUN which -s locale-gen ; if [[ $? == 0 ]] ; then en_US.UTF-8 ; fi
 
 # setup root account
 RUN echo 'root:${entity.password}' | chpasswd
 
 # install sshd
-RUN apt-get install -y openssh-server
+RUN which -s apt-get ; if [[ $? == 0 ]] ; then apt-get install -y openssh-server ; else yum -y install openssh-server ; fi
 RUN mkdir /var/run/sshd
 RUN chmod 600 /var/run/sshd
 RUN /usr/sbin/sshd
