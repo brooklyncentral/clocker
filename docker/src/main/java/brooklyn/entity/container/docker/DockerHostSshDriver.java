@@ -15,7 +15,15 @@
  */
 package brooklyn.entity.container.docker;
 
-import static brooklyn.util.ssh.BashCommands.*;
+import static brooklyn.util.ssh.BashCommands.INSTALL_CURL;
+import static brooklyn.util.ssh.BashCommands.INSTALL_WGET;
+import static brooklyn.util.ssh.BashCommands.alternatives;
+import static brooklyn.util.ssh.BashCommands.chainGroup;
+import static brooklyn.util.ssh.BashCommands.executeCommandThenAsUserTeeOutputToFile;
+import static brooklyn.util.ssh.BashCommands.ifExecutableElse0;
+import static brooklyn.util.ssh.BashCommands.ifExecutableElse1;
+import static brooklyn.util.ssh.BashCommands.installPackage;
+import static brooklyn.util.ssh.BashCommands.sudo;
 import static java.lang.String.format;
 
 import java.util.Collection;
@@ -86,7 +94,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         log.info("Created base Dockerfile image with ID {}", baseImageId);
 
         // Update the image with the Clocker sshd Dockerfile
-        copyTemplate(DockerAttributes.SSHD_DOCKERFILE, Os.mergePaths(name, "Sshd" + DockerAttributes.DOCKERFILE), MutableMap.of("repository", getRepository(), "imageName", name));
+        copyTemplate(DockerAttributes.SSHD_DOCKERFILE, Os.mergePaths(name, "Sshd" + DockerAttributes.DOCKERFILE), true, MutableMap.of("repository", getRepository(), "imageName", name));
         String sshdImageId = getImageId("Sshd" + DockerAttributes.DOCKERFILE, name);
         log.info("Created SSHable Dockerfile image with ID {}", sshdImageId);
 
