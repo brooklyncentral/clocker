@@ -41,7 +41,7 @@ public class ProvisioningFlagsPlacementStrategy extends AbstractDockerPlacementS
 
     private static final Logger LOG = LoggerFactory.getLogger(ProvisioningFlagsPlacementStrategy.class);
 
-    public static final ConfigKey<Integer> MIN_RAM = CloudLocationConfig.MIN_RAM;
+    public static final ConfigKey<Object> MIN_RAM = CloudLocationConfig.MIN_RAM;
     public static final ConfigKey<Integer> MIN_CORES = CloudLocationConfig.MIN_CORES;
 
     @Override
@@ -50,7 +50,7 @@ public class ProvisioningFlagsPlacementStrategy extends AbstractDockerPlacementS
             return Lists.newArrayList();
         }
 
-        Integer strategyMinRam = getConfig(MIN_RAM);
+        Integer strategyMinRam = (Integer) getConfig(MIN_RAM);
         Integer strategyMinCores = getConfig(MIN_CORES);
 
         Map<String,Object> contextFlags = context.getConfig(SoftwareProcess.PROVISIONING_PROPERTIES);
@@ -88,7 +88,7 @@ public class ProvisioningFlagsPlacementStrategy extends AbstractDockerPlacementS
 
     @Override
     public Map<String,Object> apply(Map<String,Object> contextFlags) {
-        Integer strategyMinRam = getConfig(MIN_RAM);
+        Integer strategyMinRam = (Integer) getConfig(MIN_RAM);
         Integer strategyMinCores = getConfig(MIN_CORES);
 
         Map<String,Object> provisioningFlags;

@@ -428,6 +428,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     }
 
     public void scanContainers() {
+        // TODO remember that _half started_ containers left behind are not to be re-used
+        // TODO add cleanup for these?
         getDynamicLocation().acquireMutex(DockerHostLocation.CONTAINER_MUTEX, "Scanning containers");
         try {
             String output = runDockerCommand("ps");

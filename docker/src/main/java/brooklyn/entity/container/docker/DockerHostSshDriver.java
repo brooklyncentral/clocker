@@ -326,7 +326,9 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         List<IpPermission> permissions = MutableList.of(dockerPort, dockerSslPort, dockerPortForwarding);
 
         if (getEntity().getConfig(DockerInfrastructure.WEAVE_ENABLED)) {
-            Integer weavePort = getEntity().getAttribute(WeaveContainer.WEAVE_CONTAINER).getConfig(WeaveContainer.WEAVE_PORT);
+            Integer weavePort = ((DockerHost) getEntity()).getInfrastructure()
+                    .getAttribute(DockerInfrastructure.WEAVE_INFRASTRUCTURE)
+                    .getConfig(WeaveContainer.WEAVE_PORT);
             IpPermission weaveTcpPort = IpPermission.builder()
                     .ipProtocol(IpProtocol.TCP)
                     .fromPort(weavePort)
