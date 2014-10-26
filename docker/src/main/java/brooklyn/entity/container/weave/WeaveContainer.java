@@ -50,7 +50,7 @@ public interface WeaveContainer extends SoftwareProcess {
 
     @SetFromFlag("downloadUrl")
     BasicAttributeSensorAndConfigKey<String> DOWNLOAD_URL = new BasicAttributeSensorAndConfigKey<String>(
-            SoftwareProcess.DOWNLOAD_URL, "https://raw.githubusercontent.com/zettio/weave/${version}/weaver/weave");
+            SoftwareProcess.DOWNLOAD_URL, "https://raw.githubusercontent.com/zettio/weave/${version}/weave");
 
     AttributeSensorAndConfigKey<DockerHost,DockerHost> DOCKER_HOST = ConfigKeys.newSensorAndConfigKey(DockerHost.class, "weave.docker.host", "Docker host we are running on");
     AttributeSensorAndConfigKey<WeaveInfrastructure,WeaveInfrastructure> WEAVE_INFRASTRUCTURE = ConfigKeys.newSensorAndConfigKey(WeaveInfrastructure.class, "weave.infrastructure", "Weave infrastructure entity");
