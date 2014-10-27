@@ -18,11 +18,8 @@ package brooklyn.entity.container.docker;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-<<<<<<< HEAD
 import java.util.concurrent.Callable;
-=======
 import java.util.Set;
->>>>>>> 5ffaab2... Respect location’s choice of image/hardware
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jclouds.compute.config.ComputeServiceProperties;
@@ -84,17 +81,15 @@ import brooklyn.util.text.StringPredicates;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 
-<<<<<<< HEAD
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicates;
 import com.google.common.base.Splitter;
-=======
->>>>>>> 5ffaab2... Respect location’s choice of image/hardware
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
 /**
  * The host running the Docker service.
