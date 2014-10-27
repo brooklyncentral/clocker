@@ -151,76 +151,76 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
         // Configure template for host virtual machine
         if (location instanceof JcloudsLocation) {
-        	Set<ConfigKey<?>> imageChoiceToRespect = ImmutableSet.<ConfigKey<?>>of(
-        			JcloudsLocationConfig.TEMPLATE_BUILDER,
-        			JcloudsLocationConfig.IMAGE_CHOOSER,
-        			JcloudsLocationConfig.IMAGE_ID,
-        			JcloudsLocationConfig.IMAGE_NAME_REGEX,
-        			JcloudsLocationConfig.IMAGE_DESCRIPTION_REGEX,
-        			JcloudsLocationConfig.OS_FAMILY,
-        			JcloudsLocationConfig.OS_VERSION_REGEX,
-        			JcloudsLocationConfig.OS_64_BIT);
-        	Set<ConfigKey<?>> hardwareChoiceToRespect = ImmutableSet.<ConfigKey<?>>of(
-        			JcloudsLocationConfig.HARDWARE_ID,
-        			JcloudsLocationConfig.MIN_RAM,
-        			JcloudsLocationConfig.MIN_CORES,
-        			JcloudsLocationConfig.MIN_DISK);
-        	Map<String, Object> existingConfigOptions = location.getAllConfig(true);
-        	TemplateBuilder template = (TemplateBuilder) flags.get(JcloudsLocationConfig.TEMPLATE_BUILDER.getName());
-        	
-        	boolean overrideImageChoice = true;
-        	for (ConfigKey<?> key : imageChoiceToRespect) {
-        		if (existingConfigOptions.get(key.getName()) != null || flags.get(key.getName()) != null) {
-        			overrideImageChoice = false;
-        			break;
-        		}
-        	}
-        	
-        	boolean overrideHardwareChoice = true;
-        	for (ConfigKey<?> key : hardwareChoiceToRespect) {
-        		if (existingConfigOptions.get(key.getName()) != null || flags.get(key.getName()) != null) {
-        			overrideHardwareChoice = false;
-        			break;
-        		}
-        	}
-        	
-        	if (overrideImageChoice) {
-        		LOG.debug("Customising image choice for {}", this);
-	            template = new PortableTemplateBuilder();
-	            if (isJcloudsLocation(location, GoogleComputeEngineConstants.GCE_PROVIDER_NAME)) {
-	                template.osFamily(OsFamily.CENTOS).osVersionMatches("6");
-	            } else {
-	                template.osFamily(OsFamily.UBUNTU).osVersionMatches("12.04");
-	            }
-	            template.os64Bit(true);
-	            flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), template);
-	        } else {
-        		LOG.debug("Not modifying existing image configuration for {}", this);
-	        }
-	
-        	if (overrideHardwareChoice) {
-        		LOG.debug("Customising hardware choice for {}", this);
-        		if (template != null) {
-    	            template.minRam(2048);
-        		} else {
-        			flags.put(JcloudsLocationConfig.MIN_RAM.getName(), 2048);
-        		}
-        	} else {
-        		LOG.debug("Not modifying existing hardware configuration for {}", this);
-        	}
-        	
-	        // Configure security groups for host virtual machine
-	        String securityGroup = getConfig(DockerInfrastructure.SECURITY_GROUP);
-	        if (Strings.isNonBlank(securityGroup)) {
-	            if (isJcloudsLocation(location, GoogleComputeEngineConstants.GCE_PROVIDER_NAME)) {
-	                flags.put("networkName", securityGroup);
-	            } else {
-	                flags.put("securityGroups", securityGroup);
-	            }
-	        } else {
-	            flags.put(JcloudsLocationConfig.JCLOUDS_LOCATION_CUSTOMIZER.getName(),
-	                    JcloudsLocationSecurityGroupCustomizer.getInstance(getApplicationId()));
-	        }
+            Set<ConfigKey<?>> imageChoiceToRespect = ImmutableSet.<ConfigKey<?>>of(
+                    JcloudsLocationConfig.TEMPLATE_BUILDER,
+                    JcloudsLocationConfig.IMAGE_CHOOSER,
+                    JcloudsLocationConfig.IMAGE_ID,
+                    JcloudsLocationConfig.IMAGE_NAME_REGEX,
+                    JcloudsLocationConfig.IMAGE_DESCRIPTION_REGEX,
+                    JcloudsLocationConfig.OS_FAMILY,
+                    JcloudsLocationConfig.OS_VERSION_REGEX,
+                    JcloudsLocationConfig.OS_64_BIT);
+            Set<ConfigKey<?>> hardwareChoiceToRespect = ImmutableSet.<ConfigKey<?>>of(
+                    JcloudsLocationConfig.HARDWARE_ID,
+                    JcloudsLocationConfig.MIN_RAM,
+                    JcloudsLocationConfig.MIN_CORES,
+                    JcloudsLocationConfig.MIN_DISK);
+            Map<String, Object> existingConfigOptions = location.getAllConfig(true);
+            TemplateBuilder template = (TemplateBuilder) flags.get(JcloudsLocationConfig.TEMPLATE_BUILDER.getName());
+
+            boolean overrideImageChoice = true;
+            for (ConfigKey<?> key : imageChoiceToRespect) {
+                if (existingConfigOptions.get(key.getName()) != null || flags.get(key.getName()) != null) {
+                    overrideImageChoice = false;
+                    break;
+                }
+            }
+
+            boolean overrideHardwareChoice = true;
+            for (ConfigKey<?> key : hardwareChoiceToRespect) {
+                if (existingConfigOptions.get(key.getName()) != null || flags.get(key.getName()) != null) {
+                    overrideHardwareChoice = false;
+                    break;
+                }
+            }
+
+            if (overrideImageChoice) {
+                LOG.debug("Customising image choice for {}", this);
+                template = new PortableTemplateBuilder();
+                if (isJcloudsLocation(location, GoogleComputeEngineConstants.GCE_PROVIDER_NAME)) {
+                    template.osFamily(OsFamily.CENTOS).osVersionMatches("6");
+                } else {
+                    template.osFamily(OsFamily.UBUNTU).osVersionMatches("12.04");
+                }
+                template.os64Bit(true);
+                flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), template);
+            } else {
+                LOG.debug("Not modifying existing image configuration for {}", this);
+            }
+
+            if (overrideHardwareChoice) {
+                LOG.debug("Customising hardware choice for {}", this);
+                if (template != null) {
+                    template.minRam(2048);
+                } else {
+                    flags.put(JcloudsLocationConfig.MIN_RAM.getName(), 2048);
+                }
+            } else {
+                LOG.debug("Not modifying existing hardware configuration for {}", this);
+            }
+
+            // Configure security groups for host virtual machine
+            String securityGroup = getConfig(DockerInfrastructure.SECURITY_GROUP);
+            if (Strings.isNonBlank(securityGroup)) {
+                if (isJcloudsLocation(location, GoogleComputeEngineConstants.GCE_PROVIDER_NAME)) {
+                    flags.put("networkName", securityGroup);
+                } else {
+                    flags.put("securityGroups", securityGroup);
+                }
+            } else {
+                flags.put(JcloudsLocationConfig.JCLOUDS_LOCATION_CUSTOMIZER.getName(),
+                        JcloudsLocationSecurityGroupCustomizer.getInstance(getApplicationId()));
+            }
         }
         return flags;
     }
