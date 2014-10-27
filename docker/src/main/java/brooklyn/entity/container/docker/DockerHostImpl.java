@@ -470,10 +470,15 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     }
 
     @Override
-    public void doStop() {
+    public void preStop() {
         if (scan != null && scan.isActivated()) scan.stop();
 
-        super.doStop();
+        super.preStop();
+    }
+
+    @Override
+    public void postStop() {
+        super.postStop(); // Currently does nothing
 
         deleteLocation();
     }
