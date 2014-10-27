@@ -441,8 +441,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     }
 
     @Override
-    public void doStop() {
-        super.doStop();
+    public void postStop() {
+        super.postStop(); // Currently does nothing
 
         deleteLocation();
     }
