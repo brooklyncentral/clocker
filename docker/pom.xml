@@ -39,7 +39,7 @@
             <version>${brooklyn.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.brooklyn</groupId>
+            <groupId>org.apache.brooklyn</groupId>
             <artifactId>brooklyn-software-base</artifactId>
             <version>${brooklyn.version}</version>
             <classifier>tests</classifier>
