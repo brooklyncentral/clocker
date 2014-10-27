@@ -25,6 +25,7 @@
             <useProjectArtifact>false</useProjectArtifact>
             <outputDirectory>lib</outputDirectory>
             <unpack>false</unpack>
+            <directoryMode>0755</directoryMode>
         </dependencySet>
     </dependencySets>
 
@@ -33,6 +34,7 @@
             <directory>src/main/assembly/scripts</directory>
             <outputDirectory></outputDirectory>
             <fileMode>0755</fileMode>
+            <directoryMode>0755</directoryMode>
             <includes>
                 <include>*.sh</include>
             </includes>
@@ -41,6 +43,7 @@
             <directory>src/main/assembly/files</directory>
             <outputDirectory></outputDirectory>
             <fileMode>0644</fileMode>
+            <directoryMode>0755</directoryMode>
             <includes>
                 <include>**</include>
             </includes>
@@ -49,6 +52,7 @@
             <directory>src/main/assembly/patch</directory>
             <outputDirectory>patch/</outputDirectory>
             <fileMode>0644</fileMode>
+            <directoryMode>0755</directoryMode>
             <includes>
                 <include>**</include>
             </includes>
@@ -57,6 +61,7 @@
             <directory>target</directory>
             <outputDirectory></outputDirectory>
             <fileMode>0644</fileMode>
+            <directoryMode>0755</directoryMode>
             <includes>
                 <include>*.jar</include>
             </includes>
@@ -65,6 +70,7 @@
             <directory>src/main/assembly/conf</directory>
             <outputDirectory>conf/</outputDirectory>
             <fileMode>0644</fileMode>
+            <directoryMode>0755</directoryMode>
             <includes>
                 <include>**</include>
             </includes>
