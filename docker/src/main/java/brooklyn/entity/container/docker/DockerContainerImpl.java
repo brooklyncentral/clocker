@@ -243,7 +243,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         if (memory != null) {
             // TODO set based on memory available in host divided by memory requested in flags
             Integer hostRam = getDockerHost().getDynamicLocation().getMachine().getMachineDetails().getHardwareDetails().getRam();
-            Integer minRam = entity.getConfig(JcloudsLocationConfig.MIN_RAM);
+            Integer minRam = (Integer) entity.getConfig(JcloudsLocationConfig.MIN_RAM);
             Map flags = entity.getConfig(SoftwareProcess.PROVISIONING_PROPERTIES);
             if (minRam == null && flags != null) {
                 minRam = (Integer) flags.get(JcloudsLocationConfig.MIN_RAM.getName());
