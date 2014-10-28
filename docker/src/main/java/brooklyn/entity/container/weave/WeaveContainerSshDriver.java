@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.AbstractGroup;
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
+import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityLocal;
 import brooklyn.location.basic.SshMachineLocation;
@@ -81,7 +82,6 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
 
     @Override
     public void launch() {
-        Cidr cidr = getEntity().getConfig(WeaveInfrastructure.WEAVE_CIDR);
         InetAddress address = getEntity().getAttribute(WeaveContainer.WEAVE_ADDRESS);
         Boolean firstMember = getEntity().getAttribute(AbstractGroup.FIRST_MEMBER);
         Entity first = getEntity().getAttribute(AbstractGroup.FIRST);
@@ -89,8 +89,8 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
 
         newScript(MutableMap.of(USE_PID_FILE, false), LAUNCHING)
                 .updateTaskAndFailOnNonZeroResultCode()
-                .body.append(BashCommands.sudo(String.format("%s launch %s/%d %s", getWeaveCommand(), address.getHostAddress(), cidr.getLength(),
-                        Boolean.TRUE.equals(firstMember) ? "" : first.getAttribute(WeaveContainer.WEAVE_ADDRESS).getHostAddress())))
+                .body.append(BashCommands.sudo(String.format("%s launch %s", getWeaveCommand(),
+                        Boolean.TRUE.equals(firstMember) ? "" : first.getAttribute(Attributes.SUBNET_ADDRESS))))
                 .execute();
     }
 
