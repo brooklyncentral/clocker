@@ -135,6 +135,8 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
                 for (DockerAwarePlacementStrategy strategy : entityStrategies) {
                     available = strategy.filterLocations(available, entity);
                 }
+            } else {
+                entityStrategies = ImmutableList.of();
             }
 
             // Use the docker strategy to add a new host
