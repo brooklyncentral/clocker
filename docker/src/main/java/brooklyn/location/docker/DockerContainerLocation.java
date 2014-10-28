@@ -219,14 +219,19 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
 
     @Override
     public void close() throws IOException {
-        LOG.info("Close called on Docker container {}: {}", machine, this);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Close called on Docker container {}: {}", machine, this);
+        }
         try {
             machine.close();
-        } catch (Exception e) {
-            LOG.info("{}: Closing Docker container: {}", e.getMessage(), this);
-            throw Exceptions.propagate(e);
-        } finally {
+            if (dockerContainer.getAttribute(DockerContainer.SERVICE_UP)) {
+                LOG.info("Stopping Docker container entity for {}: {}", this, dockerContainer);
+                dockerContainer.stop();
+            }
             LOG.info("Docker container closed: {}", this);
+        } catch (Exception e) {
+            LOG.warn("Error closing Docker container {}: {}", this, e.getMessage());
+            throw Exceptions.propagate(e);
         }
     }
 
