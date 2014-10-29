@@ -169,7 +169,6 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         setExpandedInstallDir(Os.mergePaths(getInstallDir(), resolver.getUnpackedDirectoryName(format("docker-%s", getVersion()))));
     }
 
-    // TODO consider re-using `curl get.docker.io | bash` to install docker on the platform supported
     @Override
     public void install() {
         OsDetails osDetails = getMachine().getMachineDetails().getOsDetails();
@@ -214,8 +213,8 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         } else if (osDetails.getName().equalsIgnoreCase("centos")) {
             commands.add(ifExecutableElse0("yum", useYum(osVersion, arch, getEpelRelease())));
             commands.add(installPackage(ImmutableMap.of("yum", "docker-io"), null));
-        } else { // Alternatively, just use the curl-able install.sh script provided at https://get.docker.io
-            commands.add(chainGroup(INSTALL_CURL, "curl -s https://get.docker.io/ | sudo sh"));
+        } else {
+            commands.add(installDockerFallback());
         }
         newScript(INSTALLING)
                 .failOnNonZeroResultCode()
@@ -240,7 +239,25 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     private String installDockerOnUbuntu() {
-        return chainGroup(INSTALL_CURL, "curl -s https://get.docker.io/ubuntu/ | sudo sh");
+        String version = getVersion();
+        if (version.matches("^[0-9]+\\.[0-9]+$")) {
+            version += ".0"; // Append minor version
+        }
+        if (log.isDebugEnabled()) log.debug("Installing Docker version {} on Ubuntu", version);
+        return chainGroup(
+                INSTALL_CURL,
+                installPackage("apt-transport-https"),
+                executeCommandThenAsUserTeeOutputToFile("echo deb https://get.docker.com/ubuntu docker main", "root", "/etc/apt/sources.list.d/docker.list"),
+                sudo("apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9"),
+                installPackage("lxc-docker-" + version));
+    }
+
+    /**
+     * Uses the curl-able install.sh script provided at {@code get.docker.com}.
+     * This will install the latest version, which may be incompatible with the jclouds driver.
+     */
+    private String installDockerFallback() {
+        return chainGroup(INSTALL_CURL, "curl -s https://get.docker.com/ | " + sudo("sh"));
     }
 
     @Override
