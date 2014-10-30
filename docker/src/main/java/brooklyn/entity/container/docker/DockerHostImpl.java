@@ -508,7 +508,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                             .configure(DockerContainer.DOCKER_INFRASTRUCTURE, getInfrastructure())
                             .configure(DockerContainer.DOCKER_IMAGE_ID, imageId)
                             .configure(DockerAttributes.DOCKER_IMAGE_NAME, imageName)
-                            .configure(DockerContainer.LOCATION_FLAGS, MutableMap.of("container", (JcloudsSshMachineLocation) getMachine()));
+                            .configure(DockerContainer.LOCATION_FLAGS, MutableMap.of("container", getMachine()));
 
                     // Create, manage and start the container
                     DockerContainer added = getDockerContainerCluster().addChild(containerSpec);
