@@ -42,6 +42,7 @@ import brooklyn.location.docker.strategy.affinity.AffinityRules;
 import brooklyn.location.dynamic.LocationOwner;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.util.collections.MutableList;
+import brooklyn.util.collections.MutableMap;
 import brooklyn.util.flags.SetFromFlag;
 
 /**
@@ -108,6 +109,11 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
 
     AttributeSensor<Integer> DOCKER_HOST_COUNT = DockerAttributes.DOCKER_HOST_COUNT;
     AttributeSensor<Integer> DOCKER_CONTAINER_COUNT = DockerAttributes.DOCKER_CONTAINER_COUNT;
+
+    ConfigKey<MutableMap<String, Object>> DOCKERFILE_SUBSTITUTIONS = ConfigKeys.newConfigKey(
+        "docker.dockerfile.substitutions",
+        "Dockerfile template substitutions",
+        MutableMap.<String, Object>of());
 
     List<Entity> getDockerHostList();
 
