@@ -143,10 +143,9 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     private Map<String, Object> getExtraTemplateSubstitutions(String imageName) {
         final Map<String, Object> templateSubstitutions =
             MutableMap.<String, Object>of("repository", getRepository(), "imageName", imageName);
+        final DockerHost host = (DockerHost) getEntity();
         templateSubstitutions.putAll(
-            getEntity()
-                .getParent()
-                .getAttribute(DockerContainer.DOCKER_INFRASTRUCTURE)
+            host.getInfrastructure()
                 .getConfig(DockerInfrastructure.DOCKERFILE_SUBSTITUTIONS));
         return templateSubstitutions;
     }
