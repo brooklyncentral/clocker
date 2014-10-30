@@ -27,7 +27,7 @@ fi
 if [ $# -eq 1 ] ; then
     CLOCKER="--app ${ROOT}/blueprints/docker-cloud.yaml --location $1"
 fi
-export JAVA_OPTS="-Xms1g -Xmx1g -Dbrooklyn.catalog.url=classpath://catalog.xml -Dbrooklyn.catalog.mode=LOAD_BROOKLYN_CATALOG_URL"
+export JAVA_OPTS="-Xms1g -Xmx1g ${CLOCKER_OPTS} -Dbrooklyn.catalog.url=classpath://catalog.xml -Dbrooklyn.catalog.mode=LOAD_BROOKLYN_CATALOG_URL"
 
 # launch clocker
 ${ROOT}/bin/brooklyn.sh launch ${CLOCKER}
