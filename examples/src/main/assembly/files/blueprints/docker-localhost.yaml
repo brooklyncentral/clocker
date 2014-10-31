@@ -21,7 +21,7 @@ services:
 - serviceType: brooklyn.entity.container.docker.DockerInfrastructure
   id: infrastructure
   brooklyn.config:
-    install.version: "1.2"
+    install.version: "1.3"
     entity.dynamicLocation.name: "my-docker-cloud"
     docker.host.initial.size: 1
     docker.container.cluster.maxSize: 8
