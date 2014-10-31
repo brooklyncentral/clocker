@@ -54,7 +54,7 @@ import com.google.common.reflect.TypeToken;
  * A single machine running Docker.
  * <p>
  * This entity controls the {@link DockerHostLocation} location, and creates
- * and wraps a {@link JcloudsLocatiopn} representing the API for the Docker
+ * and wraps a {@link JcloudsLocation} representing the API for the Docker
  * service on this machine.
  */
 @ImplementedBy(DockerHostImpl.class)
