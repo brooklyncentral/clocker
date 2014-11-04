@@ -157,6 +157,7 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
                 Entity added = getDockerInfrastructure().getDockerHostCluster().addNode(provisioned, MutableMap.of());
                 dockerHost = (DockerHost) added;
                 machine = dockerHost.getDynamicLocation();
+                Entities.start(added, ImmutableList.of(provisioned));
             }
 
             // Now wait until the host has started up
