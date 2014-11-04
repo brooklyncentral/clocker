@@ -18,8 +18,8 @@ package brooklyn.entity.container.docker;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jclouds.compute.config.ComputeServiceProperties;
@@ -59,7 +59,6 @@ import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.DockerResolver;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
-import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.location.jclouds.networking.JcloudsLocationSecurityGroupCustomizer;
 import brooklyn.location.jclouds.templates.PortableTemplateBuilder;
 import brooklyn.management.LocationManager;
@@ -491,7 +490,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     public void scanContainers() {
         // TODO remember that _half started_ containers left behind are not to be re-used
         // TODO add cleanup for these?
-        getDynamicLocation().acquireMutex(DockerHostLocation.CONTAINER_MUTEX, "Scanning containers");
+        getDynamicLocation().getLock().lock();
         try {
             String output = runDockerCommand("ps");
             List<String> ps = Splitter.on(CharMatcher.anyOf("\r\n")).omitEmptyStrings().splitToList(output);
@@ -524,7 +523,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 }
             }
         } finally {
-            getDynamicLocation().releaseMutex(DockerHostLocation.CONTAINER_MUTEX);
+            getDynamicLocation().getLock().unlock();
         }
     }
 

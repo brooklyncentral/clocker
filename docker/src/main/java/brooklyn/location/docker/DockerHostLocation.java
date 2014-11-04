@@ -25,6 +25,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,8 +65,6 @@ import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.flags.SetFromFlag;
-import brooklyn.util.mutex.MutexSupport;
-import brooklyn.util.mutex.WithMutexes;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.os.Os;
 import brooklyn.util.ssh.BashCommands;
@@ -76,7 +77,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class DockerHostLocation extends AbstractLocation implements MachineProvisioningLocation<DockerContainerLocation>, DockerVirtualLocation,
-        DynamicLocation<DockerHost, DockerHostLocation>, WithMutexes, Closeable {
+        DynamicLocation<DockerHost, DockerHostLocation>, Closeable {
 
     /** serialVersionUID */
     private static final long serialVersionUID = -1453203257759956820L;
@@ -85,8 +86,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
     public static final String CONTAINER_MUTEX = "container";
 
-    @SetFromFlag("mutex")
-    private transient WithMutexes mutexSupport;
+    private transient ReadWriteLock lock = new ReentrantReadWriteLock();
 
     @SetFromFlag("machine")
     private SshMachineLocation machine;
@@ -122,10 +122,6 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
     public void init() {
         super.init();
 
-        if (mutexSupport == null) {
-            mutexSupport = new MutexSupport();
-        }
-
         if (repository == null) {
             repository = machine.getId();
         }
@@ -137,7 +133,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
     @Override
     public DockerContainerLocation obtain(Map<?,?> flags) throws NoMachinesAvailableException {
-        acquireMutex(CONTAINER_MUTEX, "Obtaining container");
+        lock.readLock().lock();
         try {
             // Lookup entity from context or flags
             Object context = flags.get(LocationConfigKeys.CALLER_CONTEXT.getName());
@@ -233,7 +229,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
             return dockerContainer.getDynamicLocation();
         } finally {
-            releaseMutex(CONTAINER_MUTEX);
+            lock.readLock().unlock();
         }
     }
 
@@ -289,7 +285,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
     @Override
     public void release(DockerContainerLocation machine) {
-        acquireMutex(CONTAINER_MUTEX, "Releasing container " + machine);
+        lock.readLock().lock();
         try {
             LOG.info("Releasing {}", machine);
 
@@ -312,7 +308,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                 Entities.unmanage(container);
             }
         } finally {
-            releaseMutex(CONTAINER_MUTEX);
+            lock.readLock().unlock();
         }
     }
 
@@ -379,28 +375,8 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
         }
     }
 
-    @Override
-    public void acquireMutex(String mutexId, String description) {
-        try {
-            mutexSupport.acquireMutex(mutexId, description);
-        } catch (InterruptedException ie) {
-            throw Exceptions.propagate(ie);
-        }
-    }
-
-    @Override
-    public boolean tryAcquireMutex(String mutexId, String description) {
-        return mutexSupport.tryAcquireMutex(mutexId, description);
-    }
-
-    @Override
-    public void releaseMutex(String mutexId) {
-        mutexSupport.releaseMutex(mutexId);
-    }
-
-    @Override
-    public boolean hasMutex(String mutexId) {
-        return mutexSupport.hasMutex(mutexId);
+    public Lock getLock() {
+        return lock.writeLock();
     }
 
     @Override
