@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Semaphore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,30 +44,22 @@ import brooklyn.location.dynamic.DynamicLocation;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.flags.SetFromFlag;
-import brooklyn.util.mutex.MutexSupport;
-import brooklyn.util.mutex.WithMutexes;
 
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Optional;
+import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.SetMultimap;
 
 public class DockerLocation extends AbstractLocation implements DockerVirtualLocation, MachineProvisioningLocation<MachineLocation>,
-        DynamicLocation<DockerInfrastructure, DockerLocation>, WithMutexes, Closeable {
+        DynamicLocation<DockerInfrastructure, DockerLocation>, Closeable {
 
-    /** serialVersionUID */
-	private static final long serialVersionUID = -4562281299895377963L;
-
-	private static final Logger LOG = LoggerFactory.getLogger(DockerLocation.class);
-
-    public static final String DOCKER_HOST_MUTEX = "dockerhost";
-
-    @SetFromFlag("mutex")
-    private transient WithMutexes mutexSupport = new MutexSupport();
+    private static final Logger LOG = LoggerFactory.getLogger(DockerLocation.class);
 
     @SetFromFlag("owner")
     private DockerInfrastructure infrastructure;
@@ -76,13 +70,10 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
     @SetFromFlag("provisioner")
     private MachineProvisioningLocation<SshMachineLocation> provisioner;
 
-    /* Mappings for provisioned locations */
-
     @SetFromFlag("machines")
-    private final Multimap<SshMachineLocation, String> machines = HashMultimap.create();
+    private final SetMultimap<DockerHostLocation, String> containers = Multimaps.synchronizedSetMultimap(HashMultimap.<DockerHostLocation, String>create());
 
-    @SetFromFlag("containers")
-    private final Map<String, DockerHostLocation> containers = Maps.newHashMap();
+    private transient Semaphore permit = new Semaphore(1);
 
     public DockerLocation() {
         this(Maps.newLinkedHashMap());
@@ -116,66 +107,76 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
 
     @Override
     public MachineLocation obtain(Map<?,?> flags) throws NoMachinesAvailableException {
-        acquireMutex(DOCKER_HOST_MUTEX, "Obtaining Docker host");
-        try {
-            // Check context for entity being deployed
-            Object context = flags.get(LocationConfigKeys.CALLER_CONTEXT.getName());
-            if (context != null && !(context instanceof Entity)) {
-                throw new IllegalStateException("Invalid location context: " + context);
-            }
-            Entity entity = (Entity) context;
-            LOG.debug("Obtained mutex for DockerLocation: {}", context);
+        // Check context for entity being deployed
+        Object context = flags.get(LocationConfigKeys.CALLER_CONTEXT.getName());
+        if (context != null && !(context instanceof Entity)) {
+            throw new IllegalStateException("Invalid location context: " + context);
+        }
+        Entity entity = (Entity) context;
+        LOG.debug("Obtained mutex for DockerLocation: {}", context);
 
-            // Get the available hosts based on placement strategies
-            List<DockerHostLocation> available = getDockerHostLocations();
-            for (DockerAwarePlacementStrategy strategy : strategies) {
+        // Get the available hosts based on placement strategies
+        List<DockerHostLocation> available = getDockerHostLocations();
+        for (DockerAwarePlacementStrategy strategy : strategies) {
+            available = strategy.filterLocations(available, entity);
+        }
+        List<DockerAwarePlacementStrategy> entityStrategies = entity.getConfig(DockerAttributes.PLACEMENT_STRATEGIES);
+        if (entityStrategies != null && entityStrategies.size() > 0) {
+            for (DockerAwarePlacementStrategy strategy : entityStrategies) {
                 available = strategy.filterLocations(available, entity);
             }
-            List<DockerAwarePlacementStrategy> entityStrategies = entity.getConfig(DockerAttributes.PLACEMENT_STRATEGIES);
-            if (entityStrategies != null && entityStrategies.size() > 0) {
-                for (DockerAwarePlacementStrategy strategy : entityStrategies) {
-                    available = strategy.filterLocations(available, entity);
-                }
-            } else {
-                entityStrategies = ImmutableList.of();
-            }
-
-            // Use the docker strategy to add a new host
-            DockerHostLocation machine = null;
-            DockerHost dockerHost = null;
-            if (available.size() > 0) {
-                machine = available.get(0);
-                dockerHost = machine.getOwner();
-            } else {
-                Iterable<DockerAwareProvisioningStrategy> provisioningStrategies = Iterables.filter(Iterables.concat(strategies,  entityStrategies), DockerAwareProvisioningStrategy.class);
-                for (DockerAwareProvisioningStrategy strategy : provisioningStrategies) {
-                    flags = strategy.apply((Map<String,Object>) flags);
-                }
-
-                LOG.info("Provisioning new host with flags: {}", flags);
-                SshMachineLocation provisioned = getProvisioner().obtain(flags);
-                Entity added = getDockerInfrastructure().getDockerHostCluster().addNode(provisioned, MutableMap.of());
-                dockerHost = (DockerHost) added;
-                machine = dockerHost.getDynamicLocation();
-                Entities.start(added, ImmutableList.of(provisioned));
-            }
-
-            // Now wait until the host has started up
-            Entities.waitForServiceUp(dockerHost);
-
-            // Obtain a new Docker container location, save and return it
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Obtain a new container from {} for {}", machine, entity);
-            }
-            Map<?,?> hostFlags = MutableMap.copyOf(flags);
-            DockerContainerLocation container = machine.obtain(hostFlags);
-            machines.put(machine.getMachine(), container.getId());
-            containers.put(container.getId(), machine);
-
-            return container;
-        } finally {
-            releaseMutex(DOCKER_HOST_MUTEX);
+        } else {
+            entityStrategies = ImmutableList.of();
         }
+
+        // Use the docker strategy to add a new host
+        DockerHostLocation machine = null;
+        DockerHost dockerHost = null;
+        if (available.size() > 0) {
+            machine = available.get(0);
+            dockerHost = machine.getOwner();
+        } else {
+            // Get permission to create a new Docker host
+            if (permit.tryAcquire()) {
+                try {
+                    Iterable<DockerAwareProvisioningStrategy> provisioningStrategies = Iterables.filter(Iterables.concat(strategies,  entityStrategies), DockerAwareProvisioningStrategy.class);
+                    for (DockerAwareProvisioningStrategy strategy : provisioningStrategies) {
+                        flags = strategy.apply((Map<String,Object>) flags);
+                    }
+
+                    LOG.info("Provisioning new host with flags: {}", flags);
+                    SshMachineLocation provisioned = getProvisioner().obtain(flags);
+                    Entity added = getDockerInfrastructure().getDockerHostCluster().addNode(provisioned, MutableMap.of());
+                    dockerHost = (DockerHost) added;
+                    machine = dockerHost.getDynamicLocation();
+                    Entities.start(added, ImmutableList.of(provisioned));
+                } finally {
+                    permit.release();
+                }
+            } else {
+                // Wait until whoever has the permit releases it, and try again
+                try {
+                    permit.acquire();
+                } catch (InterruptedException ie) {
+                    Exceptions.propagate(ie);
+                } finally {
+                    permit.release();
+                }
+                return obtain(flags);
+            }
+        }
+
+        // Now wait until the host has started up
+        Entities.waitForServiceUp(dockerHost);
+
+        // Obtain a new Docker container location, save and return it
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Obtain a new container from {} for {}", machine, entity);
+        }
+        Map<?,?> hostFlags = MutableMap.copyOf(flags);
+        DockerContainerLocation container = machine.obtain(hostFlags);
+        containers.put(machine, container.getId());
+        return container;
     }
 
     @Override
@@ -188,32 +189,28 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
         if (provisioner == null) {
             throw new IllegalStateException("No provisioner available to release "+machine);
         }
-        acquireMutex(DOCKER_HOST_MUTEX, "Releasing Docker host " + machine);
-        try {
-            String id = machine.getId();
-            DockerHostLocation host = containers.remove(id);
-            if (host == null) {
-                throw new IllegalArgumentException("Request to release "+machine+", but this machine is not currently allocated");
-            }
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Request to remove container mapping {} to {}", host, id);
-            }
-            host.release((DockerContainerLocation) machine);
-            if (machines.remove(host.getMachine(), id)) {
-                if (machines.get(host.getMachine()).isEmpty()) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("Empty Docker host: {}", host);
-                    }
-                    if (getOwner().getConfig(DockerInfrastructure.REMOVE_EMPTY_DOCKER_HOSTS)) {
-                        LOG.info("Removing empty Docker host: {}", host);
-                        remove(host);
-                    }
+        String id = machine.getId();
+        Set<DockerHostLocation> set = Multimaps.filterValues(containers, Predicates.equalTo(id)).keySet();
+        if (set.isEmpty()) {
+            throw new IllegalArgumentException("Request to release "+machine+", but this machine is not currently allocated");
+        }
+        DockerHostLocation host = Iterables.getOnlyElement(set);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Request to remove container mapping {} to {}", host, id);
+        }
+        host.release((DockerContainerLocation) machine);
+        if (containers.remove(host, id)) {
+            if (containers.get(host).isEmpty()) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Empty Docker host: {}", host);
                 }
-            } else {
-                throw new IllegalArgumentException("Request to release "+machine+", but container mapping not found");
+                if (getOwner().getConfig(DockerInfrastructure.REMOVE_EMPTY_DOCKER_HOSTS)) {
+                    LOG.info("Removing empty Docker host: {}", host);
+                    remove(host);
+                }
             }
-        } finally {
-            releaseMutex(DOCKER_HOST_MUTEX);
+        } else {
+            throw new IllegalArgumentException("Request to release "+machine+", but container mapping not found");
         }
     }
 
@@ -264,30 +261,6 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
     @Override
     public void close() throws IOException {
         LOG.info("Close called on Docker infrastructure: {}", this);
-    }
-
-    @Override
-    public void acquireMutex(String mutexId, String description) {
-        try {
-            mutexSupport.acquireMutex(mutexId, description);
-        } catch (InterruptedException ie) {
-            throw Exceptions.propagate(ie);
-        }
-    }
-
-    @Override
-    public boolean tryAcquireMutex(String mutexId, String description) {
-        return mutexSupport.tryAcquireMutex(mutexId, description);
-    }
-
-    @Override
-    public void releaseMutex(String mutexId) {
-        mutexSupport.releaseMutex(mutexId);
-    }
-
-    @Override
-    public boolean hasMutex(String mutexId) {
-        return mutexSupport.hasMutex(mutexId);
     }
 
     @Override
