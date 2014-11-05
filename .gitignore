@@ -23,5 +23,5 @@ classes
 
 *.log*
 obj
-
+*.swp
 .DS_Store
