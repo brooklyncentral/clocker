@@ -22,17 +22,16 @@ services:
     install.version: "1.2"
     entity.dynamicLocation.name: "my-docker-cloud"
     docker.host.securityGroup: "docker"
-    docker.host.cluster.initial.size: 1
+    docker.host.cluster.initial.size: 2
     docker.host.register: false
     docker.policy.ha.enable: true
     docker.host.flags:
-      minRam: 3000
-      minCores: 2
+      minRam: 8000
     docker.container.strategies:
     - $brooklyn:object:
         type: "brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy"
         brooklyn.config:
-          maxContainers: 16
+          maxContainers: 8
     - $brooklyn:object:
         type: "brooklyn.location.docker.strategy.CpuUsagePlacementStrategy"
         brooklyn.config:
