@@ -17,33 +17,27 @@
     <div class="wrapper">
       <header>
         <h1 class="header">Clocker</h1>
-        <p class="header">Brooklyn managed Docker containers</p>
-
+        <p class="header">Brooklyn Managed Docker Containers</p>
         <ul>
           <li class="download"><a class="buttons" href="https://github.com/brooklyncentral/clocker/zipball/master">Source ZIP</a></li>
           <li class="download"><a class="buttons" href="https://github.com/brooklyncentral/clocker/tarball/master">Source TAR</a></li>
-          <li class="download"><a class="buttons" href="https://github.com/brooklyncentral/clocker/releases/download/v0.6.2/brooklyn-clocker-examples-0.6.2-dist.tar.gz">Distribution TGZ</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/brooklyncentral/clocker/releases/download/20141104/brooklyn-clocker-examples-0.7.0-SNAPSHOT-dist.tar.gz">Distribution TGZ</a></li>
           <li><a class="buttons github" href="https://github.com/brooklyncentral/clocker">View On GitHub</a></li>
         </ul>
-
-        <p class="header">This project is maintained by <a class="header name" href="https://github.com/brooklyncentral">brooklyncentral</a></p>
-
-
+        <p class="header">This project is maintained by <a class="header name" href="https://github.com/grkvlt">@grkvlt</a></p>
       </header>
       <section>
-        <h1>
-<a name="clocker" class="anchor" href="#clocker"><span class="octicon octicon-link"></span></a>Clocker</h1>
+        <h1><a name="clocker" class="anchor" href="#clocker"><span class="octicon octicon-link"></span></a>Clocker</h1>
 
-<p>Clocker creates and manages a <a href="http://docker.io">Docker</a> cloud infrastructure. Clocker support 
+<p>Clocker creates and manages a <a href="http://docker.io/">Docker</a> cloud infrastructure. Clocker supports
 single-click deployment and runtime management of multi-node applications that can run on
 containers distributed across docker hosts. Application blueprints written for 
 <a href="https://brooklyn.incubator.apache.org/">Brooklyn</a> can thus be deployed to a Docker cloud 
 infrastructure.</p>
 
-<p>This repo contains the required Brooklyn entities, locations and examples.</p>
+<p>This repository contains the required Brooklyn entities and locations, and some example application blueprints.</p>
 
-<h2>
-<a name="getting-started" class="anchor" href="#getting-started"><span class="octicon octicon-link"></span></a>Getting started</h2>
+<h2><a name="getting-started" class="anchor" href="#getting-started"><span class="octicon octicon-link"></span></a>Getting started</h2>
 
 <p>To get started, you just have to download Clocker, deploy the DockerCloud blueprint to the 
 cloud or machines of your choice, and then use Clocker to deploy your applications. This will 
@@ -56,23 +50,22 @@ private cloud using any of the jclouds supported APIs. Alternatively you can tar
 more existing machines for running Docker.</p>
 
 <p>If you are keen to peek under the covers, you can find the Clocker Infrastructure blueprint at 
-<a href="https://raw.githubusercontent.com/brooklyncentral/clocker/master/examples/src/main/assembly/files/blueprints/docker-cloud.yaml">docker-cloud.yaml</a>. 
-Or if you prefer Java take a look at 
-<a href="https://raw.githubusercontent.com/brooklyncentral/clocker/master/examples/src/main/java/brooklyn/clocker/example/DockerCloud.java">DockerCloud</a>.</p>
+<a href="https://raw.githubusercontent.com/brooklyncentral/clocker/master/examples/src/main/assembly/files/blueprints/docker-cloud.yaml">docker-cloud.yaml</a>.
+This shows the components being created, including examples of placement strategies and container naming schemes.</p> 
 
-<h3>
-<a name="using-the-latest-clocker-release" class="anchor" href="#using-the-latest-clocker-release"><span class="octicon octicon-link"></span></a>Using the latest Clocker release</h3>
+<h3><a name="using-the-latest-clocker-release" class="anchor" href="#using-the-latest-clocker-release"><span class="octicon octicon-link"></span></a>Using the latest Clocker release</h3>
 
 <p>You can build a <em>Docker Cloud Infrastructure</em> running these commands:</p>
 
 <div class="highlight highlight-Bash"><pre>% wget --no-check-certificate --quiet <span class="se">\</span>
-    -O brooklyn-clocker-examples-0.6.2-dist.tar.gz http://git.io/O--JKw
-% tar zxf brooklyn-clocker-examples-0.6.2-dist.tar.gz
-% <span class="nb">cd </span>brooklyn-clocker-examples-0.6.2
-% ./clocker.sh launch --cloud --location &lt;location&gt;
+    -O brooklyn-clocker-examples-0.7.0-SNAPSHOT-dist.tar.gz http://git.io/0ig_ag
+% tar zxf brooklyn-clocker-examples-0.7.0-SNAPSHOT-dist.tar.gz
+% <span class="nb">cd </span>brooklyn-clocker-examples-0.7.0-SNAPSHOT
+% ./bin/clocker.sh &lt;location&gt;
 </pre></div>
 
-<p>Where <code>&lt;location&gt;</code> can be e.g. <code>jclouds:softlayer</code>, or a named location or a fixed IP e.g. <code>byon:(hosts="1.2.3.4")</code>.
+<p>Where <code>&lt;location&gt;</code> can be e.g. <code>jclouds:softlayer:lon02</code> for Softlayer London,
+or a named location or a fixed IP e.g. <code>byon:(hosts="1.2.3.4")</code>.
 Those simple steps will give you a running docker instance on your favourite cloud.</p>
 
 <p>For anything other than a localhost or bring-your-own-nodes location, it is vital that you 
@@ -115,8 +108,7 @@ You can also paste a YAML blueprint into the <em>YAML</em> tab of the <em>Add Ap
     <span class="l-Scalar-Plain">wars.root</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">http://search.maven.org/remotecontent?filepath=io/brooklyn/example/brooklyn-example-hello-world-sql-webapp//brooklyn-example</span>
 </pre></div>
 
-<h3>
-<a name="building-from-source" class="anchor" href="#building-from-source"><span class="octicon octicon-link"></span></a>Building from source</h3>
+<h3><a name="building-from-source" class="anchor" href="#building-from-source"><span class="octicon octicon-link"></span></a>Building from source</h3>
 
 <p>Build and run the examples as follows:</p>
 
@@ -131,24 +123,24 @@ You can also paste a YAML blueprint into the <em>YAML</em> tab of the <em>Add Ap
     % <span class="nb">cd </span>target
     % tar zxf brooklyn-clocker-examples-0.7.0-SNAPSHOT-dist.tar.gz
     % <span class="nb">cd </span>brooklyn-clocker-examples-0.7.0-SNAPSHOT
-    % ./clocker.sh launch --cloud --location &lt;location&gt;
+    % ./bin/clocker.sh &lt;location&gt;
     ...
 </pre></div>
 
-<h2>
-<a name="getting-involved" class="anchor" href="#getting-involved"><span class="octicon octicon-link"></span></a>Getting involved</h2>
+<h2><a name="getting-involved" class="anchor" href="#getting-involved"><span class="octicon octicon-link"></span></a>Getting involved</h2>
 
 <p>Clocker is Apache 2.0 licensed, and builds on Apache Brooklyn. Please get involved and join the 
 discussion on <a href="http://freenode.net/">Freenode</a>, IRC <code>#brooklyncentral</code> or the Apache Brooklyn 
 community <a href="https://brooklyn.incubator.apache.org/community/">mailing list</a>. We also maintain a
 <a href="https://trello.com/b/lhS7ltyi/clocker">Trello</a> board with the current roadmap and active tasks.</p>
 
-<h3>
-<a name="documentation" class="anchor" href="#documentation"><span class="octicon octicon-link"></span></a>Documentation</h3>
+<h3><a name="documentation" class="anchor" href="#documentation"><span class="octicon octicon-link"></span></a>Documentation</h3>
 
 <p>Please visit the <a href="https://github.com/brooklyncentral/clocker/wiki">wiki</a> for more details.</p>
 
-<hr><p>Copyright 2014 by Cloudsoft Corporation Limited</p>
+<hr/>
+
+<p>Copyright 2014 by Cloudsoft Corporation Limited</p>
 
 <p>Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
