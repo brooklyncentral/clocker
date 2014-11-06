@@ -37,6 +37,7 @@ import brooklyn.location.OsDetails;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.location.jclouds.networking.JcloudsLocationSecurityGroupCustomizer;
+import brooklyn.management.Task;
 import brooklyn.util.collections.MutableList;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.file.ArchiveUtils;
@@ -46,6 +47,7 @@ import brooklyn.util.net.Urls;
 import brooklyn.util.os.Os;
 import brooklyn.util.repeat.Repeater;
 import brooklyn.util.task.DynamicTasks;
+import brooklyn.util.task.TaskBuilder;
 import brooklyn.util.task.system.ProcessTaskWrapper;
 import brooklyn.util.text.Identifiers;
 import brooklyn.util.text.Strings;
@@ -192,20 +194,30 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
             executeKernelInstallation(commands);
         }
 
-        log.info("waiting for Docker host {} to be sshable", getLocation());
-        boolean isSshable = Repeater.create()
-                .every(Duration.TEN_SECONDS)
-                .until(new Callable<Boolean>() {
-                    public Boolean call() {
-                        return getLocation().isSshable();
-                    }
-                })
-                .limitTimeTo(Duration.minutes(15)) // Because of the reboot
-                .run();
-        if (!isSshable) {
-            throw new IllegalStateException(String.format("The entity %s is not ssh'able after reboot", entity));
+        // Wait until the Docker host is SSHable after the reboot
+        Task<Boolean> sshable = TaskBuilder.<Boolean>builder()
+                .name("Waiting until host is SSHable")
+                .body(new Callable<Boolean>() {
+                        @Override
+                        public Boolean call() throws Exception {
+                            return Repeater.create()
+                                    .every(Duration.TEN_SECONDS)
+                                    .until(new Callable<Boolean>() {
+                                            public Boolean call() {
+                                                return getLocation().isSshable();
+                                            }
+                                        })
+                                    .limitTimeTo(Duration.minutes(15)) // Because of the reboot
+                                    .run();
+                        }
+                    })
+                .build();
+        Boolean result = DynamicTasks.queueIfPossible(sshable)
+                .orSubmitAndBlock()
+                .andWaitForSuccess();
+        if (!result) {
+            throw new IllegalStateException(String.format("The entity %s is not sshable after reboot", entity));
         }
-        log.info("Docker host {} is now sshable; continuing with setup", getLocation());
 
         List<String> commands = Lists.newArrayList();
         if (osDetails.getName().equalsIgnoreCase("ubuntu")) {
