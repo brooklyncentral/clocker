@@ -22,7 +22,7 @@
     <parent>
         <artifactId>brooklyn-clocker-parent</artifactId>
         <groupId>io.brooklyn.clocker</groupId>
-        <version>0.7.0-SNAPSHOT</version>
+        <version>0.7.0-20141107</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -36,7 +36,7 @@
         <dependency>
             <groupId>io.brooklyn.networking</groupId>
             <artifactId>brooklyn-networking-portforwarding</artifactId>
-            <version>${brooklyn.version}</version>
+            <version>${brooklyn-advanced-networking.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.brooklyn</groupId>
