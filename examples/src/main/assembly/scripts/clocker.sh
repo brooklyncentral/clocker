@@ -30,4 +30,4 @@ fi
 export JAVA_OPTS="-Xms1g -Xmx1g ${CLOCKER_OPTS} -Dbrooklyn.catalog.url=classpath://catalog.xml -Dbrooklyn.catalog.mode=LOAD_BROOKLYN_CATALOG_URL"
 
 # launch clocker
-${ROOT}/bin/brooklyn.sh launch ${CLOCKER}
+${ROOT}/bin/brooklyn.sh launch ${CLOCKER} 2>&1 | tee -a console .log
