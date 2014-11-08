@@ -292,13 +292,6 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         // Set login password from the Docker host
         options.overrideLoginPassword(getDockerHost().getPassword());
 
-        // Look for environment variables configured on the entity
-        Map<String, Object> shellEnv = entity.getConfig(SoftwareProcess.SHELL_ENVIRONMENT);
-        if (shellEnv != null && !shellEnv.isEmpty()) {
-            String env = Joiner.on(':').withKeyValueSeparator("=").join(shellEnv);
-            options.env(ImmutableList.of(env));
-        }
-
         return options;
     }
 
