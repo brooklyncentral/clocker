@@ -57,6 +57,8 @@ services:
     - redis-url
     - connect
     env:
-      REDISTOGO_URL:
-        $brooklyn:formatString("redis://%s/", component("redis").attributeWhenReady("mapped.redis.port"))
+      REDISTOGO_URL: >
+        $brooklyn:formatString("redis://%s:%d/",
+        component("redis").attributeWhenReady("host.subnet.hostname"),
+        component("redis").attributeWhenReady("redis.port"))
     launch.latch: $brooklyn:component("redis").attributeWhenReady("service.isUp")

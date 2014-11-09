@@ -1,0 +1,88 @@
+{
+  "entity.dynamicLocation.status": null,
+  "docker.container.spec": {
+    "type": "brooklyn.entity.container.docker.DockerContainer",
+    "displayName": null,
+    "catalogItemId": null,
+    "tags": [],
+    "id": null,
+    "impl": null,
+    "parent": null,
+    "flags": {},
+    "config": {
+      "docker.host[ConfigKey:brooklyn.entity.container.docker.DockerHost]": {
+        "type": "brooklyn.entity.Entity",
+        "id": "K9bqzLPe"
+      },
+      "docker.infrastructure[ConfigKey:brooklyn.entity.container.docker.DockerInfrastructure]": {
+        "type": "brooklyn.entity.Entity",
+        "id": "C9Utz6AF"
+      }
+    },
+    "policies": [],
+    "policySpecs": [],
+    "enrichers": [],
+    "enricherSpecs": [],
+    "locations": [],
+    "additionalInterfaces": [],
+    "entityInitializers": [],
+    "children": [],
+    "members": [],
+    "groups": [],
+    "immutable": false
+  },
+  "cluster.first": true,
+  "run.dir": "/root/brooklyn-managed-processes/apps/VROZKaBb/entities/DockerHost_K9bqzLPe",
+  "entity.dynamicLocation.spec": "docker:C9Utz6AF:K9bqzLPe:(name=\"HIBuvVoo-docker-host-brooklyn-K9bqzLPe\")",
+  "machine.cpu": "2.7%",
+  "docker.infrastructure": "DockerInfrastructure:C9Ut",
+  "host.subnet.hostname": "159.8.146.221",
+  "host.sshAddress": "root@159.8.146.221:22",
+  "install.dir": "/root/brooklyn-managed-processes/installs/DockerHost_1.2",
+  "docker.repository": "k9bqzlpe",
+  "docker.ssl.port": 2376,
+  "weave.container.entity": "WeaveContainer:PGef",
+  "machine.memory.free": "3.14 GB",
+  "docker.port": 2375,
+  "entity.dynamicLocation": {
+    "type": "brooklyn.location.Location",
+    "id": "ltcwruiD"
+  },
+  "service.process.isRunning": true,
+  "docker.subnetTier": "SubnetTier:Ggq9",
+  "softwareprocess.pid.file": null,
+  "cluster.member": true,
+  "softwareservice.provisioningLocation": {
+    "type": "brooklyn.location.Location",
+    "id": "STtM35tr"
+  },
+  "service.state.expected": "running @ 1415556930601 / Sun Nov 09 12:15:30 CST 2014",
+  "docker.jclouds.location": {
+    "type": "brooklyn.location.Location",
+    "id": "FGi1Rdak"
+  },
+  "docker.container.cluster": "Docker Containers",
+  "machine.memory.total": "4.10 GB",
+  "docker.imageId": "0787e7ebe0fd49bffb0d4b35fe2423cbe124fff68874be3996ac2262972b1e31",
+  "download.url": "https://get.docker.com/",
+  "docker.imageName": "wfyd9ni0m7l",
+  "docker.host.name": "docker-host-brooklyn-K9bqzLPe",
+  "service.state": "RUNNING",
+  "expandedinstall.dir": "/root/brooklyn-managed-processes/installs/DockerHost_1.2/docker-1.2",
+  "docker.host.scan": null,
+  "cluster.entity": "Docker Hosts",
+  "docker.hardwareId": "small",
+  "service.isUp": true,
+  "machine.uptime": "1h 31m",
+  "machine.loadAverage": 0.02,
+  "machine.memory.used": "956 MB",
+  "service.notUp.indicators": {},
+  "host.name": "159.8.146.221",
+  "download.addon.urls": null,
+  "docker.containerCount": 1,
+  "host.address": "159.8.146.221",
+  "entity.dynamicLocation.name": "ltcwruiD",
+  "cluster.first.entity": "docker-host-brooklyn-K9bqzLPe",
+  "docker.host.volumes": {},
+  "host.subnet.address": "10.112.105.84"
+}

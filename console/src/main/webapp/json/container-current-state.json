@@ -1,0 +1,25 @@
+{
+  "entity.dynamicLocation.status": null,
+  "docker.container": null,
+  "cluster.first": true,
+  "docker.container.running": true,
+  "docker.container.imageName": "zettio/weave",
+  "docker.container.ssh": {
+    "type": "brooklyn.location.Location",
+    "id": "HusQHB3A"
+  },
+  "service.state": "RUNNING",
+  "entity.dynamicLocation.spec": null,
+  "docker.infrastructure": "DockerInfrastructure:C9Ut",
+  "service.isUp": true,
+  "docker.container.entity": null,
+  "docker.container.imageId": "9806c276d6cf221ce8b930e8721197b29e1bc4aaf1cd576e4155f6288ef043f9",
+  "docker.container.id": "c7cb7ba911321f6f17082bc2540817bc07d921f8eeb7b4288bb322af578baf1e",
+  "docker.host": "docker-host-brooklyn-K9bqzLPe",
+  "entity.dynamicLocation": null,
+  "entity.dynamicLocation.name": null,
+  "cluster.first.entity": "docker-container-brooklyn-jC3jEbmG",
+  "service.state.expected": "running @ 1415556931046 / Sun Nov 09 12:15:31 CST 2014",
+  "docker.container.name": "docker-container-brooklyn-jC3jEbmG",
+  "docker.container.hardwareId": null
+}

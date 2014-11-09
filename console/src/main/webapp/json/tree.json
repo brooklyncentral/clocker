@@ -1,0 +1,123 @@
+[
+  {
+    "name": "Docker Cloud Infrastructure",
+    "id": "VROZKaBb",
+    "type": "brooklyn.entity.basic.BasicApplication",
+    "serviceUp": true,
+    "serviceState": "running",
+    "children": [
+      {
+        "name": "DockerInfrastructure:C9Ut",
+        "id": "C9Utz6AF",
+        "type": "brooklyn.entity.container.docker.DockerInfrastructure",
+        "serviceUp": true,
+        "children": [
+          {
+            "name": "Docker Hosts",
+            "id": "LsOeox7p",
+            "type": "brooklyn.entity.group.DynamicCluster",
+            "serviceUp": true,
+            "serviceState": "running",
+            "children": [
+              {
+                "name": "quarantine",
+                "id": "RjrSfvXG",
+                "type": "brooklyn.entity.group.QuarantineGroup"
+              },
+              {
+                "name": "docker-host-brooklyn-K9bqzLPe",
+                "id": "K9bqzLPe",
+                "type": "brooklyn.entity.container.docker.DockerHost",
+                "serviceUp": true,
+                "serviceState": "running",
+                "children": [
+                  {
+                    "name": "Docker Containers",
+                    "id": "eIFXLead",
+                    "type": "brooklyn.entity.group.DynamicCluster",
+                    "serviceUp": true,
+                    "serviceState": "running",
+                    "children": [
+                      {
+                        "name": "docker-container-brooklyn-jC3jEbmG",
+                        "id": "jC3jEbmG",
+                        "type": "brooklyn.entity.container.docker.DockerContainer",
+                        "serviceUp": true,
+                        "serviceState": "running"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "SubnetTier:Ggq9",
+                    "id": "Ggq9glg7",
+                    "type": "brooklyn.networking.subnet.SubnetTier"
+                  }
+                ]
+              },
+              {
+                "name": "docker-host-brooklyn-pusy2jKQ",
+                "id": "pusy2jKQ",
+                "type": "brooklyn.entity.container.docker.DockerHost",
+                "serviceUp": false,
+                "serviceState": "starting",
+                "children": [
+                  {
+                    "name": "Docker Containers",
+                    "id": "UaCFYIWe",
+                    "type": "brooklyn.entity.group.DynamicCluster",
+                    "serviceUp": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "All Docker Containers",
+            "id": "NRESUFPg",
+            "type": "brooklyn.entity.basic.DynamicGroup",
+            "serviceUp": true,
+            "serviceState": "running",
+            "children": [
+              {
+                "name": "docker-container-brooklyn-jC3jEbmG",
+                "id": "epBSPLw0",
+                "type": "brooklyn.entity.basic.DelegateEntity",
+                "serviceUp": true,
+                "serviceState": "running"
+              }
+            ]
+          },
+          {
+            "name": "Docker Applications",
+            "id": "l5RSZOjS",
+            "type": "brooklyn.entity.group.DynamicMultiGroup"
+          },
+          {
+            "name": "WeaveInfrastructure:Q9At",
+            "id": "Q9Atftps",
+            "type": "brooklyn.entity.container.weave.WeaveInfrastructure",
+            "serviceUp": true,
+            "children": [
+              {
+                "name": "Weave Services",
+                "id": "xoD8Fkze",
+                "type": "brooklyn.entity.basic.BasicGroup",
+                "serviceUp": true,
+                "serviceState": "running",
+                "children": [
+                  {
+                    "name": "WeaveContainer:PGef",
+                    "id": "PGefIXls",
+                    "type": "brooklyn.entity.container.weave.WeaveContainer",
+                    "serviceUp": true,
+                    "serviceState": "running"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
