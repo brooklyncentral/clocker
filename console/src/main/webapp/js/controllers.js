@@ -25,26 +25,21 @@ clocker.controller('infrastructures', function ($scope, $http, $interval) {
   }, 5000);
 });
 
-clocker.controller('hosts', function ($scope, $http, $interval) {
+clocker.controller('hosts', function ($scope, $rootScope, $http, $interval) {
   $scope.applicationId = $scope.infrastructure.id;
   var current = $scope.infrastructure.children[0].children[0].children.filter(function(value) {
     return value.type == 'brooklyn.entity.container.docker.DockerHost';
   });
-  var collapsed = { };
-  if ($scope.hosts) {
-    $scope.hosts.forEach(function(value) {
-      collapsed[value.id] = value.collapsed;
-    });
+  if (!$rootScope.collapsed) {
+    $rootScope.collapsed = { };
   }
   $scope.hosts = { };
   current.forEach(function(value) {
     $http.get('/v1/applications/' + $scope.applicationId + '/entities/' + value.id + '/sensors/current-state').success(function(data) {
       $scope.hosts[value.id] = data;
       $scope.hosts[value.id].id = value.id;
-      if (collapsed[value.id]) {
-        $scope.hosts[value.id].collapsed = collapsed[value.id];
-      } else {
-        $scope.hosts[value.id].collapsed = 'collapse';
+      if (!$rootScope.collapsed[value.id]) {
+        $rootScope.collapsed[value.id] = true;
       }
     });
     if ($scope.hosts[value.id]) {

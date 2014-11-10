@@ -101,7 +101,7 @@
                                 {{host['machine.memory.free']}} Free
                             </div>
                             <div class="col-md-2">
-                                <a class="accordion-toggle" ng-class="host.collapsed ? 'collapsed' : 'collapsed.in'" ng-click="host.collapsed = !host.collapsed" ng-if="host['docker.containerCount'] != 0" href="#{{host.id}}-containers">&nbsp;</a>
+                                <a class="accordion-toggle" ng-class="$root.collapsed[host.id] ? 'collapsed' : 'collapsed.in'" ng-click="$root.collapsed[host.id] = !$root.collapsed[host.id]" ng-if="host['docker.containerCount'] != 0" href="#{{host.id}}-containers">&nbsp;</a>
                             </div>
                         </div>
                     </div>
@@ -112,7 +112,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="panel-body container-fluid" ng-if="!host.collapsed" ng-controller="containers" id="{{host.id}}-containers">
+                    <div class="panel-body container-fluid" ng-if="!$root.collapsed[host.id]" ng-controller="containers" id="{{host.id}}-containers">
                         <div class="row" ng-repeat="container in containers" id="{{host.id}}-{{container.id}}">
                             <div class="col-md-2">
                                 <span>{{container['docker.container.imageName']}}</span>
