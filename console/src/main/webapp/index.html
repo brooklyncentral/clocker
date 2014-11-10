@@ -70,11 +70,16 @@
                     <div class="panel-body">
                         <div class="row">
                             <div class="col-md-6">
-                                <span>{{host['host.sshAddress']}}</span><br>
-                                <span>{{host['docker.containerCount']}} Containers</span>
+                                <ul class="list-group">
+                                <li class="list-group-item">
+                                <span class="badge">{{host['docker.containerCount']}}</span>
+                                {{host['host.sshAddress']}}
+                                </li>
+                                </ul>
                                 <a class="accordion-toggle collapsed" data-toggle="collapse" data-parent="#{{host.id}}" href="#{{host.id}}-containers">&nbsp;</a>
                             </div>
                             <div class="col-md-6">
+                                <!-- sparkline -->
                             </div>
                         </div>
                     </div>

@@ -15,45 +15,47 @@
 
 var clocker = angular.module('clocker', []);
 
-clocker.controller('infrastructures', function ($scope, $http) {
-  $http.get('/v1/applications/tree').success(function(data) {
+clocker.controller('infrastructures', function ($scope, $http, $interval) {
+  $interval(function() {
+    $http.get('/v1/applications/tree').success(function(data) {
       $scope.infrastructures = data.filter(function(value) {
-          return value.children[0].type == 'brooklyn.entity.container.docker.DockerInfrastructure';
+        return value.children[0].type == 'brooklyn.entity.container.docker.DockerInfrastructure';
       });
+    });
+  }, 15000);
+});
+
+clocker.controller('hosts', function ($scope, $http, $interval) {
+  $scope.applicationId = $scope.infrastructure.id;
+  $scope.hosts = { };
+  $scope.infrastructure.children[0].children[0].children.filter(function(value) {
+    return value.type == 'brooklyn.entity.container.docker.DockerHost';
+  }).forEach(function(value) {
+    $http.get('/v1/applications/' + $scope.applicationId + '/entities/' + value.id + '/sensors/current-state').success(function(data) {
+      $scope.hosts[value.id] = data;
+      $scope.hosts[value.id].id = value.id;
+    });
+    if ($scope.hosts[value.id]) {
+      $http.get('/v1/applications/' + $scope.applicationId + '/entities/' + value.id + '/config/current-state').success(function(data) {
+        $scope.hosts[value.id].config = data;
+      });
+    }
   });
 });
 
-clocker.controller('hosts', function ($scope, $http) {
-    $scope.applicationId = $scope.infrastructure.id;
-    $scope.hosts = { };
-    $scope.infrastructure.children[0].children[0].children.filter(function(value) {
-        return value.type == 'brooklyn.entity.container.docker.DockerHost';
-    }).forEach(function(value) {
+clocker.controller('containers', function ($scope, $http, $interval) {
+  $http.get('/v1/applications/' + $scope.applicationId + '/entities/' + $scope.host.id + '/children').success(function(data) {
+    $scope.containers = { };
+    var cluster = data.filter(function(value) {
+      return value.type == 'brooklyn.entity.group.DynamicCluster';
+    })[0];
+    $http.get('/v1/applications/' + $scope.applicationId + '/entities/' + cluster.id + '/children').success(function(data) {
+      data.forEach(function(value) {
         $http.get('/v1/applications/' + $scope.applicationId + '/entities/' + value.id + '/sensors/current-state').success(function(data) {
-            $scope.hosts[value.id] = data;
-            $scope.hosts[value.id].id = value.id;
+          $scope.containers[value.id] = data;
+          $scope.containers[value.id].id = value.id;
         });
-        if ($scope.hosts[value.id]) {
-            $http.get('/v1/applications/' + $scope.applicationId + '/entities/' + value.id + '/config/current-state').success(function(data) {
-                $scope.hosts[value.id].config = data;
-            });
-        }
+      });
     });
-});
-
-clocker.controller('containers', function ($scope, $http) {
-    $http.get('/v1/applications/' + $scope.applicationId + '/entities/' + $scope.host.id + '/children').success(function(data) {
-        $scope.containers = { };
-        var cluster = data.filter(function(value) {
-            return value.type == 'brooklyn.entity.group.DynamicCluster';
-        })[0];
-        $http.get('/v1/applications/' + $scope.applicationId + '/entities/' + cluster.id + '/children').success(function(data) {
-            data.forEach(function(value) {
-                $http.get('/v1/applications/' + $scope.applicationId + '/entities/' + value.id + '/sensors/current-state').success(function(data) {
-                    $scope.containers[value.id] = data;
-                    $scope.containers[value.id].id = value.id;
-                });
-            });
-        });
-    });
+  });
 });
