@@ -71,3 +71,7 @@ code {
 a.accordion-toggle {
     text-decoration: none;
 }
+.container-info.panel {
+    margin-left: 10px;
+    margin-right: 10px;
+}
