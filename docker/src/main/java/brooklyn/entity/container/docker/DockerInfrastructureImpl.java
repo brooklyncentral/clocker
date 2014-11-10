@@ -15,6 +15,7 @@
  */
 package brooklyn.entity.container.docker;
 
+import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,7 @@ import brooklyn.config.render.RendererHints;
 import brooklyn.enricher.Enrichers;
 import brooklyn.entity.Application;
 import brooklyn.entity.Entity;
+import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.BasicGroup;
 import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.DelegateEntity;
@@ -173,6 +175,12 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         addEnricher(Enrichers.builder()
                 .propagating(ImmutableMap.of(DynamicCluster.GROUP_SIZE, DOCKER_HOST_COUNT))
                 .from(hosts)
+                .build());
+
+        setAttribute(Attributes.MAIN_URI, URI.create("/clocker"));
+        getApplication().addEnricher(Enrichers.builder()
+                .propagating(Attributes.MAIN_URI)
+                .from(this)
                 .build());
     }
 

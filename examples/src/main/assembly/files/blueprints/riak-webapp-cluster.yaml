@@ -31,7 +31,7 @@ services:
       $brooklyn:entitySpec:
         type: brooklyn.entity.proxy.nginx.NginxController
         brooklyn.config:
-          member.sensor.hostname: $brooklyn:sensor("host.subnet.hostname")
+          member.sensor.hostname: "host.subnet.hostname"
     wars.root:
       "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/brooklyn-example-hello-world-sql-webapp.war"
     java.sysprops: 
