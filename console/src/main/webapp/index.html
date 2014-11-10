@@ -34,10 +34,12 @@
     <script src="js/jquery.js"></script>
     <script src="js/bootstrap.js"></script>
     <script src="js/angular.js"></script>
+    <script src="js/ui-bootstrap-tpls.js"></script>
     <!--
     <script src="js/jquery.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
     <script src="js/angular.min.js"></script>
+    <script src="js/ui-bootstrap-tpls.min.js"></script>
     -->
     <!--
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
@@ -60,30 +62,57 @@
     <div class="container" role="main" ng-controller="infrastructures">
         <div ng-repeat="infrastructure in infrastructures" id="{{infrastructure.id}}">
             <div class="page-header">
-                <h1>{{infrastructure.name}}</h1>
+                <h1>{{infrastructure.name}} {{infrastructure.id}}</h1>
             </div>
-            <div ng-controller="hosts" id="hosts">
+            <div ng-controller="hosts">
                 <div class="panel panel-default" ng-repeat="host in hosts" id="{{host.id}}">
                     <div class="panel-heading">
                         <h3 class="panel-title">{{host['docker.host.name']}}</h3>
                     </div>
-                    <div class="panel-body">
+                    <div class="panel-body" ng-if="host['service.state'] == 'RUNNING'">
                         <div class="row">
                             <div class="col-md-6">
                                 <ul class="list-group">
-                                <li class="list-group-item">
-                                <span class="badge">{{host['docker.containerCount']}}</span>
-                                {{host['host.sshAddress']}}
-                                </li>
+                                    <li class="list-group-item">
+                                        <span class="badge">{{host['docker.containerCount']}}</span>
+                                        {{host['host.sshAddress']}}
+                                    </li>
                                 </ul>
-                                <a class="accordion-toggle collapsed" data-toggle="collapse" data-parent="#{{host.id}}" href="#{{host.id}}-containers">&nbsp;</a>
                             </div>
                             <div class="col-md-6">
                                 <!-- sparkline -->
+                                {{host['machine.loadAverage']}}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-2">
+                                IP {{host['host.address']}}
+                            </div>
+                            <div class="col-md-2">
+                                Up {{host['machine.uptime']}}
+                            </div>
+                            <div class="col-md-2">
+                                CPU {{host['machine.cpu']}}
+                            </div>
+                            <div class="col-md-2">
+                                {{host['machine.memory.used']}} Used
+                            </div>
+                            <div class="col-md-2">
+                                {{host['machine.memory.free']}} Free
+                            </div>
+                            <div class="col-md-2">
+                                <a class="accordion-toggle" ng-class="host.collapsed ? 'collapsed' : 'collapsed.in'" ng-click="host.collapsed = !host.collapsed" ng-if="host['docker.containerCount'] != 0" href="#{{host.id}}-containers">&nbsp;</a>
                             </div>
                         </div>
                     </div>
-                    <div class="panel-body panel-collapse collapse container-fluid" ng-controller="containers" id="{{host.id}}-containers">
+                    <div class="panel-body" ng-if="host['service.state'] != 'RUNNING'">
+                        <div class="row">
+                            <div class="col-md-12">
+                                {{host['service.state']}}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel-body container-fluid" ng-if="!host.collapsed" ng-controller="containers" id="{{host.id}}-containers">
                         <div class="row" ng-repeat="container in containers" id="{{host.id}}-{{container.id}}">
                             <div class="col-md-2">
                                 <span>{{container['docker.container.imageName']}}</span>

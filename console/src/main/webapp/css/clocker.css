@@ -43,6 +43,7 @@ body > .container {
 .container .navbar-brand {
     color: #f0f0f0;
     font-weight: bold;
+    font-size: 200%;
 }
 code {
     font-size: 80%;
@@ -59,14 +60,14 @@ code {
     /* symbol for "opening" panels */
     font-family: 'Glyphicons Halflings';  
     content: "\e114";
-/*    float: right; */
     color: grey;
     overflow: no-display;
+    float: right;
 }
 .panel-body .accordion-toggle.collapsed:after {
     /* symbol for "collapsed" panels */
     content: "\e080";
 }
-a.accordion-toggle{
+a.accordion-toggle {
     text-decoration: none;
 }
