@@ -57,34 +57,23 @@
       </div>
     </nav>
 
-    <div class="container" role="main" ng-controller="infrastructures">
+    <div class="container" role="main" ng-controller="infrastructures" ng-cloak>
         <div ng-repeat="infrastructure in infrastructures" id="{{infrastructure.id}}">
-            <div class="page-header">
-                <h1>{{infrastructure.name}} {{infrastructure.id}}</h1>
+            <div class="page-header" ng-controller="sparklines">
+                <h2>{{infrastructure.name}} {{infrastructure.id}}</h2>
             </div>
-            <div ng-controller="hosts">
+            <div ng-controller="hosts" ng-cloak>
                 <div class="panel" ng-repeat="host in hosts" id="{{host.id}}" ng-class="(host['service.state'] == 'ON-FIRE') ? 'panel-danger' : ((host['service.state'] == 'RUNNING') ? 'panel-primary' : 'panel-warning')">
                     <div class="panel-heading">
                         <div class="row">
-                            <div class="col-md-4">
-                                <h2 class="panel-title">{{host['docker.host.name']}}</h2>
+                            <div class="col-md-8">
+                                <h4>{{host['docker.host.name']}}</h4>
                             </div>
                             <div class="col-md-2">
+                                <h4>{{host.id}}</h4>
                             </div>
-                            <div class="col-md-6">
-                                <div class="input-group" ng-if="host['service.state'] == 'RUNNING'">
-                                    <input type="text" class="form-control">
-                                    <div class="input-group-btn">
-                                        <button type="button" class="btn btn-default">Command</button>
-                                        <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-                                            <span class="caret"></span>
-                                            <span class="sr-only">Toggle Dropdown</span>
-                                        </button>
-                                    </div>
-                                    <ul class="dropdown-menu" role="menu">
-                                        <li><a href="#">Stop</a></li>
-                                   </ul>
-                                </div>
+                            <div class="col-md-2">
+                                <h4>{{host['service.state']}}</h4>
                             </div>
                         </div>
                     </div>
@@ -94,7 +83,7 @@
                                 <ul class="list-group">
                                     <li class="list-group-item">
                                         <span class="badge">{{host['docker.containerCount']}}</span>
-                                        {{host['host.name']}}/{{host['host.address']}} ({{host.config['docker.password']}})
+                                        {{host['host.name']}} / {{host['host.address']}} / {{host.config['docker.password']}}
                                     </li>
                                 </ul>
                             </div>
@@ -105,7 +94,7 @@
                         </div>
                         <div class="row">
                             <div class="col-md-2">
-                                IP {{host['host.address']}}
+                                IP {{host['host.subnet.address']}}
                             </div>
                             <div class="col-md-2">
                                 Up {{host['machine.uptime']}}
@@ -124,19 +113,17 @@
                             </div>
                         </div>
                     </div>
-                    <div class="panel-body" ng-if="host['service.state'] != 'RUNNING'">
-                        <div class="row">
-                            <div class="col-md-12">
-                                {{host['service.state']}}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="panel-body container-fluid" ng-if="!$root.collapsed[host.id]" ng-controller="containers" id="{{host.id}}-containers">
+                    <div class="panel-body container-fluid" ng-if="!$root.collapsed[host.id]" ng-controller="containers" id="{{host.id}}-containers" ng-cloak>
                         <div class="row" ng-repeat="container in containers" id="{{host.id}}-{{container.id}}">
-                            <div class="col-md-2 panel container-info" ng-class="(container['service.state'] == 'ON-FIRE') ? 'panel-danger' : ((container['service.state'] == 'RUNNING') ? 'panel-primary' : 'panel-warning')">
-                                <span>{{container['docker.container.imageName']}}</span><br>
-                                <span>{{container['host.subnet.hostname']}}</span><br>
-                                <span>{{container['docker.container.entity']}}</span>
+                            <div class="media col-md-3 panel container-info" ng-class="(container['service.state'] == 'ON-FIRE') ? 'panel-danger' : ((container['service.state'] == 'RUNNING') ? 'panel-primary' : 'panel-warning')">
+                                <a class="media-left" href="#{{host.id}}-{{container.id}}">
+                                    <img src="img/container.png">
+                                </a>
+                                <div class="media-body">
+                                    <h4 class="media-heading"><span>{{container['docker.container.imageName']}}</h4>
+                                    <span>{{container['host.subnet.hostname']}}</span><br>
+                                    <span>{{container['docker.container.entity']}}</span>
+                                </div>
                             </div>
                         </div>
                     </div>

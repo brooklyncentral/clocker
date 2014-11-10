@@ -72,6 +72,12 @@ a.accordion-toggle {
     text-decoration: none;
 }
 .container-info.panel {
-    margin-left: 10px;
-    margin-right: 10px;
+    margin-left: 15px;
+    margin-right: 15px;
+}
+.container-info imp {
+    padding: 5px;
+}
+.panel-heading h4 {
+    font-size: 150%;
 }
