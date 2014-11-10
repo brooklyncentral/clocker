@@ -38,7 +38,7 @@ clocker.controller('hosts', function ($scope, $rootScope, $http, $interval) {
     $http.get('/v1/applications/' + $scope.applicationId + '/entities/' + value.id + '/sensors/current-state').success(function(data) {
       $scope.hosts[value.id] = data;
       $scope.hosts[value.id].id = value.id;
-      if (!$rootScope.collapsed[value.id]) {
+      if (typeof $rootScope.collapsed[value.id] == 'undefined') {
         $rootScope.collapsed[value.id] = true;
       }
     });

@@ -48,7 +48,6 @@
     -->
 
     <script src="js/controllers.js"></script>
-    <script src="js/clocker.js"></script>
 </head>
 <body role="document">
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -65,9 +64,28 @@
                 <h1>{{infrastructure.name}} {{infrastructure.id}}</h1>
             </div>
             <div ng-controller="hosts">
-                <div class="panel panel-default" ng-repeat="host in hosts" id="{{host.id}}">
-                    <div class="panel-heading">
-                        <h3 class="panel-title">{{host['docker.host.name']}}</h3>
+                <div class="panel" ng-repeat="host in hosts" id="{{host.id}}" ng-class="(host['service.state'] == 'ON-FIRE') ? 'panel-danger' : ((host['service.state'] == 'RUNNING') ? 'panel-primary' : 'panel-warning')">
+                    <div class="panel-heading row">
+                        <div class="col-md-4">
+                            <h2 class="panel-title">{{host['docker.host.name']}}</h2>
+                        </div>
+                        <div class="col-md-2">
+                        </div>
+                        <div class="col-md-6">
+                            <div class="input-group" ng-if="host['service.state'] == 'RUNNING'">
+                                <input type="text" class="form-control">
+                                <div class="input-group-btn">
+                                    <button type="button" class="btn btn-default">Command</button>
+                                    <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                                        <span class="caret"></span>
+                                        <span class="sr-only">Toggle Dropdown</span>
+                                    </button>
+                                </div>
+                                <ul class="dropdown-menu" role="menu">
+                                    <li><a href="#">Stop</a></li>
+                               </ul>
+                            </div>
+                        </div>
                     </div>
                     <div class="panel-body" ng-if="host['service.state'] == 'RUNNING'">
                         <div class="row">
@@ -75,7 +93,7 @@
                                 <ul class="list-group">
                                     <li class="list-group-item">
                                         <span class="badge">{{host['docker.containerCount']}}</span>
-                                        {{host['host.sshAddress']}}
+                                        {{host['host.name']}}/{{host['host.address']}} ({{host.config['docker.password']}})
                                     </li>
                                 </ul>
                             </div>
@@ -112,11 +130,12 @@
                             </div>
                         </div>
                     </div>
-                    <div class="panel-body container-fluid" ng-if="!$root.collapsed[host.id]" ng-controller="containers" id="{{host.id}}-containers">
+                    <div class="panel-body container-fluid containers" ng-if="!$root.collapsed[host.id]" ng-controller="containers" id="{{host.id}}-containers">
                         <div class="row" ng-repeat="container in containers" id="{{host.id}}-{{container.id}}">
-                            <div class="col-md-2">
-                                <span>{{container['docker.container.imageName']}}</span>
-                                <span>{{container['docker.container.id']}}</span>
+                            <div class="col-md-2 panel" ng-class="(container['service.state'] == 'ON-FIRE') ? 'panel-danger' : ((container['service.state'] == 'RUNNING') ? 'panel-primary' : 'panel-warning')">
+                                <span>{{container['docker.container.imageName']}}</span><br>
+                                <span>{{container['host.subnet.hostname']}}</span><br>
+                                <span>{{container['docker.container.entity']}}</span>
                             </div>
                         </div>
                     </div>
