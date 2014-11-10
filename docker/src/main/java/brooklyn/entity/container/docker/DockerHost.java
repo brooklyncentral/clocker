@@ -123,7 +123,7 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
 
     @SetFromFlag("scanInterval")
     ConfigKey<Duration> SCAN_INTERVAL = ConfigKeys.newConfigKey(Duration.class,
-            "docker.host.scanInterval", "Interval between scans of Docker containers", Duration.THIRTY_SECONDS);
+            "docker.host.scanInterval", "Interval between scans of Docker containers", Duration.TEN_SECONDS);
     AttributeSensor<Void> SCAN = Sensors.newSensor(Void.class, "docker.host.scan", "Notification of host scan");
 
     AttributeSensor<DynamicCluster> DOCKER_CONTAINER_CLUSTER = Sensors.newSensor(DynamicCluster.class,
