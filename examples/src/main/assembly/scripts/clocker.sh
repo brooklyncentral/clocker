@@ -16,26 +16,7 @@
 
 #set -x # debug
 
-# discover BROOKLYN_HOME if not set, by attempting to resolve absolute path of this command
 ROOT=$(cd "$(dirname "$0")/.." && pwd -P)
-if [ -z "$BROOKLYN_HOME" ] ; then
-    BROOKLYN_HOME=$(cd "$(dirname "$(readlink -f "$0" 2> /dev/null || readlink "$0" 2> /dev/null || echo "$0")")/.." && pwd)
-fi
-export ROOT BROOKLYN_HOME
-
-# set up the classpath
-INITIAL_CLASSPATH=${BROOKLYN_HOME}/conf:${BROOKLYN_HOME}/lib/patch/*:${BROOKLYN_HOME}/lib/brooklyn/*:${BROOKLYN_HOME}/lib/dropins/*
-# specify additional CP args in BROOKLYN_CLASSPATH
-if [ ! -z "${BROOKLYN_CLASSPATH}" ]; then
-    INITIAL_CLASSPATH=${BROOKLYN_CLASSPATH}:${INITIAL_CLASSPATH}
-fi
-export INITIAL_CLASSPATH
-
-# force resolution of localhost to be loopback, otherwise we hit problems
-# TODO should be changed in code
-JAVA_OPTS="-Dbrooklyn.location.localhost.address=127.0.0.1 ${JAVA_OPTS}"
-
-# start Brooklyn
 
 # set blueprint and catalog options
 if [ $# -eq 1 ] ; then
@@ -44,5 +25,4 @@ fi
 export JAVA_OPTS="-Xms1g -Xmx1g ${CLOCKER_OPTS} -Dbrooklyn.catalog.url=classpath://catalog.xml -Dbrooklyn.catalog.mode=LOAD_BROOKLYN_CATALOG_URL"
 
 # launch clocker
-echo $$ > "$ROOT/pid_java"
-exec java ${JAVA_OPTS} -cp "${INITIAL_CLASSPATH}" brooklyn.clocker.Main launch ${CLOCKER} 2>&1 | tee -a console .log
+${ROOT}/bin/brooklyn.sh launch ${CLOCKER} 2>&1 | tee -a console .log
