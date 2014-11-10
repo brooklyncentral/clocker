@@ -275,6 +275,11 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     }
 
     @Override
+    public Integer getDockerSslPort() {
+        return getAttribute(DOCKER_SSL_PORT);
+    }
+
+    @Override
     public String getDockerHostName() {
         return getAttribute(DOCKER_HOST_NAME);
     }

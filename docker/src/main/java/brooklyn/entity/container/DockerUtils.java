@@ -77,6 +77,8 @@ public class DockerUtils {
     public static final CharMatcher DOCKERFILE_CHARACTERS = CharMatcher.anyOf("_")
             .or(CharMatcher.inRange('a', 'z'))
             .or(CharMatcher.inRange('0', '9'));
+
+    /** Invalid characters for the Dockerfile location. */
     public static final CharMatcher DOCKERFILE_INVALID_CHARACTERS = DOCKERFILE_CHARACTERS.negate();
 
     public static <T> AttributeSensor<T> mappedSensor(AttributeSensor<?> source) {
@@ -105,6 +107,12 @@ public class DockerUtils {
         return Sensors.newStringSensor(Joiner.on(".").join(name), source.getDescription() + " (Docker mapping)");
     }
 
+    /**
+     * Transforms the input to contain only valid characters.
+     *
+     * @see #ALLOWED
+     * @see #DOCKERFILE_CHARACTERS
+     */
     public static String allowed(String input) {
         return ALLOWED.apply(input);
     }
@@ -120,6 +128,7 @@ public class DockerUtils {
     /** Parse and return the ID returned from a Docker command. */
     public static String checkId(String input) {
         String imageId = Strings.trim(input).toLowerCase(Locale.ENGLISH);
+
         if (imageId.length() == 64 && DOCKERFILE_CHARACTERS.matchesAllOf(imageId)) {
             return imageId;
         } else {

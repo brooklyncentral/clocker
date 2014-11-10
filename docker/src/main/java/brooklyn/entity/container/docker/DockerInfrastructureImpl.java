@@ -147,6 +147,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
             Entities.manage(fabric);
             Entities.manage(buckets);
         }
+
         setAttribute(DOCKER_HOST_CLUSTER, hosts);
         setAttribute(DOCKER_CONTAINER_FABRIC, fabric);
         setAttribute(DOCKER_APPLICATIONS, buckets);

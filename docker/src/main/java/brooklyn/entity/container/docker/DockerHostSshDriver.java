@@ -21,6 +21,7 @@ import static java.lang.String.format;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 
 import org.jclouds.net.domain.IpPermission;
@@ -55,6 +56,7 @@ import brooklyn.util.time.Duration;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implements DockerHostDriver {
@@ -66,6 +68,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     protected Map<String, Integer> getPortMap() {
         Map<String, Integer> ports = MutableMap.of();
         ports.put("dockerPort", getDockerPort());
+        ports.put("dockerSslPort", getDockerSslPort());
         if (getEntity().getConfig(DockerInfrastructure.WEAVE_ENABLED)) {
             // Best guess at available port, as Weave is started _after_ the DockerHost
             Integer weavePort = getEntity()
@@ -78,8 +81,21 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     @Override
+    public Set<Integer> getPortsUsed() {
+        return ImmutableSet.<Integer>builder()
+                .addAll(super.getPortsUsed())
+                .addAll(getPortMap().values())
+                .build();
+    }
+
+    @Override
     public Integer getDockerPort() {
         return getEntity().getAttribute(DockerHost.DOCKER_PORT);
+    }
+
+    @Override
+    public Integer getDockerSslPort() {
+        return getEntity().getAttribute(DockerHost.DOCKER_SSL_PORT);
     }
 
     @Override
