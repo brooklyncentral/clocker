@@ -13,9 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var clocker = angular.module('clocker', ['ui.bootstrap']);
+var clocker = angular.module('clocker', ['ui.bootstrap', 'nvd3ChartDirectives']);
 
-clocker.controller('infrastructures', function ($scope, $http, $interval) {
+clocker.controller('init', function(sparkdata) {
+  sparkdata.poll();
+});
+
+clocker.controller('infrastructures', function($scope, $http, $interval) {
   $interval(function() {
     $http.get('/v1/applications/tree').success(function(data) {
       $scope.infrastructures = data.filter(function(value) {
@@ -48,14 +52,35 @@ clocker.controller('hosts', function ($scope, $rootScope, $http) {
   });
 });
 
-clocker.controller('sparklines', function ($scope, $rootScope, $http, $interval) {
-  $interval(function() {
-    $http.get('/v1/applications/' + $scope.infrastructure.id + '/descendants/sensor/machine.loadAverage?typeRegex=brooklyn.entity.container.docker.DockerHost').success(function(data) {
-      $scope.infrastructures = data.filter(function(value) {
-        return value.children[0].type == 'brooklyn.entity.container.docker.DockerInfrastructure';
+clocker.factory('sparkdata', function($rootScope, $http, $interval) {
+  $rootScope.sparkdata = { };
+  $rootScope.xFunction = function() { return function(d) { return d[0]; } };
+  $rootScope.yFunction = function() { return function(d) { return d[1]; } };
+  return {
+    poll: function() {
+      $http.get('/v1/applications/tree').success(function(data) {
+        var infrastructures = data.filter(function(value) {
+          return value.children[0].type == 'brooklyn.entity.container.docker.DockerInfrastructure';
+        });
+        infrastructures.forEach(function(infrastrcture) {
+          $interval(function() {
+            var milliseconds = Math.round(new Date().getTime() / 1000);
+            $http.get('/v1/applications/' + infrastrcture.id + '/descendants/sensor/machine.cpu?typeRegex=brooklyn.entity.container.docker.DockerHost').success(function(data) {
+              Object.keys(data).forEach(function(value) {
+                if (typeof $rootScope.sparkdata[value] == 'undefined') {
+                  $rootScope.sparkdata[value] = [ ];
+                }
+                $rootScope.sparkdata[value].push([milliseconds, data[value] * 100]);
+                if ($rootScope.sparkdata[value].length > 500) {
+                    $rootScope.sparkdata[value].shift();
+                }
+              });
+            });
+          }, 1000);
+        });
       });
-    });
-  }, 1000);
+    }
+  };
 });
 
 clocker.controller('containers', function ($scope, $http) {

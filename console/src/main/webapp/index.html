@@ -23,32 +23,21 @@
 
     <title>Clocker</title>
 
-    <!-- bootstrap -->
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="css/bootstrap-theme.min.css">
-
-    <!-- clocker -->
+    <link rel="stylesheet" href="css/nv.d3.min.css"/>
     <link rel="stylesheet" href="css/clocker.css">
 
-    <!-- libraries -->
-    <script src="js/jquery.js"></script>
-    <script src="js/bootstrap.js"></script>
-    <script src="js/angular.js"></script>
-    <script src="js/ui-bootstrap-tpls.js"></script>
-    <!--
     <script src="js/jquery.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
     <script src="js/angular.min.js"></script>
     <script src="js/ui-bootstrap-tpls.min.js"></script>
-    -->
-    <!--
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.2/angular.min.js"></script>
-    -->
-
+    <script src="js/d3.min.js"></script>
+    <script src="js/nv.d3.min.js"></script>
+    <script src="js/angularjs-nvd3-directives.js"></script>
     <script src="js/controllers.js"></script>
 </head>
-<body role="document">
+<body role="document" ng-controller="init" ng-cloak>
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
       <div class="container">
         <div class="navbar-header">
@@ -58,16 +47,16 @@
     </nav>
 
     <div class="container" role="main" ng-controller="infrastructures" ng-cloak>
-        <div ng-repeat="infrastructure in infrastructures" id="{{infrastructure.id}}">
-            <div class="page-header" ng-controller="sparklines">
+        <div ng-repeat="infrastructure in infrastructures" id="{{infrastructure.id}}" ng-cloak>
+            <div class="page-header">
                 <h2>{{infrastructure.name}} {{infrastructure.id}}</h2>
             </div>
             <div ng-controller="hosts" ng-cloak>
-                <div class="panel" ng-repeat="host in hosts" id="{{host.id}}" ng-class="(host['service.state'] == 'ON-FIRE') ? 'panel-danger' : ((host['service.state'] == 'RUNNING') ? 'panel-primary' : 'panel-warning')">
+                <div class="panel" ng-repeat="host in hosts" id="{{host.id}}" ng-class="(host['service.state'] == 'ON_FIRE') ? 'panel-danger' : ((host['service.state'] == 'RUNNING') ? 'panel-primary' : 'panel-warning')" ng-cloak>
                     <div class="panel-heading">
                         <div class="row">
                             <div class="col-md-8">
-                                <h4>{{host['docker.host.name']}}</h4>
+                                <h4><a href="/#v1/applications/{{infrastructure.id}}/entities/{{host.id}}">{{host['docker.host.name']}}</a></h4>
                             </div>
                             <div class="col-md-2">
                                 <h4>{{host.id}}</h4>
@@ -77,7 +66,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="panel-body" ng-if="host['service.state'] == 'RUNNING'">
+                    <div class="panel-body" ng-if="host['service.state'] == 'RUNNING' || host['docker.containerCount'] != 0">
                         <div class="row">
                             <div class="col-md-6">
                                 <ul class="list-group">
@@ -87,9 +76,22 @@
                                     </li>
                                 </ul>
                             </div>
-                            <div class="col-md-6">
-                                <!-- sparkline -->
-                                {{host['machine.loadAverage']}}
+                            <div class="col-md-5">
+                               <nvd3-sparkline-chart
+                                   data="$root.sparkdata[host.id]"
+                                   id="{{host.id}}-sparkline"
+                                   width="300"
+                                   height="25"
+                                   margin="{left:0, top:0, bottom:0, right:0}"
+                                   x="$root.xFunction()"
+                                   y="$root.yFunction()"
+                                   ymin="0"
+                                   ymax="100"
+                                   <svg></svg>
+                                </nvd3-sparkline-chart>
+                            </div>
+                            <div class="col-md-1">
+                                <h1>{{host['machine.cpu']}}</h1>
                             </div>
                         </div>
                         <div class="row">
@@ -100,29 +102,32 @@
                                 Up {{host['machine.uptime']}}
                             </div>
                             <div class="col-md-2">
-                                CPU {{host['machine.cpu']}}
+                                Load {{host['machine.loadAverage']}}
                             </div>
                             <div class="col-md-2">
-                                {{host['machine.memory.used']}} Used
+                                {{host['machine.memory.total']}} Total
                             </div>
                             <div class="col-md-2">
                                 {{host['machine.memory.free']}} Free
                             </div>
                             <div class="col-md-2">
+                                {{host['machine.memory.used']}} Used
                                 <a class="accordion-toggle" ng-class="$root.collapsed[host.id] ? 'collapsed' : 'collapsed.in'" ng-click="$root.collapsed[host.id] = !$root.collapsed[host.id]" ng-if="host['docker.containerCount'] != 0" href="#{{host.id}}-containers">&nbsp;</a>
                             </div>
                         </div>
                     </div>
                     <div class="panel-body container-fluid" ng-if="!$root.collapsed[host.id]" ng-controller="containers" id="{{host.id}}-containers" ng-cloak>
-                        <div class="row" ng-repeat="container in containers" id="{{host.id}}-{{container.id}}">
-                            <div class="media col-md-3 panel container-info" ng-class="(container['service.state'] == 'ON-FIRE') ? 'panel-danger' : ((container['service.state'] == 'RUNNING') ? 'panel-primary' : 'panel-warning')">
-                                <a class="media-left" href="#{{host.id}}-{{container.id}}">
-                                    <img src="img/container.png">
-                                </a>
-                                <div class="media-body">
-                                    <h4 class="media-heading"><span>{{container['docker.container.imageName']}}</h4>
-                                    <span>{{container['host.subnet.hostname']}}</span><br>
-                                    <span>{{container['docker.container.entity']}}</span>
+                        <div class="row">
+                            <div ng-repeat="container in containers" id="{{host.id}}-{{container.id}}"
+                                    class="col-md-3 panel container-info" ng-class="(container['service.state'] == 'ON_FIRE') ? 'bg-danger' : ((container['service.state'] == 'RUNNING') ? 'panel-primary' : 'bg-warning')" ng-cloak>
+                                <div class="media">
+                                    <a class="media-left" href="/#v1/applications/{{infrastructure.id}}/entities/{{container.id}}"><img src="img/container.png"></a>
+                                    <div class="media-body">
+                                        <h4 class="media-heading"><a href="/#v1/applications/{{infrastructure.id}}/entities/{{container.id}}">{{container.id}}</a></h4>
+                                        <span>{{container['host.subnet.hostname']}}</span><br>
+                                        <span ng-if="container['docker.container.entity']">{{container['docker.container.entity']}}</span>
+                                        <span ng-if="!container['docker.container.entity']">{{container['docker.container.imageName']}}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
