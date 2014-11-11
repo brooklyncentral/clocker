@@ -41,7 +41,7 @@
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
       <div class="container">
         <div class="navbar-header">
-          <a class="navbar-brand" href="#">Clocker</a>
+          <a class="navbar-brand" href="#"><img src="img/clocker.svg" style="height: 24px; float: left;" >&nbsp;Clocker</a>
         </div>
       </div>
     </nav>
@@ -76,7 +76,7 @@
                                     </li>
                                 </ul>
                             </div>
-                            <div class="col-md-5">
+                            <div class="col-md-5" ng-cloak>
                                <nvd3-sparkline-chart
                                    data="$root.sparkdata[host.id]"
                                    id="{{host.id}}-sparkline"
@@ -118,13 +118,12 @@
                     </div>
                     <div class="panel-body container-fluid" ng-if="!$root.collapsed[host.id]" ng-controller="containers" id="{{host.id}}-containers" ng-cloak>
                         <div class="row">
-                            <div ng-repeat="container in containers" id="{{host.id}}-{{container.id}}"
-                                    class="col-md-3 panel container-info" ng-class="(container['service.state'] == 'ON_FIRE') ? 'bg-danger' : ((container['service.state'] == 'RUNNING') ? 'panel-primary' : 'bg-warning')" ng-cloak>
-                                <div class="media">
-                                    <a class="media-left" href="/#v1/applications/{{infrastructure.id}}/entities/{{container.id}}"><img src="img/container.png"></a>
+                            <div ng-repeat="container in containers" id="{{host.id}}-{{container.id}}" class="col-md-3>
+                                <div class="media panel container-info" ng-class="(container['service.state'] == 'ON_FIRE') ? 'panel-danger' : ((container['service.state'] == 'RUNNING') ? 'panel-primary' : 'panel-warning')" ng-cloak>
+                                    <a class="media-left media-middle" href="/#v1/applications/{{infrastructure.id}}/entities/{{container.id}}"><img src="img/container.png"></a>
                                     <div class="media-body">
                                         <h4 class="media-heading"><a href="/#v1/applications/{{infrastructure.id}}/entities/{{container.id}}">{{container.id}}</a></h4>
-                                        <span>{{container['host.subnet.hostname']}}</span><br>
+                                        <span>{{container['host.subnet.address']}}</span><br>
                                         <span ng-if="container['docker.container.entity']">{{container['docker.container.entity']}}</span>
                                         <span ng-if="!container['docker.container.entity']">{{container['docker.container.imageName']}}</span>
                                     </div>
