@@ -424,16 +424,15 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     public void stop() {
         ServiceStateLogic.setExpectedState(this, Lifecycle.STOPPING);
 
-        // Stop and remove the Docker container running on the host
-        shutDown();
-        removeContainer();
-
         super.stop();
 
         disconnectSensors();
 
-        setAttribute(SSH_MACHINE_LOCATION, null);
+        // Stop and remove the Docker container running on the host
         shutDown();
+        removeContainer();
+
+        setAttribute(SSH_MACHINE_LOCATION, null);
         Boolean started = getConfig(SoftwareProcess.ENTITY_STARTED);
         if (!Boolean.TRUE.equals(started)) {
             deleteLocation();

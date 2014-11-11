@@ -119,21 +119,15 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
             if (result != 0) throw new IllegalStateException("Error creating image directory: " + name);
 
             // Build an image from the base Dockerfile
-            copyTemplate(
-                dockerFile,
-                Os.mergePaths(name, "Base" + DockerUtils.DOCKERFILE),
-                false,
-                getExtraTemplateSubstitutions(name));
+            copyTemplate(dockerFile, Os.mergePaths(name, "Base" + DockerUtils.DOCKERFILE),
+                    false, getExtraTemplateSubstitutions(name));
             String baseImageId = buildDockerfile("Base" + DockerUtils.DOCKERFILE, name);
             log.info("Created base Dockerfile image with ID {}", baseImageId);
         }
 
         // Update the image with the Clocker sshd Dockerfile
-        copyTemplate(
-            DockerUtils.SSHD_DOCKERFILE,
-            Os.mergePaths(name, "Sshd" + DockerUtils.DOCKERFILE),
-            false,
-            getExtraTemplateSubstitutions(name));
+        copyTemplate(DockerUtils.SSHD_DOCKERFILE, Os.mergePaths(name, "Sshd" + DockerUtils.DOCKERFILE),
+                false, getExtraTemplateSubstitutions(name));
         String sshdImageId = buildDockerfile("Sshd" + DockerUtils.DOCKERFILE, name);
         log.info("Created SSHable Dockerfile image with ID {}", sshdImageId);
 
@@ -141,12 +135,9 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     private Map<String, Object> getExtraTemplateSubstitutions(String imageName) {
-        final Map<String, Object> templateSubstitutions =
-            MutableMap.<String, Object>of("repository", getRepository(), "imageName", imageName);
-        final DockerHost host = (DockerHost) getEntity();
-        templateSubstitutions.putAll(
-            host.getInfrastructure()
-                .getConfig(DockerInfrastructure.DOCKERFILE_SUBSTITUTIONS));
+        Map<String, Object> templateSubstitutions = MutableMap.<String, Object>of("repository", getRepository(), "imageName", imageName);
+        DockerHost host = (DockerHost) getEntity();
+        templateSubstitutions.putAll(host.getInfrastructure().getConfig(DockerInfrastructure.DOCKERFILE_SUBSTITUTIONS));
         return templateSubstitutions;
     }
 
