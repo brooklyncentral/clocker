@@ -15,6 +15,10 @@
  */
 package brooklyn.location.docker;
 
+import static brooklyn.util.ssh.BashCommands.sudo;
+import static java.lang.String.*;
+import static java.lang.String.format;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.List;
@@ -47,6 +51,7 @@ import brooklyn.util.os.Os;
 import brooklyn.util.ssh.IptablesCommands;
 import brooklyn.util.ssh.IptablesCommands.Chain;
 import brooklyn.util.ssh.IptablesCommands.Policy;
+import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 
 import com.google.common.base.Objects.ToStringHelper;
@@ -105,10 +110,13 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
                 LOG.debug("Using iptables to add access for TCP/{} to {}", port, host);
             }
             List<String> commands = ImmutableList.of(
-                    IptablesCommands.insertIptablesRule(Chain.INPUT, Protocol.TCP, port, Policy.ACCEPT));
-            int result = host.execCommands(String.format("Open iptables TCP/%d", port), commands);
+                    sudo("iptables -L INPUT -nv | grep -q 'tcp dpt:"+port+"'"),
+                    format("if [ $? -eq 0 ]; then ( %s ); else ( %s ); fi",
+                            sudo("iptables -C INPUT -s 0/0 -p tcp --dport "+port+" -j ACCEPT"),
+                            IptablesCommands.insertIptablesRule(Chain.INPUT, Protocol.TCP, port, Policy.ACCEPT)));
+            int result = host.execCommands(format("Open iptables TCP/%d", port), commands);
             if (result != 0) {
-                String msg = String.format("Error running iptables update for TCP/%d on %s", port, host);
+                String msg = format("Error running iptables update for TCP/%d on %s", port, host);
                 LOG.error(msg);
                 throw new RuntimeException(msg);
             }
@@ -190,14 +198,14 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
         if (DockerCallbacks.COMMIT.equalsIgnoreCase(command)) {
             String containerId = getOwner().getContainerId();
             String imageName = getOwner().getAttribute(DockerContainer.IMAGE_NAME);
-            String output = getOwner().getDockerHost().runDockerCommandTimeout(String.format("commit %s %s", containerId, Os.mergePaths(getRepository(), imageName)), Duration.minutes(15));
+            String output = getOwner().getDockerHost().runDockerCommandTimeout(format("commit %s %s", containerId, Os.mergePaths(getRepository(), imageName)), Duration.minutes(15));
             String imageId = DockerUtils.checkId(output);
             ((EntityLocal) getOwner().getRunningEntity()).setAttribute(DockerContainer.IMAGE_ID, imageId);
             ((EntityLocal) getOwner()).setAttribute(DockerContainer.IMAGE_ID, imageId);
             getOwner().getDockerHost().getDynamicLocation().markImage(imageName);
         } else if (DockerCallbacks.PUSH.equalsIgnoreCase(command)) {
             String imageName = getOwner().getAttribute(DockerContainer.IMAGE_NAME);
-            getOwner().getDockerHost().runDockerCommand(String.format("push %s", Os.mergePaths(getRepository(), imageName)));
+            getOwner().getDockerHost().runDockerCommand(format("push %s", Os.mergePaths(getRepository(), imageName)));
         } else if (DockerCallbacks.SUBNET_ADDRESS.equalsIgnoreCase(command)) {
             String address = getOwner().getAttribute(Attributes.SUBNET_ADDRESS);
             ((EntityLocal) getOwner().getRunningEntity()).setAttribute(Attributes.SUBNET_ADDRESS, address);
