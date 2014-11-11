@@ -34,9 +34,28 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.apache.brooklyn</groupId>
+            <artifactId>brooklyn-all</artifactId>
+            <version>${brooklyn.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.brooklyn.networking</groupId>
             <artifactId>brooklyn-networking-portforwarding</artifactId>
             <version>${brooklyn.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.brooklyn</groupId>
+            <artifactId>brooklyn-core</artifactId>
+            <version>${brooklyn.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.brooklyn</groupId>
+            <artifactId>brooklyn-test-support</artifactId>
+            <version>${brooklyn.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.brooklyn</groupId>
