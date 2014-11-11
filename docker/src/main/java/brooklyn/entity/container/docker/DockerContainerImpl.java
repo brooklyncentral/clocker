@@ -197,6 +197,17 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         getDockerHost().runDockerCommand("start" + getContainerId());
     }
 
+    /**
+     * Remove the container from the host.
+     * <p>
+     * Should only be called when the container is not running.
+     */
+    private void removeContainer() {
+        final String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
+        LOG.info("Remove container {}", dockerContainerName);
+        getDockerHost().runDockerCommand("rm " + getContainerId());
+    }
+
     private DockerTemplateOptions getDockerTemplateOptions() {
         Entity entity = getRunningEntity();
         DockerTemplateOptions options = DockerTemplateOptions.NONE;
@@ -412,6 +423,10 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     @Override
     public void stop() {
         ServiceStateLogic.setExpectedState(this, Lifecycle.STOPPING);
+
+        // Stop and remove the Docker container running on the host
+        shutDown();
+        removeContainer();
 
         super.stop();
 
