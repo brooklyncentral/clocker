@@ -20,6 +20,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Clocker Console">
+    <link rel="icon" type="image/png" href="img/cog.png">
 
     <title>Clocker</title>
 
@@ -80,9 +81,9 @@
                                <nvd3-sparkline-chart
                                    data="$root.sparkdata[host.id]"
                                    id="{{host.id}}-sparkline"
-                                   width="300"
-                                   height="25"
-                                   margin="{left:0, top:0, bottom:0, right:0}"
+                                   width="305"
+                                   height="32"
+                                   margin="{left:0, top:0, bottom:0, right:5}"
                                    x="$root.xFunction()"
                                    y="$root.yFunction()"
                                    ymin="0"
@@ -91,7 +92,7 @@
                                 </nvd3-sparkline-chart>
                             </div>
                             <div class="col-md-1">
-                                <h1>{{host['machine.cpu']}}</h1>
+                                <h2>{{host['machine.cpu']}}</h2>
                             </div>
                         </div>
                         <div class="row">
@@ -118,14 +119,16 @@
                     </div>
                     <div class="panel-body container-fluid" ng-if="!$root.collapsed[host.id]" ng-controller="containers" id="{{host.id}}-containers" ng-cloak>
                         <div class="row">
-                            <div ng-repeat="container in containers" id="{{host.id}}-{{container.id}}" class="col-md-3>
-                                <div class="media panel container-info" ng-class="(container['service.state'] == 'ON_FIRE') ? 'panel-danger' : ((container['service.state'] == 'RUNNING') ? 'panel-primary' : 'panel-warning')" ng-cloak>
-                                    <a class="media-left media-middle" href="/#v1/applications/{{infrastructure.id}}/entities/{{container.id}}"><img src="img/container.png"></a>
+                            <div ng-repeat="container in containers" id="{{host.id}}-{{container.id}}" class="col-md-3">
+                                <div class="media panel container-info" ng-class="(container['service.state'] == 'ON_FIRE') ? 'bg-danger' : ((container['service.state'] == 'RUNNING') ? 'panel-primary' : 'bg-warning')" ng-cloak>
+                                    <a class="media-left media-middle" href="/#v1/applications/{{infrastructure.id}}/entities/{{container.id}}">
+                                      <img ng-src="{{container.entity ? container.icon : 'img/container.png'}}">
+                                    </a>
                                     <div class="media-body">
                                         <h4 class="media-heading"><a href="/#v1/applications/{{infrastructure.id}}/entities/{{container.id}}">{{container.id}}</a></h4>
                                         <span>{{container['host.subnet.address']}}</span><br>
-                                        <span ng-if="container['docker.container.entity']">{{container['docker.container.entity']}}</span>
-                                        <span ng-if="!container['docker.container.entity']">{{container['docker.container.imageName']}}</span>
+                                        <span ng-if="container.entity">{{container['docker.container.entity']}}</span>
+                                        <span ng-if="!container.entity">{{container['docker.container.imageName']}}</span>
                                     </div>
                                 </div>
                             </div>

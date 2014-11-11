@@ -53,7 +53,7 @@ clocker.controller('hosts', function ($scope, $rootScope, $http) {
 });
 
 clocker.factory('sparkdata', function($rootScope, $http, $interval) {
-  $rootScope.sparkdata = { };
+  if (typeof $rootScope.sparkdata == 'undefined') $rootScope.sparkdata = { };
   $rootScope.xFunction = function() { return function(d) { return d[0]; } };
   $rootScope.yFunction = function() { return function(d) { return d[1]; } };
   return {
@@ -94,6 +94,23 @@ clocker.controller('containers', function ($scope, $http) {
         $http.get('/v1/applications/' + $scope.applicationId + '/entities/' + value.id + '/sensors/current-state').success(function(data) {
           $scope.containers[value.id] = data;
           $scope.containers[value.id].id = value.id;
+          if (data['docker.container.entity'] != null) {
+            $http.get('/v1/applications/' + $scope.applicationId + '/entities/' + value.id + '/sensors/docker.container.entity?raw=true').success(function(entity) {
+              $scope.containers[value.id].entity = entity.id;
+              $http.get('/v1/applications/fetch?items=' + entity.id).success(function(fetch) {
+                var found = fetch.filter(function(item) {
+                  return item.id == entity.id;
+                });
+                $http.get('/v1/applications/' + found[0].applicationId + '/entities/' + found[0].applicationId).success(function(icon) {
+                  if (typeof icon.links.iconUrl != 'undefined') {
+                    $scope.containers[value.id].icon = icon.links.iconUrl;
+                  } else {
+                    $scope.containers[value.id].icon = 'img/cog.png';
+                  }
+                });
+              });
+            });
+          }
         });
       });
     });
