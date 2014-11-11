@@ -72,9 +72,7 @@ import brooklyn.util.net.Urls;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 
-import com.google.api.client.repackaged.com.google.common.base.Joiner;
 import com.google.common.base.Functions;
-import com.google.common.collect.ImmutableList;
 
 /**
  * A single Docker container.
@@ -420,9 +418,9 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         disconnectSensors();
 
         setAttribute(SSH_MACHINE_LOCATION, null);
-
+        shutDown();
         Boolean started = getConfig(SoftwareProcess.ENTITY_STARTED);
-        if (Boolean.TRUE.equals(started)) {
+        if (!Boolean.TRUE.equals(started)) {
             deleteLocation();
         }
 
