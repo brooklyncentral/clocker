@@ -179,10 +179,6 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 .build());
 
         setAttribute(Attributes.MAIN_URI, URI.create("/clocker"));
-        getApplication().addEnricher(Enrichers.builder()
-                .propagating(Attributes.MAIN_URI)
-                .from(this)
-                .build());
     }
 
     @Override
