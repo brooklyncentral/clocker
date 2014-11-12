@@ -27,6 +27,7 @@ import brooklyn.entity.container.weave.WeaveInfrastructure;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy;
 import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
+import brooklyn.location.docker.strategy.MaxContainersPlacementStrategy;
 import brooklyn.util.time.Duration;
 
 import com.google.common.collect.ImmutableList;
@@ -54,7 +55,7 @@ public class SimpleDockerCloud extends AbstractApplication {
     public static final ConfigKey<Integer> DOCKER_HOST_CLUSTER_MIN_SIZE = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 2);
 
     @CatalogConfig(label="Maximum Containers per Host", priority=50)
-    public static final ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = ConfigKeys.newConfigKeyWithDefault(BreadthFirstPlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_SIZE, 4);
+    public static final ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = ConfigKeys.newConfigKeyWithDefault(MaxContainersPlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_SIZE, 4);
 
     @CatalogConfig(label="Enable Weave SDN", priority=50)
     public static final ConfigKey<Boolean> WEAVE_ENABLED = ConfigKeys.newConfigKeyWithDefault(WeaveInfrastructure.ENABLED, false);
@@ -64,9 +65,11 @@ public class SimpleDockerCloud extends AbstractApplication {
         EntitySpec dockerSpec = EntitySpec.create(DockerHost.class)
                 .configure(SoftwareProcess.START_TIMEOUT, Duration.minutes(15));
 
-        BreadthFirstPlacementStrategy strategy = new BreadthFirstPlacementStrategy();
-        strategy.injectManagementContext(getManagementContext());
-        strategy.setConfig(BreadthFirstPlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_SIZE, getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE));
+        MaxContainersPlacementStrategy maxContainers = new MaxContainersPlacementStrategy();
+        maxContainers.injectManagementContext(getManagementContext());
+        maxContainers.setConfig(MaxContainersPlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_SIZE, getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE));
+        BreadthFirstPlacementStrategy breadthFirst = new BreadthFirstPlacementStrategy();
+        breadthFirst.injectManagementContext(getManagementContext());
 
         addChild(EntitySpec.create(DockerInfrastructure.class)
                 .configure(DockerInfrastructure.DOCKER_VERSION, getConfig(DOCKER_VERSION))
@@ -75,7 +78,7 @@ public class SimpleDockerCloud extends AbstractApplication {
                 .configure(DockerInfrastructure.LOCATION_NAME, getConfig(LOCATION_NAME))
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE))
                 .configure(DockerInfrastructure.DOCKER_HOST_SPEC, dockerSpec)
-                .configure(DockerInfrastructure.PLACEMENT_STRATEGIES, ImmutableList.<DockerAwarePlacementStrategy>of(strategy))
+                .configure(DockerInfrastructure.PLACEMENT_STRATEGIES, ImmutableList.<DockerAwarePlacementStrategy>of(maxContainers, breadthFirst))
                 .configure(WeaveInfrastructure.ENABLED, getConfig(WEAVE_ENABLED))
                 .displayName("Docker Infrastructure"));
     }

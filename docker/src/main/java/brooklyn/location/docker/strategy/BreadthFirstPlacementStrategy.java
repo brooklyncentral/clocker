@@ -15,39 +15,30 @@
  */
 package brooklyn.location.docker.strategy;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import brooklyn.config.ConfigKey;
+import brooklyn.entity.Entity;
 import brooklyn.location.docker.DockerHostLocation;
-import brooklyn.util.flags.SetFromFlag;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 
 /**
- * Placement strategy that adds containers to the smallest Docker host.
+ * Placement strategy that adds containers to each Docker host in turn.
  */
-public class BreadthFirstPlacementStrategy extends BasicDockerPlacementStrategy {
+public class BreadthFirstPlacementStrategy extends AbstractDockerPlacementStrategy {
 
-    private static final Logger LOG = LoggerFactory.getLogger(BreadthFirstPlacementStrategy.class);
-
-    @SetFromFlag("maxContainers")
-    public static final ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = DepthFirstPlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_SIZE;
+    private final AtomicInteger counter = new AtomicInteger(0);
 
     @Override
-    public boolean apply(DockerHostLocation input) {
-        Integer maxSize = getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
-        Integer currentSize = input.getOwner().getCurrentSize();
-        boolean accept = currentSize < maxSize;
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Location {} size is {}/{}: {}", new Object[] { input, currentSize, maxSize, accept ? "accepted" : "rejected" });
+    public List<DockerHostLocation> filterLocations(List<DockerHostLocation> locations, Entity context) {
+        if (locations == null || locations.isEmpty()) {
+            return ImmutableList.of();
         }
-        return accept;
-    }
 
-    @Override
-    public int compare(DockerHostLocation l1, DockerHostLocation l2) {
-        Integer size1 = l1.getOwner().getCurrentSize();
-        Integer size2 = l2.getOwner().getCurrentSize();
-        return Integer.compare(size1, size2);
-    }
+        int next = counter.incrementAndGet();
 
+        return ImmutableList.copyOf(Iterables.concat(Iterables.skip(locations, next), Iterables.limit(locations, next)));
+    }
 }

@@ -15,42 +15,19 @@
  */
 package brooklyn.location.docker.strategy;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import brooklyn.config.ConfigKey;
-import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.location.docker.DockerHostLocation;
-import brooklyn.util.flags.SetFromFlag;
+
+import com.google.common.collect.Ordering;
 
 /**
- * Placement strategy that adds containers to Docker hosts until they run out of capacity.
+ * Placement strategy that adds containers to Docker hosts in order.
  */
 public class DepthFirstPlacementStrategy extends BasicDockerPlacementStrategy {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DepthFirstPlacementStrategy.class);
-
-    @SetFromFlag("maxContainers")
-    public static final ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = ConfigKeys.newIntegerConfigKey(
-            "docker.container.cluster.maxSize",
-            "Maximum size of a Docker container cluster", 8);
-
-    @Override
-    public boolean apply(DockerHostLocation input) {
-        Integer maxSize = getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
-        Integer currentSize = input.getOwner().getCurrentSize();
-        boolean accept = currentSize < maxSize;
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Location {} size is {}/{}: {}", new Object[] { input, currentSize, maxSize, accept ? "accepted" : "rejected" });
-        }
-        return accept;
-    }
-
+    /** Use an arbitrary, but fixed, ordering. */
     @Override
     public int compare(DockerHostLocation l1, DockerHostLocation l2) {
-        Integer size1 = l1.getOwner().getCurrentSize();
-        Integer size2 = l2.getOwner().getCurrentSize();
-        return Integer.compare(size2, size1);
+        return Ordering.arbitrary().compare(l1, l2);
     }
 
 }

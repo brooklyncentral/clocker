@@ -113,7 +113,6 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
             throw new IllegalStateException("Invalid location context: " + context);
         }
         Entity entity = (Entity) context;
-        LOG.debug("Obtained mutex for DockerLocation: {}", context);
 
         // Get the available hosts based on placement strategies
         List<DockerHostLocation> available = getDockerHostLocations();

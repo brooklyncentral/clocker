@@ -17,14 +17,20 @@ package brooklyn.location.docker.strategy;
 
 import java.util.List;
 
+import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.location.docker.DockerHostLocation;
+import brooklyn.location.docker.DockerVirtualLocation;
+import brooklyn.util.flags.SetFromFlag;
 
 /**
  * Placement strategy for Docker containers in host clusters.
  */
 public interface DockerAwarePlacementStrategy {
+
+    @SetFromFlag("infrastructure")
+    ConfigKey<DockerInfrastructure> DOCKER_INFRASTRUCTURE = DockerVirtualLocation.INFRASTRUCTURE;
 
     DockerInfrastructure getDockerInfrastructure();
 

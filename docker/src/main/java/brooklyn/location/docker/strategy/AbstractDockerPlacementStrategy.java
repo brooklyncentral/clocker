@@ -16,18 +16,12 @@
 package brooklyn.location.docker.strategy;
 
 import brooklyn.basic.BasicConfigurableObject;
-import brooklyn.config.ConfigKey;
 import brooklyn.entity.container.docker.DockerInfrastructure;
-import brooklyn.location.docker.DockerVirtualLocation;
-import brooklyn.util.flags.SetFromFlag;
 
 /**
  * Placement strategy for Docker containers.
  */
 public abstract class AbstractDockerPlacementStrategy extends BasicConfigurableObject implements DockerAwarePlacementStrategy {
-
-    @SetFromFlag("infrastructure")
-    public static final ConfigKey<DockerInfrastructure> DOCKER_INFRASTRUCTURE = DockerVirtualLocation.INFRASTRUCTURE;
 
     @Override
     public DockerInfrastructure getDockerInfrastructure() { return getConfig(DOCKER_INFRASTRUCTURE); }

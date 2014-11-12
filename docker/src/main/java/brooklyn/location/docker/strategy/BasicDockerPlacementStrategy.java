@@ -24,8 +24,9 @@ import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.util.collections.MutableList;
 
 import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
 
 /**
  * A basic placement strategy for Docker containers, implemented as a {@link Predicate} and a {@link Comparator}.
@@ -36,24 +37,30 @@ public abstract class BasicDockerPlacementStrategy extends AbstractDockerPlaceme
     @Override
     public List<DockerHostLocation> filterLocations(List<DockerHostLocation> locations, Entity context) {
         if (locations == null || locations.isEmpty()) {
-            return Lists.newArrayList();
+            return ImmutableList.of();
         }
 
         List<DockerHostLocation> available = MutableList.copyOf(locations);
         Collections.sort(available, this);
-        return MutableList.<DockerHostLocation>copyOf(Iterables.filter(available, this));
+        return ImmutableList.copyOf(Iterables.filter(available, this));
     }
 
     /**
      * A {@link Predicate} function that selects Docker hosts that satisy the strategy requirements.
      */
     @Override
-    public abstract boolean apply(DockerHostLocation input);
+    public boolean apply(DockerHostLocation input) {
+        return true;
+    }
 
     /**
      * A {@link Comparator} function that orders Docker hosts according to suitability, best first.
+     * <p>
+     * Defaults to no ordering.
      */
     @Override
-    public abstract int compare(DockerHostLocation l1, DockerHostLocation l2);
+    public int compare(DockerHostLocation l1, DockerHostLocation l2) {
+        return Ordering.allEqual().compare(l1, l2);
+    }
 
 }

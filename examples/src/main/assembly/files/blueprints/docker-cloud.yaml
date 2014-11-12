@@ -29,11 +29,13 @@ services:
       minRam: 8000
     docker.container.strategies:
     - $brooklyn:object:
-        type: "brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy"
+        type: "brooklyn.location.docker.strategy.MaxContainersPlacementStrategy"
         brooklyn.config:
           maxContainers: 8
     - $brooklyn:object:
-        type: "brooklyn.location.docker.strategy.CpuUsagePlacementStrategy"
+        type: "brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy"
+    - $brooklyn:object:
+        type: "brooklyn.location.docker.strategy.MaxCpuUsagePlacementStrategy"
         brooklyn.config:
           maxCpuUsage: 0.75
     docker.host.spec:

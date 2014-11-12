@@ -31,7 +31,7 @@ import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.util.collections.MutableList;
 import brooklyn.util.collections.MutableMap;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 
 /**
@@ -47,7 +47,7 @@ public class ProvisioningFlagsPlacementStrategy extends AbstractDockerPlacementS
     @Override
     public List<DockerHostLocation> filterLocations(List<DockerHostLocation> locations, Entity context) {
         if (locations == null || locations.isEmpty()) {
-            return Lists.newArrayList();
+            return ImmutableList.of();
         }
 
         Integer strategyMinRam = (Integer) getConfig(MIN_RAM);
@@ -83,7 +83,7 @@ public class ProvisioningFlagsPlacementStrategy extends AbstractDockerPlacementS
                 }
             }
         }
-        return available;
+        return ImmutableList.copyOf(available);
     }
 
     @Override
