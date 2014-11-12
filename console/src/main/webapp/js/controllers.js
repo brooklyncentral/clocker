@@ -26,7 +26,7 @@ clocker.controller('infrastructures', function($scope, $http, $interval) {
         return value.children[0].type == 'brooklyn.entity.container.docker.DockerInfrastructure';
       });
     });
-  }, 5000);
+  }, 15000);
 });
 
 clocker.controller('hosts', function ($scope, $rootScope, $http) {
