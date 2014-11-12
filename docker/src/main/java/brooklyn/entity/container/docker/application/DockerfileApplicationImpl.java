@@ -15,6 +15,8 @@
  */
 package brooklyn.entity.container.docker.application;
 
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,17 +47,25 @@ public class DockerfileApplicationImpl extends SoftwareProcessImpl implements Do
     protected void preStart() {
     }
 
+    @Override
     public DockerContainer getDockerContainer() {
         DockerContainerLocation location = (DockerContainerLocation) Iterables.find(getLocations(), Predicates.instanceOf(DockerContainerLocation.class));
         return location.getOwner();
     }
 
+    @Override
     public DockerHost getDockerHost() {
         return getDockerContainer().getDockerHost();
     }
 
+    @Override
     public String getDockerfile() {
         return getConfig(DOCKERFILE_URL);
+    }
+
+    @Override
+    public List<Integer> getContainerPorts() {
+        return getConfig(CONTAINER_PORT_LIST);
     }
 
 }
