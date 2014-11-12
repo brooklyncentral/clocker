@@ -46,6 +46,9 @@ export INITIAL_CLASSPATH
 # TODO should be changed in code
 JAVA_OPTS="-Dbrooklyn.location.localhost.address=127.0.0.1 ${JAVA_OPTS}"
 
+# add blueprint export directory
+JAVA_OPTS="${JAVA_OPTS} -Dbrooklyn.blueprints.exportDir=${BROOKLYN_HOME}/blueprints"
+
 # start Brooklyn
 echo $$ > "$ROOT/pid_java"
 exec java ${JAVA_OPTS} -cp "${INITIAL_CLASSPATH}" brooklyn.clocker.Main "$@"
