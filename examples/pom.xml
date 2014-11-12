@@ -68,6 +68,8 @@
                         <descriptors>
                             <descriptor>src/main/assembly/assembly.xml</descriptor>
                         </descriptors>
+                        <appendAssemblyId>false</appendAssemblyId>
+                        <finalName>brooklyn-clocker-${project.version}</finalName>
                     </configuration>
                 </plugin>
             </plugins>
