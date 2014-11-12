@@ -15,14 +15,21 @@
  */
 package brooklyn.entity.container.docker.application;
 
+import java.util.List;
+
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.BrooklynConfigKeys;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.VanillaSoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
+import brooklyn.entity.container.docker.DockerContainer;
+import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.time.Duration;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.reflect.TypeToken;
 
 @ImplementedBy(DockerfileApplicationImpl.class)
 public interface DockerfileApplication extends VanillaSoftwareProcess {
@@ -33,4 +40,12 @@ public interface DockerfileApplication extends VanillaSoftwareProcess {
     @SetFromFlag("dockerfileUrl")
     ConfigKey<String> DOCKERFILE_URL = DockerAttributes.DOCKERFILE_URL;
 
+    @SetFromFlag("openPorts")
+    ConfigKey<List<Integer>> CONTAINER_PORT_LIST = ConfigKeys.newConfigKey(
+            new TypeToken<List<Integer>>() { }, "docker.container.openPorts", "List of ports to open on the container for forwarding", ImmutableList.<Integer>of());
+
+    DockerContainer getDockerContainer();
+    DockerHost getDockerHost();
+    String getDockerfile();
+    List<Integer> getContainerPorts();
 }
