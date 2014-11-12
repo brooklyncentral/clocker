@@ -18,6 +18,9 @@ package brooklyn.location.docker.strategy;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import brooklyn.entity.Entity;
 import brooklyn.location.docker.DockerHostLocation;
 
@@ -29,6 +32,8 @@ import com.google.common.collect.Iterables;
  */
 public class BreadthFirstPlacementStrategy extends AbstractDockerPlacementStrategy {
 
+    private static final Logger LOG = LoggerFactory.getLogger(MaxContainersPlacementStrategy.class);
+
     private final AtomicInteger counter = new AtomicInteger(0);
 
     @Override
@@ -37,7 +42,11 @@ public class BreadthFirstPlacementStrategy extends AbstractDockerPlacementStrate
             return ImmutableList.of();
         }
 
-        int next = counter.incrementAndGet();
+        int size = Iterables.size(locations);
+        int next = counter.incrementAndGet() % size;
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Breadth first strategy using {} of {}", next, size);
+        }
 
         return ImmutableList.copyOf(Iterables.concat(Iterables.skip(locations, next), Iterables.limit(locations, next)));
     }
