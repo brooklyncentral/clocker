@@ -47,4 +47,8 @@
         </description>
         <iconUrl>classpath://glossy-3d-blue-web-icon.png</iconUrl>
     </template>
+    <template type="brooklyn.clocker.example.CouchbaseApplication" name="Couchbase cluster">
+        <description>Couchbase cluster</description>
+        <iconUrl>classpath://couchbase-logo.png</iconUrl>
+    </template>
 </catalog>
