@@ -29,6 +29,7 @@ import org.jclouds.googlecomputeengine.GoogleComputeEngineConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.config.BrooklynServerConfig;
 import brooklyn.config.ConfigKey;
 import brooklyn.config.render.RendererHints;
 import brooklyn.enricher.Enrichers;
@@ -378,7 +379,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         }
         getManagementContext().getLocationManager().manage(location);
 
-        getManagementContext().addPropertiesReloadListener(new ManagementContext.PropertiesReloadListener() {
+        ManagementContext.PropertiesReloadListener listener = new ManagementContext.PropertiesReloadListener() {
             @Override
             public void reloaded() {
                 if (getInfrastructure().isLocationAvailable()) {
@@ -389,7 +390,9 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                     getManagementContext().getLocationManager().manage(resolved);
                 }
             }
-        });
+        };
+        getManagementContext().addPropertiesReloadListener(listener);
+        setAttribute(BrooklynServerConfig.PROPERTIES_RELOAD_LISTENER, listener);
 
         LOG.info("New Docker host location {} created", location);
         return (DockerHostLocation) location;
@@ -407,6 +410,10 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             if (getConfig(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS)) {
                 getManagementContext().getLocationRegistry().removeDefinedLocation(location.getId());
             }
+        }
+        ManagementContext.PropertiesReloadListener listener = getAttribute(BrooklynServerConfig.PROPERTIES_RELOAD_LISTENER);
+        if (listener != null) {
+            getManagementContext().removePropertiesReloadListener(listener);
         }
 
         setAttribute(DYNAMIC_LOCATION, null);
