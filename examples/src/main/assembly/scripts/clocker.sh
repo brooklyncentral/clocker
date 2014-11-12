@@ -16,13 +16,26 @@
 
 #set -x # debug
 
+# get base directory
 ROOT=$(cd "$(dirname "$0")/.." && pwd -P)
 
-# set blueprint and catalog options
+# check command line arguments for location
 if [ $# -eq 1 ] ; then
-    CLOCKER="--app ${ROOT}/blueprints/docker-cloud.yaml --location $1"
+    LAUNCH_FLAGS="--app ${ROOT}/blueprints/docker-cloud.yaml --location $1"
+elif [ $# -ne 0 ] ; then
+    echo "Too many arguments; Usage: clocker.sh [location]"
+    exit 1
 fi
-export JAVA_OPTS="-Xms1g -Xmx1g ${CLOCKER_OPTS} -Dbrooklyn.catalog.url=classpath://catalog.xml -Dbrooklyn.catalog.mode=LOAD_BROOKLYN_CATALOG_URL"
+
+# set catalog and java options
+CATALOG_OPTS="-Dbrooklyn.catalog.url=classpath://catalog.xml -Dbrooklyn.catalog.mode=LOAD_BROOKLYN_CATALOG_URL"
+JAVA_OPTS="${JAVA_OPTS:--Xms1g -Xmx1g} ${CLOCKER_OPTS} ${CATALOG_OPTS}"
+export JAVA_OPTS
 
 # launch clocker
-${ROOT}/bin/brooklyn.sh launch ${CLOCKER} 2>&1 | tee -a console .log
+${ROOT}/bin/brooklyn.sh launch ${LAUNCH_FLAGS} \
+    --ignoreManagedAppsStartupErrors \
+    --ignorePersistenceStartupErrors \
+    --persist auto \
+    --persistenceDir ${HOME}/.clocker \
+    --stopOnShutdown none 2>&1 | tee -a ${ROOT}/console.log
