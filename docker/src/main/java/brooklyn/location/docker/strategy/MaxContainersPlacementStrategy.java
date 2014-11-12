@@ -19,7 +19,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import brooklyn.config.ConfigKey;
+import brooklyn.entity.basic.BasicGroup;
 import brooklyn.entity.basic.ConfigKeys;
+import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.util.flags.SetFromFlag;
@@ -44,7 +46,7 @@ public class MaxContainersPlacementStrategy extends BasicDockerPlacementStrategy
             Integer infrastructureMax = infrastructure.getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
             if (infrastructureMax != null) maxSize = infrastructureMax;
         }
-        Integer currentSize = input.getOwner().getCurrentSize();
+        Integer currentSize = input.getOwner().getAttribute(DockerHost.DOCKER_CONTAINER_CLUSTER).getAttribute(BasicGroup.GROUP_SIZE);
         boolean accept = currentSize < maxSize;
         if (LOG.isDebugEnabled()) {
             LOG.debug("Location {} size is {}/{}: {}", new Object[] { input, currentSize, maxSize, accept ? "accepted" : "rejected" });

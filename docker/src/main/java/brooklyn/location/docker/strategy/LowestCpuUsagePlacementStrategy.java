@@ -15,14 +15,8 @@
  */
 package brooklyn.location.docker.strategy;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import brooklyn.config.ConfigKey;
-import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.location.docker.DockerHostLocation;
-import brooklyn.util.flags.SetFromFlag;
 
 /**
  * Placement strategy that selects the Docker host with the lowest CPU usage.
