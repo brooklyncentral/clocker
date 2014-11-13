@@ -45,6 +45,10 @@ body > .container {
     font-weight: bold;
     font-size: 200%;
 }
+.navbar-header .revision {
+    colour: #000000;
+    font-size: 50%;
+}
 .container.content {
     font-size: 80%;
 }
