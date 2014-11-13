@@ -112,3 +112,4 @@ Please visit the [Wiki](https://github.com/brooklyncentral/clocker/wiki) for mor
 
 ----
 Copyright 2014 by Cloudsoft Corporation Limited and Licensed with [CC-BY-SA 4.0i](http://creativecommons.org/licenses/by-sa/4.0/)
+[![Build Status](https://api.travis-ci.org/brooklyncentral/clocker.svg?branch=master)](https://travis-ci.org/brooklyncentral/clocker)

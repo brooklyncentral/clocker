@@ -14,16 +14,26 @@
 
 language: java
 jdk:
-  - openjdk7
+- openjdk7
 script: mvn clean install
 deploy:
-  provider: releases
-  api-key: "5fb30cf15ffadb958e14cec37318cdaa19348a2f"
-  file: "examples/target/brooklyn-clocker-dist.tar.gz"
-  skip_cleanup: true
-  on:
-    tags: true
-    all_branches: true
+  matrix:
+  - provider: releases
+    api-key: 5fb30cf15ffadb958e14cec37318cdaa19348a2f
+    file: examples/target/brooklyn-clocker-dist.tar.gz
+    skip_cleanup: true
+    on:
+      tags: true
+      all_branches: true
+  - provider: s3
+    access_key_id: AKIAJL5SMCB2JZCJ2WAQ
+    secret_access_key:
+      secure: JdnmzeTNcG52cKVx12tn05ojgPxwZ4bAdkYbSV/Uy863COhpx3glz1CakUEoDLLo606jGQuYbOiiL9KQrAJCsQe+xLsBA7NRcAoZjxhotYURdRSDYoOzeFHVWTngDOBJQ/irKzH6lYEnDowdV+lG/eAeDSD9eyo5EoEfFjFQR/I=
+    skip_cleanup: true
+    bucket: clocker-builds
+    acl: public_read
+    region: eu-west-1
+    file: examples/target/brooklyn-clocker-dist.tar.gz
 notifications:
   email:
   - andrew.kennedy@cloudsoft.io
