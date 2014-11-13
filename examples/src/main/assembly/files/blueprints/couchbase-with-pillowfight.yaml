@@ -1,0 +1,64 @@
+name: Couchbase w Pillow Fight
+
+location: my-docker-cloud
+
+services:
+- type: brooklyn.entity.nosql.couchbase.CouchbaseCluster
+  id: couchbase
+  adminUsername: Administrator
+  adminPassword: Password
+  initialSize: 3
+  createBuckets:
+  - bucket: default
+    bucket-port: 11211
+
+- type: brooklyn.entity.basic.VanillaSoftwareProcess
+  name: CBC Pillowfight
+  launch.command: |
+    wget -O/etc/apt/sources.list.d/couchbase.list http://packages.couchbase.com/ubuntu/couchbase-ubuntu1204.list
+    wget -O- http://packages.couchbase.com/ubuntu/couchbase.key | apt-key add -
+    apt-get update
+    apt-get install -y libcouchbase2-libevent libcouchbase-dev libcouchbase2-bin
+  provisioning.properties:
+    # CentOS requires a different launch command, see below
+    osFamily: ubuntu
+  checkRunning.command: ""
+  stop.command: ""
+  brooklyn.config:
+    base_url: $brooklyn:entity("couchbase").attributeWhenReady("couchbase.cluster.connection.url")
+  brooklyn.initializers:
+  - type: brooklyn.entity.software.ssh.SshCommandEffector
+    brooklyn.config:
+      name: pillow_fight
+      description: runs cbc pillowfight
+      command: |
+        cbc-pillowfight -U ${base_url}${bucket} \
+          `if [ -n "$username" ]; then echo -u $username; fi` \
+          `if [ -n "$password" ]; then echo -P $password; fi` \
+          `if [ -n "$num_cycles" ]; then echo -c $num_cycles; fi` \
+          `if [ -n "$min_size" ]; then echo -m $min_size; fi` \
+          `if [ -n "$max_size" ]; then echo -M $max_size; fi` \
+          `if [ -n "$ratio" ]; then echo -r $ratio; fi`
+      parameters:
+        base_url:
+          description: base URL (http or couchbases) and list of hosts/port to connect to, including trailing slash
+          defaultValue: $brooklyn:config("base_url")
+        bucket:
+          description: bucket to use
+          defaultValue: default
+        username:
+          description: username to authenticate to the bucket
+        password:
+          description: password to authenticate to the bucket
+        num_cycles:
+          description: number of iterations to run
+          defaultValue: 1
+        min_size:
+          description: minimum payload size
+          defaultValue: 50
+        max_size:
+          description: maximum payload size
+          defaultValue: 5120
+        ratio:
+          description: "specify SET/GET command ratio (default: 33, i.e. 33% SETs and 67% GETs)"
+          defaultValue: 33
