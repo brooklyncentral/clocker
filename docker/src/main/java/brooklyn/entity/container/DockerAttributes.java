@@ -79,7 +79,7 @@ public class DockerAttributes {
 
     private static AtomicBoolean initialized = new AtomicBoolean(false);
 
-    /** Setup renderer hints. */
+    /** Setup custom type coercions. */
     @SuppressWarnings("rawtypes")
     public static void init() {
         if (initialized.getAndSet(true)) return;

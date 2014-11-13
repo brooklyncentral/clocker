@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.EntityFunctions;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
@@ -116,8 +117,14 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
 
         // Get the available hosts based on placement strategies
         List<DockerHostLocation> available = getDockerHostLocations();
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Placement for: {}", Iterables.toString(Iterables.transform(available, EntityFunctions.id())));
+        }
         for (DockerAwarePlacementStrategy strategy : strategies) {
             available = strategy.filterLocations(available, entity);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Placement after {}: {}", strategy, Iterables.toString(Iterables.transform(available, EntityFunctions.id())));
+            }
         }
         List<DockerAwarePlacementStrategy> entityStrategies = entity.getConfig(DockerAttributes.PLACEMENT_STRATEGIES);
         if (entityStrategies != null && entityStrategies.size() > 0) {
