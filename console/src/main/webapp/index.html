@@ -27,24 +27,25 @@
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="css/bootstrap-theme.min.css">
     <link rel="stylesheet" href="css/nv.d3.min.css"/>
-    <link rel="stylesheet" href="css/clocker.css">
 
-    <script src="js/jquery.min.js"></script>
-    <script src="js/bootstrap.min.js"></script>
-    <script src="js/angular.min.js"></script>
-    <script src="js/ui-bootstrap-tpls.min.js"></script>
-    <script src="js/d3.min.js"></script>
-    <script src="js/nv.d3.min.js"></script>
-    <script src="js/angularjs-nvd3-directives.js"></script>
-    <script src="js/controllers.js"></script>
+    <script type="text/javascript" src="js/jquery.min.js"></script>
+    <script type="text/javascript" src="js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="js/angular.min.js"></script>
+    <script type="text/javascript" src="js/ui-bootstrap-tpls.min.js"></script>
+    <script type="text/javascript" src="js/d3.min.js"></script>
+    <script type="text/javascript" src="js/nv.d3.min.js"></script>
+    <script type="text/javascript" src="js/angularjs-nvd3-directives.js"><!-- modified; sparklines only --></script>
+
+    <link rel="stylesheet" href="css/clocker.css">
+    <script type="text/javascript" src="js/clocker.js"></script>
 </head>
 <body role="document" ng-controller="init" ng-cloak>
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
       <div class="container">
         <div class="navbar-header">
-          <a class="navbar-brand" href="#"><img src="img/clocker.svg" style="height: 24px; float: left;" >&nbsp;Clocker</a>
+          <span class="navbar-brand"><img src="img/clocker.svg" style="height: 24px; float: left;" >&nbsp;Clocker</span>
         </div>
-        <div class="revision">${buildNumber}</div>
+        <div class="revision"><a href="https://github.com/brooklyncentral/clocker/commit/${buildNumber}">${buildNumber}</a></div>
       </div>
     </nav>
 
