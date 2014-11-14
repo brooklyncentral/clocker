@@ -64,8 +64,9 @@ public class ContainerHeadroomEnricher extends AbstractEnricher {
             maxContainers = MaxContainersPlacementStrategy.DEFAULT_MAX_CONTAINERS;
         }
 
-        int containers = entity.getAttribute(DockerInfrastructure.DOCKER_CONTAINER_COUNT);
-        int hosts = entity.getAttribute(DockerInfrastructure.DOCKER_HOST_COUNT);
+        Integer containers = entity.getAttribute(DockerInfrastructure.DOCKER_CONTAINER_COUNT);
+        Integer hosts = entity.getAttribute(DockerInfrastructure.DOCKER_HOST_COUNT);
+        if (containers == null || hosts == null) return;
         int possible = maxContainers * hosts;
         int available = possible - containers;
 
