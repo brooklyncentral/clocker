@@ -61,7 +61,6 @@ import brooklyn.management.ManagementContext;
 import brooklyn.policy.EnricherSpec;
 import brooklyn.policy.PolicySpec;
 import brooklyn.policy.autoscaling.AutoScalerPolicy;
-import brooklyn.policy.basic.Policies;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.time.Duration;
 
@@ -187,6 +186,10 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         if (headroom != null) {
             addEnricher(EnricherSpec.create(ContainerHeadroomEnricher.class)
                     .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM, headroom));
+            hosts.addEnricher(Enrichers.builder()
+                    .propagating(AutoScalerPolicy.DEFAULT_POOL_HOT_SENSOR, AutoScalerPolicy.DEFAULT_POOL_COLD_SENSOR, AutoScalerPolicy.DEFAULT_POOL_OK_SENSOR)
+                    .from(this)
+                    .build());
             hosts.addPolicy(PolicySpec.create(AutoScalerPolicy.class));
         }
 
