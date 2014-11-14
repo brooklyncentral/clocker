@@ -27,6 +27,9 @@ import brooklyn.util.flags.SetFromFlag;
 
 /**
  * Placement strategy that selects only Docker hosts with low CPU usage.
+ * <p>
+ * Maximum is configured using {@link #DOCKER_CONTAINER_CLUSTER_MAX_CPU} with settings on
+ * the infrastructure overriding if set, if nothing is configured the default is used.
  */
 public class MaxCpuUsagePlacementStrategy extends BasicDockerPlacementStrategy {
 
@@ -35,7 +38,9 @@ public class MaxCpuUsagePlacementStrategy extends BasicDockerPlacementStrategy {
     @SetFromFlag("maxCpuUsage")
     public static final ConfigKey<Double> DOCKER_CONTAINER_CLUSTER_MAX_CPU = ConfigKeys.newDoubleConfigKey(
             "docker.container.cluster.maxCpu",
-            "Maximum CPU usage across a Docker container cluster", 0.5d);
+            "Maximum CPU usage across a Docker container cluster");
+
+    public static final Double DEFAULT_MAX_CPU_USAGE = 0.5d;
 
     @Override
     public boolean apply(DockerHostLocation input) {
@@ -45,6 +50,8 @@ public class MaxCpuUsagePlacementStrategy extends BasicDockerPlacementStrategy {
             Double infrastructureMax = infrastructure.getConfig(DOCKER_CONTAINER_CLUSTER_MAX_CPU);
             if (infrastructureMax != null) maxCpu = infrastructureMax;
         }
+        if (maxCpu == null) maxCpu = DEFAULT_MAX_CPU_USAGE;
+
         Double currentCpu = input.getOwner().getAttribute(DockerHost.CPU_USAGE);
         boolean accept = currentCpu < maxCpu;
         if (LOG.isDebugEnabled()) {

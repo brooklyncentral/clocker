@@ -42,6 +42,7 @@ import brooklyn.entity.basic.EntityPredicates;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.basic.SoftwareProcess.ChildStartableMode;
 import brooklyn.entity.container.DockerAttributes;
+import brooklyn.entity.container.policy.ContainerHeadroomEnricher;
 import brooklyn.entity.container.weave.WeaveInfrastructure;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
@@ -57,6 +58,10 @@ import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.DockerResolver;
 import brooklyn.management.LocationManager;
 import brooklyn.management.ManagementContext;
+import brooklyn.policy.EnricherSpec;
+import brooklyn.policy.PolicySpec;
+import brooklyn.policy.autoscaling.AutoScalerPolicy;
+import brooklyn.policy.basic.Policies;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.time.Duration;
 
@@ -177,6 +182,13 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 .propagating(ImmutableMap.of(DynamicCluster.GROUP_SIZE, DOCKER_HOST_COUNT))
                 .from(hosts)
                 .build());
+
+        Integer headroom = getConfig(ContainerHeadroomEnricher.CONTAINER_HEADROOM);
+        if (headroom != null) {
+            addEnricher(EnricherSpec.create(ContainerHeadroomEnricher.class)
+                    .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM, headroom));
+            hosts.addPolicy(PolicySpec.create(AutoScalerPolicy.class));
+        }
 
         setAttribute(Attributes.MAIN_URI, URI.create("/clocker"));
     }

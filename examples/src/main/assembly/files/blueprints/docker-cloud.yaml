@@ -25,6 +25,7 @@ services:
     docker.host.cluster.initial.size: 2
     docker.host.register: false
     docker.policy.ha.enable: true
+    docker.container.cluster.headroom: 8
     docker.host.flags:
       minRam: 8000
     docker.container.strategies:
