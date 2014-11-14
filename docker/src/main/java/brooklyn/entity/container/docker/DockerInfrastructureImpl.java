@@ -187,10 +187,18 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
             addEnricher(EnricherSpec.create(ContainerHeadroomEnricher.class)
                     .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM, headroom));
             hosts.addEnricher(Enrichers.builder()
-                    .propagating(AutoScalerPolicy.DEFAULT_POOL_HOT_SENSOR, AutoScalerPolicy.DEFAULT_POOL_COLD_SENSOR, AutoScalerPolicy.DEFAULT_POOL_OK_SENSOR)
+                    .propagating(
+                            ContainerHeadroomEnricher.DOCKER_CONTAINER_CLUSTER_COLD,
+                            ContainerHeadroomEnricher.DOCKER_CONTAINER_CLUSTER_HOT,
+                            ContainerHeadroomEnricher.DOCKER_CONTAINER_CLUSTER_OK)
                     .from(this)
                     .build());
-            hosts.addPolicy(PolicySpec.create(AutoScalerPolicy.class));
+            hosts.addPolicy(PolicySpec.create(AutoScalerPolicy.class)
+                    .configure(AutoScalerPolicy.POOL_COLD_SENSOR, ContainerHeadroomEnricher.DOCKER_CONTAINER_CLUSTER_COLD)
+                    .configure(AutoScalerPolicy.POOL_HOT_SENSOR, ContainerHeadroomEnricher.DOCKER_CONTAINER_CLUSTER_HOT)
+                    .configure(AutoScalerPolicy.POOL_OK_SENSOR, ContainerHeadroomEnricher.DOCKER_CONTAINER_CLUSTER_OK)
+                    .configure(AutoScalerPolicy.MIN_POOL_SIZE, initialSize)
+                    .configure(AutoScalerPolicy.RESIZE_UP_STABILIZATION_DELAY, Duration.TEN_SECONDS));
         }
 
         setAttribute(Attributes.MAIN_URI, URI.create("/clocker"));
