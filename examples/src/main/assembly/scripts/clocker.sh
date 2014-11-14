@@ -33,7 +33,7 @@ JAVA_OPTS="${JAVA_OPTS:--Xms1g -Xmx1g} ${CLOCKER_OPTS} ${CATALOG_OPTS}"
 export JAVA_OPTS
 
 # launch clocker
-${ROOT}/bin/brooklyn.sh launch ${LAUNCH_FLAGS} \
+${ROOT}/bin/brooklyn.sh clocker ${LAUNCH_FLAGS} \
     --ignoreManagedAppsStartupErrors \
     --ignorePersistenceStartupErrors \
     --persist auto \

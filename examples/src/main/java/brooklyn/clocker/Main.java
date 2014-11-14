@@ -29,8 +29,8 @@ public class Main extends brooklyn.cli.Main {
         return LaunchCommand.class;
     }
 
-    @Command(name = "launch", description = "Starts Clocker.")
-    public static class LaunchCommand extends brooklyn.cli.Main.LaunchCommand {
+    @Command(name = "clocker", description = "Starts the Brooklyn server with the Clocker console")
+    public static class LaunchClocker extends brooklyn.cli.Main.LaunchCommand {
         @Override
         protected BrooklynLauncher createLauncher() {
             return super.createLauncher()
