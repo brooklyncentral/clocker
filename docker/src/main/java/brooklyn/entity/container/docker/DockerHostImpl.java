@@ -111,7 +111,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         LOG.info("Starting Docker host id {}", getId());
         super.init();
 
-        String dockerHostName = String.format(getConfig(DockerHost.HOST_NAME_FORMAT), getId(), COUNTER.incrementAndGet());
+        String dockerHostName = String.format(getConfig(DockerHost.DOCKER_HOST_NAME_FORMAT), getId(), COUNTER.incrementAndGet());
         setDisplayName(dockerHostName);
         setAttribute(DOCKER_HOST_NAME, dockerHostName);
         String repository = getConfig(DOCKER_REPOSITORY);
