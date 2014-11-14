@@ -3,11 +3,15 @@ Clocker
 
 Clocker creates and manages a [Docker](http://docker.io/) cloud infrastructure. Clocker support 
 single-click deployment and runtime management of multi-node applications that can run on
-containers distributed across docker hosts. Application blueprints written for 
-[Brooklyn](https://brooklyn.incubator.apache.org/) can thus be deployed to a Docker cloud 
-infrastructure.
+containers distributed across multiple hosts, using the [Weave](http://github.com/zettio/weave/) SDN.
+Application blueprints written for [Brooklyn](https://brooklyn.incubator.apache.org/) can thus
+be deployed to a distributed Docker Cloud Infrastructure.
 
 This repository contains the required Brooklyn entities, locations and examples.
+
+[![Build Status](https://api.travis-ci.org/brooklyncentral/clocker.svg?branch=master)](https://travis-ci.org/brooklyncentral/clocker)
+[![Issue Stats](http://issuestats.com/github/brooklyncentral/clocker/badge/pr)](http://issuestats.com/github/brooklyncentral/clocker)
+[![Latest Builds](http://img.shields.io/badge/version-0.7.0--SNAPSHOT-blue.svg)](http://clocker-latest.s3-website-eu-west-1.amazonaws.com/)
 
 ## Getting started
 
@@ -24,42 +28,45 @@ If you are keen to peek under the covers, you can find the Docker cloud infrastr
 
 ### Using the latest Clocker release
 
-You can build a *Docker Cloud Infrastructure* running these commands:
+You can deploy a *Docker Cloud Infrastructure* by running these commands:
 ```Bash
 % wget --no-check-certificate --quiet \
-    -O brooklyn-clocker-examples-0.6.2-dist.tar.gz http://git.io/O--JKw
-% tar zxf brooklyn-clocker-examples-0.6.2-dist.tar.gz
-% cd brooklyn-clocker-examples-0.6.2
-% ./clocker.sh launch --cloud --location location
+    -O brooklyn-clocker-examples-0.7.0-20141111-dist.tar.gz http://git.io/3whmPg
+% tar zxf brooklyn-clocker-examples-0.7.0-20141111-dist.tar.gz
+% cd brooklyn-clocker-examples-0.7.0-20141111
+% ./bin/clocker.sh location
 ```
-Where _location_ can be e.g. _jclouds:softlayer:sjc01_, or a named location or a fixed IP e.g. _byon:(hosts="10.1.2.3,10.1.2.4")_.
-Those simple steps will give you a running docker instance on your favourite cloud.
+Where _location_ specifies the destination to deploy to. For example this can be a jclouds provider
+like _jclouds:softlayer:sjc01_, a group of machines _byon:(hosts="10.1.2.3,10.1.2.4")_ or a named
+location from your `brooklyn.properties` file.
 
-For anything other than a localhost or bring-your-own-nodes location, it is vital that you 
-first configure a `~/.brooklyn/brooklyn.properties` file with cloud credentials and security 
-details, and create an SSH key (defaulting to `~/.ssh/id_rsa`). A simple example 
-`brooklyn.properties` file would be:
+For all cloud locations you must first configure the `~/.brooklyn/brooklyn.properties` file with any
+necessary credentials and security details, and select an SSH key (defaulting to `~/.ssh/id_rsa`).
+A basic `brooklyn.properties` file should look like the following:
 
 ```
-# Sets up a user with credentials admin:password for accessing the Brooklyn web-console.
-# To genreate the hashed password, see `brooklyn generate-password --user admin`
-brooklyn.webconsole.security.users=admin
-brooklyn.webconsole.security.user.admin.salt=DOp5
-brooklyn.webconsole.security.user.admin.sha256=ffc241eae74cd035fdab353229d53c20943d0c1b6a0a8972a4f24769d99a6826
+brooklyn.ssh.config.privateKeyFile = ~/.ssh/id_rsa_clocker
+brooklyn.ssh.config.publicKeyFile = ~/.ssh/id_rsa_clocker.pub
 
-# Credentials to use in your favourite cloud
-brooklyn.location.jclouds.softlayer.identity=SL123456
-brooklyn.location.jclouds.softlayer.credential=<private-key>
+brooklyn.location.jclouds.softlayer.identity = user.name
+brooklyn.location.jclouds.softlayer.credential = softlayersecretapikey
+brooklyn.location.named.Softlayer\ California = jclouds:softlayer:sjc01
 
-brooklyn.location.jclouds.aws-ec2.identity=AKA_YOUR_ACCESS_KEY_ID
-brooklyn.location.jclouds.aws-ec2.credential=YourSecretKeyWhichIsABase64EncodedString
+brooklyn.location.jclouds.aws-ec2.identity = ACCESS_KEY
+brooklyn.location.jclouds.aws-ec2.credential = awssecretkey
+brooklyn.location.named.Amazon\ Ireland = jclouds:aws-ec2:eu-west-1
 ```
 
-For more information on setting up locations, including supplying cloud provider credentials, see the [_Setting up Locations_ section of
-Brooklyn Getting Started](https://brooklyn.incubator.apache.org/quickstart/#configuring-a-location), and the more detailed [locations guide](https://brooklyn.incubator.apache.org/v/0.7.0-M1/use/guide/locations/index.html).
+For more information on setting up locations, including supplying cloud provider credentials, see the
+[_Setting up Locations_ section of Brooklyn Getting Started](https://brooklyn.incubator.apache.org/quickstart/#configuring-a-location),
+and the more detailed [locations guide](https://brooklyn.incubator.apache.org/v/0.7.0-M1/use/guide/locations/index.html).
+The Brooklyn documentation also covers setting up security for the web-console, and configuring users
+and passwords.
 
 The Brooklyn web-console, which will be deploying and managing your Docker Cloud, can be accessed at 
 [http://localhost:8081](http://localhost:8081) - this URL will have been written to standard out during startup.
+A preview of the new Clocker web-console, which shows a summary of the deployed Docker Clouds, is also available on the
+same server, at [http://localhost:8081/clocker/](http://localhost:8081/clocker/).
 
 Once the `DockerCloud`  application has started, a new location named `my-docker-cloud` will be
 available in the Locations drop-down list when adding new applications. Simply start a new application in this location
@@ -80,7 +87,7 @@ services:
 
 ### Building from source
 
-Build and run the examples as follows:
+Build and run the latest Clocker from source as follows:
 
 ```Bash
     % git clone https://github.com/brooklyncentral/clocker.git
@@ -88,15 +95,15 @@ Build and run the examples as follows:
     % cd clocker
     % mvn clean install
     ...
-    % cd examples
-    % mvn assembly:single
-    ...
-    % cd target
-    % tar zxf brooklyn-clocker-examples-0.7.0-SNAPSHOT-dist.tar.gz
-    % cd brooklyn-clocker-examples-0.7.0-SNAPSHOT
+    % tar zxf examples/target/brooklyn-clocker-dist.tar.gz
+    % cd brooklyn-clocker
     % ./bin/clocker.sh location
     ...
 ```
+
+If you just want to test the latest code, then our [Travis CI](https://travis-ci.org/brooklyncentral/clocker)
+build runs for every commit and the resulting distribution files are archived and made available for
+download on [Amazon S3](http://clocker-latest.s3-website-eu-west-1.amazonaws.com/).
 
 ## Getting involved
 
@@ -111,5 +118,4 @@ community [mailing list](https://brooklyn.incubator.apache.org/community/). We a
 Please visit the [Wiki](https://github.com/brooklyncentral/clocker/wiki) for more details.
 
 ----
-Copyright 2014 by Cloudsoft Corporation Limited and Licensed with [CC-BY-SA 4.0i](http://creativecommons.org/licenses/by-sa/4.0/)
-[![Build Status](https://api.travis-ci.org/brooklyncentral/clocker.svg?branch=master)](https://travis-ci.org/brooklyncentral/clocker)
+Copyright 2014 by Cloudsoft Corporation Limited.
