@@ -149,6 +149,7 @@ public class WeaveInfrastructureImpl extends BasicStartableImpl implements Weave
             }
             weave.stop();
             getWeaveServices().removeMember(weave);
+            Entities.unmanage(weave);
             if (LOG.isDebugEnabled()) LOG.debug("{} removed weave service {}", this, weave);
         }
     }

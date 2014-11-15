@@ -491,6 +491,9 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     public void postStop() {
         super.postStop(); // Currently does nothing
 
+        Entity containers = getAttribute(DOCKER_CONTAINER_CLUSTER);
+        if (containers != null) Entities.unmanage(containers);
+
         deleteLocation();
     }
 
