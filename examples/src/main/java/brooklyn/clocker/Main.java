@@ -1,5 +1,6 @@
 package brooklyn.clocker;
 
+import io.airlift.command.Cli.CliBuilder;
 import io.airlift.command.Command;
 
 import java.util.Arrays;
@@ -20,13 +21,8 @@ public class Main extends brooklyn.cli.Main {
     }
 
     @Override
-    protected String cliScriptName() {
-        return "clocker";
-    }
-    
-    @Override
-    protected Class<? extends BrooklynCommand> cliLaunchCommand() {
-        return LaunchCommand.class;
+    protected CliBuilder<BrooklynCommand> cliBuilder() {
+        return super.cliBuilder().withCommand(LaunchClocker.class);
     }
 
     @Command(name = "clocker", description = "Starts the Brooklyn server with the Clocker console")
