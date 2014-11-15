@@ -5,13 +5,15 @@ Entities and sample code to allow Brooklyn to deploy and manage a Docker cloud i
 
 ## Getting Started
 
-To get started, run the `clocker.sh` script. This will launch Brooklyn automatically.
-You can also use the `brooklyn.sh` script as you would in any other Brooklyn installation.
+To get started, run the `clocker.sh` script. This will launch Brooklyn and the Clocker
+console UI, with persistence and other useful default settings configured. You can also
+use the `brooklyn.sh` script with the `clocker` command and alternative options.
 
     % ./bin/clocker.sh
+    % ./bin/brooklyn.sh clocker
 
-The Clocker catalog contains a blueprint for a simple Docker cloud and some example
-applications. To start a Docker cloud using the provided `docker-cloud.yaml` blueprint
+The Clocker catalog contains a blueprint for a Docker Cloud and some example
+applications. To start a Docker Cloud using the provided `docker-cloud.yaml` blueprint
 and its default options, use the following command:
 
     % ./bin/clocker.sh jclouds:aws-ec2:us-east-1
