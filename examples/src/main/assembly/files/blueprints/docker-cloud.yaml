@@ -22,11 +22,11 @@ services:
     install.version: "1.2"
     entity.dynamicLocation.name: "my-docker-cloud"
     docker.host.securityGroup: "docker"
+    docker.host.openIptables: true
     docker.host.cluster.initial.size: 2
     docker.host.register: false
-    docker.policy.ha.enable: true
-    docker.host.flags:
-      minRam: 8000
+    docker.container.cluster.headroom: 8
+    weave.enabled: true
     docker.container.strategies:
     - $brooklyn:object:
         type: "brooklyn.location.docker.strategy.MaxContainersPlacementStrategy"
@@ -42,7 +42,10 @@ services:
       $brooklyn:entitySpec:
         type: brooklyn.entity.container.docker.DockerHost
         brooklyn.config:
+          docker.host.flags:
+            minRam: 8000
           start.timeout: 15m
+          docker.policy.ha.enable: true
           docker.host.nameFormat: "docker-%1$s"
           docker.container.spec:
             $brooklyn:entitySpec:

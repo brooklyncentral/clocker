@@ -28,6 +28,9 @@ import brooklyn.util.flags.SetFromFlag;
 
 /**
  * Placement strategy that limits Docker hosts to a maximum number of containers.
+ * <p>
+ * Maximum is configured using {@link #DOCKER_CONTAINER_CLUSTER_MAX_SIZE} with settings on
+ * the infrastructure overriding if set, if nothing is configured the default is used.
  */
 public class MaxContainersPlacementStrategy extends BasicDockerPlacementStrategy {
 
@@ -36,7 +39,9 @@ public class MaxContainersPlacementStrategy extends BasicDockerPlacementStrategy
     @SetFromFlag("maxContainers")
     public static final ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = ConfigKeys.newIntegerConfigKey(
             "docker.container.cluster.maxSize",
-            "Maximum size of a Docker container cluster", 8);
+            "Maximum size of a Docker container cluster");
+
+    public static final Integer DEFAULT_MAX_CONTAINERS = 8;
 
     @Override
     public boolean apply(DockerHostLocation input) {
@@ -46,6 +51,8 @@ public class MaxContainersPlacementStrategy extends BasicDockerPlacementStrategy
             Integer infrastructureMax = infrastructure.getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
             if (infrastructureMax != null) maxSize = infrastructureMax;
         }
+        if (maxSize == null) maxSize = DEFAULT_MAX_CONTAINERS;
+
         Integer currentSize = input.getOwner().getAttribute(DockerHost.DOCKER_CONTAINER_CLUSTER).getAttribute(BasicGroup.GROUP_SIZE);
         boolean accept = currentSize < maxSize;
         if (LOG.isDebugEnabled()) {

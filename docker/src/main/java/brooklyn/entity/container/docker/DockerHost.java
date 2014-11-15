@@ -90,7 +90,7 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
     AttributeSensorAndConfigKey<DockerInfrastructure, DockerInfrastructure> DOCKER_INFRASTRUCTURE = ConfigKeys.newSensorAndConfigKey(DockerInfrastructure.class,
             "docker.infrastructure", "The parent Docker infrastructure");
 
-    ConfigKey<String> HOST_NAME_FORMAT = ConfigKeys.newStringConfigKey("docker.host.nameFormat",
+    ConfigKey<String> DOCKER_HOST_NAME_FORMAT = ConfigKeys.newStringConfigKey("docker.host.nameFormat",
             "Format for generating Docker host names", DockerUtils.DEFAULT_DOCKER_HOST_NAME_FORMAT);
 
     @SetFromFlag("repository")

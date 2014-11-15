@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.clocker.example;
+package brooklyn.clocker;
 
 import brooklyn.catalog.Catalog;
 import brooklyn.catalog.CatalogConfig;
@@ -21,13 +21,18 @@ import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.SoftwareProcess;
+import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
+import brooklyn.entity.container.policy.ContainerHeadroomEnricher;
 import brooklyn.entity.container.weave.WeaveInfrastructure;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy;
 import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
 import brooklyn.location.docker.strategy.MaxContainersPlacementStrategy;
+import brooklyn.location.docker.strategy.MaxCpuUsagePlacementStrategy;
+import brooklyn.location.jclouds.JcloudsLocationConfig;
+import brooklyn.util.collections.MutableMap;
 import brooklyn.util.time.Duration;
 
 import com.google.common.collect.ImmutableList;
@@ -35,10 +40,10 @@ import com.google.common.collect.ImmutableList;
 /**
  * Brooklyn managed Docker cloud infrastructure.
  */
-@Catalog(name="Docker Cloud",
-        description="Simple Clocker infrastructure for Docker cloud",
+@Catalog(name="Clocker",
+        description="Docker Cloud infrastructure with Weave networking",
         iconUrl="classpath://docker-top-logo.png")
-public class SimpleDockerCloud extends AbstractApplication {
+public class DockerCloud extends AbstractApplication {
 
     @CatalogConfig(label="Docker Version", priority=90)
     public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "1.2");
@@ -57,29 +62,43 @@ public class SimpleDockerCloud extends AbstractApplication {
     @CatalogConfig(label="Maximum Containers per Host", priority=50)
     public static final ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_MAX_SIZE = ConfigKeys.newConfigKeyWithDefault(MaxContainersPlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_SIZE, 4);
 
+    @CatalogConfig(label="Maximum CPU usage per Host", priority=50)
+    public static final ConfigKey<Double> DOCKER_CONTAINER_CLUSTER_MAX_CPU = ConfigKeys.newConfigKeyWithDefault(MaxCpuUsagePlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_CPU, 0.75d);
+
+    @CatalogConfig(label="Containers Headroom", priority=50)
+    public static final ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_HEADROOM = ConfigKeys.newConfigKeyWithDefault(ContainerHeadroomEnricher.CONTAINER_HEADROOM, 4);
+
     @CatalogConfig(label="Enable Weave SDN", priority=50)
-    public static final ConfigKey<Boolean> WEAVE_ENABLED = ConfigKeys.newConfigKeyWithDefault(WeaveInfrastructure.ENABLED, false);
+    public static final ConfigKey<Boolean> WEAVE_ENABLED = ConfigKeys.newConfigKeyWithDefault(WeaveInfrastructure.ENABLED, true);
 
     @Override
     public void initApp() {
-        EntitySpec dockerSpec = EntitySpec.create(DockerHost.class)
-                .configure(SoftwareProcess.START_TIMEOUT, Duration.minutes(15));
-
         MaxContainersPlacementStrategy maxContainers = new MaxContainersPlacementStrategy();
         maxContainers.injectManagementContext(getManagementContext());
         maxContainers.setConfig(MaxContainersPlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_SIZE, getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE));
         BreadthFirstPlacementStrategy breadthFirst = new BreadthFirstPlacementStrategy();
         breadthFirst.injectManagementContext(getManagementContext());
+        MaxCpuUsagePlacementStrategy cpuUsage = new MaxCpuUsagePlacementStrategy();
+        cpuUsage.injectManagementContext(getManagementContext());
+        cpuUsage.setConfig(MaxCpuUsagePlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_CPU, getConfig(DOCKER_CONTAINER_CLUSTER_MAX_CPU));
 
         addChild(EntitySpec.create(DockerInfrastructure.class)
                 .configure(DockerInfrastructure.DOCKER_VERSION, getConfig(DOCKER_VERSION))
+                .configure(DockerInfrastructure.LOCATION_NAME, getConfig(LOCATION_NAME))
                 .configure(DockerInfrastructure.SECURITY_GROUP, getConfig(SECURITY_GROUP))
                 .configure(DockerInfrastructure.OPEN_IPTABLES, true)
-                .configure(DockerInfrastructure.LOCATION_NAME, getConfig(LOCATION_NAME))
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE))
-                .configure(DockerInfrastructure.DOCKER_HOST_SPEC, dockerSpec)
-                .configure(DockerInfrastructure.PLACEMENT_STRATEGIES, ImmutableList.<DockerAwarePlacementStrategy>of(maxContainers, breadthFirst))
+                .configure(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS, false)
+                .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM, getConfig(DOCKER_CONTAINER_CLUSTER_HEADROOM))
                 .configure(WeaveInfrastructure.ENABLED, getConfig(WEAVE_ENABLED))
+                .configure(DockerInfrastructure.PLACEMENT_STRATEGIES, ImmutableList.<DockerAwarePlacementStrategy>of(maxContainers, breadthFirst, cpuUsage))
+                .configure(DockerInfrastructure.DOCKER_HOST_SPEC, EntitySpec.create(DockerHost.class)
+                        .configure(DockerHost.PROVISIONING_FLAGS, MutableMap.<String,Object>of(JcloudsLocationConfig.MIN_RAM.getName(), 8000))
+                        .configure(SoftwareProcess.START_TIMEOUT, Duration.minutes(15))
+                        .configure(DockerHost.HA_POLICY_ENABLE, true)
+                        .configure(DockerHost.DOCKER_HOST_NAME_FORMAT, "docker-%1$s")
+                        .configure(DockerHost.DOCKER_CONTAINER_SPEC, EntitySpec.create(DockerContainer.class)
+                                .configure(DockerContainer.DOCKER_CONTAINER_NAME_FORMAT, "docker-%2$d")))
                 .displayName("Docker Infrastructure"));
     }
 }
