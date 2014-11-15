@@ -40,14 +40,18 @@ body > .container {
     padding-right: 15px;
     padding-left: 15px;
 }
-.container .navbar-brand {
+.navbar.navbar-inverse .container .navbar-brand {
     color: #f0f0f0;
     font-weight: bold;
     font-size: 200%;
 }
-.navbar-header .revision {
-    colour: #000000;
-    font-size: 50%;
+.navbar.navbar-inverse {
+    background-image: none;
+    background-color: #151515;
+}
+.navbar.navbar-inverse .container,
+.navbar.navbar-inverse .container .navbar-header
+    color: #151515;
 }
 .container.content {
     font-size: 80%;

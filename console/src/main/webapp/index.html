@@ -41,12 +41,12 @@
 </head>
 <body role="document" ng-controller="init" ng-cloak>
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
-      <div class="container">
-        <div class="navbar-header">
-          <span class="navbar-brand"><img src="img/clocker.svg" style="height: 24px; float: left;" >&nbsp;Clocker</span>
+        <div class="container">
+            <div class="navbar-header">
+                <span class="navbar-brand"><img src="img/clocker.svg" style="height: 24px; float: left;" >&nbsp;Clocker</span>
+            </div>
+            <a style="color: #151515;" href="https://github.com/brooklyncentral/clocker/commit/${buildNumber}">${buildNumber}</a>
         </div>
-        <div class="revision"><a href="https://github.com/brooklyncentral/clocker/commit/${buildNumber}">${buildNumber}</a></div>
-      </div>
     </nav>
 
     <div class="container content" role="main" ng-controller="infrastructures" ng-cloak>
@@ -94,7 +94,7 @@
                                 </nvd3-sparkline-chart>
                             </div>
                             <div class="col-md-1">
-                                <h2>{{host['machine.cpu']}}</h2>
+                                <h3>{{host['machine.cpu']}}</h3>
                             </div>
                         </div>
                         <div class="row">
