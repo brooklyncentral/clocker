@@ -27,7 +27,6 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.config.BrooklynServerConfig;
 import brooklyn.config.render.RendererHints;
 import brooklyn.enricher.Enrichers;
 import brooklyn.entity.Application;
@@ -268,6 +267,9 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         getManagementContext().getLocationManager().manage(location);
 
         ManagementContext.PropertiesReloadListener listener = new ManagementContext.PropertiesReloadListener() {
+
+            private static final long serialVersionUID = -1;
+
             @Override
             public void reloaded() {
                 if (started.get()) {
@@ -278,7 +280,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
             }
         };
         getManagementContext().addPropertiesReloadListener(listener);
-        setAttribute(BrooklynServerConfig.PROPERTIES_RELOAD_LISTENER, listener);
+        setAttribute(Attributes.PROPERTIES_RELOAD_LISTENER, listener);
 
         setAttribute(LOCATION_DEFINITION, definition);
         setAttribute(DYNAMIC_LOCATION, location);
@@ -302,7 +304,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 getManagementContext().getLocationRegistry().removeDefinedLocation(definition.getId());
             }
         }
-        ManagementContext.PropertiesReloadListener listener = getAttribute(BrooklynServerConfig.PROPERTIES_RELOAD_LISTENER);
+        ManagementContext.PropertiesReloadListener listener = getAttribute(Attributes.PROPERTIES_RELOAD_LISTENER);
         if (listener != null) {
             getManagementContext().removePropertiesReloadListener(listener);
         }

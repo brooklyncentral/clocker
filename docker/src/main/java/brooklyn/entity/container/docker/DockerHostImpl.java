@@ -29,11 +29,11 @@ import org.jclouds.googlecomputeengine.GoogleComputeEngineConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.config.BrooklynServerConfig;
 import brooklyn.config.ConfigKey;
 import brooklyn.config.render.RendererHints;
 import brooklyn.enricher.Enrichers;
 import brooklyn.entity.Entity;
+import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityFunctions;
@@ -380,6 +380,9 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         getManagementContext().getLocationManager().manage(location);
 
         ManagementContext.PropertiesReloadListener listener = new ManagementContext.PropertiesReloadListener() {
+
+            private static final long serialVersionUID = -1;
+
             @Override
             public void reloaded() {
                 if (getInfrastructure().isLocationAvailable()) {
@@ -392,7 +395,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             }
         };
         getManagementContext().addPropertiesReloadListener(listener);
-        setAttribute(BrooklynServerConfig.PROPERTIES_RELOAD_LISTENER, listener);
+        setAttribute(Attributes.PROPERTIES_RELOAD_LISTENER, listener);
 
         LOG.info("New Docker host location {} created", location);
         return (DockerHostLocation) location;
@@ -411,7 +414,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 getManagementContext().getLocationRegistry().removeDefinedLocation(location.getId());
             }
         }
-        ManagementContext.PropertiesReloadListener listener = getAttribute(BrooklynServerConfig.PROPERTIES_RELOAD_LISTENER);
+        ManagementContext.PropertiesReloadListener listener = getAttribute(Attributes.PROPERTIES_RELOAD_LISTENER);
         if (listener != null) {
             getManagementContext().removePropertiesReloadListener(listener);
         }
