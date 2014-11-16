@@ -26,15 +26,28 @@
         <dependencySet>
             <useProjectArtifact>false</useProjectArtifact>
             <outputDirectory>/lib/brooklyn</outputDirectory>
+            <fileMode>0644</fileMode>
             <directoryMode>0755</directoryMode>
             <unpack>false</unpack>
             <excludes>
                 <exclude>*:war</exclude>
+                <exclude>io.brooklyn.clocker:brooklyn-clocker-patches:jar</exclude>
             </excludes>
         </dependencySet>
         <dependencySet>
             <useProjectArtifact>false</useProjectArtifact>
+            <outputDirectory>/lib/patch</outputDirectory>
+            <fileMode>0644</fileMode>
+            <directoryMode>0755</directoryMode>
+            <unpack>false</unpack>
+            <includes>
+                <include>io.brooklyn.clocker:brooklyn-clocker-patches:jar</include>
+            </includes>
+        </dependencySet>
+        <dependencySet>
+            <useProjectArtifact>false</useProjectArtifact>
             <outputDirectory>/conf</outputDirectory>
+            <fileMode>0644</fileMode>
             <directoryMode>0755</directoryMode>
             <unpack>false</unpack>
             <includes>
@@ -73,14 +86,6 @@
             <includes>
                 <include>**</include>
             </includes>
-        </fileSet>
-        <fileSet>
-            <directory>${project.basedir}/src/main/assembly</directory>
-            <outputDirectory>/lib/patch</outputDirectory>
-            <directoryMode>0755</directoryMode>
-            <excludes>
-                <exclude>**/*</exclude>
-            </excludes>
         </fileSet>
         <fileSet>
             <directory>${project.basedir}/src/main/assembly</directory>

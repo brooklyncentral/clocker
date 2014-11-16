@@ -43,6 +43,11 @@
             <artifactId>brooklyn-networking-portforwarding</artifactId>
             <version>${brooklyn.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.brooklyn.clocker</groupId>
+            <artifactId>brooklyn-clocker-patches</artifactId>
+            <version>${brooklyn.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.brooklyn</groupId>
