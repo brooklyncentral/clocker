@@ -217,6 +217,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <getRevisionOnlyOnce>true</getRevisionOnlyOnce>
                     <doCheck>false</doCheck>
                     <doUpdate>false</doUpdate>
                     <shortRevisionLength>7</shortRevisionLength>
