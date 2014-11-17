@@ -38,6 +38,11 @@
             <artifactId>docker</artifactId>
             <version>${jclouds.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.brooklyn</groupId>
+            <artifactId>brooklyn-core</artifactId>
+            <version>${brooklyn.version}</version>
+        </dependency>
     </dependencies>
 
 </project>
