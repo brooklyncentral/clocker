@@ -20,8 +20,8 @@
 <catalog>
     <name>Clocker Application Catalog</name>
 
-    <template type="brooklyn.clocker.example.SimpleDockerCloud" name="Simple Docker Cloud">
-        <description>Simple Clocker infrastructure for Docker cloud</description>
+    <template type="brooklyn.clocker.DockerCloud" name="Clocker">
+        <description>Docker Cloud infrastructure with Weave networking</description>
         <iconUrl>classpath://docker-top-logo.png</iconUrl>
     </template>
     <template type="brooklyn.clocker.example.ActiveMQApplication" name="ActiveMQ Broker">
