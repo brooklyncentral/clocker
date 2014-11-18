@@ -84,11 +84,18 @@ public class DockerCloud extends AbstractApplication {
         cpuUsage.injectManagementContext(getManagementContext());
         cpuUsage.setConfig(MaxCpuUsagePlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_CPU, getConfig(DOCKER_CONTAINER_CLUSTER_MAX_CPU));
 
+        // TODO We were hit by https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=712691
+        // when trying to open multiple ports on iptables (i.e. "iptables: Resource temporarily unavailable").
+        // Possible fixes/workarounds are:
+        //  1. Automatically upgrade iptables on the host.
+        //  2. Include a retry.
+        //  3. Turn off iptables, instead of enabling DockerInfrastructure.OPEN_IPTABLES on the DockerInfrastructure.
+        // Currently we've gone for (3).
+        
         addChild(EntitySpec.create(DockerInfrastructure.class)
                 .configure(DockerInfrastructure.DOCKER_VERSION, getConfig(DOCKER_VERSION))
                 .configure(DockerInfrastructure.LOCATION_NAME, getConfig(LOCATION_NAME))
                 .configure(DockerInfrastructure.SECURITY_GROUP, getConfig(SECURITY_GROUP))
-                .configure(DockerInfrastructure.OPEN_IPTABLES, true)
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE))
                 .configure(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS, false)
                 .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM, getConfig(DOCKER_CONTAINER_CLUSTER_HEADROOM))
@@ -99,7 +106,8 @@ public class DockerCloud extends AbstractApplication {
                         cpuUsage))
                 .configure(DockerInfrastructure.DOCKER_HOST_SPEC, EntitySpec.create(DockerHost.class)
                         .configure(DockerHost.PROVISIONING_FLAGS, MutableMap.<String,Object>of(
-                                JcloudsLocationConfig.MIN_RAM.getName(), 8000))
+                                JcloudsLocationConfig.MIN_RAM.getName(), 8000,
+                                JcloudsLocationConfig.STOP_IPTABLES.getName(), true))
                         .configure(SoftwareProcess.START_TIMEOUT, Duration.minutes(15))
                         .configure(DockerHost.HA_POLICY_ENABLE, true)
                         .configure(DockerHost.DOCKER_HOST_NAME_FORMAT, "docker-%1$s")
