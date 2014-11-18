@@ -97,6 +97,17 @@
                 <enabled>true</enabled>
             </snapshots>
         </repository>
+        <!-- Cloudsoft repo, for early custom releases of jclouds-docker -->
+        <repository>
+            <id>cloudsoft-deploy-artifactory-release</id>
+            <url>http://ccweb.cloudsoftcorp.com/maven/libs-release-local/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
     </repositories>
 
     <build>
