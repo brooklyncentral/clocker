@@ -181,8 +181,12 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 .from(hosts)
                 .build());
 
+        // TODO Previously we just did `headroom != null`. However, with web-console catalog
+        // you can't leave an integer field blank as it fails to parse the integer!
+        // Therefore treating 0 as no auto-scaling, even though it could equally mean
+        // only scale up when there is no room left.
         Integer headroom = getConfig(ContainerHeadroomEnricher.CONTAINER_HEADROOM);
-        if (headroom != null) {
+        if (headroom != null && headroom > 0) {
             addEnricher(EnricherSpec.create(ContainerHeadroomEnricher.class)
                     .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM, headroom));
             hosts.addEnricher(Enrichers.builder()
