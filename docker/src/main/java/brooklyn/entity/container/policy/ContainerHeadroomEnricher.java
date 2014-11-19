@@ -72,6 +72,7 @@ public class ContainerHeadroomEnricher extends AbstractEnricher {
     public void setEntity(EntityLocal entity) {
         Preconditions.checkArgument(entity instanceof DockerInfrastructure, "Entity must be a DockerInfrastructure: %s", entity);
         Preconditions.checkNotNull(getConfig(CONTAINER_HEADROOM), "Headroom must be configured for this enricher");
+        Preconditions.checkArgument(getConfig(CONTAINER_HEADROOM) > 0, "Headroom must be a positive integer: %d", getConfig(CONTAINER_HEADROOM));
 
         super.setEntity(entity);
 
@@ -123,8 +124,8 @@ public class ContainerHeadroomEnricher extends AbstractEnricher {
         Map<String, Object> properties = ImmutableMap.<String,Object>of(
                 AutoScalerPolicy.POOL_CURRENT_SIZE_KEY, hosts,
                 AutoScalerPolicy.POOL_CURRENT_WORKRATE_KEY, utilisation,
-                AutoScalerPolicy.POOL_LOW_THRESHOLD_KEY, (double) (possible - (headroom + maxContainers)) / (double) possible,
-                AutoScalerPolicy.POOL_HIGH_THRESHOLD_KEY, (double) (possible - headroom) / (double) possible);
+                AutoScalerPolicy.POOL_LOW_THRESHOLD_KEY, Math.max(0d, (double) (possible - (headroom + maxContainers)) / (double) possible),
+                AutoScalerPolicy.POOL_HIGH_THRESHOLD_KEY, Math.max(utilisation, (double) (possible - headroom) / (double) possible));
         if (needed > 0 ) {
             emit(DOCKER_CONTAINER_CLUSTER_HOT, properties);
         } else if (available > (headroom + maxContainers)) {

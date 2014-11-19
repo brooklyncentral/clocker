@@ -181,10 +181,6 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 .from(hosts)
                 .build());
 
-        // TODO Previously we just did `headroom != null`. However, with web-console catalog
-        // you can't leave an integer field blank as it fails to parse the integer!
-        // Therefore treating 0 as no auto-scaling, even though it could equally mean
-        // only scale up when there is no room left.
         Integer headroom = getConfig(ContainerHeadroomEnricher.CONTAINER_HEADROOM);
         if (headroom != null && headroom > 0) {
             addEnricher(EnricherSpec.create(ContainerHeadroomEnricher.class)
@@ -201,7 +197,8 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                     .configure(AutoScalerPolicy.POOL_HOT_SENSOR, ContainerHeadroomEnricher.DOCKER_CONTAINER_CLUSTER_HOT)
                     .configure(AutoScalerPolicy.POOL_OK_SENSOR, ContainerHeadroomEnricher.DOCKER_CONTAINER_CLUSTER_OK)
                     .configure(AutoScalerPolicy.MIN_POOL_SIZE, initialSize)
-                    .configure(AutoScalerPolicy.RESIZE_UP_STABILIZATION_DELAY, Duration.TEN_SECONDS));
+                    .configure(AutoScalerPolicy.RESIZE_UP_STABILIZATION_DELAY, Duration.THIRTY_SECONDS)
+                    .configure(AutoScalerPolicy.RESIZE_DOWN_STABILIZATION_DELAY, Duration.FIVE_MINUTES));
         }
 
         setAttribute(Attributes.MAIN_URI, URI.create("/clocker"));
