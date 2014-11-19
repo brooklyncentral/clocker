@@ -29,14 +29,23 @@
     <artifactId>brooklyn-clocker-patches</artifactId>
     <name>Clocker Patches</name>
     <description>
-        Patched classes re quired for Clocker. Will be removed when dependencies are updated and merged.
+        Patched classes required for Clocker. Will be removed when dependencies are updated and merged.
     </description>
 
     <dependencies>
         <dependency>
-            <groupId>org.apache.jclouds.labs</groupId>
+            <!-- See https://github.com/andreaturli/jclouds-labs,
+                 branch docker.1.8.2-alpha-cloudsoft.6,
+                 commit 6656e240cac6d13f6bbd84d3bbb940ed3af89da5
+             -->
+            <groupId>io.cloudsoft.jclouds.labs</groupId>
             <artifactId>docker</artifactId>
-            <version>${jclouds.version}</version>
+            <version>1.8.2-alpha-cloudsoft.6</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.brooklyn</groupId>
+            <artifactId>brooklyn-core</artifactId>
+            <version>${brooklyn.version}</version>
         </dependency>
     </dependencies>
 

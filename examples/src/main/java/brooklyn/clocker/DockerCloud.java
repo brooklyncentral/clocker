@@ -54,7 +54,7 @@ public class DockerCloud extends AbstractApplication {
 
     @CatalogConfig(label="Security Group (Optional)", priority=70)
     public static final ConfigKey<String> SECURITY_GROUP = ConfigKeys.newConfigKeyWithDefault(
-            DockerInfrastructure.SECURITY_GROUP, "");
+            DockerInfrastructure.SECURITY_GROUP, "docker");
 
     @CatalogConfig(label="Host Cluster Minimum Size", priority=60)
     public static final ConfigKey<Integer> DOCKER_HOST_CLUSTER_MIN_SIZE = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 2);
@@ -66,7 +66,7 @@ public class DockerCloud extends AbstractApplication {
     public static final ConfigKey<Double> DOCKER_CONTAINER_CLUSTER_MAX_CPU = ConfigKeys.newConfigKeyWithDefault(MaxCpuUsagePlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_CPU, 0.75d);
 
     @CatalogConfig(label="Containers Headroom", priority=50)
-    public static final ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_HEADROOM = ConfigKeys.newConfigKeyWithDefault(ContainerHeadroomEnricher.CONTAINER_HEADROOM, 4);
+    public static final ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_HEADROOM = ConfigKeys.newConfigKeyWithDefault(ContainerHeadroomEnricher.CONTAINER_HEADROOM, 0);
 
     @CatalogConfig(label="Enable Weave SDN", priority=50)
     public static final ConfigKey<Boolean> WEAVE_ENABLED = ConfigKeys.newConfigKeyWithDefault(WeaveInfrastructure.ENABLED, true);
@@ -76,24 +76,38 @@ public class DockerCloud extends AbstractApplication {
         MaxContainersPlacementStrategy maxContainers = new MaxContainersPlacementStrategy();
         maxContainers.injectManagementContext(getManagementContext());
         maxContainers.setConfig(MaxContainersPlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_SIZE, getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE));
+        
         BreadthFirstPlacementStrategy breadthFirst = new BreadthFirstPlacementStrategy();
         breadthFirst.injectManagementContext(getManagementContext());
+        
         MaxCpuUsagePlacementStrategy cpuUsage = new MaxCpuUsagePlacementStrategy();
         cpuUsage.injectManagementContext(getManagementContext());
         cpuUsage.setConfig(MaxCpuUsagePlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_CPU, getConfig(DOCKER_CONTAINER_CLUSTER_MAX_CPU));
 
+        // TODO We were hit by https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=712691
+        // when trying to open multiple ports on iptables (i.e. "iptables: Resource temporarily unavailable").
+        // Possible fixes/workarounds are:
+        //  1. Automatically upgrade iptables on the host.
+        //  2. Include a retry.
+        //  3. Turn off iptables, instead of enabling DockerInfrastructure.OPEN_IPTABLES on the DockerInfrastructure.
+        // Currently we've gone for (3).
+        
         addChild(EntitySpec.create(DockerInfrastructure.class)
                 .configure(DockerInfrastructure.DOCKER_VERSION, getConfig(DOCKER_VERSION))
                 .configure(DockerInfrastructure.LOCATION_NAME, getConfig(LOCATION_NAME))
                 .configure(DockerInfrastructure.SECURITY_GROUP, getConfig(SECURITY_GROUP))
-                .configure(DockerInfrastructure.OPEN_IPTABLES, true)
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE))
                 .configure(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS, false)
                 .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM, getConfig(DOCKER_CONTAINER_CLUSTER_HEADROOM))
                 .configure(WeaveInfrastructure.ENABLED, getConfig(WEAVE_ENABLED))
-                .configure(DockerInfrastructure.PLACEMENT_STRATEGIES, ImmutableList.<DockerAwarePlacementStrategy>of(maxContainers, breadthFirst, cpuUsage))
+                .configure(DockerInfrastructure.PLACEMENT_STRATEGIES, ImmutableList.<DockerAwarePlacementStrategy>of(
+                        maxContainers, 
+                        breadthFirst, 
+                        cpuUsage))
                 .configure(DockerInfrastructure.DOCKER_HOST_SPEC, EntitySpec.create(DockerHost.class)
-                        .configure(DockerHost.PROVISIONING_FLAGS, MutableMap.<String,Object>of(JcloudsLocationConfig.MIN_RAM.getName(), 8000))
+                        .configure(DockerHost.PROVISIONING_FLAGS, MutableMap.<String,Object>of(
+                                JcloudsLocationConfig.MIN_RAM.getName(), 8000,
+                                JcloudsLocationConfig.STOP_IPTABLES.getName(), true))
                         .configure(SoftwareProcess.START_TIMEOUT, Duration.minutes(15))
                         .configure(DockerHost.HA_POLICY_ENABLE, true)
                         .configure(DockerHost.DOCKER_HOST_NAME_FORMAT, "docker-%1$s")

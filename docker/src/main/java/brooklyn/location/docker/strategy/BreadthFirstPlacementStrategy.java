@@ -32,7 +32,7 @@ import com.google.common.collect.Iterables;
  */
 public class BreadthFirstPlacementStrategy extends AbstractDockerPlacementStrategy {
 
-    private static final Logger LOG = LoggerFactory.getLogger(MaxContainersPlacementStrategy.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BreadthFirstPlacementStrategy.class);
 
     private final AtomicInteger counter = new AtomicInteger(0);
 

@@ -22,7 +22,6 @@ services:
     install.version: "1.2"
     entity.dynamicLocation.name: "my-docker-cloud"
     docker.host.securityGroup: "docker"
-    docker.host.openIptables: true
     docker.host.cluster.initial.size: 2
     docker.host.register: false
     docker.container.cluster.headroom: 8
@@ -44,6 +43,7 @@ services:
         brooklyn.config:
           docker.host.flags:
             minRam: 8000
+            stopIptables: true
           start.timeout: 15m
           docker.policy.ha.enable: true
           docker.host.nameFormat: "docker-%1$s"
