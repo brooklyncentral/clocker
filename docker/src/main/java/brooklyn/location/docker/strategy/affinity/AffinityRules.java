@@ -52,7 +52,7 @@ import com.google.common.reflect.TypeToken;
  * <li>(<code>NOT</code>) <code>EMPTY</code>
  * </ul>
  * The <code>SAME</code> token is the default behaviour, and means the entities must have the property defined in the rule, <code>NOT</code>
- * means they mustn't have the property. The parameter given specifies the type or id, and if it's missing thee rule will apply to the
+ * means they mustn't have the property. The parameter given specifies the type or id, and if it's missing the rule will apply to the
  * properties of the entity being placed. Rules that take a class name will instantiate an instance of that class from the current
  * classpath, so ensure the appropriate Jar files are available. The <code>EMPTY</code> rule will treaty empty locations as allowable,
  * otherwise a new {@link DockerHostLocation} will be created for the container.
