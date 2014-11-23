@@ -16,7 +16,6 @@
 package brooklyn.location.docker;
 
 import static brooklyn.util.ssh.BashCommands.sudo;
-import static java.lang.String.*;
 import static java.lang.String.format;
 
 import java.io.IOException;
@@ -51,7 +50,6 @@ import brooklyn.util.os.Os;
 import brooklyn.util.ssh.IptablesCommands;
 import brooklyn.util.ssh.IptablesCommands.Chain;
 import brooklyn.util.ssh.IptablesCommands.Policy;
-import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 
 import com.google.common.base.Objects.ToStringHelper;

@@ -63,6 +63,7 @@ import brooklyn.location.jclouds.templates.PortableTemplateBuilder;
 import brooklyn.management.LocationManager;
 import brooklyn.networking.portforwarding.subnet.JcloudsPortforwardingSubnetLocation;
 import brooklyn.networking.subnet.SubnetTier;
+import brooklyn.util.collections.MutableList;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.collections.MutableSet;
 import brooklyn.util.exceptions.Exceptions;
@@ -73,6 +74,7 @@ import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 
 import com.google.common.base.Functions;
+import com.google.common.base.Joiner;
 
 /**
  * A single Docker container.
@@ -297,6 +299,18 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             }
         }
         options.volumes(volumes);
+
+        // Environment
+        List<String> environment = MutableList.of();
+        Map<String,Object> dockerEnvironment = getConfig(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT);
+        if (dockerEnvironment != null) {
+            environment.add(Joiner.on(":").withKeyValueSeparator("=").join(dockerEnvironment));
+        }
+        Map<String,Object> entityEnvironment = entity.getConfig(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT);
+        if (entityEnvironment != null) {
+            environment.add(Joiner.on(":").withKeyValueSeparator("=").join(entityEnvironment));
+        }
+        options.env(environment);
 
         // Set login password from the Docker host
         options.overrideLoginPassword(getDockerHost().getPassword());

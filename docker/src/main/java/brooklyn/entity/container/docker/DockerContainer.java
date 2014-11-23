@@ -16,6 +16,7 @@
 package brooklyn.entity.container.docker;
 
 import java.util.List;
+import java.util.Map;
 
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
@@ -37,6 +38,8 @@ import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.location.dynamic.LocationOwner;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.util.flags.SetFromFlag;
+
+import com.google.common.reflect.TypeToken;
 
 /**
  * A Docker container.
@@ -77,6 +80,11 @@ public interface DockerContainer extends BasicStartable, HasShortName, LocationO
 
     @SetFromFlag("volumeExports")
     ConfigKey<List<String>> DOCKER_CONTAINER_VOLUME_EXPORT = DockerAttributes.DOCKER_CONTAINER_VOLUME_EXPORT;
+
+    @SetFromFlag("environment")
+    ConfigKey<Map<String, Object>> DOCKER_CONTAINER_ENVIRONMENT = ConfigKeys.newConfigKey(
+            new TypeToken<Map<String, Object>>() { },
+            "docker.container.environment", "Environment variables for the Docker container");
 
     @SetFromFlag("entity")
     AttributeSensorAndConfigKey<Entity, Entity> ENTITY = ConfigKeys.newSensorAndConfigKey(Entity.class, "docker.container.entity", "The entity running in this Docker container");
