@@ -69,12 +69,12 @@
                             </div>
                         </div>
                     </div>
-                    <div class="panel-body" ng-if="host['service.state'] == 'RUNNING' || host['docker.containerCount'] != 0">
+                    <div class="panel-body" ng-if="host['service.state'] != 'ON_FIRE'">
                         <div class="row">
                             <div class="col-md-6">
                                 <ul class="list-group">
                                     <li class="list-group-item">
-                                        <span class="badge">{{host['docker.containerCount']}}</span>
+                                        <span class="badge">{{host['docker.containers.total']}}</span>
                                         {{host['host.name']}} / {{host['host.address']}} / {{host.config['docker.password']}}
                                     </li>
                                 </ul>
@@ -115,7 +115,7 @@
                             </div>
                             <div class="col-md-2">
                                 {{host['machine.memory.used']}} Used
-                                <a class="accordion-toggle" ng-class="$root.collapsed[host.id] ? 'collapsed' : 'collapsed.in'" ng-click="$root.collapsed[host.id] = !$root.collapsed[host.id]" ng-if="host['docker.containerCount'] != 0" href="#{{host.id}}-containers">&nbsp;</a>
+                                <a class="accordion-toggle" ng-class="$root.collapsed[host.id] ? 'collapsed' : 'collapsed.in'" ng-click="$root.collapsed[host.id] = !$root.collapsed[host.id]" ng-if="host['docker.containers.total'] != 0" href="#{{host.id}}-containers">&nbsp;</a>
                             </div>
                         </div>
                     </div>
