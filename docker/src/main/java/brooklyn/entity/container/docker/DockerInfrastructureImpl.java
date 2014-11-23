@@ -20,7 +20,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nullable;
 
@@ -86,8 +86,6 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
     private static final Logger LOG = LoggerFactory.getLogger(DockerInfrastructureImpl.class);
 
-    private transient final AtomicBoolean started = new AtomicBoolean(false);
-
     private Predicate<Entity> sameInfrastructure = new Predicate<Entity>() {
         @Override
         public boolean apply(@Nullable Entity input) {
@@ -107,6 +105,9 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
     public void init() {
         LOG.info("Starting Docker infrastructure id {}", getId());
         super.init();
+
+        setAttribute(DOCKER_HOST_COUNTER, new AtomicInteger(0));
+        setAttribute(DOCKER_CONTAINER_COUNTER, new AtomicInteger(0));
 
         int initialSize = getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE);
         EntitySpec<?> dockerHostSpec = EntitySpec.create(getConfig(DOCKER_HOST_SPEC))
@@ -248,7 +249,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
     @Override
     public boolean isLocationAvailable() {
-        return started.get() && getDynamicLocation() != null;
+        return getDynamicLocation() != null;
     }
 
     @Override
@@ -273,11 +274,9 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
             @Override
             public void reloaded() {
-                if (started.get()) {
-                    Location resolved = getManagementContext().getLocationRegistry().resolve(definition);
-                    getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
-                    getManagementContext().getLocationManager().manage(resolved);
-                }
+                Location resolved = getManagementContext().getLocationRegistry().resolve(definition);
+                getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
+                getManagementContext().getLocationManager().manage(resolved);
             }
         };
         getManagementContext().addPropertiesReloadListener(listener);
@@ -317,24 +316,22 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
     @Override
     public void start(Collection<? extends Location> locations) {
-        if (started.compareAndSet(false, true)) {
-            // TODO support multiple locations
-            setAttribute(SERVICE_UP, Boolean.FALSE);
+        // TODO support multiple locations
+        setAttribute(SERVICE_UP, Boolean.FALSE);
 
-            Location provisioner = Iterables.getOnlyElement(locations);
-            LOG.info("Creating new DockerLocation wrapping {}", provisioner);
+        Location provisioner = Iterables.getOnlyElement(locations);
+        LOG.info("Creating new DockerLocation wrapping {}", provisioner);
 
-            Map<String, ?> flags = MutableMap.<String, Object>builder()
-                    .putAll(getConfig(LOCATION_FLAGS))
-                    .put("provisioner", provisioner)
-                    .putIfNotNull("strategies", getConfig(PLACEMENT_STRATEGIES))
-                    .build();
-            createLocation(flags);
+        Map<String, ?> flags = MutableMap.<String, Object>builder()
+                .putAll(getConfig(LOCATION_FLAGS))
+                .put("provisioner", provisioner)
+                .putIfNotNull("strategies", getConfig(PLACEMENT_STRATEGIES))
+                .build();
+        createLocation(flags);
 
-            super.start(locations);
+        super.start(locations);
 
-            setAttribute(SERVICE_UP, Boolean.TRUE);
-        }
+        setAttribute(SERVICE_UP, Boolean.TRUE);
     }
 
     /**
@@ -342,26 +339,24 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
      */
     @Override
     public void stop() {
-        if (started.compareAndSet(true, false)) {
-            setAttribute(SERVICE_UP, Boolean.FALSE);
+        setAttribute(SERVICE_UP, Boolean.FALSE);
 
-            // Find all applications and stop, blocking for up to five minutes until ended
-            try {
-                Iterable<Entity> entities = Iterables.filter(getManagementContext().getEntityManager().getEntities(), sameInfrastructure);
-                Set<Application> applications = ImmutableSet.copyOf(Iterables.transform(entities, new Function<Entity, Application>() {
-                    @Override
-                    public Application apply(Entity input) { return input.getApplication(); }
-                }));
-                Entities.invokeEffectorList(this, applications, Startable.STOP)
-                        .get(Duration.FIVE_MINUTES);
-            } catch (Exception e) {
-                LOG.warn("Error stopping applications: {}", e);
-            }
-
-            super.stop();
-
-            deleteLocation(); // be more resilient to errors earlier
+        // Find all applications and stop, blocking for up to five minutes until ended
+        try {
+            Iterable<Entity> entities = Iterables.filter(getManagementContext().getEntityManager().getEntities(), sameInfrastructure);
+            Set<Application> applications = ImmutableSet.copyOf(Iterables.transform(entities, new Function<Entity, Application>() {
+                @Override
+                public Application apply(Entity input) { return input.getApplication(); }
+            }));
+            Entities.invokeEffectorList(this, applications, Startable.STOP)
+                    .get(Duration.FIVE_MINUTES);
+        } catch (Exception e) {
+            LOG.warn("Error stopping applications: {}", e);
         }
+
+        super.stop();
+
+        deleteLocation(); // be more resilient to errors earlier
     }
 
 }

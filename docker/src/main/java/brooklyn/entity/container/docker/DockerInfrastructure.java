@@ -16,6 +16,7 @@
 package brooklyn.entity.container.docker;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import brooklyn.catalog.Catalog;
 import brooklyn.config.ConfigKey;
@@ -106,6 +107,9 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
     AttributeSensor<DynamicGroup> DOCKER_CONTAINER_FABRIC = Sensors.newSensor(DynamicGroup.class, "docker.fabric", "Docker container fabric");
     AttributeSensor<DynamicMultiGroup> DOCKER_APPLICATIONS = Sensors.newSensor(DynamicMultiGroup.class, "docker.buckets", "Docker applications");
     AttributeSensor<WeaveInfrastructure> WEAVE_INFRASTRUCTURE = Sensors.newSensor(WeaveInfrastructure.class, "weave.infrastructure", "Weave infrastructure");
+
+    AttributeSensor<AtomicInteger> DOCKER_HOST_COUNTER = Sensors.newSensor(AtomicInteger.class, "docker.hosts.counter", "Docker host counter");
+    AttributeSensor<AtomicInteger> DOCKER_CONTAINER_COUNTER = Sensors.newSensor(AtomicInteger.class, "docker.containers.counter", "Docker container counter");;
 
     AttributeSensor<Integer> DOCKER_HOST_COUNT = DockerAttributes.DOCKER_HOST_COUNT;
     AttributeSensor<Integer> DOCKER_CONTAINER_COUNT = DockerAttributes.DOCKER_CONTAINER_COUNT;

@@ -80,7 +80,6 @@ import com.google.common.base.Functions;
 public class DockerContainerImpl extends BasicStartableImpl implements DockerContainer {
 
     private static final Logger LOG = LoggerFactory.getLogger(DockerContainerImpl.class);
-    private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
     static {
         RendererHints.register(DOCKER_HOST, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
@@ -95,7 +94,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         LOG.info("Starting Docker container id {}", getId());
         super.init();
 
-        String dockerContainerName = format(getConfig(DockerContainer.DOCKER_CONTAINER_NAME_FORMAT), getId(), COUNTER.incrementAndGet());
+        AtomicInteger counter = getConfig(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.DOCKER_CONTAINER_COUNTER);
+        String dockerContainerName = format(getConfig(DockerContainer.DOCKER_CONTAINER_NAME_FORMAT), getId(), counter.incrementAndGet());
         setDisplayName(dockerContainerName);
         setAttribute(DOCKER_CONTAINER_NAME, dockerContainerName);
 

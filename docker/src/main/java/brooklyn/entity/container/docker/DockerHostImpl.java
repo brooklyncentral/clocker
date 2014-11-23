@@ -97,9 +97,8 @@ import com.google.common.collect.Iterables;
 public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     private static final Logger LOG = LoggerFactory.getLogger(DockerHostImpl.class);
-    private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
-    private volatile FunctionFeed scan;
+    private transient FunctionFeed scan;
 
     static {
         RendererHints.register(DOCKER_INFRASTRUCTURE, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
@@ -111,7 +110,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         LOG.info("Starting Docker host id {}", getId());
         super.init();
 
-        String dockerHostName = String.format(getConfig(DockerHost.DOCKER_HOST_NAME_FORMAT), getId(), COUNTER.incrementAndGet());
+        AtomicInteger counter = getConfig(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.DOCKER_HOST_COUNTER);
+        String dockerHostName = String.format(getConfig(DockerHost.DOCKER_HOST_NAME_FORMAT), getId(), counter.incrementAndGet());
         setDisplayName(dockerHostName);
         setAttribute(DOCKER_HOST_NAME, dockerHostName);
         String repository = getConfig(DOCKER_REPOSITORY);
