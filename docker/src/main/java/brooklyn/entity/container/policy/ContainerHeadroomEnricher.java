@@ -51,7 +51,11 @@ public class ContainerHeadroomEnricher extends AbstractEnricher {
 
     @SetFromFlag("headroom")
     public static final ConfigKey<Integer> CONTAINER_HEADROOM = ConfigKeys.newIntegerConfigKey(
-            "docker.container.cluster.headroom", "Required headroom (free containers) for the Docker cluster");
+            "docker.container.cluster.headroom.count", "Required headroom (number of free containers) for the Docker cluster");
+
+    @SetFromFlag("headroomPercent")
+    public static final ConfigKey<Double> CONTAINER_HEADROOM_PERCENTAGE = ConfigKeys.newDoubleConfigKey(
+            "docker.container.cluster.headroom.percent", "Required headroom (percentage free containers) for the Docker cluster");
 
     public static final AttributeSensor<Integer> CONTAINERS_NEEDED = Sensors.newIntegerSensor(
             "docker.container.cluster.needed", "Number of containers needed to give requierd headroom");
@@ -71,10 +75,17 @@ public class ContainerHeadroomEnricher extends AbstractEnricher {
 
     public void setEntity(EntityLocal entity) {
         Preconditions.checkArgument(entity instanceof DockerInfrastructure, "Entity must be a DockerInfrastructure: %s", entity);
-        Preconditions.checkNotNull(getConfig(CONTAINER_HEADROOM), "Headroom must be configured for this enricher");
-        Preconditions.checkArgument(getConfig(CONTAINER_HEADROOM) > 0, "Headroom must be a positive integer: %d", getConfig(CONTAINER_HEADROOM));
-
         super.setEntity(entity);
+
+        Integer headroom = getConfig(CONTAINER_HEADROOM);
+        Double percent = getConfig(CONTAINER_HEADROOM_PERCENTAGE);
+        Preconditions.checkArgument((headroom != null) ^ (percent != null), "Headroom must be configured as either number or percentage for this enricher");
+        if (headroom != null) {
+            Preconditions.checkArgument(headroom > 0, "Headroom must be a positive integer: %d", headroom);
+        }
+        if (percent != null) {
+            Preconditions.checkArgument(percent > 0d && percent < 1d, "Headroom percentage must be between 0.0 and 1.0: %f", percent);
+        }
 
         subscribe(entity, DockerInfrastructure.DOCKER_CONTAINER_COUNT, new Listener());
         subscribe(entity, DockerInfrastructure.DOCKER_HOST_COUNT, new Listener());
@@ -101,6 +112,7 @@ public class ContainerHeadroomEnricher extends AbstractEnricher {
             maxContainers = MaxContainersPlacementStrategy.DEFAULT_MAX_CONTAINERS;
         }
 
+        // Calculate cluster state
         Integer containers = entity.getAttribute(DockerInfrastructure.DOCKER_CONTAINER_COUNT);
         Integer hosts = entity.getAttribute(DockerInfrastructure.DOCKER_HOST_COUNT);
         if (containers == null || hosts == null) return;
@@ -109,6 +121,12 @@ public class ContainerHeadroomEnricher extends AbstractEnricher {
 
         // Calculate headroom
         Integer headroom = getConfig(CONTAINER_HEADROOM);
+        Double percent = getConfig(CONTAINER_HEADROOM_PERCENTAGE);
+        if (headroom == null) {
+            headroom = (int) Math.ceil(percent * possible);
+        }
+
+        // Calculate requirements
         int needed = headroom - available;
         double utilisation = (double) containers / (double) possible;
         if (LOG.isDebugEnabled()) {
@@ -126,7 +144,7 @@ public class ContainerHeadroomEnricher extends AbstractEnricher {
                 AutoScalerPolicy.POOL_CURRENT_WORKRATE_KEY, utilisation,
                 AutoScalerPolicy.POOL_LOW_THRESHOLD_KEY, Math.max(0d, (double) (possible - (headroom + maxContainers)) / (double) possible),
                 AutoScalerPolicy.POOL_HIGH_THRESHOLD_KEY, Math.max(utilisation, (double) (possible - headroom) / (double) possible));
-        if (needed > 0 ) {
+        if (needed > 0) {
             emit(DOCKER_CONTAINER_CLUSTER_HOT, properties);
         } else if (available > (headroom + maxContainers)) {
             emit(DOCKER_CONTAINER_CLUSTER_COLD, properties);
