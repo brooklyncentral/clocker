@@ -143,7 +143,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     private String buildDockerfileDirectory(String name) {
         String build = format("build --rm -t %s %s", Os.mergePaths(getRepository(), name), Os.mergePaths(getRunDir(), name));
-        String stdout = ((DockerHost) getEntity()).runDockerCommandTimeout(build, Duration.minutes(15));
+        String stdout = ((DockerHost) getEntity()).runDockerCommandTimeout(build, Duration.minutes(20));
         String prefix = Strings.getFirstWordAfter(stdout, "Successfully built");
 
         return getImageId(prefix, name);
@@ -151,7 +151,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     private String buildDockerfile(String dockerfile, String name) {
         String build = format("build --rm -t %s - < %s", Os.mergePaths(getRepository(), name), Os.mergePaths(getRunDir(), name, dockerfile));
-        String stdout = ((DockerHost) getEntity()).runDockerCommandTimeout(build, Duration.minutes(15));
+        String stdout = ((DockerHost) getEntity()).runDockerCommandTimeout(build, Duration.minutes(20));
         String prefix = Strings.getFirstWordAfter(stdout, "Successfully built");
 
         return getImageId(prefix, name);

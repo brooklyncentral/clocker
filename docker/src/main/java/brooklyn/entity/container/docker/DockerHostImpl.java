@@ -315,7 +315,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     /** {@inheritDoc} */
     @Override
     public String runDockerCommand(String command) {
-        return runDockerCommandTimeout(command, Duration.ONE_MINUTE);
+        return runDockerCommandTimeout(command, Duration.FIVE_MINUTES);
     }
 
     /** {@inheritDoc} */
