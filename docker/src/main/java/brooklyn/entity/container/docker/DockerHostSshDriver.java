@@ -220,10 +220,11 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         } else if (osDetails.isMac()) {
             newScript(LAUNCHING).body.append(
                             alternatives(
-                                    ifExecutableElse1("boot2docker", "boot2docker status"),
-                                    fail("Mac OSX install requires boot2docker preinstalled", 1)))
+                                    ifExecutableElse1("boot2docker", "boot2docker status || boot2docker init"),
+                                    fail("Mac OSX install requires Boot2Docker preinstalled", 1)))
                     .failOnNonZeroResultCode()
                     .execute();
+            return;
         } else if (osDetails.isWindows()) {
             throw new IllegalStateException("Windows operating system not yet supported by Docker");
         } else {
@@ -263,7 +264,8 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
             commands.add(installDockerFallback());
         }
         newScript(INSTALLING)
-                .failOnNonZeroResultCode().body.append(commands)
+                .failOnNonZeroResultCode()
+                .body.append(commands)
                 .execute();
     }
 

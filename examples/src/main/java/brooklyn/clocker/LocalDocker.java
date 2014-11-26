@@ -47,7 +47,6 @@ public class LocalDocker extends AbstractApplication {
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 1)
                 .configure(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS, false)
                 .configure(WeaveInfrastructure.ENABLED, false)
-                .configure(SoftwareProcess.SKIP_INSTALLATION, true)
                 .displayName("Docker Infrastructure"));
     }
 }

@@ -16,8 +16,7 @@ id: docker-localhost
 name: "Docker Localhost Infrastructure"
 origin: "https://github.com/brooklyncentral/clocker/"
 locations:
-- localhost:
-    install.skip: true
+- localhost
 services:
 - serviceType: brooklyn.entity.container.docker.DockerInfrastructure
   id: infrastructure
