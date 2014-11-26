@@ -398,16 +398,14 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                     .ipProtocol(IpProtocol.TCP)
                     .fromPort(weavePort)
                     .toPort(weavePort)
-                    .cidrBlock(Cidr.UNIVERSAL.toString()) // TODO could be
-                                                          // tighter restricted?
+                    .cidrBlock(Cidr.UNIVERSAL.toString()) // TODO could be tighter restricted?
                     .build();
             permissions.add(weaveTcpPort);
             IpPermission weaveUdpPort = IpPermission.builder()
                     .ipProtocol(IpProtocol.UDP)
                     .fromPort(weavePort)
                     .toPort(weavePort)
-                    .cidrBlock(Cidr.UNIVERSAL.toString()) // TODO could be
-                                                          // tighter restricted?
+                    .cidrBlock(Cidr.UNIVERSAL.toString()) // TODO could be tighter restricted?
                     .build();
             permissions.add(weaveUdpPort);
         }

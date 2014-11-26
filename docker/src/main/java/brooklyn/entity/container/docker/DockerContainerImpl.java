@@ -25,6 +25,8 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.annotation.Nullable;
+
 import org.jclouds.compute.domain.Processor;
 import org.jclouds.compute.domain.TemplateBuilder;
 import org.jclouds.docker.compute.options.DockerTemplateOptions;
@@ -49,6 +51,7 @@ import brooklyn.event.feed.function.FunctionPollConfig;
 import brooklyn.location.Location;
 import brooklyn.location.LocationSpec;
 import brooklyn.location.NoMachinesAvailableException;
+import brooklyn.location.OsDetails;
 import brooklyn.location.PortRange;
 import brooklyn.location.basic.LocationConfigKeys;
 import brooklyn.location.basic.SshMachineLocation;
@@ -318,6 +321,21 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         return options;
     }
 
+    @Nullable
+    private String getSshHostAddress() {
+        DockerHost dockerHost = getDockerHost();
+        OsDetails osDetails = dockerHost.getDynamicLocation().getMachine().getMachineDetails().getOsDetails();
+        if (osDetails.isMac()) {
+            String address = dockerHost.execCommand("boot2docker ip");
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("The boot2docker IP address is {}", Strings.trim(address));
+            }
+            return Strings.trim(address);
+        } else {
+            return null;
+        }
+    }
+
     /**
      * Create a new {@link DockerContainerLocation} wrapping a machine from the host's {@link JcloudsLocation}.
      */
@@ -368,6 +386,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                     .configure(DynamicLocation.OWNER, this)
                     .configure("machine", container) // the underlying JcloudsLocation
                     .configure(container.getAllConfig(true))
+                    .configureIfNotNull(SshMachineLocation.SSH_HOST, getSshHostAddress())
                     .displayName(getDockerContainerName());
             DockerContainerLocation location = getManagementContext().getLocationManager().createLocation(spec);
 
