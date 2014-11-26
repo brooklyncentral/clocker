@@ -46,10 +46,6 @@ services:
     controlleddynamicwebappcluster.webClusterSpec:
       $brooklyn:entitySpec:
         type: brooklyn.entity.webapp.DynamicWebAppCluster
-        brooklyn.config:
-          dynamiccluster.zone.enable: true
-          dynamiccluster.zone.placementStrategy:
-            brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy
     controlleddynamicwebappcluster.controllerSpec:
       $brooklyn:entitySpec:
         type: brooklyn.entity.proxy.nginx.NginxController
