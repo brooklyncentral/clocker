@@ -412,7 +412,6 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     @Override
     public void start(Collection<? extends Location> locations) {
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
-        setAttribute(SoftwareProcess.SERVICE_UP, Boolean.FALSE);
 
         Boolean started = getConfig(SoftwareProcess.ENTITY_STARTED);
         if (Boolean.TRUE.equals(started)) {
@@ -452,7 +451,6 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             deleteLocation();
         }
 
-        setAttribute(SoftwareProcess.SERVICE_UP, Boolean.FALSE);
         ServiceStateLogic.setExpectedState(this, Lifecycle.STOPPED);
     }
 
