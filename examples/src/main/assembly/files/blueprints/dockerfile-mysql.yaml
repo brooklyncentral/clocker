@@ -27,5 +27,5 @@ services:
   brooklyn.config:
     docker.dockerfile.url:
       "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/mysql-5.6.tgz"
-    env:
+    docker.container.environment:
       MYSQL_ROOT_PASSWORD: "s3cr3t"

@@ -70,7 +70,8 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         ports.put("dockerPort", getDockerPort());
         ports.put("dockerSslPort", getDockerSslPort());
         if (getEntity().getConfig(DockerInfrastructure.WEAVE_ENABLED)) {
-            // Best guess at available port, as Weave is started _after_ the DockerHost
+            // Best guess at available port, as Weave is started _after_ the
+            // DockerHost
             Integer weavePort = getEntity()
                     .getAttribute(DockerHost.DOCKER_INFRASTRUCTURE)
                     .getAttribute(DockerInfrastructure.WEAVE_INFRASTRUCTURE)
@@ -82,7 +83,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     @Override
     public Set<Integer> getPortsUsed() {
-        return ImmutableSet.<Integer>builder()
+        return ImmutableSet.<Integer> builder()
                 .addAll(super.getPortsUsed())
                 .addAll(getPortMap().values())
                 .build();
@@ -135,7 +136,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     private Map<String, Object> getExtraTemplateSubstitutions(String imageName) {
-        Map<String, Object> templateSubstitutions = MutableMap.<String, Object>of("repository", getRepository(), "imageName", imageName);
+        Map<String, Object> templateSubstitutions = MutableMap.<String, Object> of("repository", getRepository(), "imageName", imageName);
         DockerHost host = (DockerHost) getEntity();
         templateSubstitutions.putAll(host.getInfrastructure().getConfig(DockerInfrastructure.DOCKERFILE_SUBSTITUTIONS));
         return templateSubstitutions;
@@ -172,20 +173,19 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     public boolean isRunning() {
         ScriptHelper helper = newScript(CHECK_RUNNING)
                 .body.append(alternatives(
-                        ifExecutableElse1("boot2docker", sudo("boot2docker status")),
+                        ifExecutableElse1("boot2docker", "boot2docker status"),
                         ifExecutableElse1("service", sudo("service docker status"))))
-                .failOnNonZeroResultCode()
-                .gatherOutput();
+                        .failOnNonZeroResultCode()
+                        .gatherOutput();
         helper.execute();
         return helper.getResultStdout().contains("running");
     }
 
     @Override
     public void stop() {
-        newScript(STOPPING)
-                .body.append(alternatives(
-                        ifExecutableElse1("boot2docker", sudo("boot2docker down")),
-                        ifExecutableElse1("service", sudo("service docker stop"))))
+        newScript(STOPPING).body.append(alternatives(
+                ifExecutableElse1("boot2docker", "boot2docker down"),
+                ifExecutableElse1("service", sudo("service docker stop"))))
                 .failOnNonZeroResultCode()
                 .execute();
     }
@@ -201,48 +201,57 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         OsDetails osDetails = getMachine().getMachineDetails().getOsDetails();
         String osVersion = osDetails.getVersion();
         String arch = osDetails.getArch();
-        if (!osDetails.is64bit()) {
-            throw new IllegalStateException("Docker supports only 64bit OS");
-        }
-        if (osDetails.getName().equalsIgnoreCase("ubuntu") && osVersion.equals("12.04")) {
-            List<String> commands = ImmutableList.<String>builder().add(installPackage("linux-image-generic-lts-raring"))
-                    .add(installPackage("linux-headers-generic-lts-raring"))
-                    .add(sudo("reboot"))
-                    .build();
-            executeKernelInstallation(commands);
-        }
-        if (osDetails.getName().equalsIgnoreCase("centos")) {
-            List<String> commands = ImmutableList.<String>builder()
-                    .add(sudo("yum -y --nogpgcheck upgrade kernel"))
-                    .add(sudo("reboot"))
-                    .build();
-            executeKernelInstallation(commands);
+        if (!osDetails.is64bit()) { throw new IllegalStateException("Docker supports only 64bit OS"); }
+        if (osDetails.isLinux()) {
+            if (osDetails.getName().equalsIgnoreCase("ubuntu") && osVersion.equals("12.04")) {
+                List<String> commands = ImmutableList.<String> builder().add(installPackage("linux-image-generic-lts-raring"))
+                        .add(installPackage("linux-headers-generic-lts-raring"))
+                        .add(sudo("reboot"))
+                        .build();
+                executeKernelInstallation(commands);
+            }
+            if (osDetails.getName().equalsIgnoreCase("centos")) {
+                List<String> commands = ImmutableList.<String> builder()
+                        .add(sudo("yum -y --nogpgcheck upgrade kernel"))
+                        .add(sudo("reboot"))
+                        .build();
+                executeKernelInstallation(commands);
+            }
+        } else if (osDetails.isMac()) {
+            newScript(LAUNCHING).body.append(
+                            alternatives(
+                                    ifExecutableElse1("boot2docker", "boot2docker status"),
+                                    fail("Mac OSX install requires boot2docker preinstalled", 1)))
+                    .failOnNonZeroResultCode()
+                    .execute();
+        } else if (osDetails.isWindows()) {
+            throw new IllegalStateException("Windows operating system not yet supported by Docker");
+        } else {
+            throw new IllegalStateException("Unknown operating system: " + osDetails);
         }
 
         // Wait until the Docker host is SSHable after the reboot
-        Task<Boolean> sshable = TaskBuilder.<Boolean>builder()
+        Task<Boolean> sshable = TaskBuilder.<Boolean> builder()
                 .name("Waiting until host is SSHable")
                 .body(new Callable<Boolean>() {
-                        @Override
-                        public Boolean call() throws Exception {
-                            return Repeater.create()
-                                    .every(Duration.TEN_SECONDS)
-                                    .until(new Callable<Boolean>() {
-                                            public Boolean call() {
-                                                return getLocation().isSshable();
-                                            }
-                                        })
-                                    .limitTimeTo(Duration.minutes(15)) // Because of the reboot
-                                    .run();
-                        }
-                    })
+                    @Override
+                    public Boolean call() throws Exception {
+                        return Repeater.create()
+                                .every(Duration.TEN_SECONDS)
+                                .until(new Callable<Boolean>() {
+                                    public Boolean call() {
+                                        return getLocation().isSshable();
+                                    }
+                                })
+                                .limitTimeTo(Duration.minutes(15)) // Because of the reboot
+                                .run();
+                    }
+                })
                 .build();
         Boolean result = DynamicTasks.queueIfPossible(sshable)
                 .orSubmitAndBlock()
                 .andWaitForSuccess();
-        if (!result) {
-            throw new IllegalStateException(String.format("The entity %s is not sshable after reboot", entity));
-        }
+        if (!result) { throw new IllegalStateException(String.format("The entity %s is not sshable after reboot", entity)); }
 
         List<String> commands = Lists.newArrayList();
         if (osDetails.getName().equalsIgnoreCase("ubuntu")) {
@@ -254,25 +263,22 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
             commands.add(installDockerFallback());
         }
         newScript(INSTALLING)
-                .failOnNonZeroResultCode()
-                .body.append(commands)
+                .failOnNonZeroResultCode().body.append(commands)
                 .execute();
     }
 
     private void executeKernelInstallation(List<String> commands) {
-        newScript(INSTALLING + "kernel")
-                .body.append(commands)
+        newScript(INSTALLING + "kernel").body.append(commands)
                 .execute();
     }
 
     private String useYum(String osVersion, String arch, String epelRelease) {
-            String osMajorVersion = osVersion.substring(0, osVersion.lastIndexOf("."));
+        String osMajorVersion = osVersion.substring(0, osVersion.lastIndexOf("."));
         return chainGroup(
                 INSTALL_WGET,
                 alternatives(
                         sudo("rpm -qa | grep epel-release"),
-                        sudo(format("rpm -Uvh http://dl.fedoraproject.org/pub/epel/%s/%s/epel-release-%s.noarch.rpm", osMajorVersion, arch, epelRelease)))
-        );
+                        sudo(format("rpm -Uvh http://dl.fedoraproject.org/pub/epel/%s/%s/epel-release-%s.noarch.rpm", osMajorVersion, arch, epelRelease))));
     }
 
     private String installDockerOnUbuntu() {
@@ -291,7 +297,8 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     /**
      * Uses the curl-able install.sh script provided at {@code get.docker.com}.
-     * This will install the latest version, which may be incompatible with the jclouds driver.
+     * This will install the latest version, which may be incompatible with the
+     * jclouds driver.
      */
     private String installDockerFallback() {
         return chainGroup(INSTALL_CURL, "curl -s https://get.docker.com/ | " + sudo("sh"));
@@ -304,15 +311,16 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         stop();
 
         newScript(CUSTOMIZING)
-                .failOnNonZeroResultCode()
-                .body.append(
-                        ifExecutableElse0("apt-get", chainGroup(
-                                executeCommandThenAsUserTeeOutputToFile(format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%s -H unix:///var/run/docker.sock\"'", getDockerPort()), "root", "/etc/default/docker"),
-                                sudo("groupadd -f docker"),
-                                sudo(format("gpasswd -a %s docker", getMachine().getUser())),
-                                sudo("newgrp docker"))),
-                        ifExecutableElse0("yum",
-                                executeCommandThenAsUserTeeOutputToFile(format("echo 'other_args=\"--selinux-enabled -H tcp://0.0.0.0:%s -H unix:///var/run/docker.sock -e lxc\"'", getDockerPort()), "root", "/etc/sysconfig/docker")))
+                .failOnNonZeroResultCode().body.append(
+                ifExecutableElse0("apt-get", chainGroup(
+                        executeCommandThenAsUserTeeOutputToFile(format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock\"'", getDockerPort()), "root", "/etc/default/docker"),
+                        sudo("groupadd -f docker"),
+                        sudo(format("gpasswd -a %s docker", getMachine().getUser())),
+                        sudo("newgrp docker"))),
+                ifExecutableElse0(
+                        "yum",
+                        executeCommandThenAsUserTeeOutputToFile(format("echo 'other_args=\"--selinux-enabled -H tcp://0.0.0.0:%s -H unix:///var/run/docker.sock -e lxc\"'", getDockerPort()), "root",
+                                "/etc/sysconfig/docker")))
                 .execute();
 
         // Configure volume mappings for the host
@@ -328,7 +336,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 }
             }
         }
-        getEntity().setAttribute(DockerHost.DOCKER_HOST_VOLUME_MAPPING, mapping); 
+        getEntity().setAttribute(DockerHost.DOCKER_HOST_VOLUME_MAPPING, mapping);
     }
 
     @Override
@@ -347,6 +355,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 log.info("{} not running in a JcloudsSshMachineLocation, not configuring extra security groups", entity);
                 return;
             }
+            // TODO check GCE compatibility?
             JcloudsSshMachineLocation location = (JcloudsSshMachineLocation) getLocation();
             JcloudsLocationSecurityGroupCustomizer customizer = JcloudsLocationSecurityGroupCustomizer.getInstance(getEntity().getApplicationId());
             Collection<IpPermission> permissions = getIpPermissions(customizer);
@@ -387,14 +396,16 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                     .ipProtocol(IpProtocol.TCP)
                     .fromPort(weavePort)
                     .toPort(weavePort)
-                    .cidrBlock(Cidr.UNIVERSAL.toString()) // TODO could be tighter restricted?
+                    .cidrBlock(Cidr.UNIVERSAL.toString()) // TODO could be
+                                                          // tighter restricted?
                     .build();
             permissions.add(weaveTcpPort);
             IpPermission weaveUdpPort = IpPermission.builder()
                     .ipProtocol(IpProtocol.UDP)
                     .fromPort(weavePort)
                     .toPort(weavePort)
-                    .cidrBlock(Cidr.UNIVERSAL.toString()) // TODO could be tighter restricted?
+                    .cidrBlock(Cidr.UNIVERSAL.toString()) // TODO could be
+                                                          // tighter restricted?
                     .build();
             permissions.add(weaveUdpPort);
         }
@@ -402,17 +413,28 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         return permissions;
     }
 
-    public String getPidFile() { return "/var/run/docker.pid"; }
-
     @Override
     public void launch() {
-        newScript(LAUNCHING)
-                .body.append(alternatives(
-                        ifExecutableElse1("boot2docker", sudo("boot2docker up")),
-                        ifExecutableElse1("service", sudo("service docker start"))))
+        newScript(LAUNCHING).body.append(alternatives(
+                ifExecutableElse1("boot2docker", "boot2docker up"),
+                ifExecutableElse1("service", sudo("service docker start"))))
                 .failOnNonZeroResultCode()
                 .uniqueSshConnection()
                 .execute();
+    }
+
+    public String getPidFile() {
+        return "/var/run/docker.pid";
+    }
+
+    @Override
+    public Map<String, String> getShellEnvironment() {
+        ImmutableMap.Builder<String, String> builder = ImmutableMap.<String, String> builder()
+                .putAll(super.getShellEnvironment());
+        if (getMachine().getMachineDetails().getOsDetails().isMac()) {
+            builder.put("DOCKER_HOST", format("tcp://%s:%d", getSubnetAddress(), getDockerPort()));
+        }
+        return builder.build();
     }
 
 }
