@@ -39,6 +39,10 @@ public class LocalDocker extends AbstractApplication {
     @CatalogConfig(label="Location Name", priority=80)
     public static final ConfigKey<String> LOCATION_NAME = ConfigKeys.newConfigKeyWithDefault(
             DockerInfrastructure.LOCATION_NAME.getConfigKey(), "my-docker-cloud");
+
+    @CatalogConfig(label="Docker Installed", priority=70)
+    public static final ConfigKey<Boolean> DOCKER_INSTALLED = ConfigKeys.newBooleanConfigKey("docker.installed", "Docker already pre-installed", false);
+
     @Override
     public void initApp() {
         addChild(EntitySpec.create(DockerInfrastructure.class)
@@ -47,6 +51,7 @@ public class LocalDocker extends AbstractApplication {
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 1)
                 .configure(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS, false)
                 .configure(WeaveInfrastructure.ENABLED, false)
+                .configure(SoftwareProcess.SKIP_INSTALLATION, getConfig(DOCKER_INSTALLED))
                 .displayName("Docker Infrastructure"));
     }
 }
