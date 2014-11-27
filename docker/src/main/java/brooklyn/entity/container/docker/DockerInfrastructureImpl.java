@@ -183,9 +183,11 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 .build());
 
         Integer headroom = getConfig(ContainerHeadroomEnricher.CONTAINER_HEADROOM);
-        if (headroom != null && headroom > 0) {
+        Double headroomPercent = getConfig(ContainerHeadroomEnricher.CONTAINER_HEADROOM_PERCENTAGE);
+        if ((headroom != null && headroom > 0) || (headroomPercent != null && headroomPercent > 0d)) {
             addEnricher(EnricherSpec.create(ContainerHeadroomEnricher.class)
-                    .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM, headroom));
+                    .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM, headroom)
+                    .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM_PERCENTAGE, headroomPercent));
             hosts.addEnricher(Enrichers.builder()
                     .propagating(
                             ContainerHeadroomEnricher.DOCKER_CONTAINER_CLUSTER_COLD,
