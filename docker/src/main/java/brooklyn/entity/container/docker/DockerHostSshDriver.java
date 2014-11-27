@@ -53,7 +53,9 @@ import brooklyn.util.task.system.ProcessTaskWrapper;
 import brooklyn.util.text.Identifiers;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
+import brooklyn.util.time.Time;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -232,6 +234,11 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         }
 
         // Wait until the Docker host is SSHable after the reboot
+        // Don't check immediately; it could take a few seconds for rebooting to make the machine not ssh'able;
+        // must not accidentally think it's rebooted before we've actually rebooted!
+        Stopwatch stopwatchForReboot = Stopwatch.createStarted();
+        Time.sleep(Duration.seconds(30));
+        
         Task<Boolean> sshable = TaskBuilder.<Boolean> builder()
                 .name("Waiting until host is SSHable")
                 .body(new Callable<Boolean>() {
@@ -252,7 +259,10 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         Boolean result = DynamicTasks.queueIfPossible(sshable)
                 .orSubmitAndBlock()
                 .andWaitForSuccess();
-        if (!result) { throw new IllegalStateException(String.format("The entity %s is not sshable after reboot", entity)); }
+        if (!result) {
+            throw new IllegalStateException(String.format("The entity %s is not sshable after reboot (waited %s)", 
+                    entity, Time.makeTimeStringRounded(stopwatchForReboot)));
+        }
 
         List<String> commands = Lists.newArrayList();
         if (osDetails.getName().equalsIgnoreCase("ubuntu")) {
