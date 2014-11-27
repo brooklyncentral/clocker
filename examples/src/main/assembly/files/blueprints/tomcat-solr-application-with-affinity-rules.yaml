@@ -14,7 +14,7 @@
 
 id: tomcat-solr-application
 name: "Tomcat Solr Application"
-origin: "http://brooklyncentral.github.io/"
+origin: "http://brooklyncentral.github.io/clocker/"
 locations:
 - my-docker-cloud
 services:

@@ -21,7 +21,6 @@ services:
   brooklyn.config:
     install.version: "1.2"
     entity.dynamicLocation.name: "my-docker-cloud"
-    docker.host.securityGroup: "docker"
     docker.host.cluster.initial.size: 2
     docker.host.register: false
     docker.container.cluster.headroom: 4

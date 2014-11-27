@@ -14,7 +14,7 @@
 
 id: tomcat-application
 name: "Tomcat Web Application"
-origin: "http://brooklyncentral.github.io/"
+origin: "https://github.com/apache/incubator-brooklyn/"
 locations:
 - my-docker-cloud
 services:

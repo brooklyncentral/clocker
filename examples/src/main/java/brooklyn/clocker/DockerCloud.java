@@ -53,8 +53,7 @@ public class DockerCloud extends AbstractApplication {
             DockerInfrastructure.LOCATION_NAME.getConfigKey(), "my-docker-cloud");
 
     @CatalogConfig(label="Security Group (Optional)", priority=70)
-    public static final ConfigKey<String> SECURITY_GROUP = ConfigKeys.newConfigKeyWithDefault(
-            DockerInfrastructure.SECURITY_GROUP, "docker");
+    public static final ConfigKey<String> SECURITY_GROUP = DockerInfrastructure.SECURITY_GROUP;
 
     @CatalogConfig(label="Host Cluster Minimum Size", priority=60)
     public static final ConfigKey<Integer> DOCKER_HOST_CLUSTER_MIN_SIZE = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 2);

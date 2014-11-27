@@ -14,7 +14,7 @@
 
 id: tomcat-cluster-with-mysql
 name: "Tomcat Application Server Cluster with MySQL Database"
-origin: "http://brooklyncentral.github.io/"
+origin: "https://github.com/apache/incubator-brooklyn/"
 locations:
 - my-docker-cloud
 services:
@@ -30,7 +30,7 @@ services:
     java.sysprops:
       brooklyn.example.db.url: >
         $brooklyn:formatString("jdbc:%s%s?user=%s&password=%s",
-        component("mysql").attributeWhenReady("mapped.datastore.url"),
+        component("mysql").attributeWhenReady("datastore.url"),
         "visitors", "brooklyn", "br00k11n")
     memberSpec:
       $brooklyn:entitySpec:
@@ -50,7 +50,7 @@ services:
       $brooklyn:entitySpec:
         type: brooklyn.entity.proxy.nginx.NginxController
         brooklyn.config:
-          member.sensor.hostandport: "mapped.http.port"
+          member.sensor.hostname: "host.subnet.hostname"
 - serviceType: brooklyn.entity.database.mysql.MySqlNode
   id: mysql
   name: MySQL Database

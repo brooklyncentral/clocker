@@ -1,7 +1,22 @@
-name: Couchbase w Pillow Fight
+# Copyright 2014 by Cloudsoft Corporation Limited
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-location: my-docker-cloud
-
+id: couchbase-pillowfight
+name: Couchbase with Pillow Fight
+origin: "https://github.com/apache/incubator-brooklyn/"
+locations:
+- my-docker-cloud
 services:
 - type: brooklyn.entity.nosql.couchbase.CouchbaseCluster
   id: couchbase
@@ -11,7 +26,8 @@ services:
   createBuckets:
   - bucket: default
     bucket-port: 11211
-
+  brooklyn.config:
+    couchbase.clusterInitRamSize: 4000
 - type: brooklyn.entity.basic.VanillaSoftwareProcess
   name: CBC Pillowfight
   launch.command: |
@@ -26,6 +42,7 @@ services:
   stop.command: ""
   brooklyn.config:
     base_url: $brooklyn:entity("couchbase").attributeWhenReady("couchbase.cluster.connection.url")
+    launch.latch: $brooklyn:entity("couchbase").attributeWhenReady("service.isUp")
   brooklyn.initializers:
   - type: brooklyn.entity.software.ssh.SshCommandEffector
     brooklyn.config:

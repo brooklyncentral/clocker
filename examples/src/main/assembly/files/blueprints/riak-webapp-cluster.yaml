@@ -14,9 +14,9 @@
 
 id: riak-webapp-cluster
 name: Riak Cluster with Webapp Cluster
+origin: "https://github.com/apache/incubator-brooklyn/"
 locations:
 - my-docker-cloud
-origin: "https://github.com/apache/incubator-brooklyn/"
 services:
 - type: brooklyn.entity.nosql.riak.RiakCluster
   initialSize: 5
