@@ -128,8 +128,8 @@ public class TomcatClusterWithMySql extends AbstractApplication {
                 .metric(DynamicWebAppCluster.REQUESTS_PER_SECOND_IN_WINDOW_PER_NODE)
                 .metricRange(0.1, 10.0)
                 .sizeRange(getConfig(INITIAL_SIZE), 10)
-                .resizeDownStabilizationDelay(Duration.ONE_MINUTE.toMilliseconds())
-                .resizeUpStabilizationDelay(Duration.THIRTY_SECONDS.toMilliseconds())
+                .resizeDownStabilizationDelay(Duration.ONE_MINUTE)
+                .resizeUpStabilizationDelay(Duration.THIRTY_SECONDS)
                 .build());
 
         // expose some KPI's
