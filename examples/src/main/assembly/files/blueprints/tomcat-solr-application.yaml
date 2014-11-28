@@ -19,14 +19,18 @@ locations:
 - my-docker-cloud
 services:
 - serviceType: brooklyn.entity.nosql.solr.SolrServer
+  brooklyn.config:
+    jmx.enabled: true
+    jmx.agent.mode: "JMX_RMI"
+    jmx.direct.port: "30000+"
+    rmi.registry.port: "1099"
+    solr.core.config:
+      example:
+        "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/example.tgz"
 - serviceType: brooklyn.entity.webapp.tomcat.TomcatServer
   brooklyn.config:
     docker.dockerfile.url:
       "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/UsesJavaDockerfile"
-    affinity.rules:
-    - NOT TYPE
-    - TYPE brooklyn.entity.nosql.solr.SolrServer
-    - APPLICATION
     wars.root:
       "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/hello-world.war"
     version: "7.0.53"
