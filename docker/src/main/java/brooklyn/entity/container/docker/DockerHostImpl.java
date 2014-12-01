@@ -51,7 +51,6 @@ import brooklyn.event.feed.function.FunctionPollConfig;
 import brooklyn.location.Location;
 import brooklyn.location.LocationDefinition;
 import brooklyn.location.MachineProvisioningLocation;
-import brooklyn.location.access.PortForwardManagerAuthority;
 import brooklyn.location.basic.BasicLocationDefinition;
 import brooklyn.location.basic.Machines;
 import brooklyn.location.basic.SshMachineLocation;
@@ -434,7 +433,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 .resolve(dockerLocationSpec, MutableMap.of("identity", "docker", "credential", "docker", ComputeServiceProperties.IMAGE_LOGIN_USER, "root:" + getPassword()));
         setAttribute(JCLOUDS_DOCKER_LOCATION, jcloudsLocation);
 
-        DockerPortForwarder portForwarder = new DockerPortForwarder(new PortForwardManagerAuthority(this));
+        DockerPortForwarder portForwarder = new DockerPortForwarder();
+        portForwarder.injectManagementContext(getManagementContext());
         portForwarder.init(URI.create(jcloudsLocation.getEndpoint()));
         SubnetTier subnetTier = addChild(EntitySpec.create(SubnetTier.class, SubnetTierImpl.class)
                 .configure(SubnetTier.PORT_FORWARDER, portForwarder)

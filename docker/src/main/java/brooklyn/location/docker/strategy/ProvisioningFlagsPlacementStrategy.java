@@ -67,7 +67,7 @@ public class ProvisioningFlagsPlacementStrategy extends AbstractDockerPlacementS
             HardwareDetails details = location.getMachine().getMachineDetails().getHardwareDetails();
             if (details.getCpuCount() > minCores && details.getRam() > minRam) {
                 // Look up other entities already using this location and their requirements
-                Iterable<Entity> entities = getBrooklynManagementContext().getEntityManager().findEntities(EntityPredicates.withLocation(location));
+                Iterable<Entity> entities = getBrooklynManagementContext().getEntityManager().findEntities(EntityPredicates.locationsIncludes(location));
                 int ramUsed = 0, coresUsed = 0;
                 for (Entity entity : entities) {
                     Map<String,Object> entityFlags = entity.getConfig(SoftwareProcess.PROVISIONING_PROPERTIES);

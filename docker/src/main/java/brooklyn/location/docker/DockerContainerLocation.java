@@ -157,6 +157,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
         portForwardManager.recordPublicIpHostname(dockerHost, dockerHost);
         portForwardManager.acquirePublicPortExplicit(dockerHost, hostPort);
         portForwardManager.associate(dockerHost, hostPort, this, containerPort);
+        //FIXME portForwardManager.associate(dockerHost, HostAndPort.fromParts(dockerHost, hostPort), this, containerPort);
     }
 
     @Override
