@@ -72,6 +72,8 @@ public class ContainerHeadroomEnricher extends AbstractEnricher {
     static {
         RendererHints.register(DOCKER_CONTAINER_UTILISATION, RendererHints.displayValue(MathFunctions.percent(3)));
     }
+    
+    private BasicNotificationSensor lastPublished = null;
 
     public void setEntity(EntityLocal entity) {
         Preconditions.checkArgument(entity instanceof DockerInfrastructure, "Entity must be a DockerInfrastructure: %s", entity);
@@ -134,6 +136,12 @@ public class ContainerHeadroomEnricher extends AbstractEnricher {
                     new Object[] { containers, hosts, available, needed });
         }
 
+        double lowThreshold = (double) (possible - (headroom + maxContainers)) / (double) possible;
+        lowThreshold = Math.max(0d, lowThreshold);
+        
+        double highThreshold = (double) (possible - headroom) / (double) possible;
+        highThreshold = Math.max(0, highThreshold);
+        
         // Emit current status of the pool as sensor data
         emit(CONTAINERS_NEEDED, needed);
         emit(DOCKER_CONTAINER_UTILISATION, utilisation);
@@ -142,14 +150,20 @@ public class ContainerHeadroomEnricher extends AbstractEnricher {
         Map<String, Object> properties = ImmutableMap.<String,Object>of(
                 AutoScalerPolicy.POOL_CURRENT_SIZE_KEY, hosts,
                 AutoScalerPolicy.POOL_CURRENT_WORKRATE_KEY, utilisation,
-                AutoScalerPolicy.POOL_LOW_THRESHOLD_KEY, Math.max(0d, (double) (possible - (headroom + maxContainers)) / (double) possible),
-                AutoScalerPolicy.POOL_HIGH_THRESHOLD_KEY, Math.max(utilisation, (double) (possible - headroom) / (double) possible));
+                AutoScalerPolicy.POOL_LOW_THRESHOLD_KEY, lowThreshold,
+                AutoScalerPolicy.POOL_HIGH_THRESHOLD_KEY, highThreshold);
         if (needed > 0) {
+            lastPublished = DOCKER_CONTAINER_CLUSTER_HOT;
             emit(DOCKER_CONTAINER_CLUSTER_HOT, properties);
         } else if (available > (headroom + maxContainers)) {
+            lastPublished = DOCKER_CONTAINER_CLUSTER_COLD;
             emit(DOCKER_CONTAINER_CLUSTER_COLD, properties);
         } else {
-            emit(DOCKER_CONTAINER_CLUSTER_OK, properties);
+            // Only emit ok if we weren't previously
+            if (lastPublished != null && lastPublished != DOCKER_CONTAINER_CLUSTER_OK) {
+                lastPublished = DOCKER_CONTAINER_CLUSTER_OK;
+                emit(DOCKER_CONTAINER_CLUSTER_OK, properties);
+            }
         }
     }
 }
