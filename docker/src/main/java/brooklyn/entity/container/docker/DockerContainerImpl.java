@@ -17,6 +17,7 @@ package brooklyn.entity.container.docker;
 
 import static java.lang.String.format;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Collection;
 import java.util.List;
@@ -409,6 +410,11 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         DockerContainerLocation location = getDynamicLocation();
 
         if (location != null) {
+            try {
+                location.close();
+            } catch (IOException ioe) {
+                LOG.debug("Error closing container location", ioe);
+            }
             LocationManager mgr = getManagementContext().getLocationManager();
             if (mgr.isManaged(location)) {
                 mgr.unmanage(location);
@@ -468,8 +474,6 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     @Override
     public void stop() {
         ServiceStateLogic.setExpectedState(this, Lifecycle.STOPPING);
-
-        super.stop();
 
         disconnectSensors();
 

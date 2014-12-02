@@ -61,6 +61,7 @@ import brooklyn.policy.EnricherSpec;
 import brooklyn.policy.PolicySpec;
 import brooklyn.policy.autoscaling.AutoScalerPolicy;
 import brooklyn.util.collections.MutableMap;
+import brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import brooklyn.util.time.Duration;
 
 import com.google.common.base.Function;
@@ -93,6 +94,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 .configure(Cluster.INITIAL_SIZE, initialSize)
                 .configure(DynamicCluster.QUARANTINE_FAILED_ENTITIES, true)
                 .configure(DynamicCluster.MEMBER_SPEC, dockerHostSpec)
+                .configure(DynamicCluster.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .displayName("Docker Hosts"));
 
         DynamicGroup fabric = addChild(EntitySpec.create(DynamicGroup.class)

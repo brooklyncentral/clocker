@@ -40,6 +40,7 @@ import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
+import brooklyn.entity.container.weave.WeaveContainer;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.machine.MachineEntityImpl;
@@ -69,6 +70,7 @@ import brooklyn.policy.ha.ServiceFailureDetector;
 import brooklyn.policy.ha.ServiceReplacer;
 import brooklyn.policy.ha.ServiceRestarter;
 import brooklyn.util.collections.MutableMap;
+import brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.ssh.BashCommands;
@@ -135,6 +137,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 .configure(Cluster.INITIAL_SIZE, 0)
                 .configure(DynamicCluster.QUARANTINE_FAILED_ENTITIES, false)
                 .configure(DynamicCluster.MEMBER_SPEC, dockerContainerSpec)
+                .configure(DynamicCluster.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .displayName("Docker Containers"));
         if (getConfig(DockerInfrastructure.HA_POLICY_ENABLE)) {
             containers.addPolicy(PolicySpec.create(ServiceReplacer.class)
@@ -465,15 +468,17 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     public void preStop() {
         if (scan != null && scan.isActivated()) scan.stop();
 
+        WeaveContainer weave = getAttribute(WeaveContainer.WEAVE_CONTAINER);
+        if (weave != null) {
+            weave.stop();
+        }
+
         super.preStop();
     }
 
     @Override
     public void postStop() {
         super.postStop(); // Currently does nothing
-
-        Entity containers = getAttribute(DOCKER_CONTAINER_CLUSTER);
-        if (containers != null) Entities.unmanage(containers);
 
         deleteLocation();
     }

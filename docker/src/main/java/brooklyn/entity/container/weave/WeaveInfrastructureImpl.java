@@ -38,6 +38,7 @@ import brooklyn.event.feed.ConfigToAttributes;
 import brooklyn.location.Location;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.policy.PolicySpec;
+import brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import brooklyn.util.net.Cidr;
 
 import com.google.common.collect.ImmutableList;
@@ -62,6 +63,7 @@ public class WeaveInfrastructureImpl extends BasicStartableImpl implements Weave
                 .configure(WeaveContainer.WEAVE_INFRASTRUCTURE, this);
 
         BasicGroup services = addChild(EntitySpec.create(BasicGroup.class)
+                .configure(BasicGroup.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .displayName("Weave Services"));
 
         if (Entities.isManaged(this)) {
