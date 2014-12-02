@@ -96,9 +96,9 @@ public class DockerCloud extends AbstractApplication {
                 .configure(DockerInfrastructure.LOCATION_NAME, getConfig(LOCATION_NAME))
                 .configure(DockerInfrastructure.SECURITY_GROUP, getConfig(SECURITY_GROUP))
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE))
-                .configure(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS, false)
                 .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM, getConfig(DOCKER_CONTAINER_CLUSTER_HEADROOM))
                 .configure(DockerAttributes.WEAVE_ENABLED, getConfig(WEAVE_ENABLED))
+                .configure(DockerInfrastructure.HA_POLICY_ENABLE, false)
                 .configure(DockerInfrastructure.PLACEMENT_STRATEGIES, ImmutableList.<DockerAwarePlacementStrategy>of(
                         maxContainers, 
                         breadthFirst, 
@@ -108,7 +108,6 @@ public class DockerCloud extends AbstractApplication {
                                 JcloudsLocationConfig.MIN_RAM.getName(), 8000,
                                 JcloudsLocationConfig.STOP_IPTABLES.getName(), true))
                         .configure(SoftwareProcess.START_TIMEOUT, Duration.minutes(15))
-                        .configure(DockerHost.HA_POLICY_ENABLE, true)
                         .configure(DockerHost.DOCKER_HOST_NAME_FORMAT, "docker-%1$s")
                         .configure(DockerHost.DOCKER_CONTAINER_SPEC, EntitySpec.create(DockerContainer.class)
                                 .configure(DockerContainer.DOCKER_CONTAINER_NAME_FORMAT, "docker-%2$d")))

@@ -244,7 +244,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
         getManagementContext().getLocationManager().manage(location);
 
-        ManagementContext.PropertiesReloadListener listener = DockerUtils.reloadLocationListener(getManagementContext(), definition, true);
+        ManagementContext.PropertiesReloadListener listener = DockerUtils.reloadLocationListener(getManagementContext(), definition);
         getManagementContext().addPropertiesReloadListener(listener);
         setAttribute(Attributes.PROPERTIES_RELOAD_LISTENER, listener);
 
@@ -254,6 +254,17 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
         LOG.info("New Docker location {} created", location);
         return (DockerLocation) location;
+    }
+
+    @Override
+    public void rebind() {
+        super.rebind();
+
+        // Reload our location definition on rebind
+        ManagementContext.PropertiesReloadListener listener = getAttribute(Attributes.PROPERTIES_RELOAD_LISTENER);
+        if (listener != null) {
+            listener.reloaded();
+        }
     }
 
     @Override

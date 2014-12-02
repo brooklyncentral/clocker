@@ -33,7 +33,6 @@ import brooklyn.config.ConfigKey;
 import brooklyn.config.render.RendererHints;
 import brooklyn.enricher.Enrichers;
 import brooklyn.entity.Entity;
-import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityFunctions;
@@ -62,7 +61,6 @@ import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.location.jclouds.networking.JcloudsLocationSecurityGroupCustomizer;
 import brooklyn.location.jclouds.templates.PortableTemplateBuilder;
 import brooklyn.management.LocationManager;
-import brooklyn.management.ManagementContext;
 import brooklyn.networking.portforwarding.DockerPortForwarder;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.networking.subnet.SubnetTierImpl;
@@ -127,7 +125,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         EntitySpec<?> dockerContainerSpec = EntitySpec.create(getConfig(DOCKER_CONTAINER_SPEC))
                 .configure(DockerContainer.DOCKER_HOST, this)
                 .configure(DockerContainer.DOCKER_INFRASTRUCTURE, getInfrastructure());
-        if (getConfig(HA_POLICY_ENABLE)) {
+        if (getConfig(DockerInfrastructure.HA_POLICY_ENABLE)) {
             dockerContainerSpec.policy(PolicySpec.create(ServiceRestarter.class)
                     .configure(ServiceRestarter.FAILURE_SENSOR_TO_MONITOR, ServiceFailureDetector.ENTITY_FAILED));
         }
@@ -138,7 +136,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 .configure(DynamicCluster.QUARANTINE_FAILED_ENTITIES, false)
                 .configure(DynamicCluster.MEMBER_SPEC, dockerContainerSpec)
                 .displayName("Docker Containers"));
-        if (getConfig(HA_POLICY_ENABLE)) {
+        if (getConfig(DockerInfrastructure.HA_POLICY_ENABLE)) {
             containers.addPolicy(PolicySpec.create(ServiceReplacer.class)
                     .configure(ServiceReplacer.FAILURE_SENSOR_TO_MONITOR, ServiceRestarter.ENTITY_RESTART_FAILED));
         }
@@ -367,16 +365,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         Location location = getManagementContext().getLocationRegistry().resolve(definition);
         setAttribute(DYNAMIC_LOCATION, location);
         setAttribute(LOCATION_NAME, location.getId());
-
-        boolean register = getConfig(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS);
-        if (register) {
-            getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
-        }
         getManagementContext().getLocationManager().manage(location);
-
-        ManagementContext.PropertiesReloadListener listener = DockerUtils.reloadLocationListener(getManagementContext(), definition, register);
-        getManagementContext().addPropertiesReloadListener(listener);
-        setAttribute(Attributes.PROPERTIES_RELOAD_LISTENER, listener);
 
         LOG.info("New Docker host location {} created", location);
         return (DockerHostLocation) location;
@@ -391,13 +380,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             if (mgr.isManaged(location)) {
                 mgr.unmanage(location);
             }
-            if (getConfig(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS)) {
-                getManagementContext().getLocationRegistry().removeDefinedLocation(location.getId());
-            }
-        }
-        ManagementContext.PropertiesReloadListener listener = getAttribute(Attributes.PROPERTIES_RELOAD_LISTENER);
-        if (listener != null) {
-            getManagementContext().removePropertiesReloadListener(listener);
         }
 
         setAttribute(DYNAMIC_LOCATION, null);

@@ -180,29 +180,25 @@ public class DockerUtils {
         }
     };
 
-    public static final ManagementContext.PropertiesReloadListener reloadLocationListener(ManagementContext context, LocationDefinition definition, boolean register) {
-        return new ReloadDockerLocation(context, definition, register);
+    public static final ManagementContext.PropertiesReloadListener reloadLocationListener(ManagementContext context, LocationDefinition definition) {
+        return new ReloadDockerLocation(context, definition);
     }
 
     public static class ReloadDockerLocation implements ManagementContext.PropertiesReloadListener {
 
         private final ManagementContext context;
         private final LocationDefinition definition;
-        private final boolean register;
 
-        public ReloadDockerLocation(ManagementContext context, LocationDefinition definition, boolean register) {
+        public ReloadDockerLocation(ManagementContext context, LocationDefinition definition) {
             this.context = Preconditions.checkNotNull(context, "context");
             this.definition = Preconditions.checkNotNull(definition, "definition");
-            this.register = register;
         }
 
         @Override
         public void reloaded() {
-                Location resolved = context.getLocationRegistry().resolve(definition);
-                if (register) {
-                    context.getLocationRegistry().updateDefinedLocation(definition);
-                }
-                context.getLocationManager().manage(resolved);
+            Location resolved = context.getLocationRegistry().resolve(definition);
+            context.getLocationRegistry().updateDefinedLocation(definition);
+            context.getLocationManager().manage(resolved);
         }
     };
 }

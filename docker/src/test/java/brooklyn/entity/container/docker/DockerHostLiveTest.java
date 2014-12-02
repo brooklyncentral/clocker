@@ -87,22 +87,13 @@ public class DockerHostLiveTest {
     public void testRegistersLocations() throws Exception {
         DockerInfrastructure dockerInfrastructure = app.createAndManageChild(EntitySpec.create(DockerInfrastructure.class)
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 1)
-                .configure(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS, true)
                 .configure(DockerInfrastructure.LOCATION_NAME_PREFIX, "dynamicdockertest")
                 .displayName("Docker Infrastructure"));
         dockerInfrastructure.start(ImmutableList.of(machinePool));
-        
-        List<Entity> dockerHosts = dockerInfrastructure.getDockerHostList();
-        DockerHost dockerHost = (DockerHost) Iterables.getOnlyElement(dockerHosts);
 
         LocationDefinition infraLocDef = findLocationMatchingName("dynamicdockertest.*");
         Location infraLoc = managementContext.getLocationRegistry().resolve(infraLocDef);
         assertTrue(infraLoc instanceof DockerLocation, "loc="+infraLoc);
-
-        LocationDefinition hostLocDef = findLocationMatchingName(dockerInfrastructure.getDynamicLocation().getId() + "-" + dockerHost
-                .getDockerHostName() + ".*");
-        Location hostLoc = managementContext.getLocationRegistry().resolve(hostLocDef);
-        assertTrue(hostLoc instanceof DockerHostLocation, "loc=" + hostLoc);
     }
 
     @Test(groups="Integration")

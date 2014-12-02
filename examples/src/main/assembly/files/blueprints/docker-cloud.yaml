@@ -25,6 +25,7 @@ services:
     docker.host.register: false
     docker.container.cluster.headroom.count: 4
     weave.enabled: true
+    docker.policy.ha.enable: true
     docker.container.strategies:
     - $brooklyn:object:
         type: "brooklyn.location.docker.strategy.MaxContainersPlacementStrategy"
@@ -44,7 +45,6 @@ services:
             minRam: 8000
             stopIptables: true
           start.timeout: 15m
-          docker.policy.ha.enable: true
           docker.host.nameFormat: "docker-%1$s"
           docker.container.spec:
             $brooklyn:entitySpec:

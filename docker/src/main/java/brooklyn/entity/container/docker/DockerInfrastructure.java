@@ -32,6 +32,7 @@ import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.group.DynamicMultiGroup;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.entity.proxying.ImplementedBy;
+import brooklyn.entity.rebind.Rebindable;
 import brooklyn.entity.trait.Resizable;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
@@ -74,9 +75,9 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
     ConfigKey<List<DockerAwarePlacementStrategy>> PLACEMENT_STRATEGIES = ConfigKeys.newConfigKeyWithDefault(DockerAttributes.PLACEMENT_STRATEGIES,
             MutableList.<DockerAwarePlacementStrategy>of(new DepthFirstPlacementStrategy()));
 
-    @SetFromFlag("registerHosts")
-    ConfigKey<Boolean> REGISTER_DOCKER_HOST_LOCATIONS = ConfigKeys.newBooleanConfigKey("docker.host.register",
-            "Register new Docker Host locations for deployment", Boolean.FALSE);
+    @SetFromFlag("highAvailabilty")
+    ConfigKey<Boolean> HA_POLICY_ENABLE = ConfigKeys.newBooleanConfigKey("docker.policy.ha.enable",
+            "Enable high-availability and resilience/restart policies", Boolean.FALSE);
 
     @SetFromFlag("removeEmptyHosts")
     ConfigKey<Boolean> REMOVE_EMPTY_DOCKER_HOSTS = ConfigKeys.newBooleanConfigKey("docker.host.removeEmpty",
