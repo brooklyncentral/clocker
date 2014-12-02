@@ -30,6 +30,7 @@ RUN echo 'root:${entity.password}' | chpasswd
 # install sshd
 RUN type apt-get ; \
   if [ "$?" -eq "0" ] ; then \
+    apt-get update ; \
     apt-get install -y openssh-server ; \
   else \
     yum -y install openssh-server ; \
