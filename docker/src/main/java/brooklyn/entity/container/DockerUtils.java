@@ -30,6 +30,10 @@ import brooklyn.entity.webapp.WebAppServiceConstants;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
+import brooklyn.location.Location;
+import brooklyn.location.LocationDefinition;
+import brooklyn.location.docker.DockerContainerLocation;
+import brooklyn.management.ManagementContext;
 import brooklyn.util.text.Identifiers;
 import brooklyn.util.text.Strings;
 
@@ -37,7 +41,12 @@ import com.google.common.base.CharMatcher;
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.hash.Hashing;
 
@@ -143,4 +152,57 @@ public class DockerUtils {
         String label = Joiner.on(":").skipNulls().join(simpleName, version, dockerfile, repository);
         return Identifiers.makeIdFromHash(Hashing.md5().hashString(label, Charsets.UTF_8).asLong()).toLowerCase(Locale.ENGLISH);
     }
+
+    public static final Predicate<Entity> sameInfrastructure(Entity entity) {
+        Preconditions.checkNotNull(entity, "entity");
+        return new SameInfrastructurePredicate(entity.getId());
+    }
+
+    public static class SameInfrastructurePredicate implements Predicate<Entity> {
+
+        private final String id;
+
+        public SameInfrastructurePredicate(String id) {
+            this.id = Preconditions.checkNotNull(id, "id");
+        }
+
+        @Override
+        public boolean apply(@Nullable Entity input) {
+            // Check if entity is deployed to a DockerContainerLocation
+            Optional<Location> lookup = Iterables.tryFind(input.getLocations(), Predicates.instanceOf(DockerContainerLocation.class));
+            if (lookup.isPresent()) {
+                DockerContainerLocation container = (DockerContainerLocation) lookup.get();
+                // Only containers that are part of this infrastructure
+                return id.equals(container.getOwner().getDockerHost().getInfrastructure().getId());
+            } else {
+                return false;
+            }
+        }
+    };
+
+    public static final ManagementContext.PropertiesReloadListener reloadLocationListener(ManagementContext context, LocationDefinition definition, boolean register) {
+        return new ReloadDockerLocation(context, definition, register);
+    }
+
+    public static class ReloadDockerLocation implements ManagementContext.PropertiesReloadListener {
+
+        private final ManagementContext context;
+        private final LocationDefinition definition;
+        private final boolean register;
+
+        public ReloadDockerLocation(ManagementContext context, LocationDefinition definition, boolean register) {
+            this.context = Preconditions.checkNotNull(context, "context");
+            this.definition = Preconditions.checkNotNull(definition, "definition");
+            this.register = register;
+        }
+
+        @Override
+        public void reloaded() {
+                Location resolved = context.getLocationRegistry().resolve(definition);
+                if (register) {
+                    context.getLocationRegistry().updateDefinedLocation(definition);
+                }
+                context.getLocationManager().manage(resolved);
+        }
+    };
 }

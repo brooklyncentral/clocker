@@ -21,8 +21,8 @@ import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.SoftwareProcess;
+import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.docker.DockerInfrastructure;
-import brooklyn.entity.container.weave.WeaveInfrastructure;
 import brooklyn.entity.proxying.EntitySpec;
 
 /**
@@ -50,7 +50,7 @@ public class LocalDocker extends AbstractApplication {
                 .configure(DockerInfrastructure.LOCATION_NAME, getConfig(LOCATION_NAME))
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 1)
                 .configure(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS, false)
-                .configure(WeaveInfrastructure.ENABLED, false)
+                .configure(DockerAttributes.WEAVE_ENABLED, false)
                 .configure(SoftwareProcess.SKIP_INSTALLATION, getConfig(DOCKER_INSTALLED))
                 .displayName("Docker Infrastructure"));
     }

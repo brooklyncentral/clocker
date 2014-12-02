@@ -41,6 +41,7 @@ import brooklyn.entity.basic.EntityPredicates;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.basic.SoftwareProcess.ChildStartableMode;
 import brooklyn.entity.container.DockerAttributes;
+import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.policy.ContainerHeadroomEnricher;
 import brooklyn.entity.container.weave.WeaveInfrastructure;
 import brooklyn.entity.group.Cluster;
@@ -52,7 +53,6 @@ import brooklyn.entity.trait.Startable;
 import brooklyn.location.Location;
 import brooklyn.location.LocationDefinition;
 import brooklyn.location.basic.BasicLocationDefinition;
-import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.DockerResolver;
 import brooklyn.management.LocationManager;
@@ -65,8 +65,6 @@ import brooklyn.util.time.Duration;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -75,31 +73,7 @@ import com.google.common.collect.Iterables;
 
 public class DockerInfrastructureImpl extends BasicStartableImpl implements DockerInfrastructure {
 
-    static {
-        DockerAttributes.init();
-
-        RendererHints.register(DOCKER_HOST_CLUSTER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(DOCKER_CONTAINER_FABRIC, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(DOCKER_APPLICATIONS, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(WEAVE_INFRASTRUCTURE, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-    }
-
     private static final Logger LOG = LoggerFactory.getLogger(DockerInfrastructureImpl.class);
-
-    private Predicate<Entity> sameInfrastructure = new Predicate<Entity>() {
-        @Override
-        public boolean apply(@Nullable Entity input) {
-            // Check if entity is deployed to a DockerContainerLocation
-            Optional<Location> lookup = Iterables.tryFind(input.getLocations(), Predicates.instanceOf(DockerContainerLocation.class));
-            if (lookup.isPresent()) {
-                DockerContainerLocation container = (DockerContainerLocation) lookup.get();
-                // Only containers that are part of this infrastructure
-                return getId().equals(container.getOwner().getDockerHost().getInfrastructure().getId());
-            } else {
-                return false;
-            }
-        }
-    };
 
     @Override
     public void init() {
@@ -127,7 +101,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 .displayName("All Docker Containers"));
 
         DynamicMultiGroup buckets = addChild(EntitySpec.create(DynamicMultiGroup.class)
-                .configure(DynamicMultiGroup.ENTITY_FILTER, sameInfrastructure)
+                .configure(DynamicMultiGroup.ENTITY_FILTER, DockerUtils.sameInfrastructure(this))
                 .configure(DynamicMultiGroup.RESCAN_INTERVAL, 15L)
                 .configure(DynamicMultiGroup.BUCKET_FUNCTION, new Function<Entity, String>() {
                         @Override
@@ -270,17 +244,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
         getManagementContext().getLocationManager().manage(location);
 
-        ManagementContext.PropertiesReloadListener listener = new ManagementContext.PropertiesReloadListener() {
-
-            private static final long serialVersionUID = -1;
-
-            @Override
-            public void reloaded() {
-                Location resolved = getManagementContext().getLocationRegistry().resolve(definition);
-                getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
-                getManagementContext().getLocationManager().manage(resolved);
-            }
-        };
+        ManagementContext.PropertiesReloadListener listener = DockerUtils.reloadLocationListener(getManagementContext(), definition, true);
         getManagementContext().addPropertiesReloadListener(listener);
         setAttribute(Attributes.PROPERTIES_RELOAD_LISTENER, listener);
 
@@ -345,7 +309,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
         // Find all applications and stop, blocking for up to five minutes until ended
         try {
-            Iterable<Entity> entities = Iterables.filter(getManagementContext().getEntityManager().getEntities(), sameInfrastructure);
+            Iterable<Entity> entities = Iterables.filter(getManagementContext().getEntityManager().getEntities(), DockerUtils.sameInfrastructure(this));
             Set<Application> applications = ImmutableSet.copyOf(Iterables.transform(entities, new Function<Entity, Application>() {
                 @Override
                 public Application apply(Entity input) { return input.getApplication(); }
@@ -359,6 +323,15 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         super.stop();
 
         deleteLocation(); // be more resilient to errors earlier
+    }
+
+    static {
+        DockerAttributes.init();
+
+        RendererHints.register(DOCKER_HOST_CLUSTER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(DOCKER_CONTAINER_FABRIC, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(DOCKER_APPLICATIONS, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(WEAVE_INFRASTRUCTURE, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }

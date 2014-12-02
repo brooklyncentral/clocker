@@ -86,12 +86,6 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
     private static final Logger LOG = LoggerFactory.getLogger(DockerContainerImpl.class);
 
-    static {
-        RendererHints.register(DOCKER_HOST, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(ENTITY, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(CONTAINER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-    }
-
     private transient FunctionFeed sensorFeed;
 
     @Override
@@ -163,7 +157,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
     @Override
     public DockerHost getDockerHost() {
-        return getConfig(DOCKER_HOST);
+        return (DockerHost) getConfig(DOCKER_HOST);
     }
 
     @Override
@@ -471,6 +465,12 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         }
 
         ServiceStateLogic.setExpectedState(this, Lifecycle.STOPPED);
+    }
+
+    static {
+        RendererHints.register(DOCKER_HOST, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(ENTITY, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(CONTAINER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }

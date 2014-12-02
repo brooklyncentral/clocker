@@ -30,10 +30,10 @@ import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.docker.DockerHost;
+import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.group.AbstractMembershipTrackingPolicy;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.proxying.EntitySpec;
-import brooklyn.event.feed.ConfigToAttributes;
 import brooklyn.location.Location;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.policy.PolicySpec;
@@ -45,18 +45,17 @@ public class WeaveInfrastructureImpl extends BasicStartableImpl implements Weave
 
     private static final Logger LOG = LoggerFactory.getLogger(WeaveInfrastructureImpl.class);
 
-    static {
-        RendererHints.register(WEAVE_SERVICES, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(DOCKER_INFRASTRUCTURE, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-    }
+    private transient Object mutex = new Object[0];
 
-    private Object mutex = new Object[0];
+    public WeaveInfrastructureImpl() {
+        super();
+    }
 
     @Override
     public void init() {
         LOG.info("Starting Weave infrastructure id {}", getId());
         super.init();
-        ConfigToAttributes.apply(this, DOCKER_INFRASTRUCTURE);
+//        ConfigToAttributes.apply(this, DOCKER_INFRASTRUCTURE);
 
         EntitySpec<WeaveContainer> weaveSpec = EntitySpec.create(getConfig(WEAVE_CONTAINER_SPEC))
                 .configure(SoftwareProcess.SUGGESTED_VERSION, getConfig(WEAVE_VERSION))
@@ -88,7 +87,7 @@ public class WeaveInfrastructureImpl extends BasicStartableImpl implements Weave
 
     @Override
     public DynamicCluster getDockerHostCluster() {
-        return getConfig(DOCKER_INFRASTRUCTURE).getDockerHostCluster();
+        return getConfig(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.DOCKER_HOST_CLUSTER);
     }
 
     @Override
@@ -164,6 +163,11 @@ public class WeaveInfrastructureImpl extends BasicStartableImpl implements Weave
                 onHostRemoved(item);
             }
         }
+    }
+
+    static {
+        RendererHints.register(WEAVE_SERVICES, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+//        RendererHints.register(DOCKER_INFRASTRUCTURE, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }

@@ -34,12 +34,6 @@ public class WeaveContainerImpl extends SoftwareProcessImpl implements WeaveCont
 
     private static final Logger LOG = LoggerFactory.getLogger(WeaveContainer.class);
 
-    static {
-        RendererHints.register(DOCKER_HOST, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(WEAVE_INFRASTRUCTURE, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(WEAVE_CONTAINER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-    }
-
     @Override
     public void init() {
         super.init();
@@ -90,6 +84,12 @@ public class WeaveContainerImpl extends SoftwareProcessImpl implements WeaveCont
         InetAddress address = getDriver().attachNetwork(containerId);
         LOG.info("Attached {} to container ID {}", address.getHostAddress(), containerId);
         return address;
+    }
+
+    static {
+        RendererHints.register(DOCKER_HOST, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(WEAVE_INFRASTRUCTURE, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(WEAVE_CONTAINER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }

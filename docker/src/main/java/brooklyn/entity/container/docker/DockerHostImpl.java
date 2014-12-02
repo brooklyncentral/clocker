@@ -99,11 +99,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     private transient FunctionFeed scan;
 
-    static {
-        RendererHints.register(DOCKER_INFRASTRUCTURE, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(DOCKER_CONTAINER_CLUSTER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-    }
-
     @Override
     public void init() {
         LOG.info("Starting Docker host id {}", getId());
@@ -290,7 +285,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     public DockerInfrastructure getInfrastructure() {
-        return getConfig(DOCKER_INFRASTRUCTURE);
+        return (DockerInfrastructure) getConfig(DOCKER_INFRASTRUCTURE);
     }
 
     @Override
@@ -361,7 +356,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
      */
     @Override
     public DockerHostLocation createLocation(Map<String, ?> flags) {
-        DockerInfrastructure infrastructure = getConfig(DOCKER_INFRASTRUCTURE);
+        DockerInfrastructure infrastructure = getInfrastructure();
         DockerLocation docker = infrastructure.getDynamicLocation();
         String locationName = docker.getId() + "-" + getDockerHostName();
 
@@ -373,26 +368,13 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         setAttribute(DYNAMIC_LOCATION, location);
         setAttribute(LOCATION_NAME, location.getId());
 
-        if (getConfig(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS)) {
+        boolean register = getConfig(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS);
+        if (register) {
             getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
         }
         getManagementContext().getLocationManager().manage(location);
 
-        ManagementContext.PropertiesReloadListener listener = new ManagementContext.PropertiesReloadListener() {
-
-            private static final long serialVersionUID = -1;
-
-            @Override
-            public void reloaded() {
-                if (getInfrastructure().isLocationAvailable()) {
-                    Location resolved = getManagementContext().getLocationRegistry().resolve(definition);
-                    if (getConfig(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS)) {
-                        getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
-                    }
-                    getManagementContext().getLocationManager().manage(resolved);
-                }
-            }
-        };
+        ManagementContext.PropertiesReloadListener listener = DockerUtils.reloadLocationListener(getManagementContext(), definition, register);
         getManagementContext().addPropertiesReloadListener(listener);
         setAttribute(Attributes.PROPERTIES_RELOAD_LISTENER, listener);
 
@@ -538,6 +520,11 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         } finally {
             getDynamicLocation().getLock().unlock();
         }
+    }
+
+    static {
+        RendererHints.register(DOCKER_INFRASTRUCTURE, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(DOCKER_CONTAINER_CLUSTER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }

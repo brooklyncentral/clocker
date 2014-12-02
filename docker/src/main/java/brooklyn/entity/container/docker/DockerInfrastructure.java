@@ -16,6 +16,7 @@
 package brooklyn.entity.container.docker;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import brooklyn.catalog.Catalog;
@@ -27,14 +28,13 @@ import brooklyn.entity.basic.DynamicGroup;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
-import brooklyn.entity.container.weave.WeaveInfrastructure;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.group.DynamicMultiGroup;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.entity.trait.Resizable;
 import brooklyn.event.AttributeSensor;
-import brooklyn.event.basic.BasicAttributeSensorAndConfigKey;
+import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.strategy.DepthFirstPlacementStrategy;
@@ -45,6 +45,8 @@ import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.util.collections.MutableList;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.flags.SetFromFlag;
+
+import com.google.common.reflect.TypeToken;
 
 /**
  * A collection of machines running Docker.
@@ -81,10 +83,10 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
             "Remove empty Docker Hosts with no containers", Boolean.FALSE);
 
     @SetFromFlag("enableWeave")
-    ConfigKey<Boolean> WEAVE_ENABLED = WeaveInfrastructure.ENABLED;
+    ConfigKey<Boolean> WEAVE_ENABLED = DockerAttributes.WEAVE_ENABLED;
 
     @SetFromFlag("hostSpec")
-    BasicAttributeSensorAndConfigKey<EntitySpec> DOCKER_HOST_SPEC = new BasicAttributeSensorAndConfigKey<EntitySpec>(
+    AttributeSensorAndConfigKey<EntitySpec, EntitySpec> DOCKER_HOST_SPEC = ConfigKeys.newSensorAndConfigKey(
             EntitySpec.class, "docker.host.spec", "Specification to use when creating child Docker Hosts",
             EntitySpec.create(DockerHost.class));
 
@@ -106,7 +108,7 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
     AttributeSensor<DynamicCluster> DOCKER_HOST_CLUSTER = Sensors.newSensor(DynamicCluster.class, "docker.hosts", "Docker host cluster");
     AttributeSensor<DynamicGroup> DOCKER_CONTAINER_FABRIC = Sensors.newSensor(DynamicGroup.class, "docker.fabric", "Docker container fabric");
     AttributeSensor<DynamicMultiGroup> DOCKER_APPLICATIONS = Sensors.newSensor(DynamicMultiGroup.class, "docker.buckets", "Docker applications");
-    AttributeSensor<WeaveInfrastructure> WEAVE_INFRASTRUCTURE = Sensors.newSensor(WeaveInfrastructure.class, "weave.infrastructure", "Weave infrastructure");
+    AttributeSensor<Entity> WEAVE_INFRASTRUCTURE = Sensors.newSensor(Entity.class, "weave.infrastructure", "Weave infrastructure entity");
 
     AttributeSensor<AtomicInteger> DOCKER_HOST_COUNTER = Sensors.newSensor(AtomicInteger.class, "docker.hosts.counter", "Docker host counter");
     AttributeSensor<AtomicInteger> DOCKER_CONTAINER_COUNTER = Sensors.newSensor(AtomicInteger.class, "docker.containers.counter", "Docker container counter");;
@@ -114,10 +116,9 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
     AttributeSensor<Integer> DOCKER_HOST_COUNT = DockerAttributes.DOCKER_HOST_COUNT;
     AttributeSensor<Integer> DOCKER_CONTAINER_COUNT = DockerAttributes.DOCKER_CONTAINER_COUNT;
 
-    ConfigKey<MutableMap<String, Object>> DOCKERFILE_SUBSTITUTIONS = ConfigKeys.newConfigKey(
-        "docker.dockerfile.substitutions",
-        "Dockerfile template substitutions",
-        MutableMap.<String, Object>of());
+    ConfigKey<Map<String, Object>> DOCKERFILE_SUBSTITUTIONS = ConfigKeys.newConfigKey(
+            new TypeToken<Map<String, Object>>() { },
+            "docker.dockerfile.substitutions", "Dockerfile template substitutions", MutableMap.<String, Object>of());
 
     List<Entity> getDockerHostList();
 

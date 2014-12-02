@@ -19,11 +19,11 @@ import java.net.InetAddress;
 
 import brooklyn.catalog.Catalog;
 import brooklyn.config.ConfigKey;
+import brooklyn.entity.Entity;
 import brooklyn.entity.Group;
 import brooklyn.entity.basic.BasicStartable;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.container.docker.DockerHost;
-import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.entity.proxying.ImplementedBy;
@@ -43,8 +43,6 @@ import com.google.common.reflect.TypeToken;
 @Catalog(name = "Weave Infrastructure", description = "Weave SDN.")
 @ImplementedBy(WeaveInfrastructureImpl.class)
 public interface WeaveInfrastructure extends BasicStartable, Supplier<InetAddress> {
-
-    ConfigKey<Boolean> ENABLED = ConfigKeys.newBooleanConfigKey("weave.enabled",  "Enable Weave SDN", Boolean.TRUE);
 
     @SetFromFlag("version")
     ConfigKey<String> WEAVE_VERSION = WeaveContainer.SUGGESTED_VERSION;
@@ -66,7 +64,8 @@ public interface WeaveInfrastructure extends BasicStartable, Supplier<InetAddres
             new TypeToken<EntitySpec<WeaveContainer>>() { },
             "weave.container.spec", "Weave container specification", EntitySpec.create(WeaveContainer.class));
 
-    AttributeSensorAndConfigKey<DockerInfrastructure, DockerInfrastructure> DOCKER_INFRASTRUCTURE = DockerHost.DOCKER_INFRASTRUCTURE;
+    @SetFromFlag("dockerInfrastructure")
+    AttributeSensorAndConfigKey<Entity, Entity> DOCKER_INFRASTRUCTURE = DockerHost.DOCKER_INFRASTRUCTURE;
 
     DynamicCluster getDockerHostCluster();
 

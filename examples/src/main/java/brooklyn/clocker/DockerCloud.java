@@ -21,11 +21,11 @@ import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.SoftwareProcess;
+import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.container.policy.ContainerHeadroomEnricher;
-import brooklyn.entity.container.weave.WeaveInfrastructure;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy;
 import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
@@ -68,7 +68,7 @@ public class DockerCloud extends AbstractApplication {
     public static final ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_HEADROOM = ConfigKeys.newConfigKeyWithDefault(ContainerHeadroomEnricher.CONTAINER_HEADROOM, 4);
 
     @CatalogConfig(label="Enable Weave SDN", priority=50)
-    public static final ConfigKey<Boolean> WEAVE_ENABLED = ConfigKeys.newConfigKeyWithDefault(WeaveInfrastructure.ENABLED, true);
+    public static final ConfigKey<Boolean> WEAVE_ENABLED = ConfigKeys.newConfigKeyWithDefault(DockerAttributes.WEAVE_ENABLED, true);
 
     @Override
     public void initApp() {
@@ -98,7 +98,7 @@ public class DockerCloud extends AbstractApplication {
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE))
                 .configure(DockerInfrastructure.REGISTER_DOCKER_HOST_LOCATIONS, false)
                 .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM, getConfig(DOCKER_CONTAINER_CLUSTER_HEADROOM))
-                .configure(WeaveInfrastructure.ENABLED, getConfig(WEAVE_ENABLED))
+                .configure(DockerAttributes.WEAVE_ENABLED, getConfig(WEAVE_ENABLED))
                 .configure(DockerInfrastructure.PLACEMENT_STRATEGIES, ImmutableList.<DockerAwarePlacementStrategy>of(
                         maxContainers, 
                         breadthFirst, 

@@ -87,7 +87,7 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
             EntitySpec.create(DockerContainer.class));
 
     @SetFromFlag("infrastructure")
-    AttributeSensorAndConfigKey<DockerInfrastructure, DockerInfrastructure> DOCKER_INFRASTRUCTURE = ConfigKeys.newSensorAndConfigKey(DockerInfrastructure.class,
+    AttributeSensorAndConfigKey<Entity, Entity> DOCKER_INFRASTRUCTURE = ConfigKeys.newSensorAndConfigKey(Entity.class,
             "docker.infrastructure", "The parent Docker infrastructure");
 
     ConfigKey<String> DOCKER_HOST_NAME_FORMAT = ConfigKeys.newStringConfigKey("docker.host.nameFormat",

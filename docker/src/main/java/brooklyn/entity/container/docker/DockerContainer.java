@@ -52,10 +52,10 @@ import com.google.common.reflect.TypeToken;
 public interface DockerContainer extends BasicStartable, HasShortName, LocationOwner<DockerContainerLocation, DockerContainer> {
 
     @SetFromFlag("dockerHost")
-    AttributeSensorAndConfigKey<DockerHost, DockerHost> DOCKER_HOST = ConfigKeys.newSensorAndConfigKey(DockerHost.class, "docker.host", "The parent Docker host");
+    AttributeSensorAndConfigKey<Entity, Entity> DOCKER_HOST = ConfigKeys.newSensorAndConfigKey(Entity.class, "docker.host", "The parent Docker host");
 
     @SetFromFlag("infrastructure")
-    AttributeSensorAndConfigKey<DockerInfrastructure, DockerInfrastructure> DOCKER_INFRASTRUCTURE = DockerHost.DOCKER_INFRASTRUCTURE;
+    AttributeSensorAndConfigKey<Entity, Entity> DOCKER_INFRASTRUCTURE = DockerHost.DOCKER_INFRASTRUCTURE;
 
     @SetFromFlag("managed")
     ConfigKey<Boolean> MANAGED = DockerAttributes.MANAGED;

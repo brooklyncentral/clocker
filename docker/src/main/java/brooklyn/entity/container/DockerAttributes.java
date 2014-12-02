@@ -68,6 +68,8 @@ public class DockerAttributes {
             new TypeToken<List<DockerAwarePlacementStrategy>>() { },
             "docker.container.strategies", "Placement strategy list for Docker containers");
 
+    public static final ConfigKey<Boolean> WEAVE_ENABLED = ConfigKeys.newBooleanConfigKey("weave.enabled",  "Enable Weave SDN", Boolean.TRUE);
+
     /*
      * Counter attributes.
      */
