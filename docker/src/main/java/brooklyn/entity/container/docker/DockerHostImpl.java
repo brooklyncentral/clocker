@@ -430,8 +430,12 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
         setAttribute(DOCKER_IMAGE_ID, imageId);
 
+        scan = scanner();
+    }
+
+    private FunctionFeed scanner() {
         Duration interval = getConfig(SCAN_INTERVAL);
-        scan = FunctionFeed.builder()
+        return FunctionFeed.builder()
                 .entity(this)
                 .poll(new FunctionPollConfig<Object, Void>(SCAN)
                         .period(interval)
@@ -445,6 +449,16 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                             })
                         .onFailureOrException(Functions.<Void>constant(null)))
                 .build();
+    }
+
+    @Override
+    public void rebind() {
+        super.rebind();
+
+        // Restart the container scanner
+        if (scan == null) {
+            scan = scanner();
+        }
     }
 
     @Override

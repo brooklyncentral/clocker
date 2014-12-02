@@ -101,7 +101,8 @@ public interface DockerContainer extends BasicStartable, HasShortName, LocationO
 
     AttributeSensor<Entity> CONTAINER = Sensors.newSensor(Entity.class, "docker.container", "The Docker container entity");
 
-    AttributeSensor<Boolean> CONTAINER_RUNNING = Sensors.newBooleanSensor("docker.container.running", "The Docker container process status");
+    AttributeSensor<Boolean> CONTAINER_RUNNING = Sensors.newBooleanSensor("docker.container.running", "The Docker container process running status");
+    AttributeSensor<Boolean> CONTAINER_PAUSED = Sensors.newBooleanSensor("docker.container.paused", "The Docker container process paused status");
 
     AttributeSensor<Lifecycle> SERVICE_STATE_ACTUAL = SoftwareProcess.SERVICE_STATE_ACTUAL;
 

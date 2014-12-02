@@ -86,7 +86,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
     private static final Logger LOG = LoggerFactory.getLogger(DockerContainerImpl.class);
 
-    private transient FunctionFeed sensorFeed;
+    private transient FunctionFeed status;
 
     @Override
     public void init() {
@@ -104,14 +104,15 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     }
 
     protected void connectSensors() {
-        sensorFeed = FunctionFeed.builder()
+        status = FunctionFeed.builder()
                 .entity(this)
-                .period(Duration.TEN_SECONDS)
+                .period(Duration.seconds(15))
                 .poll(new FunctionPollConfig<Boolean, Boolean>(SERVICE_UP)
                         .callable(new Callable<Boolean>() {
                                 @Override
                                 public Boolean call() throws Exception {
-                                    return getAttribute(SSH_MACHINE_LOCATION).isSshable();
+                                    getDockerHost().runDockerCommand("inspect -f {{.Id}} " + getContainerId());
+                                    return Boolean.TRUE;
                                 }
                         })
                         .onFailureOrException(Functions.constant(Boolean.FALSE)))
@@ -124,11 +125,20 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                                 }
                         })
                         .onFailureOrException(Functions.constant(Boolean.FALSE)))
+                .poll(new FunctionPollConfig<Boolean, Boolean>(CONTAINER_PAUSED)
+                        .callable(new Callable<Boolean>() {
+                                @Override
+                                public Boolean call() throws Exception {
+                                    String running = getDockerHost().runDockerCommand("inspect -f {{.State.Paused}} " + getContainerId());
+                                    return Boolean.parseBoolean(Strings.trim(running));
+                                }
+                        })
+                        .onFailureOrException(Functions.constant(Boolean.FALSE)))
                 .build();
     }
 
     public void disconnectSensors() {
-        if (sensorFeed !=  null) sensorFeed.stop();
+        if (status !=  null) status.stop();
     }
 
     @Override
@@ -444,6 +454,15 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         super.start(locations);
 
         ServiceStateLogic.setExpectedState(this, Lifecycle.RUNNING);
+    }
+
+    @Override
+    public void rebind() {
+        super.rebind();
+
+        if (status == null) {
+            connectSensors();
+        }
     }
 
     @Override
