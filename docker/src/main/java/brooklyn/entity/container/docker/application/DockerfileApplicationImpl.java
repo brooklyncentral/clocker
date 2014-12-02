@@ -39,12 +39,33 @@ public class DockerfileApplicationImpl extends SoftwareProcessImpl implements Do
     }
 
     @Override
+    protected void connectSensors() {
+        connectServiceUpIsRunning();
+        super.connectSensors();
+    }
+
+    @Override
+    protected void disconnectSensors() {
+        super.disconnectSensors();
+        disconnectServiceUpIsRunning();
+    }
+
+    @Override
+    public void rebind() {
+        super.rebind();
+
+        disconnectSensors();
+        connectSensors();
+    }
+
+    @Override
     public Class<? extends DockerfileApplicationDriver> getDriverInterface() {
         return DockerfileApplicationDriver.class;
     }
 
     @Override
     protected void preStart() {
+        super.preStart();
     }
 
     @Override
