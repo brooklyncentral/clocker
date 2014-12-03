@@ -259,7 +259,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
     private void configureEnrichers(AbstractEntity entity) {
         for (AttributeSensor sensor : Iterables.filter(entity.getEntityType().getSensors(), AttributeSensor.class)) {
             if (DockerUtils.URL_SENSOR_NAMES.contains(sensor.getName()) ||
-                    sensor.getName().endsWith(".url") ||
+                    (sensor.getName().endsWith(".url") && !sensor.getName().equals("download.url")) ||
                     URI.class.isAssignableFrom(sensor.getType())) {
                 AttributeSensor<String> target = DockerUtils.<String>mappedSensor(sensor);
                 entity.addEnricher(dockerHost.getSubnetTier().uriTransformingEnricher(
