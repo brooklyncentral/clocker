@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
+import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.location.docker.DockerHostLocation;
@@ -52,7 +53,10 @@ public class MaxCpuUsagePlacementStrategy extends BasicDockerPlacementStrategy {
         }
         if (maxCpu == null) maxCpu = DEFAULT_MAX_CPU_USAGE;
 
+        Boolean serviceUp = input.getOwner().getAttribute(SoftwareProcess.SERVICE_UP);
         Double currentCpu = input.getOwner().getAttribute(DockerHost.CPU_USAGE);
+        if (!Boolean.TRUE.equals(serviceUp) || currentCpu == null) return false; // reject
+
         boolean accept = currentCpu < maxCpu;
         if (LOG.isDebugEnabled()) {
             LOG.debug("Location {} CPU usage is {}: {}", new Object[] { input, currentCpu, accept ? "accepted" : "rejected" });
