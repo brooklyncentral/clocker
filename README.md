@@ -11,7 +11,7 @@ This repository contains the required Brooklyn entities, locations and examples.
 
 [![Build Status](https://api.travis-ci.org/brooklyncentral/clocker.svg?branch=master)](https://travis-ci.org/brooklyncentral/clocker)
 [![Issue Stats](http://issuestats.com/github/brooklyncentral/clocker/badge/pr)](http://issuestats.com/github/brooklyncentral/clocker)
-[![Latest Builds](http://img.shields.io/badge/version-0.7.0--SNAPSHOT-blue.svg)](http://clocker-latest.s3-website-eu-west-1.amazonaws.com/)
+[![Latest Builds](http://img.shields.io/badge/version-0.8.0--SNAPSHOT-blue.svg)](http://clocker-latest.s3-website-eu-west-1.amazonaws.com/)
 
 ## Getting started
 
@@ -28,12 +28,13 @@ If you are keen to peek under the covers, you can find the Docker cloud infrastr
 
 ### Using the latest Clocker release
 
-You can deploy a *Docker Cloud Infrastructure* by running these commands:
+The latest version of Clocker is [0.7.0](https://github.com/brooklyncentral/clocker/releases/tag/v0.7.0).
+You can deploy this *Docker Cloud Infrastructure* by running these commands:
 ```Bash
 % wget --no-check-certificate --quiet \
-    -O brooklyn-clocker-examples-0.7.0-20141111-dist.tar.gz http://git.io/3whmPg
-% tar zxf brooklyn-clocker-examples-0.7.0-20141111-dist.tar.gz
-% cd brooklyn-clocker-examples-0.7.0-20141111
+    -O brooklyn-clocker-dist.tar.gz http://git.io/w8jsYQ
+% tar zxf brooklyn-clocker-dist.tar.gz
+% cd brooklyn-clocker
 % ./bin/clocker.sh location
 ```
 Where _location_ specifies the destination to deploy to. For example this can be a jclouds provider
@@ -87,7 +88,8 @@ services:
 
 ### Building from source
 
-Build and run the latest Clocker from source as follows:
+The master branch of Clocker is at version [0.8.0-SNAPSHOT](http://github.com/brooklyncentral/clocker/).
+Build and run this version of Clocker from source as follows:
 
 ```Bash
     % git clone https://github.com/brooklyncentral/clocker.git
