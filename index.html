@@ -105,7 +105,8 @@ You can also paste a YAML blueprint into the <em>YAML</em> tab of the <em>Add Ap
 <span class="l-Scalar-Plain">services</span><span class="p-Indicator">:</span>
 <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">type</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">brooklyn.entity.webapp.jboss.JBoss7Server</span>
   <span class="l-Scalar-Plain">brooklyn.config</span><span class="p-Indicator">:</span>
-    <span class="l-Scalar-Plain">wars.root</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">http://search.maven.org/remotecontent?filepath=io/brooklyn/example/brooklyn-example-hello-world-sql-webapp//brooklyn-example</span>
+    <span class="l-Scalar-Plain">wars.root</span><span class="p-Indicator">:</span>
+    <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">"https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/hello-world.war"</span>
 </pre></div>
 
 <h3><a name="building-from-source" class="anchor" href="#building-from-source"><span class="octicon octicon-link"></span></a>Building from source</h3>
