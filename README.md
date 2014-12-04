@@ -31,9 +31,9 @@ If you are keen to peek under the covers, you can find the Docker cloud infrastr
 You can deploy a *Docker Cloud Infrastructure* by running these commands:
 ```Bash
 % wget --no-check-certificate --quiet \
-    -O brooklyn-clocker-examples-0.7.0-20141111-dist.tar.gz http://git.io/3whmPg
-% tar zxf brooklyn-clocker-examples-0.7.0-20141111-dist.tar.gz
-% cd brooklyn-clocker-examples-0.7.0-20141111
+    -O brooklyn-clocker-dist.tar.gz http://git.io/w8jsYQ
+% tar zxf brooklyn-clocker-dist.tar.gz
+% cd brooklyn-clocker
 % ./bin/clocker.sh location
 ```
 Where _location_ specifies the destination to deploy to. For example this can be a jclouds provider
