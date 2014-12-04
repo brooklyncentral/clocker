@@ -21,7 +21,7 @@
         <ul>
           <li class="download"><a class="buttons" href="https://github.com/brooklyncentral/clocker/zipball/master">Source ZIP</a></li>
           <li class="download"><a class="buttons" href="https://github.com/brooklyncentral/clocker/tarball/master">Source TAR</a></li>
-          <li class="download"><a class="buttons" href="https://github.com/brooklyncentral/clocker/releases/download/20141104/brooklyn-clocker-examples-0.7.0-SNAPSHOT-dist.tar.gz">Distribution TGZ</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/brooklyncentral/clocker/releases/download/v0.7.0/brooklyn-clocker-dist.tar.gz">Distribution TGZ</a></li>
           <li><a class="buttons github" href="https://github.com/brooklyncentral/clocker">View On GitHub</a></li>
         </ul>
         <p class="header">This project is maintained by <a class="header name" href="https://github.com/grkvlt">@grkvlt</a> and <a class="header name" href="https://github.com/andreaturli">@andreaturli</a></p>
@@ -58,9 +58,9 @@ This shows the components being created, including examples of placement strateg
 <p>You can build a <em>Docker Cloud Infrastructure</em> running these commands:</p>
 
 <div class="highlight highlight-Bash"><pre>% wget --no-check-certificate --quiet <span class="se">\</span>
-    -O brooklyn-clocker-examples-0.7.0-SNAPSHOT-dist.tar.gz http://git.io/0ig_ag
-% tar zxf brooklyn-clocker-examples-0.7.0-SNAPSHOT-dist.tar.gz
-% <span class="nb">cd </span>brooklyn-clocker-examples-0.7.0-SNAPSHOT
+    -O brooklyn-clocker-dist.tar.gz http://git.io/w8jsYQ
+% tar zxf brooklyn-clocker-dist.tar.gz
+% <span class="nb">cd </span>brooklyn-clocker
 % ./bin/clocker.sh &lt;location&gt;
 </pre></div>
 
@@ -117,15 +117,16 @@ You can also paste a YAML blueprint into the <em>YAML</em> tab of the <em>Add Ap
     % <span class="nb">cd </span>clocker
     % mvn clean install
     ...
-    % <span class="nb">cd </span>examples
-    % mvn assembly:single
-    ...
     % <span class="nb">cd </span>target
-    % tar zxf brooklyn-clocker-examples-0.7.0-SNAPSHOT-dist.tar.gz
-    % <span class="nb">cd </span>brooklyn-clocker-examples-0.7.0-SNAPSHOT
+    % tar zxf brooklyn-clocker-dist.tar.gz
+    % <span class="nb">cd </span>brooklyn-clocker
     % ./bin/clocker.sh &lt;location&gt;
     ...
 </pre></div>
+
+<p>If you just want to test the latest code, then our <a href="https://travis-ci.org/brooklyncentral/clocker">Travis CI</a>
+build runs for every commit and the resulting distribution files are archived and made available for download on
+<a href="http://clocker-latest.s3-website-eu-west-1.amazonaws.com/">Amazon S3</a>.</p>
 
 <h2><a name="getting-involved" class="anchor" href="#getting-involved"><span class="octicon octicon-link"></span></a>Getting involved</h2>
 
