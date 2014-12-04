@@ -22,7 +22,7 @@
     <parent>
         <artifactId>brooklyn-clocker-parent</artifactId>
         <groupId>io.brooklyn.clocker</groupId>
-        <version>0.7.0-SNAPSHOT</version>
+        <version>0.7.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -67,7 +67,7 @@
         <dependency>
             <groupId>io.brooklyn.clocker</groupId>
             <artifactId>brooklyn-clocker-patches</artifactId>
-            <version>${brooklyn.version}</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
