@@ -73,18 +73,24 @@ first configure a <code>~/.brooklyn/brooklyn.properties</code> file with cloud c
 details, and create an SSH key (defaulting to <code>~/.ssh/id_rsa</code>). A simple example 
 <code>brooklyn.properties</code> file would be:</p>
 
-<pre><code># Sets up a user with credentials admin:password for accessing the Brooklyn web-console.
+<pre><code># Optional user and credential setup of admin:password for accessing the Brooklyn web-console.
 # To genreate the hashed password, see `brooklyn generate-password --user admin`
 brooklyn.webconsole.security.users=admin
 brooklyn.webconsole.security.user.admin.salt=DOp5
 brooklyn.webconsole.security.user.admin.sha256=ffc241eae74cd035fdab353229d53c20943d0c1b6a0a8972a4f24769d99a6826
 
-# Credentials to use in your favourite cloud
-brooklyn.location.jclouds.softlayer.identity=SL123456
-brooklyn.location.jclouds.softlayer.credential=&lt;private-key&gt;
+# Optional SSH configuration
+brooklyn.ssh.config.privateKeyFile = ~/.ssh/id_rsa_clocker
+brooklyn.ssh.config.publicKeyFile = ~/.ssh/id_rsa_clocker.pub
 
-brooklyn.location.jclouds.aws-ec2.identity=AKA_YOUR_ACCESS_KEY_ID
-brooklyn.location.jclouds.aws-ec2.credential=YourSecretKeyWhichIsABase64EncodedString
+# Cloud location configurations
+brooklyn.location.jclouds.softlayer.identity = user.name
+brooklyn.location.jclouds.softlayer.credential = softlayersecretapikey
+brooklyn.location.named.Softlayer\ California = jclouds:softlayer:sjc01
+
+brooklyn.location.jclouds.aws-ec2.identity = ACCESS_KEY
+brooklyn.location.jclouds.aws-ec2.credential = awssecretkey
+brooklyn.location.named.Amazon\ Ireland = jclouds:aws-ec2:eu-west-1
 </code></pre>
 
 <p>For more information on setting up locations, including supplying cloud provider credentials, see the <a href="https://brooklyn.incubator.apache.org/quickstart/#configuring-a-location"><em>Setting up Locations</em> section of
