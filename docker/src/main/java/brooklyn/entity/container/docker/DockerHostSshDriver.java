@@ -318,9 +318,9 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     @Override
     public void customize() {
-        Networking.checkPortsValid(getPortMap());
+        if (isRunning()) stop();
 
-        stop();
+        Networking.checkPortsValid(getPortMap());
 
         newScript(CUSTOMIZING)
                 .failOnNonZeroResultCode().body.append(

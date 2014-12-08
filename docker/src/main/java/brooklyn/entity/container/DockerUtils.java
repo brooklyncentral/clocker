@@ -25,6 +25,7 @@ import brooklyn.entity.Entity;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.database.DatastoreMixins;
 import brooklyn.entity.messaging.MessageBroker;
+import brooklyn.entity.nosql.couchbase.CouchbaseCluster;
 import brooklyn.entity.nosql.couchbase.CouchbaseNode;
 import brooklyn.entity.webapp.WebAppServiceConstants;
 import brooklyn.event.AttributeSensor;
@@ -70,6 +71,10 @@ public class DockerUtils {
             DatastoreMixins.DATASTORE_URL.getName(),
             CouchbaseNode.COUCHBASE_WEB_ADMIN_URL.getName(),
             MessageBroker.BROKER_URL.getName());
+
+    public static final Set<String> BLACKLIST_URL_SENSOR_NAMES = ImmutableSet.<String>of(
+            SoftwareProcess.DOWNLOAD_URL.getName(),
+            CouchbaseCluster.COUCHBASE_CLUSTER_CONNECTION_URL.getName());
 
     public static final String DEFAULT_DOCKER_CONTAINER_NAME_FORMAT = "docker-container-brooklyn-%1$s";
     public static final String DEFAULT_DOCKER_HOST_NAME_FORMAT = "docker-host-brooklyn-%1$s";

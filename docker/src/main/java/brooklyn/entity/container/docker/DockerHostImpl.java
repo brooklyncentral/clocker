@@ -137,6 +137,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 .configure(Cluster.INITIAL_SIZE, 0)
                 .configure(DynamicCluster.QUARANTINE_FAILED_ENTITIES, false)
                 .configure(DynamicCluster.MEMBER_SPEC, dockerContainerSpec)
+                .configure(DynamicCluster.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .configure(DynamicCluster.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .displayName("Docker Containers"));
         if (getConfig(DockerInfrastructure.HA_POLICY_ENABLE)) {
