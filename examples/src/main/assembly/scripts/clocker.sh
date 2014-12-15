@@ -20,10 +20,12 @@
 ROOT=$(cd "$(dirname "$0")/.." && pwd -P)
 
 # check command line arguments for location
-if [ $# -eq 1 ] ; then
+if [ $# -eq 2 ] ; then
+    LAUNCH_FLAGS="--app $2 --location $1"
+elif [ $# -eq 1 ] ; then
     LAUNCH_FLAGS="--app ${ROOT}/blueprints/docker-cloud.yaml --location $1"
 elif [ $# -ne 0 ] ; then
-    echo "Too many arguments; Usage: clocker.sh [location]"
+    echo "Too many arguments; Usage: clocker.sh [location] [blueprint]"
     exit 1
 fi
 
