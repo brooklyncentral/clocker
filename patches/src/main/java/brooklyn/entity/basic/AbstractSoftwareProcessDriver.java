@@ -90,10 +90,11 @@ public abstract class AbstractSoftwareProcessDriver implements SoftwareProcessDr
         boolean skipStart = false;
         Optional<Boolean> locationRunning = Optional.fromNullable(getLocation().getConfig(BrooklynConfigKeys.ENTITY_RUNNING));
         Optional<Boolean> entityRunning = Optional.fromNullable(entity.getConfig(BrooklynConfigKeys.ENTITY_RUNNING));
+        Optional<Boolean> entityStarted = Optional.fromNullable(entity.getConfig(BrooklynConfigKeys.ENTITY_STARTED));
         if (locationRunning.or(entityRunning).or(false)) {
             skipStart = isRunning();
         } else {
-            skipStart = Optional.fromNullable(entity.getConfig(BrooklynConfigKeys.ENTITY_STARTED)).or(false);
+            skipStart = entityStarted.or(false);
         }
         if (!skipStart) {
             DynamicTasks.queue("pre-install", new Runnable() { public void run() {

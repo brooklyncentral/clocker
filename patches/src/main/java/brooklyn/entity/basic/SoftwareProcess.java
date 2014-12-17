@@ -236,6 +236,7 @@ public interface SoftwareProcess extends Entity, Startable {
  
     AttributeSensor<String> PID_FILE = Sensors.newStringSensor("softwareprocess.pid.file", "PID file");
 
+    @Beta
     public static class RestartSoftwareParameters {
         @Beta /** @since 0.7.0 semantics of parameters to restart being explored */
         public static final ConfigKey<Boolean> RESTART_CHILDREN = ConfigKeys.newConfigKey(Boolean.class, "restartChildren",
@@ -255,6 +256,14 @@ public interface SoftwareProcess extends Entity, Startable {
         public static final ConfigKey<RestartMachineMode> RESTART_MACHINE_TYPED = ConfigKeys.newConfigKey(RestartMachineMode.class, "restartMachine");
             
         public enum RestartMachineMode { TRUE, FALSE, AUTO }
+    }
+
+    @Beta
+    public static class StopSoftwareParameters {
+        @Beta /** @since 0.7.0 semantics of parameters to restart being explored */
+        public static final ConfigKey<Boolean> STOP_MACHINE = ConfigKeys.newBooleanConfigKey("stopMachine",
+                "Whether to stop the machine provisioned for this entity:  'true', or 'false' are supported, "
+                        + "with the default being 'true'", true);
     }
     
     // NB: the START, STOP, and RESTART effectors themselves are (re)defined by MachineLifecycleEffectorTasks
