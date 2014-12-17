@@ -94,6 +94,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 .configure(Cluster.INITIAL_SIZE, initialSize)
                 .configure(DynamicCluster.QUARANTINE_FAILED_ENTITIES, true)
                 .configure(DynamicCluster.MEMBER_SPEC, dockerHostSpec)
+                .configure(DynamicCluster.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .configure(DynamicCluster.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .displayName("Docker Hosts"));
 

@@ -63,6 +63,7 @@ public class WeaveInfrastructureImpl extends BasicStartableImpl implements Weave
                 .configure(WeaveContainer.WEAVE_INFRASTRUCTURE, this);
 
         BasicGroup services = addChild(EntitySpec.create(BasicGroup.class)
+                .configure(BasicGroup.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .configure(BasicGroup.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .displayName("Weave Services"));
 
