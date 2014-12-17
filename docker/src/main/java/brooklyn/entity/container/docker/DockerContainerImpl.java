@@ -332,9 +332,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         OsDetails osDetails = dockerHost.getDynamicLocation().getMachine().getMachineDetails().getOsDetails();
         if (osDetails.isMac()) {
             String address = dockerHost.execCommand("boot2docker ip");
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("The boot2docker IP address is {}", Strings.trim(address));
-            }
+            LOG.debug("The boot2docker IP address is {}", Strings.trim(address));
             return Strings.trim(address);
         } else {
             return null;
@@ -433,6 +431,9 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 PortRange p = (PortRange) entity.getConfig(k);
                 if (p != null && !p.isEmpty()) ports.add(p.iterator().next());
             }
+        }
+        for (Entity child : entity.getChildren()) {
+            ports.addAll(getRequiredOpenPorts(child));
         }
         LOG.debug("getRequiredOpenPorts detected default {} for {}", ports, entity);
         return ports;
