@@ -30,7 +30,7 @@ public class LeastContainersPlacementStrategy extends BasicDockerPlacementStrate
         if (size1 == null) size1 = 0;
         Integer size2 = l2.getOwner().getAttribute(DockerHost.DOCKER_CONTAINER_CLUSTER).getAttribute(BasicGroup.GROUP_SIZE);
         if (size2 == null) size2 = 0;
-        return Integer.compare(size1, size2);
+        return size1.compareTo(size2);
     }
 
 }
