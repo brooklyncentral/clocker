@@ -52,6 +52,7 @@ import brooklyn.util.ssh.IptablesCommands.Chain;
 import brooklyn.util.ssh.IptablesCommands.Policy;
 import brooklyn.util.time.Duration;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
@@ -104,9 +105,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     private void addIptablesRule(Integer port) {
         if (getOwner().getConfig(DockerInfrastructure.OPEN_IPTABLES)) {
             SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Using iptables to add access for TCP/{} to {}", port, host);
-            }
+            LOG.debug("Using iptables to add access for TCP/{} to {}", port, host);
             List<String> commands = ImmutableList.of(
                     sudo("iptables -L INPUT -nv | grep -q 'tcp dpt:"+port+"'"),
                     format("if [ $? -eq 0 ]; then ( %s ); else ( %s ); fi",
@@ -125,8 +124,11 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
         String containerId = getOwner().getContainerId();
         Map<Integer, Integer> mapping = JcloudsUtil.dockerPortMappingsFor(getOwner().getDockerHost().getJcloudsLocation(), containerId);
         Integer publicPort = mapping.get(portNumber);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Docker mapped port {} to {} for Container {}", new Object[] { portNumber, publicPort, containerId });
+        if (publicPort == null) {
+            LOG.warn("Unable to map port {} for Container {}. Mappings: {}",
+                    new Object[]{portNumber, containerId, Joiner.on(", ").withKeyValueSeparator("=").join(mapping)});
+        } else {
+            LOG.debug("Docker mapped port {} to {} for Container {}", new Object[]{portNumber, publicPort, containerId});
         }
         return publicPort;
     }
@@ -226,9 +228,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
 
     @Override
     public void close() throws IOException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Close called on Docker container {}: {}", machine, this);
-        }
+        LOG.debug("Close called on Docker container {}: {}", machine, this);
         try {
             machine.close();
             if (dockerContainer.getAttribute(DockerContainer.SERVICE_UP)) {
