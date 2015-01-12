@@ -92,7 +92,6 @@ public class DockerCloud extends AbstractApplication {
         // Currently we've gone for (3).
         
         addChild(EntitySpec.create(DockerInfrastructure.class)
-                .configure(DockerInfrastructure.DOCKER_VERSION, getConfig(DOCKER_VERSION))
                 .configure(DockerInfrastructure.LOCATION_NAME, getConfig(LOCATION_NAME))
                 .configure(DockerInfrastructure.SECURITY_GROUP, getConfig(SECURITY_GROUP))
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE))
@@ -104,6 +103,7 @@ public class DockerCloud extends AbstractApplication {
                         breadthFirst, 
                         cpuUsage))
                 .configure(DockerInfrastructure.DOCKER_HOST_SPEC, EntitySpec.create(DockerHost.class)
+                        .configure(SoftwareProcess.SUGGESTED_VERSION, getConfig(DOCKER_VERSION))
                         .configure(DockerHost.PROVISIONING_FLAGS, MutableMap.<String,Object>of(
                                 JcloudsLocationConfig.MIN_RAM.getName(), 8000,
                                 JcloudsLocationConfig.STOP_IPTABLES.getName(), true))

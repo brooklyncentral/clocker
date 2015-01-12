@@ -87,7 +87,6 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         int initialSize = getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE);
         EntitySpec<?> dockerHostSpec = EntitySpec.create(getConfig(DOCKER_HOST_SPEC))
                 .configure(DockerHost.DOCKER_INFRASTRUCTURE, this)
-                .configure(SoftwareProcess.SUGGESTED_VERSION, getConfig(DOCKER_VERSION))
                 .configure(SoftwareProcess.CHILDREN_STARTABLE_MODE, ChildStartableMode.BACKGROUND_LATE);
 
         DynamicCluster hosts = addChild(EntitySpec.create(DynamicCluster.class)

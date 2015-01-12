@@ -32,7 +32,7 @@ import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.container.DockerCallbacks;
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.DockerContainer;
-import brooklyn.entity.container.docker.DockerInfrastructure;
+import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.location.Location;
 import brooklyn.location.PortRange;
 import brooklyn.location.access.PortForwardManager;
@@ -103,7 +103,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
      * fixed after initial provisioning, so updates use iptables to open ports.
      */
     private void addIptablesRule(Integer port) {
-        if (getOwner().getConfig(DockerInfrastructure.OPEN_IPTABLES)) {
+        if (getOwner().getConfig(DockerHost.OPEN_IPTABLES)) {
             SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
             LOG.debug("Using iptables to add access for TCP/{} to {}", port, host);
             List<String> commands = ImmutableList.of(
