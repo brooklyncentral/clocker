@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jclouds.compute.config.ComputeServiceProperties;
 import org.jclouds.compute.domain.OsFamily;
 import org.jclouds.compute.domain.TemplateBuilder;
-import org.jclouds.googlecomputeengine.GoogleComputeEngineConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -198,7 +197,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             if (overrideImageChoice) {
                 LOG.debug("Customising image choice for {}", this);
                 template = new PortableTemplateBuilder();
-                if (isJcloudsLocation(location, GoogleComputeEngineConstants.GCE_PROVIDER_NAME)) {
+                if (isJcloudsLocation(location, "google-compute-engine")) {
                     template.osFamily(OsFamily.CENTOS).osVersionMatches("6");
                 } else {
                     template.osFamily(OsFamily.UBUNTU).osVersionMatches("12.04");
@@ -223,7 +222,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             // Configure security groups for host virtual machine
             String securityGroup = getConfig(DockerInfrastructure.SECURITY_GROUP);
             if (Strings.isNonBlank(securityGroup)) {
-                if (isJcloudsLocation(location, GoogleComputeEngineConstants.GCE_PROVIDER_NAME)) {
+                if (isJcloudsLocation(location, "google-compute-engine")) {
                     flags.put("networkName", securityGroup);
                 } else {
                     flags.put("securityGroups", securityGroup);

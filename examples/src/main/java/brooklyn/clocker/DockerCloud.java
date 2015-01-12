@@ -15,6 +15,8 @@
  */
 package brooklyn.clocker;
 
+import org.jclouds.compute.domain.OsFamily;
+
 import brooklyn.catalog.Catalog;
 import brooklyn.catalog.CatalogConfig;
 import brooklyn.config.ConfigKey;
@@ -110,6 +112,7 @@ public class DockerCloud extends AbstractApplication {
                         cpuUsage))
                 .configure(DockerInfrastructure.DOCKER_HOST_SPEC, EntitySpec.create(DockerHost.class)
                         .configure(DockerHost.PROVISIONING_FLAGS, MutableMap.<String,Object>of(
+                                JcloudsLocationConfig.OS_FAMILY.getName(), OsFamily.CENTOS,
                                 JcloudsLocationConfig.MIN_RAM.getName(), 8000,
                                 JcloudsLocationConfig.STOP_IPTABLES.getName(), true))
                         .configure(SoftwareProcess.START_TIMEOUT, Duration.minutes(15))
