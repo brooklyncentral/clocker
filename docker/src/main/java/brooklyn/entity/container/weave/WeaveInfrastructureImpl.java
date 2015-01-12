@@ -40,6 +40,7 @@ import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.policy.PolicySpec;
 import brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import brooklyn.util.net.Cidr;
+import brooklyn.util.text.Strings;
 
 import com.google.common.collect.ImmutableList;
 
@@ -56,11 +57,13 @@ public class WeaveInfrastructureImpl extends BasicStartableImpl implements Weave
         ConfigToAttributes.apply(this, DOCKER_INFRASTRUCTURE);
 
         EntitySpec<WeaveContainer> weaveSpec = EntitySpec.create(getConfig(WEAVE_CONTAINER_SPEC))
-                .configure(SoftwareProcess.SUGGESTED_VERSION, getConfig(WEAVE_VERSION))
-                .configure(SoftwareProcess.DOWNLOAD_URL, getConfig(WEAVE_DOWNLOAD_URL))
                 .configure(WeaveContainer.WEAVE_CIDR, getConfig(WEAVE_CIDR))
                 .configure(WeaveContainer.WEAVE_PORT, getConfig(WEAVE_PORT))
                 .configure(WeaveContainer.WEAVE_INFRASTRUCTURE, this);
+        String weaveVersion = getConfig(WEAVE_VERSION);
+        if (Strings.isNonBlank(weaveVersion)) {
+            weaveSpec.configure(SoftwareProcess.SUGGESTED_VERSION, weaveVersion);
+        }
 
         BasicGroup services = addChild(EntitySpec.create(BasicGroup.class)
                 .configure(BasicGroup.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())

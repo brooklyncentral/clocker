@@ -29,7 +29,6 @@ import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
-import brooklyn.event.basic.BasicAttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
@@ -44,17 +43,13 @@ import com.google.common.reflect.TypeToken;
 @ImplementedBy(WeaveInfrastructureImpl.class)
 public interface WeaveInfrastructure extends BasicStartable, Supplier<InetAddress> {
 
-    @SetFromFlag("version")
-    ConfigKey<String> WEAVE_VERSION = WeaveContainer.SUGGESTED_VERSION;
+    ConfigKey<String> WEAVE_VERSION = ConfigKeys.newStringConfigKey("weave.version", "The Weave SDN version number");
 
     @SetFromFlag("cidr")
     ConfigKey<Cidr> WEAVE_CIDR = WeaveContainer.WEAVE_CIDR;
 
     @SetFromFlag("weavePort")
     ConfigKey<Integer> WEAVE_PORT = WeaveContainer.WEAVE_PORT;
-
-    @SetFromFlag("downloadUrl")
-    BasicAttributeSensorAndConfigKey<String> WEAVE_DOWNLOAD_URL = WeaveContainer.DOWNLOAD_URL;
 
     AttributeSensor<Group> WEAVE_SERVICES = Sensors.newSensor(Group.class, "weave.services", "Group of Weave services");
     AttributeSensor<Integer> ALLOCATED_IPS = Sensors.newIntegerSensor("weave.ips", "Number of allocated IPs");

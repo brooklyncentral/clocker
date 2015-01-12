@@ -26,6 +26,7 @@ import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.container.policy.ContainerHeadroomEnricher;
+import brooklyn.entity.container.weave.WeaveInfrastructure;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy;
 import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
@@ -46,7 +47,10 @@ import com.google.common.collect.ImmutableList;
 public class DockerCloud extends AbstractApplication {
 
     @CatalogConfig(label="Docker Version", priority=90)
-    public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "1.2");
+    public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_VERSION, "1.2");
+
+    @CatalogConfig(label="Weave Version", priority=90)
+    public static final ConfigKey<String> WEAVE_VERSION = ConfigKeys.newConfigKeyWithDefault(WeaveInfrastructure.WEAVE_VERSION, "0.8.0");
 
     @CatalogConfig(label="Location Name", priority=80)
     public static final ConfigKey<String> LOCATION_NAME = ConfigKeys.newConfigKeyWithDefault(
@@ -75,10 +79,10 @@ public class DockerCloud extends AbstractApplication {
         MaxContainersPlacementStrategy maxContainers = new MaxContainersPlacementStrategy();
         maxContainers.injectManagementContext(getManagementContext());
         maxContainers.setConfig(MaxContainersPlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_SIZE, getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE));
-        
+
         BreadthFirstPlacementStrategy breadthFirst = new BreadthFirstPlacementStrategy();
         breadthFirst.injectManagementContext(getManagementContext());
-        
+
         MaxCpuUsagePlacementStrategy cpuUsage = new MaxCpuUsagePlacementStrategy();
         cpuUsage.injectManagementContext(getManagementContext());
         cpuUsage.setConfig(MaxCpuUsagePlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_CPU, getConfig(DOCKER_CONTAINER_CLUSTER_MAX_CPU));
@@ -90,8 +94,10 @@ public class DockerCloud extends AbstractApplication {
         //  2. Include a retry.
         //  3. Turn off iptables, instead of enabling DockerInfrastructure.OPEN_IPTABLES on the DockerInfrastructure.
         // Currently we've gone for (3).
-        
+
         addChild(EntitySpec.create(DockerInfrastructure.class)
+                .configure(DockerInfrastructure.DOCKER_VERSION, getConfig(DOCKER_VERSION))
+                .configure(WeaveInfrastructure.WEAVE_VERSION, getConfig(WEAVE_VERSION))
                 .configure(DockerInfrastructure.LOCATION_NAME, getConfig(LOCATION_NAME))
                 .configure(DockerInfrastructure.SECURITY_GROUP, getConfig(SECURITY_GROUP))
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE))
@@ -103,7 +109,6 @@ public class DockerCloud extends AbstractApplication {
                         breadthFirst, 
                         cpuUsage))
                 .configure(DockerInfrastructure.DOCKER_HOST_SPEC, EntitySpec.create(DockerHost.class)
-                        .configure(SoftwareProcess.SUGGESTED_VERSION, getConfig(DOCKER_VERSION))
                         .configure(DockerHost.PROVISIONING_FLAGS, MutableMap.<String,Object>of(
                                 JcloudsLocationConfig.MIN_RAM.getName(), 8000,
                                 JcloudsLocationConfig.STOP_IPTABLES.getName(), true))
@@ -111,6 +116,6 @@ public class DockerCloud extends AbstractApplication {
                         .configure(DockerHost.DOCKER_HOST_NAME_FORMAT, "docker-%1$s")
                         .configure(DockerHost.DOCKER_CONTAINER_SPEC, EntitySpec.create(DockerContainer.class)
                                 .configure(DockerContainer.DOCKER_CONTAINER_NAME_FORMAT, "docker-%2$d")))
-                .displayName("Docker Infrastructure"));
+                .displayName("Docker Cloud"));
     }
 }

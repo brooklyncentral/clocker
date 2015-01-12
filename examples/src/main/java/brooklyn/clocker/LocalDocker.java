@@ -22,7 +22,6 @@ import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
-import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.proxying.EntitySpec;
 
@@ -35,7 +34,7 @@ import brooklyn.entity.proxying.EntitySpec;
 public class LocalDocker extends AbstractApplication {
 
     @CatalogConfig(label="Docker Version", priority=90)
-    public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "1.2");
+    public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_VERSION, "1.2");
 
     @CatalogConfig(label="Location Name", priority=80)
     public static final ConfigKey<String> LOCATION_NAME = ConfigKeys.newConfigKeyWithDefault(
@@ -47,12 +46,11 @@ public class LocalDocker extends AbstractApplication {
     @Override
     public void initApp() {
         addChild(EntitySpec.create(DockerInfrastructure.class)
+                .configure(DockerInfrastructure.DOCKER_VERSION, getConfig(DOCKER_VERSION))
                 .configure(DockerInfrastructure.LOCATION_NAME, getConfig(LOCATION_NAME))
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 1)
                 .configure(DockerAttributes.WEAVE_ENABLED, false)
                 .configure(SoftwareProcess.SKIP_INSTALLATION, getConfig(DOCKER_INSTALLED))
-                .configure(DockerInfrastructure.DOCKER_HOST_SPEC, EntitySpec.create(DockerHost.class)
-                        .configure(SoftwareProcess.SUGGESTED_VERSION, getConfig(DOCKER_VERSION)))
                 .displayName("Docker Infrastructure"));
     }
 }

@@ -55,6 +55,8 @@ import com.google.common.reflect.TypeToken;
 @ImplementedBy(DockerInfrastructureImpl.class)
 public interface DockerInfrastructure extends BasicStartable, Resizable, LocationOwner<DockerLocation, DockerInfrastructure> {
 
+    ConfigKey<String> DOCKER_VERSION = ConfigKeys.newStringConfigKey("docker.version", "The Docker Engine version number");
+
     @SetFromFlag("securityGroup")
     ConfigKey<String> SECURITY_GROUP = ConfigKeys.newStringConfigKey(
             "docker.host.securityGroup", "Set a network security group for cloud servers to use; (null to use default configuration)");

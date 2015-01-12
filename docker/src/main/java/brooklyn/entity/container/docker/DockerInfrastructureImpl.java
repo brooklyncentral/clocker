@@ -62,6 +62,7 @@ import brooklyn.policy.PolicySpec;
 import brooklyn.policy.autoscaling.AutoScalerPolicy;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.collections.QuorumCheck.QuorumChecks;
+import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 
 import com.google.common.base.Function;
@@ -88,6 +89,10 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         EntitySpec<?> dockerHostSpec = EntitySpec.create(getConfig(DOCKER_HOST_SPEC))
                 .configure(DockerHost.DOCKER_INFRASTRUCTURE, this)
                 .configure(SoftwareProcess.CHILDREN_STARTABLE_MODE, ChildStartableMode.BACKGROUND_LATE);
+        String dockerVersion = getConfig(DOCKER_VERSION);
+        if (Strings.isNonBlank(dockerVersion)) {
+            dockerHostSpec.configure(SoftwareProcess.SUGGESTED_VERSION, dockerVersion);
+        }
 
         DynamicCluster hosts = addChild(EntitySpec.create(DynamicCluster.class)
                 .configure(Cluster.INITIAL_SIZE, initialSize)
