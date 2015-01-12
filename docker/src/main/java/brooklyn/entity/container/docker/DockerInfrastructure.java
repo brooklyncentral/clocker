@@ -25,14 +25,12 @@ import brooklyn.entity.Entity;
 import brooklyn.entity.basic.BasicStartable;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.DynamicGroup;
-import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.group.DynamicMultiGroup;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.entity.proxying.ImplementedBy;
-import brooklyn.entity.rebind.Rebindable;
 import brooklyn.entity.trait.Resizable;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
@@ -42,7 +40,6 @@ import brooklyn.location.docker.strategy.DepthFirstPlacementStrategy;
 import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
 import brooklyn.location.docker.strategy.affinity.AffinityRules;
 import brooklyn.location.dynamic.LocationOwner;
-import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.util.collections.MutableList;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.flags.SetFromFlag;
@@ -58,15 +55,9 @@ import com.google.common.reflect.TypeToken;
 @ImplementedBy(DockerInfrastructureImpl.class)
 public interface DockerInfrastructure extends BasicStartable, Resizable, LocationOwner<DockerLocation, DockerInfrastructure> {
 
-    @SetFromFlag("version")
-    ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "1.2");
-
     @SetFromFlag("securityGroup")
     ConfigKey<String> SECURITY_GROUP = ConfigKeys.newStringConfigKey(
             "docker.host.securityGroup", "Set a network security group for cloud servers to use; (null to use default configuration)");
-
-    @SetFromFlag("openIptables")
-    ConfigKey<Boolean> OPEN_IPTABLES = ConfigKeys.newConfigKeyWithPrefix("docker.host.", JcloudsLocationConfig.OPEN_IPTABLES);
 
     @SetFromFlag("minHost")
     ConfigKey<Integer> DOCKER_HOST_CLUSTER_MIN_SIZE = ConfigKeys.newConfigKeyWithPrefix("docker.host.", DynamicCluster.INITIAL_SIZE);

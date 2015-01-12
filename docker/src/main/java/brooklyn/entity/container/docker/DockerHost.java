@@ -43,6 +43,7 @@ import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.docker.strategy.affinity.AffinityRules;
 import brooklyn.location.dynamic.LocationOwner;
 import brooklyn.location.jclouds.JcloudsLocation;
+import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.flags.SetFromFlag;
@@ -61,7 +62,7 @@ import com.google.common.reflect.TypeToken;
 public interface DockerHost extends MachineEntity, Resizable, HasShortName, LocationOwner<DockerHostLocation, DockerHost> {
 
     @SetFromFlag("version")
-    ConfigKey<String> SUGGESTED_VERSION = DockerInfrastructure.DOCKER_VERSION;
+    ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "1.2");
 
     @SetFromFlag("startTimeout")
     ConfigKey<Duration> START_TIMEOUT = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.START_TIMEOUT, Duration.FIVE_MINUTES);
@@ -76,6 +77,9 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
     @SetFromFlag("dockerSslPort")
     PortAttributeSensorAndConfigKey DOCKER_SSL_PORT = ConfigKeys.newPortSensorAndConfigKey("docker.ssl.port",
             "Docker port", PortRanges.fromInteger(2376));
+
+    @SetFromFlag("openIptables")
+    ConfigKey<Boolean> OPEN_IPTABLES = ConfigKeys.newConfigKeyWithPrefix("docker.host.", JcloudsLocationConfig.OPEN_IPTABLES);
 
     @SetFromFlag("containerSpec")
     AttributeSensorAndConfigKey<EntitySpec, EntitySpec> DOCKER_CONTAINER_SPEC = ConfigKeys.newSensorAndConfigKey(

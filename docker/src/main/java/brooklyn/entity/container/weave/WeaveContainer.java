@@ -40,7 +40,7 @@ import brooklyn.util.net.Cidr;
 public interface WeaveContainer extends SoftwareProcess {
 
     @SetFromFlag("version")
-    ConfigKey<String> SUGGESTED_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "master");
+    ConfigKey<String> SUGGESTED_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "0.8.0");
 
     @SetFromFlag("cidr")
     ConfigKey<Cidr> WEAVE_CIDR = ConfigKeys.newConfigKey(Cidr.class, "weave.cidr", "Weave CIDR for address allocation", Cidr.LINK_LOCAL);
@@ -50,7 +50,7 @@ public interface WeaveContainer extends SoftwareProcess {
 
     @SetFromFlag("downloadUrl")
     BasicAttributeSensorAndConfigKey<String> DOWNLOAD_URL = new BasicAttributeSensorAndConfigKey<String>(
-            SoftwareProcess.DOWNLOAD_URL, "https://raw.githubusercontent.com/zettio/weave/${version}/weave");
+            SoftwareProcess.DOWNLOAD_URL, "https://raw.githubusercontent.com/zettio/weave/v${version}/weave");
 
     AttributeSensorAndConfigKey<DockerHost,DockerHost> DOCKER_HOST = ConfigKeys.newSensorAndConfigKey(DockerHost.class, "weave.docker.host", "Docker host we are running on");
     AttributeSensorAndConfigKey<WeaveInfrastructure,WeaveInfrastructure> WEAVE_INFRASTRUCTURE = ConfigKeys.newSensorAndConfigKey(WeaveInfrastructure.class, "weave.infrastructure", "Weave infrastructure entity");
