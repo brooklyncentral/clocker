@@ -47,7 +47,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <!-- Dependencies -->
-        <jclouds.version>1.8.1</jclouds.version>
+        <jclouds.version>2.0.0-SNAPSHOT</jclouds.version>
 
         <!-- Testing -->
         <testng.version>6.8</testng.version>
