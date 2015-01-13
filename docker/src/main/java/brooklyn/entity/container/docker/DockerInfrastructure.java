@@ -27,6 +27,7 @@ import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.DynamicGroup;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
+import brooklyn.entity.container.weave.WeaveInfrastructure;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.group.DynamicMultiGroup;
 import brooklyn.entity.proxying.EntitySpec;
@@ -78,6 +79,9 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
 
     @SetFromFlag("enableWeave")
     ConfigKey<Boolean> WEAVE_ENABLED = DockerAttributes.WEAVE_ENABLED;
+
+    @SetFromFlag("weaveVersion")
+    ConfigKey<String> WEAVE_VERSION = WeaveInfrastructure.WEAVE_VERSION;
 
     @SetFromFlag("hostSpec")
     AttributeSensorAndConfigKey<EntitySpec, EntitySpec> DOCKER_HOST_SPEC = ConfigKeys.newSensorAndConfigKey(

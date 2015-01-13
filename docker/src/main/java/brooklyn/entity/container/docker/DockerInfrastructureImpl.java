@@ -122,7 +122,8 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
         if (getConfig(WEAVE_ENABLED)) {
             WeaveInfrastructure weave = addChild(EntitySpec.create(WeaveInfrastructure.class)
-                    .configure(WeaveInfrastructure.DOCKER_INFRASTRUCTURE, this));
+                    .configure(WeaveInfrastructure.DOCKER_INFRASTRUCTURE, this)
+                    .configure(WeaveInfrastructure.WEAVE_VERSION, getConfig(WEAVE_VERSION)));
             setAttribute(WEAVE_INFRASTRUCTURE, weave);
 
             if (Entities.isManaged(this)) {
