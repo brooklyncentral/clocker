@@ -10,8 +10,8 @@ be deployed to a distributed Docker Cloud Infrastructure.
 This repository contains the required Brooklyn entities, locations and examples.
 
 [![Build Status](https://api.travis-ci.org/brooklyncentral/clocker.svg?branch=master)](https://travis-ci.org/brooklyncentral/clocker)
-[![Issue Stats](http://issuestats.com/github/brooklyncentral/clocker/badge/pr)](http://issuestats.com/github/brooklyncentral/clocker)
-[![Latest Builds](http://img.shields.io/badge/version-0.8.0--SNAPSHOT-blue.svg)](http://clocker-latest.s3-website-eu-west-1.amazonaws.com/)
+[![Latest Builds](http://img.shields.io/badge/version-0.8.0--SNAPSHOT-blue.svg?style=flat)](http://clocker-latest.s3-website-eu-west-1.amazonaws.com/)
+[![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/brooklyncentral/clocker)
 
 ## Getting started
 
