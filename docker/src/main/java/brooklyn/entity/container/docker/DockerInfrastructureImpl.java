@@ -52,7 +52,9 @@ import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.entity.trait.Startable;
 import brooklyn.location.Location;
 import brooklyn.location.LocationDefinition;
+import brooklyn.location.LocationRegistry;
 import brooklyn.location.basic.BasicLocationDefinition;
+import brooklyn.location.basic.BasicLocationRegistry;
 import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.DockerResolver;
 import brooklyn.management.LocationManager;
@@ -80,6 +82,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
     @Override
     public void init() {
         LOG.info("Starting Docker infrastructure id {}", getId());
+        registerLocationResolver();
         super.init();
 
         setAttribute(DOCKER_HOST_COUNTER, new AtomicInteger(0));
@@ -186,6 +189,16 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         }
 
         setAttribute(Attributes.MAIN_URI, URI.create("/clocker"));
+    }
+
+    private void registerLocationResolver() {
+        // Doesn't matter if the resolver is already registered through ServiceLoader.
+        // It just overwrite the existing registration (if any).
+        // TODO Register separate resolvers for each infrastructure instance, unregister on unmanage.
+        LocationRegistry registry = getManagementContext().getLocationRegistry();
+        DockerResolver dockerResolver = new DockerResolver();
+        ((BasicLocationRegistry)registry).registerResolver(dockerResolver);
+        if (LOG.isDebugEnabled()) LOG.debug("Explicitly registered docker resolver: "+dockerResolver);
     }
 
     @Override
