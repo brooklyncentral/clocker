@@ -84,6 +84,9 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
             EntitySpec.class, "docker.host.spec", "Specification to use when creating child Docker Hosts",
             EntitySpec.create(DockerHost.class));
 
+    ConfigKey<String> DOCKER_CERTIFICATE_PATH = ConfigKeys.newStringConfigKey("docker.tls.certificate", "The Docker Engine TLS certificate PEM file path", "server-cert.pem");
+    ConfigKey<String> DOCKER_KEY_PATH = ConfigKeys.newStringConfigKey("docker.tls.key", "The Docker Engine TLS key PEM file path", "server-key.pem");
+
     @SetFromFlag("dockerfileUrl")
     ConfigKey<String> DOCKERFILE_URL = ConfigKeys.newConfigKeyWithDefault(DockerAttributes.DOCKERFILE_URL, DockerUtils.UBUNTU_DOCKERFILE);
 

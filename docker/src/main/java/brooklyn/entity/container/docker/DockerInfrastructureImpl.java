@@ -91,6 +91,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         int initialSize = getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE);
         EntitySpec<?> dockerHostSpec = EntitySpec.create(getConfig(DOCKER_HOST_SPEC))
                 .configure(DockerHost.DOCKER_INFRASTRUCTURE, this)
+                .configure(DockerHost.RUNTIME_FILES, ImmutableMap.of(getConfig(DOCKER_CERTIFICATE_PATH), "cert.pem", getConfig(DOCKER_KEY_PATH), "key.pem"))
                 .configure(SoftwareProcess.CHILDREN_STARTABLE_MODE, ChildStartableMode.BACKGROUND_LATE);
         String dockerVersion = getConfig(DOCKER_VERSION);
         if (Strings.isNonBlank(dockerVersion)) {

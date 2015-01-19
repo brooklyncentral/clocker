@@ -139,8 +139,6 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
 
     Integer getDockerPort();
 
-    Integer getDockerSslPort();
-
     JcloudsLocation getJcloudsLocation();
 
     SubnetTier getSubnetTier();
