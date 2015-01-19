@@ -34,7 +34,7 @@ import brooklyn.entity.proxying.EntitySpec;
 public class LocalDocker extends AbstractApplication {
 
     @CatalogConfig(label="Docker Version", priority=90)
-    public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_VERSION, "1.2");
+    public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_VERSION, "1.3.3");
 
     @CatalogConfig(label="Location Name", priority=80)
     public static final ConfigKey<String> LOCATION_NAME = ConfigKeys.newConfigKeyWithDefault(
