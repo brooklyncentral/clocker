@@ -73,7 +73,6 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     protected Map<String, Integer> getPortMap() {
         Map<String, Integer> ports = MutableMap.of();
         ports.put("dockerPort", getDockerPort());
-        ports.put("dockerSslPort", getDockerSslPort());
         if (getEntity().getConfig(DockerInfrastructure.WEAVE_ENABLED)) {
             // Best guess at available port, as Weave is started _after_ the DockerHost
             Integer weavePort = getEntity()
@@ -95,11 +94,6 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     @Override
     public Integer getDockerPort() {
-        return getEntity().getAttribute(DockerHost.DOCKER_PORT);
-    }
-
-    @Override
-    public Integer getDockerSslPort() {
         return getEntity().getAttribute(DockerHost.DOCKER_SSL_PORT);
     }
 
@@ -356,14 +350,13 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         newScript(CUSTOMIZING)
                 .failOnNonZeroResultCode().body.append(
                 ifExecutableElse0("apt-get", chainGroup(
-                        executeCommandThenAsUserTeeOutputToFile(format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock\"'", getDockerPort()), "root", "/etc/default/docker"),
+                        executeCommandThenAsUserTeeOutputToFile(format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock --tls --tlscert=%s/cert.pem --tlskey=%s/key.pem\"'", getDockerPort(), getRunDir(), getRunDir()), "root", "/etc/default/docker"),
                         sudo("groupadd -f docker"),
                         sudo(format("gpasswd -a %s docker", getMachine().getUser())),
                         sudo("newgrp docker"))),
-                ifExecutableElse0(
-                        "yum",
-                        executeCommandThenAsUserTeeOutputToFile(format("echo 'other_args=\"--selinux-enabled -H tcp://0.0.0.0:%s -H unix:///var/run/docker.sock -e lxc\"'", getDockerPort()), "root",
-                                "/etc/sysconfig/docker")))
+                ifExecutableElse0("yum",
+                        executeCommandThenAsUserTeeOutputToFile(format("echo 'other_args=\"--selinux-enabled -H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock -e lxc --tls --tlscert=%s/cert.pem --tlskey=%s/key.pem\"'", getDockerPort(), getRunDir(), getRunDir()),
+                                "root", "/etc/sysconfig/docker")))
                 .execute();
 
         // Configure volume mappings for the host

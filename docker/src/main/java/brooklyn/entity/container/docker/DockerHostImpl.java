@@ -267,11 +267,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     public Integer getDockerPort() {
-        return getAttribute(DOCKER_PORT);
-    }
-
-    @Override
-    public Integer getDockerSslPort() {
         return getAttribute(DOCKER_SSL_PORT);
     }
 
@@ -413,10 +408,12 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         getDriver().configureSecurityGroups();
 
         Maybe<SshMachineLocation> found = Machines.findUniqueSshMachineLocation(getLocations());
-        String dockerLocationSpec = String.format("jclouds:docker:http://%s:%s",
+        String dockerLocationSpec = String.format("jclouds:docker:https://%s:%s",
                 found.get().getSshHostAndPort().getHostText(), getDockerPort());
+        String certificatePath = getConfig(DockerInfrastructure.DOCKER_CERTIFICATE_PATH);
+        String keyPath = getConfig(DockerInfrastructure.DOCKER_KEY_PATH);
         JcloudsLocation jcloudsLocation = (JcloudsLocation) getManagementContext().getLocationRegistry()
-                .resolve(dockerLocationSpec, MutableMap.of("identity", "docker", "credential", "docker", ComputeServiceProperties.IMAGE_LOGIN_USER, "root:" + getPassword()));
+                .resolve(dockerLocationSpec, MutableMap.of("identity", certificatePath, "credential", keyPath, ComputeServiceProperties.IMAGE_LOGIN_USER, "root:" + getPassword()));
         setAttribute(JCLOUDS_DOCKER_LOCATION, jcloudsLocation);
 
         DockerPortForwarder portForwarder = new DockerPortForwarder();
