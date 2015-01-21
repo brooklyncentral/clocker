@@ -62,7 +62,7 @@ import com.google.common.reflect.TypeToken;
 public interface DockerHost extends MachineEntity, Resizable, HasShortName, LocationOwner<DockerHostLocation, DockerHost> {
 
     @SetFromFlag("version")
-    ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "1.3.3");
+    ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "1.4.1");
 
     @SetFromFlag("startTimeout")
     ConfigKey<Duration> START_TIMEOUT = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.START_TIMEOUT, Duration.FIVE_MINUTES);

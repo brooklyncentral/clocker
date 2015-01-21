@@ -188,7 +188,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
                 // Tag image name and create latch
                 images.putIfAbsent(imageName, new CountDownLatch(1));
-                dockerHost.runDockerCommand(String.format("tag %s %s:latest", imageId, Os.mergePaths(repository, imageName)));
+                dockerHost.runDockerCommand(String.format("tag -f %s %s:latest", imageId, Os.mergePaths(repository, imageName)));
             }
 
             // Set subnet address pre install
