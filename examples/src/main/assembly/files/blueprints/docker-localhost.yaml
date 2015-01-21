@@ -21,7 +21,7 @@ services:
 - serviceType: brooklyn.entity.container.docker.DockerInfrastructure
   id: infrastructure
   brooklyn.config:
-    docker.version: "1.3.3"
+    docker.version: "1.4.1"
     entity.dynamicLocation.name: "my-docker-cloud"
     docker.host.initial.size: 1
     weave.enabled: false

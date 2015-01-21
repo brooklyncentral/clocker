@@ -49,7 +49,7 @@ import com.google.common.collect.ImmutableList;
 public class DockerCloud extends AbstractApplication {
 
     @CatalogConfig(label="Docker Version", priority=90)
-    public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_VERSION, "1.3.3");
+    public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_VERSION, "1.4.1");
 
     @CatalogConfig(label="Weave Version", priority=90)
     public static final ConfigKey<String> WEAVE_VERSION = ConfigKeys.newConfigKeyWithDefault(WeaveInfrastructure.WEAVE_VERSION, "0.8.0");
