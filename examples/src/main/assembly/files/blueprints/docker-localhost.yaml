@@ -13,16 +13,15 @@
 # limitations under the License.
 
 id: docker-localhost
-name: "Docker Localhost Infrastructure"
-origin: "https://github.com/brooklyncentral/clocker/"
-locations:
-- localhost
+name: "Docker Localhost"
+origin: https://github.com/brooklyncentral/clocker/
+location: localhost
 services:
-- serviceType: brooklyn.entity.container.docker.DockerInfrastructure
-  id: infrastructure
+- type: brooklyn.entity.container.docker.DockerInfrastructure
   brooklyn.config:
-    docker.version: "1.4.1"
+    docker.version: 1.4.1
     entity.dynamicLocation.name: "my-docker-cloud"
     docker.host.initial.size: 1
     weave.enabled: false
     install.skip: false
+    docker.container.nameFormat: "container-%2$02x"

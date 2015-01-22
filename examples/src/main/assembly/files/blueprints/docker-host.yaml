@@ -12,36 +12,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-id: docker-cloud
-name: "Docker Cloud"
+id: docker-host
+name: "Docker Host"
 origin: https://github.com/brooklyncentral/clocker/
+location: jclouds:softlayer:ams01
 services:
 - type: brooklyn.entity.container.docker.DockerInfrastructure
   brooklyn.config:
     docker.version: 1.4.1
     weave.version: 0.8.0
     entity.dynamicLocation.name: "my-docker-cloud"
-    docker.host.cluster.initial.size: 2
-    docker.container.cluster.headroom.count: 4
+    docker.host.cluster.initial.size: 1
+    docker.host.register: false
+    docker.container.cluster.headroom.count: 0
     weave.enabled: true
-    docker.policy.ha.enable: true
+    docker.policy.ha.enable: false
     docker.container.strategies:
     - $brooklyn:object:
         type: brooklyn.location.docker.strategy.MaxContainersPlacementStrategy
         brooklyn.config:
-          maxContainers: 8
+          maxContainers: 32
     - $brooklyn:object:
         type: brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy
-    - $brooklyn:object:
-        type: brooklyn.location.docker.strategy.MaxCpuUsagePlacementStrategy
-        brooklyn.config:
-          maxCpuUsage: 0.75
     docker.host.spec:
       $brooklyn:entitySpec:
         type: brooklyn.entity.container.docker.DockerHost
         brooklyn.config:
           docker.host.flags:
             minRam: 7g
+            minCpu: 4
             stopIptables: true
           start.timeout: 15m
           docker.host.nameFormat: "host-%2$02x"
