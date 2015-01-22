@@ -360,5 +360,26 @@
                 <excludedTestGroups>Integration,Live</excludedTestGroups>
             </properties>
         </profile>
+        <profile>
+          <id>cloudsoft-artifactory-repo</id>
+          <activation>
+            <property>
+              <name>brooklyn.deployTo</name>
+              <value>cloudsoftArtifactory</value>
+            </property>
+          </activation>
+          <distributionManagement>
+            <repository>
+              <id>cloudsoft-deploy-artifactory-release</id>
+              <name>Cloudsoft Artifactory libs-release-local repo</name>
+              <url>http://ccweb.cloudsoftcorp.com/maven/libs-release-local/</url>
+            </repository>
+            <snapshotRepository>
+              <id>cloudsoft-deploy-artifactory-snapshot</id>
+              <name>Cloudsoft Artifactory libs-snapshot-local repo</name>
+              <url>http://ccweb.cloudsoftcorp.com/maven/libs-snapshot-local/</url>
+            </snapshotRepository>
+          </distributionManagement>
+        </profile>
     </profiles>
 </project>
