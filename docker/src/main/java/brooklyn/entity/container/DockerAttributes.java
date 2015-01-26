@@ -20,11 +20,13 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import brooklyn.config.ConfigKey;
+import brooklyn.entity.Entity;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
+import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.flags.TypeCoercions;
 import brooklyn.util.internal.ssh.SshTool;
 import brooklyn.util.javalang.Reflections;
@@ -68,7 +70,10 @@ public class DockerAttributes {
             new TypeToken<List<DockerAwarePlacementStrategy>>() { },
             "docker.container.strategies", "Placement strategy list for Docker containers");
 
-    public static final ConfigKey<Boolean> WEAVE_ENABLED = ConfigKeys.newBooleanConfigKey("weave.enabled",  "Enable Weave SDN", Boolean.TRUE);
+    public static final AttributeSensorAndConfigKey<Entity, Entity> DOCKER_INFRASTRUCTURE = ConfigKeys.newSensorAndConfigKey(Entity.class,
+            "docker.infrastructure", "The Docker infrastructure");
+
+    public static final ConfigKey<Boolean> SDN_ENABLE = ConfigKeys.newBooleanConfigKey("sdn.enable", "Enable Sofware Defined Networking", Boolean.FALSE);
 
     /*
      * Counter attributes.

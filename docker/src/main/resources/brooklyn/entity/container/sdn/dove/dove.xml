@@ -1,0 +1,15 @@
+[#ftl]
+<dove loglevel="0">
+  <agent ip="127.0.0.1" port="12340" path="/tmp/doveagent" maxtunnels="10" maxgws="10" maxips="10" maxpolicies="10"/>
+  <cmd>iptables -t filter --flush</cmd>
+  <cmd>ip route add blackhole 172.16.15.1/32</cmd>
+  <blackhole ip="172.16.15.1"/>
+  <router mac="00:18:b1:aa:aa:00"/>
+  <gateway mac="00:18:b1:aa:aa:01"/>
+  <dmc ip="${entity.dmcAddress}" request_port="80" response_port="1999"/>
+  <data ip="${entity.agentAddress}"/>
+  <!-- cmd> ip link set ethX mtu 1600 </cmd --> 
+  <periodics secs="60"/>
+  <nbtreduction state="off"/>
+  <openstack support="no"/>
+</dove>

@@ -20,6 +20,7 @@ import org.jclouds.compute.domain.OsFamily;
 import brooklyn.catalog.Catalog;
 import brooklyn.catalog.CatalogConfig;
 import brooklyn.config.ConfigKey;
+import brooklyn.entity.Entity;
 import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.SoftwareProcess;
@@ -28,7 +29,6 @@ import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.container.policy.ContainerHeadroomEnricher;
-import brooklyn.entity.container.weave.WeaveInfrastructure;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy;
 import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
@@ -36,6 +36,8 @@ import brooklyn.location.docker.strategy.MaxContainersPlacementStrategy;
 import brooklyn.location.docker.strategy.MaxCpuUsagePlacementStrategy;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.util.collections.MutableMap;
+import brooklyn.util.exceptions.Exceptions;
+import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 
 import com.google.common.collect.ImmutableList;
@@ -48,11 +50,14 @@ import com.google.common.collect.ImmutableList;
         iconUrl="classpath://docker-top-logo.png")
 public class DockerCloud extends AbstractApplication {
 
-    @CatalogConfig(label="Docker Version", priority=90)
+    @CatalogConfig(label="Docker Version", priority=100)
     public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_VERSION, "1.4.1");
 
-    @CatalogConfig(label="Weave Version", priority=90)
-    public static final ConfigKey<String> WEAVE_VERSION = ConfigKeys.newConfigKeyWithDefault(WeaveInfrastructure.WEAVE_VERSION, "0.8.0");
+    @CatalogConfig(label="SDN Provider", priority=90)
+    public static final ConfigKey<String> SDN_PROVIDER = ConfigKeys.newStringConfigKey("sdn.provider", "SDN provider specification", "brooklyn.entity.container.weave.WeaveInfrastructure");
+
+    @CatalogConfig(label="SDN Version", priority=90)
+    public static final ConfigKey<String> SDN_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "0.8.0");
 
     @CatalogConfig(label="Location Name", priority=80)
     public static final ConfigKey<String> LOCATION_NAME = ConfigKeys.newConfigKeyWithDefault(
@@ -72,9 +77,6 @@ public class DockerCloud extends AbstractApplication {
 
     @CatalogConfig(label="Containers Headroom", priority=50)
     public static final ConfigKey<Integer> DOCKER_CONTAINER_CLUSTER_HEADROOM = ConfigKeys.newConfigKeyWithDefault(ContainerHeadroomEnricher.CONTAINER_HEADROOM, 4);
-
-    @CatalogConfig(label="Enable Weave SDN", priority=50)
-    public static final ConfigKey<Boolean> WEAVE_ENABLED = ConfigKeys.newConfigKeyWithDefault(DockerAttributes.WEAVE_ENABLED, true);
 
     @Override
     public void initApp() {
@@ -97,19 +99,27 @@ public class DockerCloud extends AbstractApplication {
         //  3. Turn off iptables, instead of enabling DockerInfrastructure.OPEN_IPTABLES on the DockerInfrastructure.
         // Currently we've gone for (3).
 
+        Class<? extends Entity> sdnProviderClass = null;
+        try {
+            sdnProviderClass = (Class<? extends Entity>) Class.forName(getConfig(SDN_PROVIDER));
+        } catch (ClassNotFoundException cnfe) {
+            throw Exceptions.propagate(cnfe);
+        }
+
         addChild(EntitySpec.create(DockerInfrastructure.class)
                 .configure(DockerInfrastructure.DOCKER_VERSION, getConfig(DOCKER_VERSION))
-                .configure(WeaveInfrastructure.WEAVE_VERSION, getConfig(WEAVE_VERSION))
                 .configure(DockerInfrastructure.LOCATION_NAME, getConfig(LOCATION_NAME))
                 .configure(DockerInfrastructure.SECURITY_GROUP, getConfig(SECURITY_GROUP))
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE))
                 .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM, getConfig(DOCKER_CONTAINER_CLUSTER_HEADROOM))
-                .configure(DockerAttributes.WEAVE_ENABLED, getConfig(WEAVE_ENABLED))
                 .configure(DockerInfrastructure.HA_POLICY_ENABLE, false)
                 .configure(DockerInfrastructure.PLACEMENT_STRATEGIES, ImmutableList.<DockerAwarePlacementStrategy>of(
                         maxContainers, 
                         breadthFirst, 
                         cpuUsage))
+                .configure(DockerAttributes.SDN_ENABLE, Strings.isNonEmpty(getConfig(SDN_PROVIDER)))
+                .configure(DockerInfrastructure.SDN_PROVIDER_SPEC, EntitySpec.create(sdnProviderClass)
+                        .configure(SoftwareProcess.SUGGESTED_VERSION, getConfig(SDN_VERSION)))
                 .configure(DockerInfrastructure.DOCKER_HOST_SPEC, EntitySpec.create(DockerHost.class)
                         .configure(DockerHost.PROVISIONING_FLAGS, MutableMap.<String,Object>of(
                                 JcloudsLocationConfig.OS_FAMILY.getName(), OsFamily.CENTOS,

@@ -43,7 +43,7 @@ import brooklyn.entity.basic.SoftwareProcess.ChildStartableMode;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.policy.ContainerHeadroomEnricher;
-import brooklyn.entity.container.weave.WeaveInfrastructure;
+import brooklyn.entity.container.sdn.weave.WeaveNetwork;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.group.DynamicMultiGroup;
@@ -124,13 +124,13 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                         .configure(BasicGroup.MEMBER_DELEGATE_CHILDREN, true))
                 .displayName("Docker Applications"));
 
-        if (getConfig(WEAVE_ENABLED)) {
-            WeaveInfrastructure weave = addChild(EntitySpec.create(WeaveInfrastructure.class)
-                    .configure(WeaveInfrastructure.DOCKER_INFRASTRUCTURE, this));
-            setAttribute(WEAVE_INFRASTRUCTURE, weave);
+        if (getConfig(SDN_PROVIDER_SPEC) != null) {
+            Entity sdn = addChild(EntitySpec.create(getConfig(SDN_PROVIDER_SPEC))
+                    .configure(DockerAttributes.DOCKER_INFRASTRUCTURE, this));
+            setAttribute(SDN_PROVIDER, sdn);
 
             if (Entities.isManaged(this)) {
-                Entities.manage(weave);
+                Entities.manage(sdn);
             }
         }
 
@@ -363,7 +363,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         RendererHints.register(DOCKER_HOST_CLUSTER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(DOCKER_CONTAINER_FABRIC, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(DOCKER_APPLICATIONS, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(WEAVE_INFRASTRUCTURE, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(SDN_PROVIDER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }

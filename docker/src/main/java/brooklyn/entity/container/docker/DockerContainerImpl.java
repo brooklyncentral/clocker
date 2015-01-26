@@ -45,7 +45,7 @@ import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.basic.ServiceStateLogic;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
-import brooklyn.entity.container.weave.WeaveContainer;
+import brooklyn.entity.container.sdn.SdnAgent;
 import brooklyn.event.feed.ConfigToAttributes;
 import brooklyn.event.feed.function.FunctionFeed;
 import brooklyn.event.feed.function.FunctionPollConfig;
@@ -376,9 +376,9 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             setAttribute(CONTAINER_ID, container.getNode().getId());
 
             // If Weave is enabled, attach to the network
-            if (getConfig(DockerInfrastructure.WEAVE_ENABLED)) {
-                WeaveContainer weave = Entities.attributeSupplierWhenReady(dockerHost, WeaveContainer.WEAVE_CONTAINER).get();
-                InetAddress subnetAddress = weave.attachNetwork(getAttribute(CONTAINER_ID));
+            if (getConfig(DockerInfrastructure.SDN_ENABLE)) {
+                SdnAgent agent = Entities.attributeSupplierWhenReady(dockerHost, SdnAgent.SDN_AGENT).get();
+                InetAddress subnetAddress = agent.attachNetwork(getAttribute(CONTAINER_ID));
                 setAttribute(Attributes.SUBNET_ADDRESS, subnetAddress.getHostAddress());
             }
 

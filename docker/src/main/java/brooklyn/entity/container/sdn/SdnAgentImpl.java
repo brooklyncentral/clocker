@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.entity.container.dove;
+package brooklyn.entity.container.sdn;
 
 import java.net.InetAddress;
 
@@ -28,27 +28,22 @@ import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.event.feed.ConfigToAttributes;
 
 /**
- * A single Docker container.
+ * An SDN agent process on a Docker host.
  */
-public class DoveAgentImpl extends SoftwareProcessImpl implements DoveAgent {
+public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAgent {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DoveAgent.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SdnAgent.class);
 
     @Override
     public void init() {
         super.init();
         ConfigToAttributes.apply(this, DOCKER_HOST);
-        ConfigToAttributes.apply(this, WEAVE_INFRASTRUCTURE);
+        ConfigToAttributes.apply(this, SDN_PROVIDER);
     }
 
     @Override
-    public Class getDriverInterface() {
-        return DoveAgentDriver.class;
-    }
-
-    @Override
-    public DoveAgentDriver getDriver() {
-        return (DoveAgentDriver) super.getDriver();
+    public SdnAgentDriver getDriver() {
+        return (SdnAgentDriver) super.getDriver();
     }
 
     @Override
@@ -70,13 +65,13 @@ public class DoveAgentImpl extends SoftwareProcessImpl implements DoveAgent {
 
     @Override
     public void preStart() {
-        InetAddress address = getConfig(DoveAgent.WEAVE_INFRASTRUCTURE).get();
-        setAttribute(WEAVE_ADDRESS, address);
+        InetAddress address = getConfig(SDN_PROVIDER).get();
+        setAttribute(SDN_AGENT_ADDRESS, address);
     }
 
     @Override
     public void postStart() {
-        ((EntityInternal) getDockerHost()).setAttribute(WEAVE_CONTAINER, this);
+        ((EntityInternal) getDockerHost()).setAttribute(SDN_AGENT, this);
     }
 
     @Override
@@ -88,8 +83,8 @@ public class DoveAgentImpl extends SoftwareProcessImpl implements DoveAgent {
 
     static {
         RendererHints.register(DOCKER_HOST, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(WEAVE_INFRASTRUCTURE, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(WEAVE_CONTAINER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(SDN_PROVIDER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(SDN_AGENT, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }

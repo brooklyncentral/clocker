@@ -31,8 +31,8 @@ import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.lifecycle.ScriptHelper;
 import brooklyn.entity.container.DockerUtils;
-import brooklyn.entity.container.weave.WeaveContainer;
-import brooklyn.entity.container.weave.WeaveInfrastructure;
+import brooklyn.entity.container.sdn.SdnAgent;
+import brooklyn.entity.container.sdn.weave.WeaveNetwork;
 import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.location.OsDetails;
 import brooklyn.location.basic.SshMachineLocation;
@@ -70,12 +70,13 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     protected Map<String, Integer> getPortMap() {
         Map<String, Integer> ports = MutableMap.of();
         ports.put("dockerPort", getDockerPort());
-        if (getEntity().getConfig(DockerInfrastructure.WEAVE_ENABLED)) {
+        if (getEntity().getConfig(DockerInfrastructure.SDN_ENABLE)) {
+            // XXX make generic
             // Best guess at available port, as Weave is started _after_ the DockerHost
             Integer weavePort = getEntity()
                     .getAttribute(DockerHost.DOCKER_INFRASTRUCTURE)
-                    .getAttribute(DockerInfrastructure.WEAVE_INFRASTRUCTURE)
-                    .getConfig(WeaveInfrastructure.WEAVE_PORT);
+                    .getAttribute(DockerInfrastructure.SDN_PROVIDER)
+                    .getConfig(WeaveNetwork.WEAVE_PORT);
             ports.put("weavePort", weavePort);
         }
         return ports;
@@ -396,24 +397,10 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .build();
         List<IpPermission> permissions = MutableList.of(dockerPort, dockerSslPort, dockerPortForwarding);
 
-        if (getEntity().getConfig(DockerInfrastructure.WEAVE_ENABLED)) {
-            Integer weavePort = ((DockerHost) getEntity()).getInfrastructure()
-                    .getAttribute(DockerInfrastructure.WEAVE_INFRASTRUCTURE)
-                    .getConfig(WeaveContainer.WEAVE_PORT);
-            IpPermission weaveTcpPort = IpPermission.builder()
-                    .ipProtocol(IpProtocol.TCP)
-                    .fromPort(weavePort)
-                    .toPort(weavePort)
-                    .cidrBlock(Cidr.UNIVERSAL.toString()) // TODO could be tighter restricted?
-                    .build();
-            permissions.add(weaveTcpPort);
-            IpPermission weaveUdpPort = IpPermission.builder()
-                    .ipProtocol(IpProtocol.UDP)
-                    .fromPort(weavePort)
-                    .toPort(weavePort)
-                    .cidrBlock(Cidr.UNIVERSAL.toString()) // TODO could be tighter restricted?
-                    .build();
-            permissions.add(weaveUdpPort);
+        if (getEntity().getConfig(DockerInfrastructure.SDN_ENABLE)) {
+            SdnAgent agent = getEntity().getAttribute(SdnAgent.SDN_AGENT);
+            Collection<IpPermission> sdnPermissions = agent.getIpPermissions();
+            permissions.addAll(sdnPermissions);
         }
 
         return permissions;
