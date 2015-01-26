@@ -15,6 +15,7 @@
 id: docker-cloud
 name: "Docker Cloud"
 origin: https://github.com/brooklyncentral/clocker/
+#location: named:dove
 services:
 - type: brooklyn.entity.container.docker.DockerInfrastructure
   brooklyn.config:
@@ -22,8 +23,7 @@ services:
     entity.dynamicLocation.name: "my-docker-cloud"
     docker.host.cluster.initial.size: 2
     docker.host.register: false
-    docker.container.cluster.headroom.count: 4
-    sdn.enabled: false
+    docker.container.cluster.headroom.count: 0
     docker.policy.ha.enable: false
     docker.container.strategies:
     - $brooklyn:object:
@@ -32,10 +32,15 @@ services:
           maxContainers: 8
     - $brooklyn:object:
         type: brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy
-    - $brooklyn:object:
-        type: brooklyn.location.docker.strategy.MaxCpuUsagePlacementStrategy
+    sdn.enabled: true
+    sdn.provider.spec:
+      $brooklyn:entitySpec:
+        type: brooklyn.entity.container.sdn.dove.DoveNetwork
         brooklyn.config:
-          maxCpuUsage: 0.75
+          sdn.dove.dmc.address: 10.52.36.66
+          sdn.dove.vlanId: 644534
+#          sdn.dove.vlanId: 425232
+          sdn.cidr: 10.52.36.72/29
     docker.host.spec:
       $brooklyn:entitySpec:
         type: brooklyn.entity.container.docker.DockerHost

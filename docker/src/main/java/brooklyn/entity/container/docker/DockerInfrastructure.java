@@ -76,8 +76,11 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
     ConfigKey<Boolean> REMOVE_EMPTY_DOCKER_HOSTS = ConfigKeys.newBooleanConfigKey("docker.host.removeEmpty",
             "Remove empty Docker Hosts with no containers", Boolean.FALSE);
 
-    @SetFromFlag("enableWeave")
-    ConfigKey<Boolean> WEAVE_ENABLED = DockerAttributes.WEAVE_ENABLED;
+    @SetFromFlag("enableSdn")
+    ConfigKey<Boolean> SDN_ENABLE = DockerAttributes.SDN_ENABLE;
+
+    @SetFromFlag("sdnProviderSpec")
+    ConfigKey<EntitySpec> SDN_PROVIDER_SPEC = ConfigKeys.newConfigKey(EntitySpec.class, "sdn.provider.spec", "SDN provider entity specification");
 
     @SetFromFlag("hostSpec")
     AttributeSensorAndConfigKey<EntitySpec, EntitySpec> DOCKER_HOST_SPEC = ConfigKeys.newSensorAndConfigKey(
@@ -105,7 +108,7 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
     AttributeSensor<DynamicCluster> DOCKER_HOST_CLUSTER = Sensors.newSensor(DynamicCluster.class, "docker.hosts", "Docker host cluster");
     AttributeSensor<DynamicGroup> DOCKER_CONTAINER_FABRIC = Sensors.newSensor(DynamicGroup.class, "docker.fabric", "Docker container fabric");
     AttributeSensor<DynamicMultiGroup> DOCKER_APPLICATIONS = Sensors.newSensor(DynamicMultiGroup.class, "docker.buckets", "Docker applications");
-    AttributeSensor<Entity> WEAVE_INFRASTRUCTURE = Sensors.newSensor(Entity.class, "weave.infrastructure", "Weave infrastructure entity");
+    AttributeSensor<Entity> SDN_PROVIDER = Sensors.newSensor(Entity.class, "sdn.provider.network", "SDN provider network entity");
 
     AttributeSensor<AtomicInteger> DOCKER_HOST_COUNTER = Sensors.newSensor(AtomicInteger.class, "docker.hosts.counter", "Docker host counter");
     AttributeSensor<AtomicInteger> DOCKER_CONTAINER_COUNTER = Sensors.newSensor(AtomicInteger.class, "docker.containers.counter", "Docker container counter");;

@@ -1,7 +1,7 @@
 /*
  * Copyright 2014 by Cloudsoft Corporation Limited
  */
-package brooklyn.entity.container.weave;
+package brooklyn.entity.container.sdn.weave;
 
 import java.net.InetAddress;
 import java.util.List;
@@ -82,7 +82,7 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
 
     @Override
     public void launch() {
-        InetAddress address = getEntity().getAttribute(WeaveContainer.WEAVE_ADDRESS);
+        InetAddress address = getEntity().getAttribute(WeaveContainer.SDN_AGENT_ADDRESS);
         Boolean firstMember = getEntity().getAttribute(AbstractGroup.FIRST_MEMBER);
         Entity first = getEntity().getAttribute(AbstractGroup.FIRST);
         LOG.info("Launching {} Weave service at {}", Boolean.TRUE.equals(firstMember) ? "first" : "next", address.getHostAddress());
@@ -112,8 +112,8 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
     public InetAddress attachNetwork(String containerId) {
         Tasks.setBlockingDetails("Attach Weave to " + containerId);
         try {
-            Cidr cidr = getEntity().getConfig(WeaveInfrastructure.WEAVE_CIDR);
-            InetAddress address = getEntity().getConfig(WeaveContainer.WEAVE_INFRASTRUCTURE).get();
+            Cidr cidr = getEntity().getConfig(WeaveNetwork.CIDR);
+            InetAddress address = getEntity().getConfig(WeaveContainer.SDN_PROVIDER).get();
             ((WeaveContainer) getEntity()).getDockerHost().execCommand(BashCommands.sudo(String.format("%s attach %s/%d %s",
                     getWeaveCommand(), address.getHostAddress(), cidr.getLength(), containerId)));
             return address;

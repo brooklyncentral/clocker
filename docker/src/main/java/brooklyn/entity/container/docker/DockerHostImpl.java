@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jclouds.compute.config.ComputeServiceProperties;
 import org.jclouds.compute.domain.OsFamily;
 import org.jclouds.compute.domain.TemplateBuilder;
+import org.jclouds.softlayer.compute.options.SoftLayerTemplateOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +40,8 @@ import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
-import brooklyn.entity.container.weave.WeaveContainer;
+import brooklyn.entity.container.sdn.SdnAgent;
+import brooklyn.entity.container.sdn.dove.DoveNetwork;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.machine.MachineEntityImpl;
@@ -199,6 +201,10 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 template = new PortableTemplateBuilder();
                 if (isJcloudsLocation(location, "google-compute-engine")) {
                     template.osFamily(OsFamily.CENTOS).osVersionMatches("6");
+                } else if (isJcloudsLocation(location, "softlayer") && isSdnProvider("DoveNetwork")) {
+                    template.osFamily(OsFamily.CENTOS).osVersionMatches("6");
+                    Integer vlanId = getAttribute(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER).getConfig(DoveNetwork.VLAN_ID);
+                    template.options(SoftLayerTemplateOptions.Builder.primaryBackendNetworkComponentNetworkVlanId(vlanId));
                 } else {
                     template.osFamily(OsFamily.UBUNTU).osVersionMatches("12.04");
                 }
@@ -238,6 +244,12 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     private boolean isJcloudsLocation(MachineProvisioningLocation location, String providerName) {
         return location instanceof JcloudsLocation
                 && ((JcloudsLocation) location).getProvider().equals(providerName);
+    }
+
+    private boolean isSdnProvider(String providerName) {
+        Entity sdn = getAttribute(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER);
+        if (sdn == null) return false;
+        return sdn.getEntityType().getSimpleName().equalsIgnoreCase(providerName);
     }
 
     @Override
@@ -466,14 +478,14 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     public void preStop() {
         if (scan != null && scan.isActivated()) scan.stop();
 
-        WeaveContainer weave = getAttribute(WeaveContainer.WEAVE_CONTAINER);
-        if (weave != null) {
-            // Avoid DockerHost -> Weave -> DockerHost stop recursion by invoking
-            // the effector instead of weave.stop().
-            boolean weaveStopped = Entities.invokeEffector(this, weave, Startable.STOP)
+        SdnAgent agent = getAttribute(SdnAgent.SDN_AGENT);
+        if (agent != null) {
+            // Avoid DockerHost -> SdnAgent -> DockerHost stop recursion by invoking
+            // the effector instead of agent.stop().
+            boolean agentStopped = Entities.invokeEffector(this, agent, Startable.STOP)
                     .blockUntilEnded(Duration.TEN_SECONDS);
-            if (!weaveStopped) {
-                LOG.debug("{} may not have stopped. Proceeding to stop {} anyway", weave, this);
+            if (!agentStopped) {
+                LOG.debug("{} may not have stopped. Proceeding to stop {} anyway", agent, this);
             }
         }
 
