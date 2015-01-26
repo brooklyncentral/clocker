@@ -48,7 +48,7 @@ import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
-import brooklyn.entity.container.weave.WeaveContainer;
+import brooklyn.entity.container.sdn.SdnAgent;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
@@ -145,12 +145,12 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             LOG.info("Configuring entity {} via subnet {}", entity, dockerHost.getSubnetTier());
             ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.PORT_FORWARDING_MANAGER, dockerHost.getSubnetTier().getPortForwardManager());
             ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.PORT_FORWARDER, portForwarder);
-            if (getOwner().getConfig(DockerAttributes.WEAVE_ENABLED)) {
-                WeaveContainer weave = getOwner().getAttribute(WeaveContainer.WEAVE_CONTAINER);
-                if (weave == null) {
-                    throw new IllegalStateException("Weave container on " + getOwner() + " is null");
+            if (getOwner().getConfig(DockerAttributes.SDN_ENABLE)) {
+                SdnAgent agent = getOwner().getAttribute(SdnAgent.SDN_AGENT);
+                if (agent == null) {
+                    throw new IllegalStateException("SDN agent entity on " + getOwner() + " is null");
                 }
-                ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, weave.getConfig(WeaveContainer.WEAVE_CIDR));
+                ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, agent.getConfig(SdnAgent.CIDR));
             } else {
                 ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL);
             }
