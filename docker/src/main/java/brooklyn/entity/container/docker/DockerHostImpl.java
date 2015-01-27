@@ -45,6 +45,7 @@ import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.machine.MachineEntityImpl;
 import brooklyn.entity.proxying.EntitySpec;
+import brooklyn.entity.trait.Startable;
 import brooklyn.event.feed.ConfigToAttributes;
 import brooklyn.event.feed.function.FunctionFeed;
 import brooklyn.event.feed.function.FunctionPollConfig;
@@ -471,7 +472,13 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
         WeaveContainer weave = getAttribute(WeaveContainer.WEAVE_CONTAINER);
         if (weave != null) {
-            weave.stop();
+            // Avoid DockerHost -> Weave -> DockerHost stop recursion by invoking
+            // the effector instead of weave.stop().
+            boolean weaveStopped = Entities.invokeEffector(this, weave, Startable.STOP)
+                    .blockUntilEnded(Duration.TEN_SECONDS);
+            if (!weaveStopped) {
+                LOG.debug("{} may not have stopped. Proceeding to stop {} anyway", weave, this);
+            }
         }
 
         super.preStop();
