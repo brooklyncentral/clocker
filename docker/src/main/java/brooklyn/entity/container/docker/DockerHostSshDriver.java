@@ -177,6 +177,8 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .body.append(alternatives(
                         ifExecutableElse1("boot2docker", "boot2docker status"),
                         ifExecutableElse1("service", sudo("service docker status"))))
+                // otherwise Brooklyn appends 'check-running' and the method always returns true.
+                .noExtraOutput()
                 .gatherOutput();
         helper.execute();
         return helper.getResultStdout().contains("running");
@@ -317,7 +319,10 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     @Override
     public void customize() {
-        if (isRunning()) stop();
+        if (isRunning()) {
+            log.info("Stopping running Docker instance at {} before customising", getMachine());
+            stop();
+        }
 
         Networking.checkPortsValid(getPortMap());
 
