@@ -177,8 +177,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .body.append(alternatives(
                         ifExecutableElse1("boot2docker", "boot2docker status"),
                         ifExecutableElse1("service", sudo("service docker status"))))
-                        .failOnNonZeroResultCode()
-                        .gatherOutput();
+                .gatherOutput();
         helper.execute();
         return helper.getResultStdout().contains("running");
     }
