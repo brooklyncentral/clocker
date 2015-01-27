@@ -40,7 +40,7 @@ import com.google.common.reflect.TypeToken;
 public interface SdnProvider extends BasicStartable, Supplier<InetAddress> {
 
     @SetFromFlag("cidr")
-    ConfigKey<Cidr> CIDR = ConfigKeys.newConfigKey(Cidr.class, "sdn.agent.cidr", "Weave CIDR for address allocation", Cidr.LINK_LOCAL);
+    ConfigKey<Cidr> CIDR = ConfigKeys.newConfigKey(Cidr.class, "sdn.cidr", "CIDR for address allocation");
 
     AttributeSensor<Group> SDN_AGENTS = Sensors.newSensor(Group.class, "sdn.agents", "Group of SDN agent services");
     AttributeSensor<Integer> ALLOCATED_IPS = Sensors.newIntegerSensor("sdn.allocated.ips", "Number of allocated IPs");
