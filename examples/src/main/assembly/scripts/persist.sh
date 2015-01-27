@@ -23,7 +23,7 @@ ROOT=$(cd "$(dirname "$0")/.." && pwd -P)
 if [ $# -eq 1 ] ; then
     LAUNCH_FLAGS="--app ${ROOT}/blueprints/docker-cloud.yaml --location $1"
 elif [ $# -ne 0 ] ; then
-    echo "Too many arguments; Usage: clocker.sh [location]"
+    echo "Too many arguments; Usage: persist.sh [location]"
     exit 1
 fi
 
@@ -35,4 +35,7 @@ export JAVA_OPTS
 # launch clocker
 ${ROOT}/bin/brooklyn.sh clocker ${LAUNCH_FLAGS} \
     --ignoreManagedAppsStartupErrors \
+    --ignorePersistenceStartupErrors \
+    --persist auto \
+    --persistenceDir ${PERSISTENCE_DIR:-${HOME}/.clocker} \
     --stopOnShutdown none 2>&1 | tee -a ${ROOT}/console.log
