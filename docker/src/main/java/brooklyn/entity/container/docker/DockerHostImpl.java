@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jclouds.compute.config.ComputeServiceProperties;
 import org.jclouds.compute.domain.OsFamily;
 import org.jclouds.compute.domain.TemplateBuilder;
+import org.jclouds.compute.domain.Volume;
 import org.jclouds.softlayer.compute.options.SoftLayerTemplateOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -204,7 +205,10 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 } else if (isJcloudsLocation(location, "softlayer") && isSdnProvider("DoveNetwork")) {
                     template.osFamily(OsFamily.CENTOS).osVersionMatches("6");
                     Integer vlanId = getAttribute(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER).getConfig(DoveNetwork.VLAN_ID);
-                    template.options(SoftLayerTemplateOptions.Builder.primaryBackendNetworkComponentNetworkVlanId(vlanId));
+                    template.options(SoftLayerTemplateOptions.Builder
+                            .diskType(Volume.Type.LOCAL.name())
+                            .primaryBackendNetworkComponentNetworkVlanId(vlanId)
+                            .portSpeed(1000));
                 } else {
                     template.osFamily(OsFamily.UBUNTU).osVersionMatches("12.04");
                 }

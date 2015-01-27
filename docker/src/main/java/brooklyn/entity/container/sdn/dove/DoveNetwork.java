@@ -43,6 +43,10 @@ public interface DoveNetwork extends SdnProvider {
     @SetFromFlag("vlanId")
     ConfigKey<Integer> VLAN_ID = ConfigKeys.newIntegerConfigKey("sdn.dove.vlanId", "Dove Softlayer VLAN ID");
 
+    // TODO obtain id from a call to networks API
+    @SetFromFlag("bridgeId")
+    ConfigKey<Integer> DOVE_BRIDGE_ID = ConfigKeys.newIntegerConfigKey("sdn.dove.bridgeId", "Dove bridge ID");
+
     AttributeSensorAndConfigKey<String, String> CONFIGURATION_XML_TEMPLATE = ConfigKeys.newStringSensorAndConfigKey("sdn.dove.config.xml.url",
             "Configuration XML template for Dove SDN", "classpath://brooklyn/entity/container/sdn/dove/dove.xml");
 

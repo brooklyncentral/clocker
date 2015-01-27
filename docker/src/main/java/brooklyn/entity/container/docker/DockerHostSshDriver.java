@@ -255,7 +255,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         // must not accidentally think it's rebooted before we've actually rebooted!
         Stopwatch stopwatchForReboot = Stopwatch.createStarted();
         Time.sleep(Duration.seconds(30));
-        
+
         Task<Boolean> sshable = TaskBuilder.<Boolean> builder()
                 .name("Waiting until host is SSHable")
                 .body(new Callable<Boolean>() {
