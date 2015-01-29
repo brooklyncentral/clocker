@@ -1,0 +1,12 @@
+[#ftl]
+{
+  "subnet": {
+    "id": "${subnetId}",
+    "name": "${subnetName}",
+    "network_id": "${networkId}",
+    "ip_version": 4,
+    "gateway_ip": "50.0.0.1",
+    "cidr": "50.0.0.0/24",
+    "tenant_id": "${tenantId}"
+  }
+}

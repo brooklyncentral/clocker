@@ -1,0 +1,5 @@
+[#ftl]
+{
+  "vnid_list": "${networkId}",
+  "ip_addr":  "${agentAddress}"
+}

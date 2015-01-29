@@ -23,7 +23,9 @@ import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.container.sdn.SdnAgent;
 import brooklyn.entity.container.sdn.SdnProvider;
 import brooklyn.entity.proxying.ImplementedBy;
+import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
+import brooklyn.event.basic.Sensors;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
 
@@ -43,9 +45,7 @@ public interface DoveNetwork extends SdnProvider {
     @SetFromFlag("vlanId")
     ConfigKey<Integer> VLAN_ID = ConfigKeys.newIntegerConfigKey("sdn.dove.vlanId", "Dove Softlayer VLAN ID");
 
-    // TODO obtain id from a call to networks API
-    @SetFromFlag("bridgeId")
-    ConfigKey<Integer> DOVE_BRIDGE_ID = ConfigKeys.newIntegerConfigKey("sdn.dove.bridgeId", "Dove bridge ID");
+    AttributeSensor<Integer> DOVE_BRIDGE_ID = Sensors.newIntegerSensor("sdn.dove.bridgeId", "Dove bridge ID");
 
     AttributeSensorAndConfigKey<String, String> CONFIGURATION_XML_TEMPLATE = ConfigKeys.newStringSensorAndConfigKey("sdn.dove.config.xml.url",
             "Configuration XML template for Dove SDN", "classpath://brooklyn/entity/container/sdn/dove/dove.xml");
