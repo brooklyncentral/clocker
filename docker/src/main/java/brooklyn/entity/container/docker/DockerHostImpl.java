@@ -203,6 +203,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 if (isJcloudsLocation(location, "google-compute-engine")) {
                     template.osFamily(OsFamily.CENTOS).osVersionMatches("6");
                 } else if (isJcloudsLocation(location, "softlayer") && isSdnProvider("DoveNetwork")) {
+                    // TODO separate OS settings from VLAN settings
                     template.osFamily(OsFamily.CENTOS).osVersionMatches("6");
                     Integer vlanId = getAttribute(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER).getConfig(DoveNetwork.VLAN_ID);
                     template.options(SoftLayerTemplateOptions.Builder
@@ -210,7 +211,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                             .primaryBackendNetworkComponentNetworkVlanId(vlanId)
                             .portSpeed(1000));
                 } else {
-                    template.osFamily(OsFamily.UBUNTU).osVersionMatches("12.04");
+                    template.osFamily(OsFamily.UBUNTU).osVersionMatches("14.04");
                 }
                 template.os64Bit(true);
                 flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), template);
