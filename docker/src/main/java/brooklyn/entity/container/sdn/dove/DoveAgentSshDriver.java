@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityLocal;
+import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.basic.lifecycle.ScriptHelper;
 import brooklyn.entity.container.sdn.SdnAgent;
 import brooklyn.entity.software.SshEffectorTasks;
@@ -31,10 +32,16 @@ import brooklyn.util.text.Strings;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicates;
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 public class DoveAgentSshDriver extends AbstractSoftwareProcessSshDriver implements DoveAgentDriver {
 
@@ -69,7 +76,11 @@ public class DoveAgentSshDriver extends AbstractSoftwareProcessSshDriver impleme
     public void install() {
         List<String> commands = Lists.newLinkedList();
         commands.addAll(BashCommands.commandsToDownloadUrlsAs(resolver.getTargets(), "dove-agent.rpm"));
-        commands.add(BashCommands.installPackage("iotop libvirt libvirt-python iproute"));
+        commands.add(BashCommands.INSTALL_CURL);
+        commands.add(BashCommands.installPackage(MutableMap.builder()
+                .put("yum", "iotop libvirt libvirt-python iproute")
+                .put("apt", "iotop libvirt-bin libvirt-dev python-libvirt iproute2 rpm")
+                .build(), null));
         commands.add(BashCommands.sudo("rpm --nodeps --install dove-agent.rpm"));
 
         newScript(INSTALLING)
@@ -81,9 +92,12 @@ public class DoveAgentSshDriver extends AbstractSoftwareProcessSshDriver impleme
     public void customize() {
         Networking.checkPortsValid(getPortMap());
 
-        String routes = getEntity().getAttribute(DoveAgent.DOCKER_HOST).execCommand("netstat -r");
-        String address = Strings.getFirstWord(Iterables.find(Splitter.on(CharMatcher.anyOf("\r\n")).split(routes), StringPredicates.containsLiteral("255.255.255.192")));
-        String gateway = Strings.getFirstWordAfter(Iterables.find(Splitter.on(CharMatcher.anyOf("\r\n")).split(routes), StringPredicates.containsLiteral("10.0.0.0")), "10.0.0.0");
+        String netstat = getEntity().getAttribute(DoveAgent.DOCKER_HOST).execCommand("netstat -rn");
+        Iterable<String> routes = Iterables.filter(Splitter.on(CharMatcher.anyOf("\r\n")).split(netstat), StringPredicates.containsLiteral("eth0"));
+        String subnetAddress = getEntity().getAttribute(SoftwareProcess.SUBNET_ADDRESS);
+        String address = Strings.getFirstWord(Iterables.find(routes, Predicates.and(StringPredicates.containsLiteral("255.255.255."),
+                StringPredicates.containsLiteral(subnetAddress.substring(0, subnetAddress.lastIndexOf('.'))))));
+        String gateway = Strings.getFirstWordAfter(Iterables.find(routes, StringPredicates.containsLiteral("10.0.0.0")), "10.0.0.0");
         LOG.debug("Found gateway {} and address {}", gateway, address);
 
         List<String> commands = Lists.newLinkedList();
@@ -93,7 +107,7 @@ public class DoveAgentSshDriver extends AbstractSoftwareProcessSshDriver impleme
         commands.add(sudo(String.format("ifconfig br_mgmt_1:1 %s netmask 255.255.255.192", address)));
         commands.add(sudo("brctl addif br_mgmt_1 eth0"));
         commands.add(sudo(String.format("route add -net 10.0.0.0 netmask 255.0.0.0 gw %s", gateway)));
-        commands.add(sudo("service libvirtd start"));
+        commands.add(BashCommands.alternatives(sudo("service libvirtd start"), sudo("service libvirt-bin start"), "true"));
         commands.add(BashCommands.executeCommandThenAsUserTeeOutputToFile("echo \"nameserver 8.8.8.8\"", "root", "/etc/resolv.conf"));
 
         newScript(CUSTOMIZING)
@@ -109,21 +123,81 @@ public class DoveAgentSshDriver extends AbstractSoftwareProcessSshDriver impleme
         LOG.debug("Copied XML configuration file to /etc directory: " + savedDoveXml);
     }
 
+    private int createNetwork(String networkId, String tenantId) {
+        Map<String, String> createNetworkData = ImmutableMap.<String, String>builder()
+                .put("networkId", networkId)
+                .put("networkName", networkId)
+                .put("tenantId", tenantId)
+                .build();
+        String createNetwork = copyJsonTemplate("create_network.json", createNetworkData);
+        String createNetworkOutput = callRestApi(createNetwork, "v2.0/networks");
+
+        Map<String, String> createSubnetData = ImmutableMap.<String, String>builder()
+                .put("subnetId", networkId)
+                .put("subnetName", networkId)
+                .put("networkId", networkId)
+                .put("tenantId", tenantId)
+                .build();
+        String createSubnet = copyJsonTemplate("create_subnet.json", createSubnetData);
+        String createSubnetOutput = callRestApi(createSubnet, "v2.0/subnets");
+
+        int doveNetworkId = getNetworkIdForName(networkId);
+        return doveNetworkId;
+    }
+
+    private String copyJsonTemplate(String fileName, Map<String, String> substitutions) {
+        String contents = processTemplate("classpath://brooklyn/entity/container/sdn/dove/" + fileName, substitutions);
+        String target = Urls.mergePaths(getRunDir(), fileName);
+        DynamicTasks.queueIfPossible(SshEffectorTasks.put(target).contents(contents)).andWaitForSuccess();
+        return target;
+    }
+
+    private String callRestApi(String jsonData, String apiPath) {
+        String command = String.format("curl -i -u admin:admin -X POST -H \"Content-Type: application/json\" -d @- http://%s/%s < %s",
+                getEntity().getConfig(DoveNetwork.DOVE_CONTROLLER).getHostAddress(), apiPath, jsonData);
+        String output = getEntity().getAttribute(DoveAgent.DOCKER_HOST).execCommand(command);
+        return output;
+    }
+
+    private int getNetworkIdForName(String networkName) {
+        String command = String.format("curl -s -u admin:admin http://%s/networks", getEntity().getConfig(DoveNetwork.DOVE_CONTROLLER).getHostAddress());
+        String output = getEntity().getAttribute(DoveAgent.DOCKER_HOST).execCommand(command);
+        JsonParser parser = new JsonParser();
+        JsonElement json = parser.parse(output);
+        JsonArray networks = json.getAsJsonObject().get("networks").getAsJsonArray();
+        for (JsonElement element : networks) {
+            JsonObject network = element.getAsJsonObject();
+            int networkId = network.get("network_id").getAsInt();
+            String name = network.get("name").getAsString();
+            if (name.endsWith(networkName)) {
+                return networkId;
+            }
+        }
+        throw new IllegalStateException("Cannot find network: " + networkName);
+    }
+
     @Override
     public void launch() {
         newScript(MutableMap.of(USE_PID_FILE, false), LAUNCHING)
                 .body.append(sudo("start doved"))
                 .execute();
 
-        Integer bridgeId = getEntity().getConfig(DoveNetwork.DOVE_BRIDGE_ID);
-        String addBridgeCommand = String.format("echo \"{ \\\"vnid_list\\\": \\\"%d\\\", \\\"ip_addr\\\": \\\"%s\\\" }\" | "
-                + "curl -i -u admin:admin -X POST -H \"Content-Type: application/json\" -d @- http://%s/api/dove/vrmgr/vnids/vm_mgr",
-                bridgeId, getEntity().getAttribute(SdnAgent.SDN_AGENT_ADDRESS).getHostAddress(), getEntity().getConfig(DoveNetwork.DOVE_CONTROLLER).getHostAddress());
-        String addBridgeOutput = getEntity().getAttribute(DoveAgent.DOCKER_HOST).execCommand(addBridgeCommand);
-        Preconditions.checkState(Strings.containsLiteral(addBridgeOutput, "successfully"), "Failed to export network %s", bridgeId);
+        int networkId = createNetwork(getEntity().getApplicationId(), "clocker");
+        getEntity().setAttribute(DoveNetwork.DOVE_BRIDGE_ID, networkId);
+
+        Map<String, String> createBridgeData = ImmutableMap.<String, String>builder()
+                .put("networkId", Integer.toString(networkId))
+                .put("agentAddress", getEntity().getAttribute(SdnAgent.SDN_AGENT_ADDRESS).getHostAddress())
+                .build();
+        String createBridge = copyJsonTemplate("create_bridge.json", createBridgeData);
+        String createBridgeOutput = callRestApi(createBridge, "api/dove/vrmgr/vnids/vm_mgr");
+        Preconditions.checkState(Strings.containsLiteral(createBridgeOutput, "successfully"), "Failed to export network %s", networkId);
 
         String bridge = getEntity().getAttribute(DoveAgent.DOCKER_HOST).execCommand(sudo("brctl show"));
         String doveBridge = Strings.getFirstWordAfter(bridge, "dovebr_");
+        if (Integer.valueOf(doveBridge) != networkId) {
+            throw new IllegalStateException("Incorrect network ID found: " + doveBridge);
+        }
         LOG.debug("Added bridge: " + doveBridge);
     }
 
