@@ -33,9 +33,6 @@ public class DockerSoftLayerLiveTest extends AbstractSoftlayerLiveTest {
         app.start(ImmutableList.of(loc));
     }
 
-    @Test(enabled=false)
-    public void testDummy() { } // Convince testng IDE integration that this really does have test methods
-
     @Override
     @Test(enabled=false)
     public void test_Default() throws Exception {

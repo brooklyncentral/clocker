@@ -136,7 +136,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
         try {
             // Lookup entity from context or flags
             Object context = flags.get(LocationConfigKeys.CALLER_CONTEXT.getName());
-            if (context != null && !(context instanceof Entity)) {
+            if (context == null || !(context instanceof Entity)) {
                 throw new IllegalStateException("Invalid location context: " + context);
             }
             Entity entity = (Entity) context;
