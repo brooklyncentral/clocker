@@ -17,11 +17,9 @@ package brooklyn.entity.container.docker;
 
 import org.testng.annotations.Test;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import brooklyn.entity.AbstractSoftlayerLiveTest;
-import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.location.Location;
 
 @Test(groups="Live")
@@ -29,8 +27,7 @@ public class DockerSoftLayerLiveTest extends AbstractSoftlayerLiveTest {
 
     @Override
     protected void doTest(Location loc) throws Exception {
-        app.createAndManageChild(EntitySpec.create(DockerHost.class).configure("docker.port", "4244+"));
-        app.start(ImmutableList.of(loc));
+        DockerInfrastructureTests.testDeploysTrivialApplication(app, loc);
     }
 
     @Override

@@ -1,0 +1,64 @@
+/*
+ * Copyright 2014 by Cloudsoft Corporation Limited
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package brooklyn.entity.container.docker;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+
+import brooklyn.entity.basic.ApplicationBuilder;
+import brooklyn.entity.basic.Attributes;
+import brooklyn.entity.basic.EmptySoftwareProcess;
+import brooklyn.entity.basic.Lifecycle;
+import brooklyn.entity.proxying.EntitySpec;
+import brooklyn.location.Location;
+import brooklyn.test.EntityTestUtils;
+import brooklyn.test.entity.TestApplication;
+import brooklyn.util.time.Duration;
+
+/**
+ * Contains static tests that can be run by any test class.
+ */
+public class DockerInfrastructureTests {
+
+    private static final Logger LOG = LoggerFactory.getLogger(DockerInfrastructureTests.class);
+
+    private DockerInfrastructureTests() {}
+
+    public static void testDeploysTrivialApplication(TestApplication app, Location location) {
+        DockerInfrastructure dockerInfrastructure = app.createAndManageChild(EntitySpec.create(DockerInfrastructure.class)
+                .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 1)
+                .configure(DockerInfrastructure.WEAVE_ENABLED, false)
+                .displayName("Docker Infrastructure"));
+        LOG.info("Starting {} in {}", dockerInfrastructure, location);
+        app.start(ImmutableList.of(location));
+        LOG.info("Waiting {} for {} to have started", Duration.FIVE_MINUTES, dockerInfrastructure);
+        EntityTestUtils.assertAttributeEqualsEventually(ImmutableMap.of("timeout", Duration.FIVE_MINUTES),
+                dockerInfrastructure, Attributes.SERVICE_UP, true);
+
+        int existingCount = dockerInfrastructure.getAttribute(DockerInfrastructure.DOCKER_CONTAINER_COUNT);
+
+        TestApplication deployment = ApplicationBuilder.newManagedApp(TestApplication.class, app.getManagementContext());
+        deployment.createAndManageChild(EntitySpec.create(EmptySoftwareProcess.class));
+        deployment.start(ImmutableList.of(dockerInfrastructure.getDynamicLocation()));
+
+        EntityTestUtils.assertAttributeEqualsEventually(deployment, Attributes.SERVICE_STATE_ACTUAL, Lifecycle.RUNNING);
+        EntityTestUtils.assertAttributeEqualsEventually(dockerInfrastructure, DockerInfrastructure.DOCKER_CONTAINER_COUNT,
+                existingCount + 1);
+    }
+}

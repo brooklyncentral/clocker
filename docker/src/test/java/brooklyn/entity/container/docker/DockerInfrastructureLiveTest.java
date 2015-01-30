@@ -100,25 +100,7 @@ public class DockerInfrastructureLiveTest extends BrooklynAppLiveTestSupport  {
 
     @Test(groups="Live")
     public void testDeploysTrivialApplication() throws Exception {
-        DockerInfrastructure dockerInfrastructure = app.createAndManageChild(EntitySpec.create(DockerInfrastructure.class)
-                .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 1)
-                .configure(DockerInfrastructure.WEAVE_ENABLED, false)
-                .displayName("Docker Infrastructure"));
-        LOG.info("Starting {} in {}", dockerInfrastructure, testLocation);
-        app.start(ImmutableList.of(testLocation));
-        LOG.info("Waiting {} for {} to have started", Duration.FIVE_MINUTES, dockerInfrastructure);
-        EntityTestUtils.assertAttributeEqualsEventually(ImmutableMap.of("timeout", Duration.FIVE_MINUTES),
-                dockerInfrastructure, Attributes.SERVICE_UP, true);
-
-        int existingCount = dockerInfrastructure.getAttribute(DockerInfrastructure.DOCKER_CONTAINER_COUNT);
-
-        TestApplication deployment = ApplicationBuilder.newManagedApp(TestApplication.class, this.mgmt);
-        deployment.createAndManageChild(EntitySpec.create(EmptySoftwareProcess.class));
-        deployment.start(ImmutableList.of(dockerInfrastructure.getDynamicLocation()));
-
-        EntityTestUtils.assertAttributeEqualsEventually(deployment, Attributes.SERVICE_STATE_ACTUAL, Lifecycle.RUNNING);
-        EntityTestUtils.assertAttributeEqualsEventually(dockerInfrastructure, DockerInfrastructure.DOCKER_CONTAINER_COUNT,
-                existingCount + 1);
+        DockerInfrastructureTests.testDeploysTrivialApplication(app, testLocation);
     }
 
     private LocationDefinition findLocationMatchingName(String regex) {
