@@ -16,6 +16,9 @@
 package brooklyn.entity.container.sdn;
 
 import java.net.InetAddress;
+import java.util.Collection;
+
+import org.jclouds.net.domain.IpPermission;
 
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
@@ -52,6 +55,8 @@ public interface SdnProvider extends BasicStartable, Supplier<InetAddress> {
 
     @SetFromFlag("dockerInfrastructure")
     AttributeSensorAndConfigKey<Entity, Entity> DOCKER_INFRASTRUCTURE = DockerAttributes.DOCKER_INFRASTRUCTURE;
+
+    Collection<IpPermission> getIpPermissions();
 
     DynamicCluster getDockerHostCluster();
 

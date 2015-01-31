@@ -22,7 +22,7 @@ services:
     entity.dynamicLocation.name: "my-docker-cloud"
     docker.host.cluster.initial.size: 2
     docker.container.cluster.headroom.count: 4
-    sdn.enabled: false
+    sdn.enable: false
     docker.policy.ha.enable: false
     docker.container.strategies:
     - $brooklyn:object:

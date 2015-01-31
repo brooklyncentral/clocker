@@ -15,14 +15,10 @@
  */
 package brooklyn.entity.container.sdn.dove;
 
-import java.util.Collection;
-
-import org.jclouds.net.domain.IpPermission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import brooklyn.entity.container.sdn.SdnAgentImpl;
-import brooklyn.util.collections.MutableList;
 
 /**
  * A single Docker container.
@@ -34,12 +30,6 @@ public class DoveAgentImpl extends SdnAgentImpl implements DoveAgent {
     @Override
     public Class getDriverInterface() {
         return DoveAgentDriver.class;
-    }
-
-    @Override
-    public Collection<IpPermission> getIpPermissions() {
-        Collection<IpPermission> permissions = MutableList.of();
-        return permissions;
     }
 
     @Override

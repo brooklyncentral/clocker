@@ -43,7 +43,6 @@ import brooklyn.entity.basic.SoftwareProcess.ChildStartableMode;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.policy.ContainerHeadroomEnricher;
-import brooklyn.entity.container.sdn.weave.WeaveNetwork;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.group.DynamicMultiGroup;
@@ -124,7 +123,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                         .configure(BasicGroup.MEMBER_DELEGATE_CHILDREN, true))
                 .displayName("Docker Applications"));
 
-        if (getConfig(SDN_PROVIDER_SPEC) != null) {
+        if (getConfig(SDN_ENABLE) && getConfig(SDN_PROVIDER_SPEC) != null) {
             Entity sdn = addChild(EntitySpec.create(getConfig(SDN_PROVIDER_SPEC))
                     .configure(DockerAttributes.DOCKER_INFRASTRUCTURE, this));
             setAttribute(SDN_PROVIDER, sdn);

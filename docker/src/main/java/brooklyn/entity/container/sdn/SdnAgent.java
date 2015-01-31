@@ -16,9 +16,6 @@
 package brooklyn.entity.container.sdn;
 
 import java.net.InetAddress;
-import java.util.Collection;
-
-import org.jclouds.net.domain.IpPermission;
 
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.annotation.Effector;
@@ -64,6 +61,4 @@ public interface SdnAgent extends SoftwareProcess {
     @Effector(description="Attach a container to the network")
     InetAddress attachNetwork(
             @EffectorParam(name="containerId", description="Container ID") String containerId);
-
-    Collection<IpPermission> getIpPermissions();
 }

@@ -15,6 +15,9 @@
  */
 package brooklyn.entity.container.sdn.dove;
 
+import java.util.Collection;
+
+import org.jclouds.net.domain.IpPermission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +29,7 @@ import brooklyn.entity.container.sdn.SdnProvider;
 import brooklyn.entity.container.sdn.SdnProviderImpl;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.location.basic.SshMachineLocation;
+import brooklyn.util.collections.MutableList;
 
 import com.google.common.collect.ImmutableList;
 
@@ -43,6 +47,12 @@ public class DoveNetworkImpl extends SdnProviderImpl implements DoveNetwork {
                 .configure(DoveAgent.SDN_PROVIDER, this);
 
         setAttribute(SdnProvider.SDN_AGENT_SPEC, agentSpec);
+    }
+
+    @Override
+    public Collection<IpPermission> getIpPermissions() {
+        Collection<IpPermission> permissions = MutableList.of();
+        return permissions;
     }
 
     public void addHost(Entity item) {

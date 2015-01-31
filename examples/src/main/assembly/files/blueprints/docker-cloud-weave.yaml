@@ -35,7 +35,7 @@ services:
         type: brooklyn.location.docker.strategy.MaxCpuUsagePlacementStrategy
         brooklyn.config:
           maxCpuUsage: 0.75
-    sdn.enabled: true
+    sdn.enable: true
     sdn.provider.spec:
       $brooklyn:entitySpec:
         type: brooklyn.entity.container.sdn.weave.WeaveNetwork

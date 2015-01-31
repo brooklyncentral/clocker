@@ -25,7 +25,7 @@ services:
     docker.host.cluster.initial.size: 1
     docker.host.register: false
     docker.container.cluster.headroom.count: 0
-    weave.enabled: true
+    sdn.enable: false
     docker.policy.ha.enable: false
     docker.container.strategies:
     - $brooklyn:object:

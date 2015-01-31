@@ -201,6 +201,13 @@ public class DoveAgentSshDriver extends AbstractSoftwareProcessSshDriver impleme
             throw new IllegalStateException("Incorrect network ID found: " + doveBridge);
         }
         LOG.debug("Added bridge: " + doveBridge);
+
+        LOG.info("SDN agent restarting Docker service");
+        String restart = getEntity().getAttribute(DoveAgent.DOCKER_HOST).execCommand(sudo("service docker restart"));
+        Iterable<String> successes = Iterables.filter(Splitter.on(CharMatcher.anyOf("\r\n")).split(restart), StringPredicates.containsLiteral("OK"));
+        if (Iterables.size(successes) != 2) {
+            throw new IllegalStateException("Failed to restart Docker Engine service: " + restart);
+        }
     }
 
     @Override

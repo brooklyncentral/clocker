@@ -202,14 +202,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 template = new PortableTemplateBuilder();
                 if (isJcloudsLocation(location, "google-compute-engine")) {
                     template.osFamily(OsFamily.CENTOS).osVersionMatches("6");
-                } else if (isJcloudsLocation(location, "softlayer") && isSdnProvider("DoveNetwork")) {
-                    // TODO separate OS settings from VLAN settings
+                } else if (isJcloudsLocation(location, "softlayer")) {
                     template.osFamily(OsFamily.CENTOS).osVersionMatches("6");
-                    Integer vlanId = getAttribute(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER).getConfig(DoveNetwork.VLAN_ID);
-                    template.options(SoftLayerTemplateOptions.Builder
-                            .diskType(Volume.Type.LOCAL.name())
-                            .primaryBackendNetworkComponentNetworkVlanId(vlanId)
-                            .portSpeed(1000));
                 } else {
                     template.osFamily(OsFamily.UBUNTU).osVersionMatches("14.04");
                 }
@@ -241,6 +235,20 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             } else {
                 flags.put(JcloudsLocationConfig.JCLOUDS_LOCATION_CUSTOMIZERS.getName(),
                         ImmutableList.of(JcloudsLocationSecurityGroupCustomizer.getInstance(getApplicationId())));
+            }
+
+            // Setup SoftLayer template options required for Dove SDN
+            // TODO Move this into a callback on the SdnProvider interface
+            if (isJcloudsLocation(location, "softlayer") && isSdnProvider("DoveNetwork")) {
+                if (template == null) template = new PortableTemplateBuilder();
+                Integer vlanId = getAttribute(DOCKER_INFRASTRUCTURE)
+                        .getAttribute(DockerInfrastructure.SDN_PROVIDER)
+                        .getConfig(DoveNetwork.VLAN_ID);
+                template.options(SoftLayerTemplateOptions.Builder
+                        .diskType(Volume.Type.LOCAL.name()) // FIXME Temporary setting overriding capacity limitation on account
+                        .primaryBackendNetworkComponentNetworkVlanId(vlanId)
+                        .portSpeed(1000)); // TODO Make configurable
+                flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), template);
             }
         }
         return flags;
@@ -455,6 +463,13 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     public void postStart() {
+        if (Boolean.TRUE.equals(getAttribute(DOCKER_INFRASTRUCTURE).getConfig(DockerInfrastructure.SDN_ENABLE))) {
+            LOG.info("Waiting on SDN agent");
+            SdnAgent agent = Entities.attributeSupplierWhenReady(this, SdnAgent.SDN_AGENT).get();
+            Entities.waitForServiceUp(agent);
+            LOG.info("SDN agent running: " + agent.getAttribute(SERVICE_UP));
+        }
+
         String imageId = getConfig(DOCKER_IMAGE_ID);
 
         if (Strings.isBlank(imageId)) {

@@ -376,7 +376,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             JcloudsSshMachineLocation container = host.getJcloudsLocation().obtain(dockerFlags);
             setAttribute(CONTAINER_ID, container.getNode().getId());
 
-            // If Weave is enabled, attach to the network
+            // If SDN is enabled, attach to the network
             if (getConfig(DockerInfrastructure.SDN_ENABLE)) {
                 SdnAgent agent = Entities.attributeSupplierWhenReady(dockerHost, SdnAgent.SDN_AGENT).get();
                 InetAddress subnetAddress = agent.attachNetwork(getAttribute(CONTAINER_ID));
