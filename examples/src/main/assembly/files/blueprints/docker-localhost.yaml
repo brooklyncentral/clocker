@@ -23,6 +23,6 @@ services:
     entity.dynamicLocation.name: "my-docker-cloud"
     docker.host.initial.size: 1
     docker.host.register: false
-    weave.enabled: false
+    sdn.enable: false
     install.skip: false
     docker.container.nameFormat: "container-%2$02x"
