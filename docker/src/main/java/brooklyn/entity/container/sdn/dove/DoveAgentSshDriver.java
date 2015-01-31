@@ -81,7 +81,9 @@ public class DoveAgentSshDriver extends AbstractSoftwareProcessSshDriver impleme
                 .put("yum", "iotop libvirt libvirt-python iproute")
                 .put("apt", "iotop libvirt-bin libvirt-dev python-libvirt iproute2 rpm")
                 .build(), null));
-        commands.add(BashCommands.sudo("rpm --nodeps --install dove-agent.rpm"));
+        commands.add(sudo("rpm --nodeps --install dove-agent.rpm"));
+        commands.add("wget https://repos.fedorapeople.org/repos/openstack/openstack-icehouse/epel-6/iproute-2.6.32-130.el6ost.netns.2.x86_64.rpm");
+        commands.add(sudo("rpm -Uvh iproute-2.6.32-130.el6ost.netns.2.x86_64.rpm"));
 
         newScript(INSTALLING)
                 .body.append(commands)
@@ -108,7 +110,7 @@ public class DoveAgentSshDriver extends AbstractSoftwareProcessSshDriver impleme
         commands.add(sudo("brctl addif br_mgmt_1 eth0"));
         commands.add(sudo(String.format("route add -net 10.0.0.0 netmask 255.0.0.0 gw %s", gateway)));
         commands.add(BashCommands.alternatives(sudo("service libvirtd start"), sudo("service libvirt-bin start"), "true"));
-        commands.add(BashCommands.executeCommandThenAsUserTeeOutputToFile("echo \"nameserver 8.8.8.8\"", "root", "/etc/resolv.conf"));
+        commands.add("echo 'nameserver 8.8.8.8' | " + sudo("tee /etc/resolv.conf"));
 
         newScript(CUSTOMIZING)
                 .body.append(commands)

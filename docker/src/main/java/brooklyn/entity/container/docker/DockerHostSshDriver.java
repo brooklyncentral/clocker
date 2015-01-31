@@ -77,7 +77,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                     .getAttribute(DockerHost.DOCKER_INFRASTRUCTURE)
                     .getAttribute(DockerInfrastructure.SDN_PROVIDER)
                     .getConfig(WeaveNetwork.WEAVE_PORT);
-            ports.put("weavePort", weavePort);
+            if (weavePort != null) ports.put("weavePort", weavePort);
         }
         return ports;
     }
@@ -297,7 +297,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         return chainGroup(
                 INSTALL_CURL,
                 installPackage("apt-transport-https"),
-                executeCommandThenAsUserTeeOutputToFile("echo deb https://get.docker.com/ubuntu docker main", "root", "/etc/apt/sources.list.d/docker.list"),
+                "echo 'deb https://get.docker.com/ubuntu docker main' | " + sudo("tee -a /etc/apt/sources.list.d/docker.list"),
                 sudo("apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9"),
                 installPackage("lxc-docker-" + version));
     }
@@ -321,15 +321,15 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         Networking.checkPortsValid(getPortMap());
 
         newScript(CUSTOMIZING)
-                .failOnNonZeroResultCode().body.append(
-                ifExecutableElse0("apt-get", chainGroup(
-                        executeCommandThenAsUserTeeOutputToFile(format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock --tls --tlscert=%s/cert.pem --tlskey=%s/key.pem\"'", getDockerPort(), getRunDir(), getRunDir()), "root", "/etc/default/docker"),
-                        sudo("groupadd -f docker"),
-                        sudo(format("gpasswd -a %s docker", getMachine().getUser())),
-                        sudo("newgrp docker"))),
-                ifExecutableElse0("yum",
-                        executeCommandThenAsUserTeeOutputToFile(format("echo 'other_args=\"--selinux-enabled -H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock -e lxc --tls --tlscert=%s/cert.pem --tlskey=%s/key.pem\"'", getDockerPort(), getRunDir(), getRunDir()),
-                                "root", "/etc/sysconfig/docker")))
+                .failOnNonZeroResultCode()
+                .body.append(
+                        ifExecutableElse0("apt-get", chainGroup(
+                                format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock --tls --tlscert=%s/cert.pem --tlskey=%s/key.pem\"' | ", getDockerPort(), getRunDir(), getRunDir()) + sudo("tee -a /etc/default/docker"),
+                                sudo("groupadd -f docker"),
+                                sudo(format("gpasswd -a %s docker", getMachine().getUser())),
+                                sudo("newgrp docker"))),
+                        ifExecutableElse0("yum",
+                                format("echo 'other_args=\"--selinux-enabled -H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock -e lxc --tls --tlscert=%s/cert.pem --tlskey=%s/key.pem\"' | ", getDockerPort(), getRunDir(), getRunDir()) + sudo("tee -a /etc/sysconfig/docker")))
                 .execute();
 
         // Configure volume mappings for the host
