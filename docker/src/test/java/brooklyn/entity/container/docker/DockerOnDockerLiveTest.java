@@ -46,6 +46,7 @@ public class DockerOnDockerLiveTest {
 
     protected TestApplication app;
     protected Location jcloudsLocation;
+
     @BeforeMethod(alwaysRun=true)
     public void setUp() throws Exception {
         List<String> propsToRemove = ImmutableList.of("imageDescriptionRegex", "imageNameRegex", "inboundPorts",
@@ -76,20 +77,19 @@ public class DockerOnDockerLiveTest {
                 .putAll(flags)
                 .build();
         jcloudsLocation = ctx.getLocationRegistry().resolve(PROVIDER, allFlags);
-        doTest(jcloudsLocation);
-    }
 
-    protected void doTest(Location loc) throws Exception {
+        // FIXME: DockerHost relies on a DockerInfrastructure; this cannot pass.
         DockerHost dockerHost = app.createAndManageChild(EntitySpec.create(DockerHost.class)
                 .configure("docker.port", "4244+"));
-        app.start(ImmutableList.of(loc));
+        app.start(ImmutableList.of(jcloudsLocation));
         DockerHostLocation location = dockerHost.createLocation(Maps.<String, Object>newHashMap());
         app.start(ImmutableList.of(location));
     }
 
     @Test(groups={"Live", "WIP"})
     public void test_Ubuntu_12_04() throws Exception {
-        runTest(ImmutableMap.of("imageId", "269778b3ca2a6a21cff07aca8b2ac05abaa8b5ddbe6f10b715af2fdd81af657a",
+        runTest(ImmutableMap.of(
+                "imageId", "269778b3ca2a6a21cff07aca8b2ac05abaa8b5ddbe6f10b715af2fdd81af657a",
                 "loginUser", "root",
                 "loginUser.password", "password"));
     }
