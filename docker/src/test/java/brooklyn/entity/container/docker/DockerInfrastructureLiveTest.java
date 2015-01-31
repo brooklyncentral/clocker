@@ -30,25 +30,17 @@ import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-
 import brooklyn.entity.BrooklynAppLiveTestSupport;
-import brooklyn.entity.basic.ApplicationBuilder;
-import brooklyn.entity.basic.Attributes;
-import brooklyn.entity.basic.EmptySoftwareProcess;
 import brooklyn.entity.basic.Entities;
-import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.launcher.BrooklynLauncher;
 import brooklyn.location.Location;
 import brooklyn.location.LocationDefinition;
 import brooklyn.location.docker.DockerLocation;
-import brooklyn.test.EntityTestUtils;
-import brooklyn.test.entity.TestApplication;
 import brooklyn.util.text.Strings;
-import brooklyn.util.time.Duration;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 /**
  * Brooklyn managed basic Docker infrastructure.
@@ -89,7 +81,7 @@ public class DockerInfrastructureLiveTest extends BrooklynAppLiveTestSupport  {
         app.createAndManageChild(EntitySpec.create(DockerInfrastructure.class)
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 1)
                 .configure(DockerInfrastructure.LOCATION_NAME_PREFIX, "dynamicdockertest")
-                .configure(DockerInfrastructure.WEAVE_ENABLED, false)
+                .configure(DockerInfrastructure.SDN_ENABLE, false)
                 .displayName("Docker Infrastructure"));
         app.start(ImmutableList.of(testLocation));
 
