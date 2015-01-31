@@ -32,6 +32,7 @@ import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.lifecycle.ScriptHelper;
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.sdn.SdnAgent;
+import brooklyn.entity.container.sdn.SdnProvider;
 import brooklyn.entity.container.sdn.weave.WeaveNetwork;
 import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.location.OsDetails;
@@ -404,8 +405,8 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         List<IpPermission> permissions = MutableList.of(dockerPort, dockerSslPort, dockerPortForwarding);
 
         if (getEntity().getConfig(DockerInfrastructure.SDN_ENABLE)) {
-            SdnAgent agent = getEntity().getAttribute(SdnAgent.SDN_AGENT);
-            Collection<IpPermission> sdnPermissions = agent.getIpPermissions();
+            SdnProvider provider = (SdnProvider) getEntity().getAttribute(DockerHost.DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER);
+            Collection<IpPermission> sdnPermissions = provider.getIpPermissions();
             permissions.addAll(sdnPermissions);
         }
 

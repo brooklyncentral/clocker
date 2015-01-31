@@ -32,7 +32,7 @@ services:
           maxContainers: 8
     - $brooklyn:object:
         type: brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy
-    sdn.enabled: true
+    sdn.enable: true
     sdn.provider.spec:
       $brooklyn:entitySpec:
         type: brooklyn.entity.container.sdn.dove.DoveNetwork
