@@ -36,8 +36,6 @@ import brooklyn.util.net.Cidr;
  */
 public interface SdnAgent extends SoftwareProcess {
 
-    @SetFromFlag("cidr")
-    ConfigKey<Cidr> CIDR = SdnProvider.CIDR;
 
     @SetFromFlag("host")
     AttributeSensorAndConfigKey<DockerHost,DockerHost> DOCKER_HOST = ConfigKeys.newSensorAndConfigKey(DockerHost.class, "sdn.agent.docker.host", "Docker host we are running on");
@@ -61,4 +59,5 @@ public interface SdnAgent extends SoftwareProcess {
     @Effector(description="Attach a container to the network")
     InetAddress attachNetwork(
             @EffectorParam(name="containerId", description="Container ID") String containerId);
+
 }

@@ -18,24 +18,19 @@ package brooklyn.entity.container.sdn.weave;
 import brooklyn.catalog.Catalog;
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.entity.container.sdn.SdnAgent;
 import brooklyn.entity.container.sdn.SdnProvider;
 import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.util.flags.SetFromFlag;
-import brooklyn.util.net.Cidr;
 
 /**
  * A collection of machines running Weave.
  */
-@Catalog(name = "Weave Infrastructure", description = "Weave SDN.")
+@Catalog(name = "Weave Infrastructure", description = "Weave SDN")
 @ImplementedBy(WeaveNetworkImpl.class)
 public interface WeaveNetwork extends SdnProvider {
 
     @SetFromFlag("version")
     ConfigKey<String> WEAVE_VERSION = ConfigKeys.newStringConfigKey("weave.version", "The Weave SDN version number");
-
-    @SetFromFlag("cidr")
-    ConfigKey<Cidr> CIDR = SdnAgent.CIDR;
 
     @SetFromFlag("weavePort")
     ConfigKey<Integer> WEAVE_PORT = WeaveContainer.WEAVE_PORT;

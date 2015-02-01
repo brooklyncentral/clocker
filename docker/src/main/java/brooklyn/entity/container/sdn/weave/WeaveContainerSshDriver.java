@@ -109,14 +109,12 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
     }
 
     @Override
-    public InetAddress attachNetwork(String containerId) {
+    public void attachNetwork(String containerId, InetAddress address) {
         Tasks.setBlockingDetails("Attach Weave to " + containerId);
         try {
             Cidr cidr = getEntity().getConfig(WeaveNetwork.CIDR);
-            InetAddress address = getEntity().getConfig(WeaveContainer.SDN_PROVIDER).get();
             ((WeaveContainer) getEntity()).getDockerHost().execCommand(BashCommands.sudo(String.format("%s attach %s/%d %s",
                     getWeaveCommand(), address.getHostAddress(), cidr.getLength(), containerId)));
-            return address;
         } finally {
             Tasks.resetBlockingDetails();
         }

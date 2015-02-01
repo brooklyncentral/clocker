@@ -43,7 +43,6 @@ public class DoveNetworkImpl extends SdnProviderImpl implements DoveNetwork {
         super.init();
 
         EntitySpec<?> agentSpec = EntitySpec.create(getConfig(SdnProvider.SDN_AGENT_SPEC, EntitySpec.create(DoveAgent.class)))
-                .configure(DoveAgent.CIDR, getConfig(DoveNetwork.CIDR))
                 .configure(DoveAgent.SDN_PROVIDER, this);
 
         setAttribute(SdnProvider.SDN_AGENT_SPEC, agentSpec);

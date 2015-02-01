@@ -20,24 +20,19 @@ import java.net.InetAddress;
 import brooklyn.catalog.Catalog;
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.entity.container.sdn.SdnAgent;
 import brooklyn.entity.container.sdn.SdnProvider;
 import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.util.flags.SetFromFlag;
-import brooklyn.util.net.Cidr;
 
 /**
  * A collection of machines that are part of the Dove SDN VE network.
  */
-@Catalog(name = "Dove SDN", description = "Dove SDN VE Provider.")
+@Catalog(name = "Dove SDN", description = "Dove SDN VE Provider")
 @ImplementedBy(DoveNetworkImpl.class)
 public interface DoveNetwork extends SdnProvider {
-
-    @SetFromFlag("cidr")
-    ConfigKey<Cidr> CIDR = SdnAgent.CIDR;
 
     @SetFromFlag("dmc")
     ConfigKey<InetAddress> DOVE_CONTROLLER = ConfigKeys.newConfigKey(InetAddress.class, "sdn.dove.dmc.address", "The Dove DMC IP address");

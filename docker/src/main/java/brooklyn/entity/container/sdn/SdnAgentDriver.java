@@ -9,6 +9,6 @@ import brooklyn.entity.basic.SoftwareProcessDriver;
 
 public interface SdnAgentDriver extends SoftwareProcessDriver {
 
-    InetAddress attachNetwork(String containerId);
+    void attachNetwork(String containerId, InetAddress address);
 
 }
