@@ -17,9 +17,12 @@ package brooklyn.entity.container.sdn;
 
 import java.net.InetAddress;
 import java.util.Collection;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Maps;
 
 import brooklyn.config.render.RendererHints;
 import brooklyn.entity.Entity;
@@ -42,12 +45,14 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
 
     private static final Logger LOG = LoggerFactory.getLogger(SdnProvider.class);
 
-    protected transient Object mutex = new Object[0];
+    protected transient Object addressMutex = new Object[0];
+    protected transient Object hostMutex = new Object[0];
 
     @Override
     public void init() {
         LOG.info("Starting SDN provider id {}", getId());
         super.init();
+
         ConfigToAttributes.apply(this, DOCKER_INFRASTRUCTURE);
 
         BasicGroup agents = addChild(EntitySpec.create(BasicGroup.class)
@@ -60,16 +65,48 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
         }
 
         setAttribute(SDN_AGENTS, agents);
+
         setAttribute(ALLOCATED_IPS, 0);
+        setAttribute(ALLOCATED_ADDRESSES, Maps.<String, InetAddress>newConcurrentMap());
+
+        setAttribute(ALLOCATED_CONTAINER_IPS, 1); // Allow for gateway IP
+        setAttribute(ALLOCATED_CONTAINER_ADDRESSES, Maps.<String, InetAddress>newConcurrentMap());
     }
 
     @Override
-    public synchronized InetAddress get() {
-        Cidr cidr = getConfig(CIDR);
-        Integer allocated = getAttribute(ALLOCATED_IPS);
-        InetAddress next = cidr.addressAtOffset(allocated + 1);
-        setAttribute(ALLOCATED_IPS, allocated + 1);
-        return next;
+    public Map<String, InetAddress> getAgentAddresses() {
+        synchronized (addressMutex) {
+            return getAttribute(SdnProvider.ALLOCATED_ADDRESSES);
+        }
+    }
+
+    @Override
+    public synchronized InetAddress getNextAddress() {
+        synchronized (addressMutex) {
+            Cidr cidr = getConfig(CIDR);
+            Integer allocated = getAttribute(ALLOCATED_IPS);
+            InetAddress next = cidr.addressAtOffset(allocated + 1);
+            setAttribute(ALLOCATED_IPS, allocated + 1);
+            return next;
+        }
+    }
+
+    @Override
+    public Map<String, InetAddress> getContainerAddresses() {
+        synchronized (addressMutex) {
+            return getAttribute(SdnProvider.ALLOCATED_CONTAINER_ADDRESSES);
+        }
+    }
+
+    @Override
+    public InetAddress getNextContainerAddress() {
+        synchronized (addressMutex) {
+            Cidr cidr = getConfig(CONTAINER_CIDR);
+            Integer allocated = getAttribute(ALLOCATED_CONTAINER_IPS);
+            InetAddress next = cidr.addressAtOffset(allocated + 1);
+            setAttribute(ALLOCATED_CONTAINER_IPS, allocated + 1);
+            return next;
+        }
     }
 
     @Override
@@ -114,19 +151,19 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
     }
 
     private void onHostAdded(Entity item) {
-        synchronized (mutex) {
+        synchronized (hostMutex) {
             addHost(item);
         }
     }
 
     private void onHostRemoved(Entity item) {
-        synchronized (mutex) {
+        synchronized (hostMutex) {
             removeHost(item);
         }
     }
 
     private void onHostChanged(Entity item) {
-        synchronized (mutex) {
+        synchronized (hostMutex) {
             boolean exists = getDockerHostCluster().hasMember(item);
             Boolean running = item.getAttribute(SERVICE_UP);
             if (exists && running && item.getAttribute(SdnAgent.SDN_AGENT) == null) {

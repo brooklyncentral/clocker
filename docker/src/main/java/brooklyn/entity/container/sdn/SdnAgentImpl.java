@@ -16,6 +16,7 @@
 package brooklyn.entity.container.sdn;
 
 import java.net.InetAddress;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,9 +35,12 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
 
     private static final Logger LOG = LoggerFactory.getLogger(SdnAgent.class);
 
+    protected transient Object addressMutex = new Object[0];
+
     @Override
     public void init() {
         super.init();
+
         ConfigToAttributes.apply(this, DOCKER_HOST);
         ConfigToAttributes.apply(this, SDN_PROVIDER);
     }
@@ -65,8 +69,11 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
 
     @Override
     public void preStart() {
-        InetAddress address = getConfig(SDN_PROVIDER).get();
-        setAttribute(SDN_AGENT_ADDRESS, address);
+        synchronized (addressMutex) {
+            InetAddress address = getAttribute(SDN_PROVIDER).getNextAddress();
+            setAttribute(SDN_AGENT_ADDRESS, address);
+            getAgentAddresses().put(getId(), address);
+        }
     }
 
     @Override
@@ -74,11 +81,27 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
         ((EntityInternal) getDockerHost()).setAttribute(SDN_AGENT, this);
     }
 
+    public Map<String, InetAddress> getAgentAddresses() {
+        synchronized (addressMutex) {
+            return getAttribute(SDN_PROVIDER).getAgentAddresses();
+        }
+    }
+
+    public Map<String, InetAddress> getContainerAddresses() {
+        synchronized (addressMutex) {
+            return getAttribute(SDN_PROVIDER).getContainerAddresses();
+        }
+    }
+
     @Override
     public InetAddress attachNetwork(String containerId) {
-        InetAddress address = getDriver().attachNetwork(containerId);
-        LOG.info("Attached {} to container ID {}", address.getHostAddress(), containerId);
-        return address;
+        synchronized (addressMutex) {
+            InetAddress address = getAttribute(SDN_PROVIDER).getNextContainerAddress();
+            getDriver().attachNetwork(containerId, address);
+            getContainerAddresses().put(containerId, address);
+            LOG.info("Attached {} to container ID {}", address.getHostAddress(), containerId);
+            return address;
+        }
     }
 
     static {

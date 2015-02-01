@@ -17,6 +17,7 @@ package brooklyn.entity.container.sdn;
 
 import java.net.InetAddress;
 import java.util.Collection;
+import java.util.Map;
 
 import org.jclouds.net.domain.IpPermission;
 
@@ -34,24 +35,32 @@ import brooklyn.event.basic.Sensors;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
 
-import com.google.common.base.Supplier;
 import com.google.common.reflect.TypeToken;
 
 /**
  * An SDN provider implementation.
  */
-public interface SdnProvider extends BasicStartable, Supplier<InetAddress> {
+public interface SdnProvider extends BasicStartable {
 
     @SetFromFlag("cidr")
     ConfigKey<Cidr> CIDR = ConfigKeys.newConfigKey(Cidr.class, "sdn.cidr", "CIDR for address allocation");
 
+    @SetFromFlag("containerCidr")
+    ConfigKey<Cidr> CONTAINER_CIDR = ConfigKeys.newConfigKey(Cidr.class, "sdn.container.cidr", "CIDR for address allocation to containers");
+
     AttributeSensor<Group> SDN_AGENTS = Sensors.newSensor(Group.class, "sdn.agents", "Group of SDN agent services");
-    AttributeSensor<Integer> ALLOCATED_IPS = Sensors.newIntegerSensor("sdn.allocated.ips", "Number of allocated IPs");
+
+    AttributeSensor<Integer> ALLOCATED_IPS = Sensors.newIntegerSensor("sdn.agent.ips", "Number of allocated IPs for agents");
+    AttributeSensor<Map<String, InetAddress>> ALLOCATED_ADDRESSES = Sensors.newSensor(
+            new TypeToken<Map<String, InetAddress>>() { }, "sdn.agent.addresses", "Allocated IP addresses for agents");
+
+    AttributeSensor<Integer> ALLOCATED_CONTAINER_IPS = Sensors.newIntegerSensor("sdn.container.ips", "Number of allocated IPs for containers");
+    AttributeSensor<Map<String, InetAddress>> ALLOCATED_CONTAINER_ADDRESSES = Sensors.newSensor(
+            new TypeToken<Map<String, InetAddress>>() { }, "sdn.container.addresses", "Allocated IP addresses for containers");
 
     @SetFromFlag("agentSpec")
     AttributeSensorAndConfigKey<EntitySpec<?>,EntitySpec<?>> SDN_AGENT_SPEC = ConfigKeys.newSensorAndConfigKey(
-            new TypeToken<EntitySpec<?>>() { },
-            "sdn.agent.spec", "SDN agent specification");
+            new TypeToken<EntitySpec<?>>() { }, "sdn.agent.spec", "SDN agent specification");
 
     @SetFromFlag("dockerInfrastructure")
     AttributeSensorAndConfigKey<Entity, Entity> DOCKER_INFRASTRUCTURE = DockerAttributes.DOCKER_INFRASTRUCTURE;
@@ -61,6 +70,14 @@ public interface SdnProvider extends BasicStartable, Supplier<InetAddress> {
     DynamicCluster getDockerHostCluster();
 
     Group getAgents();
+
+    InetAddress getNextContainerAddress();
+
+    InetAddress getNextAddress();
+
+    Map<String, InetAddress> getContainerAddresses();
+
+    Map<String, InetAddress> getAgentAddresses();
 
     void addHost(Entity host);
 

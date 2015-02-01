@@ -15,7 +15,9 @@
  */
 package brooklyn.entity.container.sdn.weave;
 
+import java.net.InetAddress;
 import java.util.Collection;
+import java.util.Map;
 
 import org.jclouds.net.domain.IpPermission;
 import org.jclouds.net.domain.IpProtocol;
@@ -47,7 +49,6 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
         super.init();
 
         EntitySpec<?> agentSpec = EntitySpec.create(getConfig(SdnProvider.SDN_AGENT_SPEC, EntitySpec.create(WeaveContainer.class)))
-                .configure(WeaveContainer.CIDR, getConfig(WeaveNetwork.CIDR))
                 .configure(WeaveContainer.WEAVE_PORT, getConfig(WeaveNetwork.WEAVE_PORT))
                 .configure(WeaveContainer.SDN_PROVIDER, this);
         String weaveVersion = getConfig(WEAVE_VERSION);
@@ -100,6 +101,16 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
         getAgents().removeMember(agent);
         Entities.unmanage(agent);
         if (LOG.isDebugEnabled()) LOG.debug("{} removed weave service {}", this, agent);
+    }
+
+    @Override
+    public Map<String, InetAddress> getContainerAddresses() {
+        return getAgentAddresses();
+    }
+
+    @Override
+    public InetAddress getNextContainerAddress() {
+        return getNextAddress();
     }
 
 }
