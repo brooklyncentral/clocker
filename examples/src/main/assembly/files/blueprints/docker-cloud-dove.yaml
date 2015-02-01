@@ -39,8 +39,8 @@ services:
         brooklyn.config:
           sdn.dove.dmc.address: 10.52.36.66
           sdn.dove.vlanId: 425232
-          sdn.dove.bridgeId: 12967411
           sdn.cidr: 10.52.36.80/29
+          sdn.container.cidr: 50.0.0.0/24
     docker.host.spec:
       $brooklyn:entitySpec:
         type: brooklyn.entity.container.docker.DockerHost

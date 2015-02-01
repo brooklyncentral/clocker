@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 
 # UUID of the Container instance
 UUID=$1
@@ -66,6 +67,6 @@ $DACTL register dockerport \
 
 
 ip netns exec $PID ip route add default via $GATEWAY
-#ip netns exec $PID ping -c 3 $GATEWAY
+ip netns exec $PID ping -c 3 $GATEWAY
 
 echo 'DONE'
