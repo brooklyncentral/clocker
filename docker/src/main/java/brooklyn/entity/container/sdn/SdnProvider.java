@@ -17,7 +17,7 @@ package brooklyn.entity.container.sdn;
 
 import java.net.InetAddress;
 import java.util.Collection;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 
 import org.jclouds.net.domain.IpPermission;
@@ -33,7 +33,6 @@ import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
-import brooklyn.util.collections.MutableMap;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
 
@@ -45,6 +44,9 @@ import com.google.common.reflect.TypeToken;
 public interface SdnProvider extends BasicStartable {
 
     ConfigKey<Cidr> CIDR = ConfigKeys.newConfigKey(Cidr.class, "sdn.agent.cidr", "CIDR for address allocation");
+
+    ConfigKey<Collection<String>> EXTRA_NETWORKS = ConfigKeys.newConfigKey(
+            new TypeToken<Collection<String>>() { }, "sdn.extra.networks", "Collection of extra networks to create for an entity", Collections.<String>emptyList());
 
     ConfigKey<Cidr> CONTAINER_NETWORK_CIDR = ConfigKeys.newConfigKey(Cidr.class, "sdn.network.cidr", "CIDR for network allocation to containers");
     ConfigKey<Integer> CONTAINER_NETWORK_SIZE = ConfigKeys.newIntegerConfigKey("sdn.network.size", "Size of network CIDR allocation for containers");
@@ -77,17 +79,11 @@ public interface SdnProvider extends BasicStartable {
 
     Group getAgents();
 
-    InetAddress getNextContainerAddress(Entity entity);
+    InetAddress getNextContainerAddress(String networkId);
 
     InetAddress getNextAddress();
 
-    Map<String, Cidr> getNetworks();
-
-    Map<String, Integer> getNetworkAllocations();
-
-    Map<String, InetAddress> getContainerAddresses();
-
-    Map<String, InetAddress> getAgentAddresses();
+    Cidr getSubnet(String subnetId, String subnetName);
 
     void addHost(Entity host);
 

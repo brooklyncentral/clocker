@@ -22,8 +22,6 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Maps;
-
 import brooklyn.config.render.RendererHints;
 import brooklyn.entity.Entity;
 import brooklyn.entity.Group;
@@ -32,6 +30,7 @@ import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.container.docker.DockerInfrastructure;
+import brooklyn.entity.container.sdn.dove.DoveNetwork;
 import brooklyn.entity.group.AbstractMembershipTrackingPolicy;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.proxying.EntitySpec;
@@ -40,6 +39,8 @@ import brooklyn.location.Location;
 import brooklyn.policy.PolicySpec;
 import brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import brooklyn.util.net.Cidr;
+
+import com.google.common.collect.Maps;
 
 public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnProvider {
 
@@ -76,34 +77,6 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
     }
 
     @Override
-    public Map<String, Cidr> getNetworks() {
-        synchronized (addressMutex) {
-            return getAttribute(NETWORKS);
-        }
-    }
-
-    @Override
-    public Map<String, Integer> getNetworkAllocations() {
-        synchronized (addressMutex) {
-            return getAttribute(NETWORK_ALLOCATIONS);
-        }
-    }
-
-    @Override
-    public Map<String, InetAddress> getAgentAddresses() {
-        synchronized (addressMutex) {
-            return getAttribute(ALLOCATED_ADDRESSES);
-        }
-    }
-
-    @Override
-    public Map<String, InetAddress> getContainerAddresses() {
-        synchronized (addressMutex) {
-            return getAttribute(CONTAINER_ADDRESSES);
-        }
-    }
-
-    @Override
     public synchronized InetAddress getNextAddress() {
         synchronized (addressMutex) {
             Cidr cidr = getConfig(CIDR);
@@ -111,6 +84,27 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
             InetAddress next = cidr.addressAtOffset(allocated + 1);
             setAttribute(ALLOCATED_IPS, allocated + 1);
             return next;
+        }
+    }
+
+    @Override
+    public Cidr getSubnet(String subnetId, String subnetName) {
+        synchronized (addressMutex) {
+            Map<String, Cidr> networks = getAttribute(SdnProvider.NETWORKS);
+            if (networks.containsKey(subnetId)) return networks.get(subnetId);
+
+            Cidr networkCidr = getConfig(DoveNetwork.CONTAINER_NETWORK_CIDR);
+            Integer networkSize = getConfig(DoveNetwork.CONTAINER_NETWORK_SIZE);
+            Integer allocated = getAttribute(DoveNetwork.ALLOCATED_NETWORKS);
+
+            InetAddress baseAddress = networkCidr.addressAtOffset(allocated * (2 << (32 - networkSize)));
+            Cidr subnetCidr = new Cidr(baseAddress.getHostAddress() + "/" + networkSize);
+
+            networks.put(subnetId, subnetCidr);
+            setAttribute(DoveNetwork.ALLOCATED_NETWORKS, allocated + 1);
+            setAttribute(DoveNetwork.NETWORKS, networks);
+
+            return subnetCidr;
         }
     }
 

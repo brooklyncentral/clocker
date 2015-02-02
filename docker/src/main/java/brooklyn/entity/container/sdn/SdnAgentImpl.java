@@ -16,6 +16,7 @@
 package brooklyn.entity.container.sdn;
 
 import java.net.InetAddress;
+import java.util.Collection;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -24,7 +25,7 @@ import org.slf4j.LoggerFactory;
 import brooklyn.config.render.RendererHints;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.DelegateEntity;
-import brooklyn.entity.basic.EntityInternal;
+import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.SoftwareProcessImpl;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.event.feed.ConfigToAttributes;
@@ -73,33 +74,36 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
         synchronized (addressMutex) {
             InetAddress address = getAttribute(SDN_PROVIDER).getNextAddress();
             setAttribute(SDN_AGENT_ADDRESS, address);
-            getAgentAddresses().put(getId(), address);
+            Map<String, InetAddress> addresses = getAttribute(SDN_PROVIDER).getAttribute(SdnProvider.ALLOCATED_ADDRESSES);
+            addresses.put(getId(), address);
+            Entities.deproxy(getAttribute(SdnAgent.SDN_PROVIDER)).setAttribute(SdnProvider.ALLOCATED_ADDRESSES, addresses);
         }
     }
 
     @Override
     public void postStart() {
-        ((EntityInternal) getDockerHost()).setAttribute(SDN_AGENT, this);
-    }
-
-    public Map<String, InetAddress> getAgentAddresses() {
-        synchronized (addressMutex) {
-            return getAttribute(SDN_PROVIDER).getAgentAddresses();
-        }
-    }
-
-    public Map<String, InetAddress> getContainerAddresses() {
-        synchronized (addressMutex) {
-            return getAttribute(SDN_PROVIDER).getContainerAddresses();
-        }
+        Entities.deproxy(getDockerHost()).setAttribute(SDN_AGENT, this);
     }
 
     @Override
     public InetAddress attachNetwork(String containerId, Entity entity) {
         synchronized (addressMutex) {
-            InetAddress address = getDriver().attachNetwork(containerId, entity);
-            getContainerAddresses().put(containerId, address);
+            String networkId = entity.getApplicationId();
+            String networkName = entity.getApplication().getDisplayName();
+            InetAddress address = getDriver().attachNetwork(containerId, networkId, networkName);
+            Map<String, InetAddress> addresses = getAttribute(SDN_PROVIDER).getAttribute(SdnProvider.CONTAINER_ADDRESSES);
+            addresses.put(containerId, address);
+            Entities.deproxy(getAttribute(SdnAgent.SDN_PROVIDER)).setAttribute(SdnProvider.CONTAINER_ADDRESSES, addresses);
             LOG.info("Attached {} to container ID {}", address.getHostAddress(), containerId);
+
+            Collection<String> extra = entity.getConfig(SdnProvider.EXTRA_NETWORKS);
+            if (extra != null) {
+                for (String extraId : extra) {
+                    InetAddress extraAddress = getDriver().attachNetwork(containerId, extraId, extraId);
+                    LOG.info("Attached {} to container ID {} on {}", new Object[] { extraAddress.getHostAddress(), containerId, extraId });
+                }
+            }
+
             return address;
         }
     }
