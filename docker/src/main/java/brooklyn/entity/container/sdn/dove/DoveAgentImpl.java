@@ -15,10 +15,15 @@
  */
 package brooklyn.entity.container.sdn.dove;
 
+import java.net.InetAddress;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import brooklyn.entity.container.sdn.SdnAgentImpl;
+import brooklyn.entity.container.sdn.SdnProvider;
+import brooklyn.util.net.Cidr;
 
 /**
  * A single Docker container.
@@ -41,4 +46,5 @@ public class DoveAgentImpl extends SdnAgentImpl implements DoveAgent {
     public String getAgentAddress() {
         return getAttribute(SDN_AGENT_ADDRESS).getHostAddress();
     }
+
 }

@@ -17,7 +17,7 @@ package brooklyn.entity.container.sdn;
 
 import java.net.InetAddress;
 
-import brooklyn.config.ConfigKey;
+import brooklyn.entity.Entity;
 import brooklyn.entity.annotation.Effector;
 import brooklyn.entity.annotation.EffectorParam;
 import brooklyn.entity.basic.ConfigKeys;
@@ -29,7 +29,6 @@ import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.util.flags.SetFromFlag;
-import brooklyn.util.net.Cidr;
 
 /**
  * An SDN agent process.
@@ -54,10 +53,12 @@ public interface SdnAgent extends SoftwareProcess {
      * Attach a container to the network.
      *
      * @param containerId the container ID
+     * @param entity the entity running in the container
      * @return the {@link SubnetTier} IP address
      */
     @Effector(description="Attach a container to the network")
     InetAddress attachNetwork(
-            @EffectorParam(name="containerId", description="Container ID") String containerId);
+            @EffectorParam(name="containerId", description="Container ID") String containerId,
+            @EffectorParam(name="entity", description="Entity") Entity entity);
 
 }

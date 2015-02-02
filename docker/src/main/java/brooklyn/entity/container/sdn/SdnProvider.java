@@ -44,29 +44,25 @@ import com.google.common.reflect.TypeToken;
  */
 public interface SdnProvider extends BasicStartable {
 
-    @SetFromFlag("cidr")
-    ConfigKey<Cidr> CIDR = ConfigKeys.newConfigKey(Cidr.class, "sdn.cidr", "CIDR for address allocation");
+    ConfigKey<Cidr> CIDR = ConfigKeys.newConfigKey(Cidr.class, "sdn.agent.cidr", "CIDR for address allocation");
 
-    @SetFromFlag("containerCidr")
-    ConfigKey<Cidr> CONTAINER_CIDR = ConfigKeys.newConfigKey(Cidr.class, "sdn.container.cidr", "CIDR for address allocation to containers");
+    ConfigKey<Cidr> CONTAINER_NETWORK_CIDR = ConfigKeys.newConfigKey(Cidr.class, "sdn.network.cidr", "CIDR for network allocation to containers");
+    ConfigKey<Integer> CONTAINER_NETWORK_SIZE = ConfigKeys.newIntegerConfigKey("sdn.network.size", "Size of network CIDR allocation for containers");
 
-    ConfigKey<Map<String, Cidr>> NETWORK_SPEC = ConfigKeys.newConfigKey(
-            new TypeToken<Map<String, Cidr>>() { }, "sdn.network.spec", "Map of network subnets to be created",
-            MutableMap.<String, Cidr>of("clocker", new Cidr("50.0.0.0/24")));
+    AttributeSensor<Integer> ALLOCATED_NETWORKS = Sensors.newIntegerSensor("sdn.network.allocated", "Number of allocated networks");
+    AttributeSensor<Map<String, Cidr>> NETWORKS = Sensors.newSensor(
+            new TypeToken<Map<String, Cidr>>() { }, "sdn.networks", "Map of network subnets that have been created");
+    AttributeSensor<Map<String, Integer>> NETWORK_ALLOCATIONS = Sensors.newSensor(
+            new TypeToken<Map<String, Integer>>() { }, "sdn.networks.allocated", "Map of allocated address count on network subnets");
 
-    ConfigKey<Collection<String>> NETWORKS = ConfigKeys.newConfigKey(
-            new TypeToken<Collection<String>>() { }, "sdn.networks", "Collection of networks to be used",
-            Arrays.asList("clocker"));
+    AttributeSensor<Map<String, InetAddress>> CONTAINER_ADDRESSES = Sensors.newSensor(
+            new TypeToken<Map<String, InetAddress>>() { }, "sdn.container.addresses", "Map of container ID to IP addresses on network");
 
     AttributeSensor<Group> SDN_AGENTS = Sensors.newSensor(Group.class, "sdn.agents", "Group of SDN agent services");
 
     AttributeSensor<Integer> ALLOCATED_IPS = Sensors.newIntegerSensor("sdn.agent.ips", "Number of allocated IPs for agents");
     AttributeSensor<Map<String, InetAddress>> ALLOCATED_ADDRESSES = Sensors.newSensor(
             new TypeToken<Map<String, InetAddress>>() { }, "sdn.agent.addresses", "Allocated IP addresses for agents");
-
-    AttributeSensor<Integer> ALLOCATED_CONTAINER_IPS = Sensors.newIntegerSensor("sdn.container.ips", "Number of allocated IPs for containers");
-    AttributeSensor<Map<String, InetAddress>> ALLOCATED_CONTAINER_ADDRESSES = Sensors.newSensor(
-            new TypeToken<Map<String, InetAddress>>() { }, "sdn.container.addresses", "Allocated IP addresses for containers");
 
     @SetFromFlag("agentSpec")
     AttributeSensorAndConfigKey<EntitySpec<?>,EntitySpec<?>> SDN_AGENT_SPEC = ConfigKeys.newSensorAndConfigKey(
@@ -81,9 +77,13 @@ public interface SdnProvider extends BasicStartable {
 
     Group getAgents();
 
-    InetAddress getNextContainerAddress();
+    InetAddress getNextContainerAddress(Entity entity);
 
     InetAddress getNextAddress();
+
+    Map<String, Cidr> getNetworks();
+
+    Map<String, Integer> getNetworkAllocations();
 
     Map<String, InetAddress> getContainerAddresses();
 

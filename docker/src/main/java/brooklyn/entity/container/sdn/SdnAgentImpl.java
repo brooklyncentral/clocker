@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import brooklyn.config.render.RendererHints;
+import brooklyn.entity.Entity;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.EntityInternal;
 import brooklyn.entity.basic.SoftwareProcessImpl;
@@ -94,10 +95,9 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
     }
 
     @Override
-    public InetAddress attachNetwork(String containerId) {
+    public InetAddress attachNetwork(String containerId, Entity entity) {
         synchronized (addressMutex) {
-            InetAddress address = getAttribute(SDN_PROVIDER).getNextContainerAddress();
-            getDriver().attachNetwork(containerId, address);
+            InetAddress address = getDriver().attachNetwork(containerId, entity);
             getContainerAddresses().put(containerId, address);
             LOG.info("Attached {} to container ID {}", address.getHostAddress(), containerId);
             return address;
