@@ -17,6 +17,7 @@ package brooklyn.entity.container.sdn.dove;
 
 import java.net.InetAddress;
 import java.util.Collection;
+import java.util.Map;
 
 import org.jclouds.net.domain.IpPermission;
 import org.slf4j.Logger;
@@ -80,13 +81,15 @@ public class DoveNetworkImpl extends SdnProviderImpl implements DoveNetwork {
     }
 
     @Override
-    public InetAddress getNextContainerAddress(Entity entity) {
+    public InetAddress getNextContainerAddress(String networkId) {
         synchronized (addressMutex) {
-            Cidr cidr = getNetworks().get(entity.getApplicationId());
-            Integer allocated = getNetworkAllocations().get(entity.getApplicationId());
+            Cidr cidr = getAttribute(NETWORKS).get(networkId);
+            Map<String, Integer> allocations = getAttribute(NETWORK_ALLOCATIONS);
+            Integer allocated = allocations.get(networkId);
             if (allocated == null) allocated = 1;
             InetAddress next = cidr.addressAtOffset(allocated + 1);
-            getNetworkAllocations().put(entity.getApplicationId(), allocated + 1);
+            allocations.put(networkId, allocated + 1);
+            setAttribute(NETWORK_ALLOCATIONS, allocations);
             return next;
         }
     }

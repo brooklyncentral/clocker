@@ -29,6 +29,7 @@ import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.util.flags.SetFromFlag;
+import brooklyn.util.net.Cidr;
 
 /**
  * An SDN agent process.
@@ -60,5 +61,4 @@ public interface SdnAgent extends SoftwareProcess {
     InetAddress attachNetwork(
             @EffectorParam(name="containerId", description="Container ID") String containerId,
             @EffectorParam(name="entity", description="Entity") Entity entity);
-
 }
