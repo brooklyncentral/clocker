@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.entity.container.sdn.dove;
+package brooklyn.entity.container.sdn.ibm;
 
 import java.net.InetAddress;
 import java.util.Collection;
@@ -36,17 +36,17 @@ import brooklyn.util.net.Cidr;
 
 import com.google.common.collect.ImmutableList;
 
-public class DoveNetworkImpl extends SdnProviderImpl implements DoveNetwork {
+public class SdnVeNetworkImpl extends SdnProviderImpl implements SdnVeNetwork {
 
     private static final Logger LOG = LoggerFactory.getLogger(SdnProvider.class);
 
     @Override
     public void init() {
-        LOG.info("Starting Dove SDN VE network id {}", getId());
+        LOG.info("Starting IBM SDN VE network id {}", getId());
         super.init();
 
-        EntitySpec<?> agentSpec = EntitySpec.create(getConfig(SdnProvider.SDN_AGENT_SPEC, EntitySpec.create(DoveAgent.class)))
-                .configure(DoveAgent.SDN_PROVIDER, this);
+        EntitySpec<?> agentSpec = EntitySpec.create(getConfig(SdnProvider.SDN_AGENT_SPEC, EntitySpec.create(SdnVeAgent.class)))
+                .configure(SdnVeAgent.SDN_PROVIDER, this);
 
         setAttribute(SdnProvider.SDN_AGENT_SPEC, agentSpec);
     }
@@ -60,12 +60,12 @@ public class DoveNetworkImpl extends SdnProviderImpl implements DoveNetwork {
     public void addHost(Entity item) {
         SshMachineLocation machine = ((DockerHost) item).getDynamicLocation().getMachine();
         EntitySpec<?> spec = EntitySpec.create(getAttribute(SDN_AGENT_SPEC))
-                .configure(DoveAgent.DOCKER_HOST, (DockerHost) item);
-        DoveAgent agent = (DoveAgent) getAgents().addChild(spec);
+                .configure(SdnVeAgent.DOCKER_HOST, (DockerHost) item);
+        SdnVeAgent agent = (SdnVeAgent) getAgents().addChild(spec);
         Entities.manage(agent);
         getAgents().addMember(agent);
         agent.start(ImmutableList.of(machine));
-        if (LOG.isDebugEnabled()) LOG.debug("{} added dove agent {}", this, agent);
+        if (LOG.isDebugEnabled()) LOG.debug("{} added IBM SDN VE agent {}", this, agent);
     }
 
     public void removeHost(Entity item) {
@@ -77,7 +77,7 @@ public class DoveNetworkImpl extends SdnProviderImpl implements DoveNetwork {
         agent.stop();
         getAgents().removeMember(agent);
         Entities.unmanage(agent);
-        if (LOG.isDebugEnabled()) LOG.debug("{} removed dove agent {}", this, agent);
+        if (LOG.isDebugEnabled()) LOG.debug("{} removed IBM SDN VE agent {}", this, agent);
     }
 
     @Override
