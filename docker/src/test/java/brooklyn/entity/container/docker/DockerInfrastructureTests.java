@@ -47,7 +47,7 @@ public class DockerInfrastructureTests {
                 .displayName("Docker Infrastructure"));
         LOG.info("Starting {} in {}", dockerInfrastructure, location);
         app.start(ImmutableList.of(location));
-        LOG.info("Waiting {} for {} to have started", Duration.FIVE_MINUTES, dockerInfrastructure);
+        LOG.info("Waiting {} for {} to have started", Duration.TWO_MINUTES, dockerInfrastructure);
         EntityTestUtils.assertAttributeEqualsEventually(ImmutableMap.of("timeout", Duration.FIVE_MINUTES),
                 dockerInfrastructure, Attributes.SERVICE_UP, true);
 
@@ -60,5 +60,7 @@ public class DockerInfrastructureTests {
         EntityTestUtils.assertAttributeEqualsEventually(deployment, Attributes.SERVICE_STATE_ACTUAL, Lifecycle.RUNNING);
         EntityTestUtils.assertAttributeEqualsEventually(dockerInfrastructure, DockerInfrastructure.DOCKER_CONTAINER_COUNT,
                 existingCount + 1);
+
+        deployment.stop();
     }
 }

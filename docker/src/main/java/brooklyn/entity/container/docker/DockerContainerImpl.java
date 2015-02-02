@@ -474,6 +474,13 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
     @Override
     public void stop() {
+        Lifecycle state = getAttribute(SERVICE_STATE_ACTUAL);
+        if (Lifecycle.STOPPING.equals(state) || Lifecycle.STOPPED.equals(state)) {
+            LOG.debug("Ignoring request to stop {} when it is already {}", this, state);
+            LOG.trace("Duplicate stop came from: \n" + Joiner.on("\n").join(Thread.getAllStackTraces().get(Thread.currentThread())));
+            return;
+        }
+        LOG.info("Stopping {} when its state is {}", this, getAttribute(SERVICE_STATE_ACTUAL));
         ServiceStateLogic.setExpectedState(this, Lifecycle.STOPPING);
 
         disconnectSensors();
