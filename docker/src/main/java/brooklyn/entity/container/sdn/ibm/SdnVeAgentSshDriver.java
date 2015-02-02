@@ -1,7 +1,7 @@
 /*
  * Copyright 2014 by Cloudsoft Corporation Limited
  */
-package brooklyn.entity.container.sdn.dove;
+package brooklyn.entity.container.sdn.ibm;
 
 import static brooklyn.util.ssh.BashCommands.sudo;
 
@@ -45,11 +45,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-public class DoveAgentSshDriver extends AbstractSoftwareProcessSshDriver implements DoveAgentDriver {
+public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implements SdnVeAgentDriver {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DoveAgent.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SdnVeAgent.class);
 
-    public DoveAgentSshDriver(EntityLocal entity, SshMachineLocation machine) {
+    public SdnVeAgentSshDriver(EntityLocal entity, SshMachineLocation machine) {
         super(entity, machine);
     }
 
@@ -96,7 +96,7 @@ public class DoveAgentSshDriver extends AbstractSoftwareProcessSshDriver impleme
     public void customize() {
         Networking.checkPortsValid(getPortMap());
 
-        String netstat = getEntity().getAttribute(DoveAgent.DOCKER_HOST).execCommand("netstat -rn");
+        String netstat = getEntity().getAttribute(SdnVeAgent.DOCKER_HOST).execCommand("netstat -rn");
         Iterable<String> routes = Iterables.filter(Splitter.on(CharMatcher.anyOf("\r\n")).split(netstat), StringPredicates.containsLiteral("eth0"));
         String subnetAddress = getEntity().getAttribute(SoftwareProcess.SUBNET_ADDRESS);
         String address = Strings.getFirstWord(Iterables.find(routes, Predicates.and(StringPredicates.containsLiteral("255.255.255."),
@@ -118,11 +118,11 @@ public class DoveAgentSshDriver extends AbstractSoftwareProcessSshDriver impleme
                 .body.append(commands)
                 .execute();
 
-        String doveXmlTemplate = processTemplate(entity.getConfig(DoveNetwork.CONFIGURATION_XML_TEMPLATE));
+        String doveXmlTemplate = processTemplate(entity.getConfig(SdnVeNetwork.CONFIGURATION_XML_TEMPLATE));
         String savedDoveXml = Urls.mergePaths(getRunDir(), "dove.xml");
         DynamicTasks.queueIfPossible(SshEffectorTasks.put(savedDoveXml).contents(doveXmlTemplate)).andWaitForSuccess();
 
-        String networkScriptUrl = getEntity().getConfig(DoveNetwork.NETWORK_SETUP_SCRIPT_URL);
+        String networkScriptUrl = getEntity().getConfig(SdnVeNetwork.NETWORK_SETUP_SCRIPT_URL);
         String networkScript = Urls.mergePaths(getRunDir(), "network.sh");
         DynamicTasks.queueIfPossible(SshEffectorTasks.put(networkScript).contents(resource.getResourceFromUrl(networkScriptUrl))).andWaitForSuccess();
 
@@ -167,7 +167,7 @@ public class DoveAgentSshDriver extends AbstractSoftwareProcessSshDriver impleme
     }
 
     private String copyJsonTemplate(String fileName, Map<String, String> substitutions) {
-        String contents = processTemplate("classpath://brooklyn/entity/container/sdn/dove/" + fileName, substitutions);
+        String contents = processTemplate("classpath://brooklyn/entity/container/sdn/ibm/" + fileName, substitutions);
         String target = Urls.mergePaths(getRunDir(), fileName);
         DynamicTasks.queueIfPossible(SshEffectorTasks.put(target).contents(contents)).andWaitForSuccess();
         return target;
@@ -175,14 +175,14 @@ public class DoveAgentSshDriver extends AbstractSoftwareProcessSshDriver impleme
 
     private String callRestApi(String jsonData, String apiPath) {
         String command = String.format("curl -i -u admin:admin -X POST -H \"Content-Type: application/json\" -d @- http://%s/%s < %s",
-                getEntity().getConfig(DoveNetwork.DOVE_CONTROLLER).getHostAddress(), apiPath, jsonData);
-        String output = getEntity().getAttribute(DoveAgent.DOCKER_HOST).execCommand(command);
+                getEntity().getConfig(SdnVeNetwork.DOVE_CONTROLLER).getHostAddress(), apiPath, jsonData);
+        String output = getEntity().getAttribute(SdnVeAgent.DOCKER_HOST).execCommand(command);
         return output;
     }
 
     private int getNetworkIdForName(String networkName) {
-        String command = String.format("curl -s -u admin:admin http://%s/networks", getEntity().getConfig(DoveNetwork.DOVE_CONTROLLER).getHostAddress());
-        String output = getEntity().getAttribute(DoveAgent.DOCKER_HOST).execCommand(command);
+        String command = String.format("curl -s -u admin:admin http://%s/networks", getEntity().getConfig(SdnVeNetwork.DOVE_CONTROLLER).getHostAddress());
+        String output = getEntity().getAttribute(SdnVeAgent.DOCKER_HOST).execCommand(command);
         JsonParser parser = new JsonParser();
         JsonElement json = parser.parse(output);
         JsonArray networks = json.getAsJsonObject().get("networks").getAsJsonArray();
@@ -204,7 +204,7 @@ public class DoveAgentSshDriver extends AbstractSoftwareProcessSshDriver impleme
                 .execute();
 
         int networkId = createNetwork();
-        getEntity().setAttribute(DoveNetwork.DOVE_BRIDGE_ID, networkId);
+        getEntity().setAttribute(SdnVeNetwork.DOVE_BRIDGE_ID, networkId);
 
         Map<String, String> createBridgeData = ImmutableMap.<String, String>builder()
                 .put("networkId", Integer.toString(networkId))
@@ -214,7 +214,7 @@ public class DoveAgentSshDriver extends AbstractSoftwareProcessSshDriver impleme
         String createBridgeOutput = callRestApi(createBridge, "api/dove/vrmgr/vnids/vm_mgr");
         Preconditions.checkState(Strings.containsLiteral(createBridgeOutput, "successfully"), "Failed to export network %s", networkId);
 
-        String bridge = getEntity().getAttribute(DoveAgent.DOCKER_HOST).execCommand(sudo("brctl show"));
+        String bridge = getEntity().getAttribute(SdnVeAgent.DOCKER_HOST).execCommand(sudo("brctl show"));
         String doveBridge = Strings.getFirstWordAfter(bridge, "dovebr_");
         if (Integer.valueOf(doveBridge) != networkId) {
             throw new IllegalStateException("Incorrect network ID found: " + doveBridge);
@@ -222,7 +222,7 @@ public class DoveAgentSshDriver extends AbstractSoftwareProcessSshDriver impleme
         LOG.debug("Added bridge: " + doveBridge);
 
         LOG.info("SDN agent restarting Docker service");
-        String restart = getEntity().getAttribute(DoveAgent.DOCKER_HOST).execCommand(sudo("service docker restart"));
+        String restart = getEntity().getAttribute(SdnVeAgent.DOCKER_HOST).execCommand(sudo("service docker restart"));
         Iterable<String> successes = Iterables.filter(Splitter.on(CharMatcher.anyOf("\r\n")).split(restart), StringPredicates.containsLiteral("OK"));
         if (Iterables.size(successes) != 2) {
             throw new IllegalStateException("Failed to restart Docker Engine service: " + restart);
@@ -255,8 +255,8 @@ public class DoveAgentSshDriver extends AbstractSoftwareProcessSshDriver impleme
             InetAddress address = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getNextContainerAddress(subnetId);
 
             String networkScript = Urls.mergePaths(getRunDir(), "network.sh");
-            Integer bridgeId = getEntity().getAttribute(DoveNetwork.DOVE_BRIDGE_ID);
-            Map<String, Cidr> networks = getEntity().getAttribute(DoveAgent.SDN_PROVIDER).getAttribute(SdnProvider.NETWORKS);
+            Integer bridgeId = getEntity().getAttribute(SdnVeNetwork.DOVE_BRIDGE_ID);
+            Map<String, Cidr> networks = getEntity().getAttribute(SdnVeAgent.SDN_PROVIDER).getAttribute(SdnProvider.NETWORKS);
             Cidr cidr = networks.get(entity.getApplicationId());
 
             /* ./setup_network_v2.sh containerid network_1 12345678 fa:16:50:00:01:e1 50.0.0.2/24 50.0.0.1 8064181 */
@@ -269,7 +269,7 @@ public class DoveAgentSshDriver extends AbstractSoftwareProcessSshDriver impleme
                     cidr.addressAtOffset(1).getHostAddress(), // Default gateway assigned to the Container
                     bridgeId, // VNID to be used
                     subnetId); // Interface name
-            getEntity().getConfig(DoveAgent.DOCKER_HOST).execCommand(sudo(command));
+            getEntity().getConfig(SdnVeAgent.DOCKER_HOST).execCommand(sudo(command));
             
             return address;
         } finally {

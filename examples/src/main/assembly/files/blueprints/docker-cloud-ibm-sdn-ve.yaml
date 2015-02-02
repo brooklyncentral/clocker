@@ -34,10 +34,10 @@ services:
     sdn.enable: true
     sdn.provider.spec:
       $brooklyn:entitySpec:
-        type: brooklyn.entity.container.sdn.dove.DoveNetwork
+        type: brooklyn.entity.container.sdn.ibm.SdnVeNetwork
         brooklyn.config:
-          sdn.dove.dmc.address: 10.52.36.66
-          sdn.dove.vlanId: 425232
+          sdn.ibm.dmc.address: 10.52.36.66
+          sdn.ibm.vlanId: 425232
           sdn.agent.cidr: 10.52.36.80/29
           sdn.network.cidr: 65.0.0.0/8
           sdn.network.size: 24
