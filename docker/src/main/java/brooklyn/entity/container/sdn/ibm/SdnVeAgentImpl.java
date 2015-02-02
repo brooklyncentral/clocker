@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.entity.container.sdn.dove;
+package brooklyn.entity.container.sdn.ibm;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,18 +23,18 @@ import brooklyn.entity.container.sdn.SdnAgentImpl;
 /**
  * A single Docker container.
  */
-public class DoveAgentImpl extends SdnAgentImpl implements DoveAgent {
+public class SdnVeAgentImpl extends SdnAgentImpl implements SdnVeAgent {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DoveAgent.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SdnVeAgent.class);
 
     @Override
     public Class getDriverInterface() {
-        return DoveAgentDriver.class;
+        return SdnVeAgentDriver.class;
     }
 
     @Override
     public String getDmcAddress() {
-        return getAttribute(SDN_PROVIDER).getConfig(DoveNetwork.DOVE_CONTROLLER).getHostAddress();
+        return getAttribute(SDN_PROVIDER).getConfig(SdnVeNetwork.DOVE_CONTROLLER).getHostAddress();
     }
 
     @Override

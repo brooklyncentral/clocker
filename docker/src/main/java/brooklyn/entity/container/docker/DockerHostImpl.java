@@ -42,7 +42,7 @@ import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.sdn.SdnAgent;
-import brooklyn.entity.container.sdn.dove.DoveNetwork;
+import brooklyn.entity.container.sdn.ibm.SdnVeNetwork;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.machine.MachineEntityImpl;
@@ -237,13 +237,13 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                         JcloudsLocationSecurityGroupCustomizer.getInstance(getApplicationId()));
             }
 
-            // Setup SoftLayer template options required for Dove SDN
+            // Setup SoftLayer template options required for IBM SDN VE
             // TODO Move this into a callback on the SdnProvider interface
-            if (isJcloudsLocation(location, "softlayer") && isSdnProvider("DoveNetwork")) {
+            if (isJcloudsLocation(location, "softlayer") && isSdnProvider("SdnVeNetwork")) {
                 if (template == null) template = new PortableTemplateBuilder();
                 Integer vlanId = getAttribute(DOCKER_INFRASTRUCTURE)
                         .getAttribute(DockerInfrastructure.SDN_PROVIDER)
-                        .getConfig(DoveNetwork.VLAN_ID);
+                        .getConfig(SdnVeNetwork.VLAN_ID);
                 template.options(SoftLayerTemplateOptions.Builder
                         .diskType(Volume.Type.LOCAL.name()) // FIXME Temporary setting overriding capacity limitation on account
                         .primaryBackendNetworkComponentNetworkVlanId(vlanId)

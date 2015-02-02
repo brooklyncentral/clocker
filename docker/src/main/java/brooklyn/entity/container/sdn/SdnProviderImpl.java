@@ -30,7 +30,7 @@ import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.container.docker.DockerInfrastructure;
-import brooklyn.entity.container.sdn.dove.DoveNetwork;
+import brooklyn.entity.container.sdn.ibm.SdnVeNetwork;
 import brooklyn.entity.group.AbstractMembershipTrackingPolicy;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.proxying.EntitySpec;
@@ -93,16 +93,16 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
             Map<String, Cidr> networks = getAttribute(SdnProvider.NETWORKS);
             if (networks.containsKey(subnetId)) return networks.get(subnetId);
 
-            Cidr networkCidr = getConfig(DoveNetwork.CONTAINER_NETWORK_CIDR);
-            Integer networkSize = getConfig(DoveNetwork.CONTAINER_NETWORK_SIZE);
-            Integer allocated = getAttribute(DoveNetwork.ALLOCATED_NETWORKS);
+            Cidr networkCidr = getConfig(SdnVeNetwork.CONTAINER_NETWORK_CIDR);
+            Integer networkSize = getConfig(SdnVeNetwork.CONTAINER_NETWORK_SIZE);
+            Integer allocated = getAttribute(SdnVeNetwork.ALLOCATED_NETWORKS);
 
             InetAddress baseAddress = networkCidr.addressAtOffset(allocated * (2 << (32 - networkSize)));
             Cidr subnetCidr = new Cidr(baseAddress.getHostAddress() + "/" + networkSize);
 
             networks.put(subnetId, subnetCidr);
-            setAttribute(DoveNetwork.ALLOCATED_NETWORKS, allocated + 1);
-            setAttribute(DoveNetwork.NETWORKS, networks);
+            setAttribute(SdnVeNetwork.ALLOCATED_NETWORKS, allocated + 1);
+            setAttribute(SdnVeNetwork.NETWORKS, networks);
 
             return subnetCidr;
         }

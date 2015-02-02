@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.entity.container.sdn.dove;
+package brooklyn.entity.container.sdn.ibm;
 
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
@@ -24,17 +24,17 @@ import brooklyn.event.basic.BasicAttributeSensorAndConfigKey;
 import brooklyn.util.flags.SetFromFlag;
 
 /**
- * The Dove SDN VE agent.
+ * The IBM SDN VE agent.
  */
-@ImplementedBy(DoveAgentImpl.class)
-public interface DoveAgent extends SdnAgent {
+@ImplementedBy(SdnVeAgentImpl.class)
+public interface SdnVeAgent extends SdnAgent {
 
     @SetFromFlag("version")
-    ConfigKey<String> SUGGESTED_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "1.1.90");
+    ConfigKey<String> SUGGESTED_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "1.1.90-06");
 
     @SetFromFlag("downloadUrl")
     BasicAttributeSensorAndConfigKey<String> DOWNLOAD_URL = new BasicAttributeSensorAndConfigKey<String>(
-            SoftwareProcess.DOWNLOAD_URL, "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/DoveAgent-1.1.90-06.x86_64.rpm.docker.works.rpm");
+            SoftwareProcess.DOWNLOAD_URL, "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/DoveAgent-${version}.x86_64.rpm.docker.works.rpm");
 
     String getDmcAddress();
 
