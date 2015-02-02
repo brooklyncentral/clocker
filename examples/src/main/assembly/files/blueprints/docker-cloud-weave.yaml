@@ -22,7 +22,7 @@ services:
     entity.dynamicLocation.name: "my-docker-cloud"
     docker.host.cluster.initial.size: 2
     docker.host.register: false
-    docker.container.cluster.headroom.count: 4
+    docker.container.cluster.headroom.count: 0
     docker.policy.ha.enable: false
     docker.container.strategies:
     - $brooklyn:object:
@@ -31,17 +31,14 @@ services:
           maxContainers: 8
     - $brooklyn:object:
         type: brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy
-    - $brooklyn:object:
-        type: brooklyn.location.docker.strategy.MaxCpuUsagePlacementStrategy
-        brooklyn.config:
-          maxCpuUsage: 0.75
     sdn.enable: true
     sdn.provider.spec:
       $brooklyn:entitySpec:
         type: brooklyn.entity.container.sdn.weave.WeaveNetwork
         brooklyn.config:
           install.version: 0.8.0
-          sdn.agent.cidr: 169.254.0.0/16
+          sdn.network.cidr: 169.254.0.0/16
+          sdn.network.size: 24
     docker.host.spec:
       $brooklyn:entitySpec:
         type: brooklyn.entity.container.docker.DockerHost

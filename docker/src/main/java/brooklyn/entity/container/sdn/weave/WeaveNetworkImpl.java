@@ -17,7 +17,6 @@ package brooklyn.entity.container.sdn.weave;
 
 import java.net.InetAddress;
 import java.util.Collection;
-import java.util.Map;
 
 import org.jclouds.net.domain.IpPermission;
 import org.jclouds.net.domain.IpProtocol;
@@ -57,6 +56,9 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
         }
 
         setAttribute(SdnProvider.SDN_AGENT_SPEC, agentSpec);
+
+        Cidr weaveCidr = getSubnet(getApplicationId(), "Weave");
+        setConfig(CIDR,  weaveCidr);
     }
 
     @Override
@@ -104,7 +106,7 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
     }
 
     @Override
-    public InetAddress getNextContainerAddress(Entity entity) {
+    public InetAddress getNextContainerAddress(String networkId) {
         return getNextAddress();
     }
 

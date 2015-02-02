@@ -37,10 +37,8 @@ import brooklyn.config.render.RendererHints;
 import brooklyn.config.render.RendererHints.Hint;
 import brooklyn.config.render.RendererHints.NamedActionWithUrl;
 import brooklyn.entity.Entity;
-import brooklyn.entity.basic.AbstractEntity;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityAndAttribute;
-import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerCallbacks;
@@ -49,6 +47,7 @@ import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.container.sdn.SdnAgent;
+import brooklyn.entity.container.sdn.SdnProvider;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
@@ -143,18 +142,19 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
             // Configure the entity
             LOG.info("Configuring entity {} via subnet {}", entity, dockerHost.getSubnetTier());
-            ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.PORT_FORWARDING_MANAGER, dockerHost.getSubnetTier().getPortForwardManager());
-            ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.PORT_FORWARDER, portForwarder);
+            Entities.deproxy(entity).setConfigEvenIfOwned(SubnetTier.PORT_FORWARDING_MANAGER, dockerHost.getSubnetTier().getPortForwardManager());
+            Entities.deproxy(entity).setConfigEvenIfOwned(SubnetTier.PORT_FORWARDER, portForwarder);
             if (getOwner().getConfig(DockerAttributes.SDN_ENABLE)) {
                 SdnAgent agent = getOwner().getAttribute(SdnAgent.SDN_AGENT);
                 if (agent == null) {
                     throw new IllegalStateException("SDN agent entity on " + getOwner() + " is null");
                 }
-                ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, agent.getAttribute(SdnAgent.SDN_PROVIDER).getNetworks().get(entity.getApplicationId()));
+                Map<String, Cidr> networks = agent.getAttribute(SdnAgent.SDN_PROVIDER).getAttribute(SdnProvider.NETWORKS);
+                Entities.deproxy(entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, networks.get(entity.getApplicationId()));
             } else {
-                ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL);
+                Entities.deproxy(entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL);
             }
-            configureEnrichers((AbstractEntity) entity);
+            configureEnrichers(entity);
 
             // Add the entity Dockerfile if configured
             String dockerfile = entity.getConfig(DockerAttributes.DOCKERFILE_URL);
@@ -178,12 +178,12 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                 LOG.info("Found image {} for entity: {}", imageName, imageId);
 
                 // Skip install phase
-                ((AbstractEntity) entity).setConfigEvenIfOwned(SoftwareProcess.SKIP_INSTALLATION, true);
+                Entities.deproxy(entity).setConfigEvenIfOwned(SoftwareProcess.SKIP_INSTALLATION, true);
             } else if (baseImage.isPresent()) {
                 // Create an SSHable image from the one configured
                 imageId = dockerHost.layerSshableImageOn(baseImage.get(), imageTag);
                 LOG.info("Created SSHable image from {}: {}", baseImage.get(), imageId);
-                ((AbstractEntity) entity).setConfigEvenIfOwned(SoftwareProcess.SKIP_INSTALLATION, true);
+                Entities.deproxy(entity).setConfigEvenIfOwned(SoftwareProcess.SKIP_INSTALLATION, true);
             } else {
                 // Otherwise Clocker is going to make an image for the entity once it is installed.
                 insertCallback(entity, SoftwareProcess.POST_INSTALL_COMMAND, DockerCallbacks.commit());
@@ -230,13 +230,13 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             DockerContainer dockerContainer = (DockerContainer) added;
 
             // Save the container attributes
-            ((EntityLocal) dockerContainer).setAttribute(DockerContainer.IMAGE_ID, imageId);
-            ((EntityLocal) dockerContainer).setAttribute(DockerContainer.IMAGE_NAME, imageName);
-            ((EntityLocal) dockerContainer).setAttribute(DockerContainer.HARDWARE_ID, hardwareId);
+            Entities.deproxy(dockerContainer).setAttribute(DockerContainer.IMAGE_ID, imageId);
+            Entities.deproxy(dockerContainer).setAttribute(DockerContainer.IMAGE_NAME, imageName);
+            Entities.deproxy(dockerContainer).setAttribute(DockerContainer.HARDWARE_ID, hardwareId);
 
             // Link the container to the entity
-            ((EntityLocal) entity).setAttribute(DockerContainer.CONTAINER, dockerContainer);
-            ((EntityLocal) entity).setAttribute(DockerContainer.CONTAINER_ID, dockerContainer.getContainerId());
+            Entities.deproxy(entity).setAttribute(DockerContainer.CONTAINER, dockerContainer);
+            Entities.deproxy(entity).setAttribute(DockerContainer.CONTAINER_ID, dockerContainer.getContainerId());
 
             return dockerContainer.getDynamicLocation();
         } finally {
@@ -251,7 +251,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
         } else {
             command = callback;
         }
-        ((AbstractEntity) entity).setConfigEvenIfOwned(commandKey, command);
+        Entities.deproxy(entity).setConfigEvenIfOwned(commandKey, command);
     }
 
     public void waitForImage(String imageName) {
@@ -268,7 +268,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
         if (latch != null) latch.countDown();
     }
 
-    private void configureEnrichers(AbstractEntity entity) {
+    private void configureEnrichers(Entity entity) {
         for (AttributeSensor sensor : Iterables.filter(entity.getEntityType().getSensors(), AttributeSensor.class)) {
             if ((DockerUtils.URL_SENSOR_NAMES.contains(sensor.getName()) ||
                         sensor.getName().endsWith(".url") ||
