@@ -245,11 +245,11 @@ public class DoveAgentSshDriver extends AbstractSoftwareProcessSshDriver impleme
             Integer bridgeId = getEntity().getAttribute(DoveNetwork.DOVE_BRIDGE_ID);
             Cidr cidr = getEntity().getConfig(DoveNetwork.CONTAINER_CIDR);
             Integer allocatedAddresses = getEntity().getAttribute(DoveAgent.SDN_PROVIDER).getAttribute(DoveNetwork.ALLOCATED_CONTAINER_IPS);
-            /* ./setup_network_v2.sh containerid network_1 port_null_12345678 fa:16:50:00:01:e1 50.0.0.2/24 50.0.0.1 8064181 */
-            String command = String.format("%s %s %s port_null_%d fa:16:50:00:01:%02x %s/%d %s %d", networkScript,
+            /* ./setup_network_v2.sh containerid network_1 12345678 fa:16:50:00:01:e1 50.0.0.2/24 50.0.0.1 8064181 */
+            String command = String.format("%s %s %s %s fa:16:50:00:01:%02x %s/%d %s %d", networkScript,
                     containerId, // UUID of the Container instance
                     getEntity().getApplicationId(), // Network ID
-                    bridgeId, // Container Port ID
+                    containerId.substring(0, 16), // Port ID unique to container
                     allocatedAddresses, // Container MAC address
                     address.getHostAddress(), cidr.getLength(), // CIDR IP address assigned to the above interface
                     cidr.addressAtOffset(1).getHostAddress(), // Default gateway assigned to the Container
