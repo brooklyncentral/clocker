@@ -5,10 +5,11 @@ package brooklyn.entity.container.sdn;
 
 import java.net.InetAddress;
 
+import brooklyn.entity.Entity;
 import brooklyn.entity.basic.SoftwareProcessDriver;
 
 public interface SdnAgentDriver extends SoftwareProcessDriver {
 
-    void attachNetwork(String containerId, InetAddress address);
+    InetAddress attachNetwork(String containerId, Entity entity);
 
 }

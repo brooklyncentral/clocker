@@ -2,7 +2,7 @@
 {
   "network": {
     "id": "${networkId}",
-    "name": "${networkName}",
+    "name": "Clocker ${networkName}",
     "admin_state_up": true,
     "tenant_id": "${tenantId}"
   }

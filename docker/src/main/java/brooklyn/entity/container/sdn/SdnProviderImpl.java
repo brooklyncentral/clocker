@@ -69,14 +69,37 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
         setAttribute(ALLOCATED_IPS, 0);
         setAttribute(ALLOCATED_ADDRESSES, Maps.<String, InetAddress>newConcurrentMap());
 
-        setAttribute(ALLOCATED_CONTAINER_IPS, 1); // Allow for gateway IP
-        setAttribute(ALLOCATED_CONTAINER_ADDRESSES, Maps.<String, InetAddress>newConcurrentMap());
+        setAttribute(ALLOCATED_NETWORKS, 0);
+        setAttribute(NETWORKS, Maps.<String, Cidr>newConcurrentMap());
+        setAttribute(NETWORK_ALLOCATIONS, Maps.<String, Integer>newConcurrentMap());
+        setAttribute(CONTAINER_ADDRESSES, Maps.<String, InetAddress>newConcurrentMap());
+    }
+
+    @Override
+    public Map<String, Cidr> getNetworks() {
+        synchronized (addressMutex) {
+            return getAttribute(NETWORKS);
+        }
+    }
+
+    @Override
+    public Map<String, Integer> getNetworkAllocations() {
+        synchronized (addressMutex) {
+            return getAttribute(NETWORK_ALLOCATIONS);
+        }
     }
 
     @Override
     public Map<String, InetAddress> getAgentAddresses() {
         synchronized (addressMutex) {
-            return getAttribute(SdnProvider.ALLOCATED_ADDRESSES);
+            return getAttribute(ALLOCATED_ADDRESSES);
+        }
+    }
+
+    @Override
+    public Map<String, InetAddress> getContainerAddresses() {
+        synchronized (addressMutex) {
+            return getAttribute(CONTAINER_ADDRESSES);
         }
     }
 
@@ -87,24 +110,6 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
             Integer allocated = getAttribute(ALLOCATED_IPS);
             InetAddress next = cidr.addressAtOffset(allocated + 1);
             setAttribute(ALLOCATED_IPS, allocated + 1);
-            return next;
-        }
-    }
-
-    @Override
-    public Map<String, InetAddress> getContainerAddresses() {
-        synchronized (addressMutex) {
-            return getAttribute(SdnProvider.ALLOCATED_CONTAINER_ADDRESSES);
-        }
-    }
-
-    @Override
-    public InetAddress getNextContainerAddress() {
-        synchronized (addressMutex) {
-            Cidr cidr = getConfig(CONTAINER_CIDR);
-            Integer allocated = getAttribute(ALLOCATED_CONTAINER_IPS);
-            InetAddress next = cidr.addressAtOffset(allocated + 1);
-            setAttribute(ALLOCATED_CONTAINER_IPS, allocated + 1);
             return next;
         }
     }

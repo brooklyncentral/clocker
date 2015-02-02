@@ -378,8 +378,9 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
             // If SDN is enabled, attach to the network
             if (getConfig(DockerInfrastructure.SDN_ENABLE)) {
+                Entity entity = getRunningEntity();
                 SdnAgent agent = Entities.attributeSupplierWhenReady(dockerHost, SdnAgent.SDN_AGENT).get();
-                InetAddress subnetAddress = agent.attachNetwork(getAttribute(CONTAINER_ID));
+                InetAddress subnetAddress = agent.attachNetwork(getAttribute(CONTAINER_ID), entity);
                 setAttribute(Attributes.SUBNET_ADDRESS, subnetAddress.getHostAddress());
             }
 

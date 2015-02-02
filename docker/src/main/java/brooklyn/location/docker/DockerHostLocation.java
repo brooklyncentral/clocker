@@ -49,7 +49,6 @@ import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.container.sdn.SdnAgent;
-import brooklyn.entity.container.sdn.SdnProvider;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
@@ -151,7 +150,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                 if (agent == null) {
                     throw new IllegalStateException("SDN agent entity on " + getOwner() + " is null");
                 }
-                ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, agent.getConfig(SdnProvider.CONTAINER_CIDR));
+                ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, agent.getAttribute(SdnAgent.SDN_PROVIDER).getNetworks().get(entity.getApplicationId()));
             } else {
                 ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL);
             }

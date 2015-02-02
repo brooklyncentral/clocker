@@ -15,6 +15,7 @@
  */
 package brooklyn.entity.container.sdn.dove;
 
+import java.net.InetAddress;
 import java.util.Collection;
 
 import org.jclouds.net.domain.IpPermission;
@@ -30,6 +31,7 @@ import brooklyn.entity.container.sdn.SdnProviderImpl;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.util.collections.MutableList;
+import brooklyn.util.net.Cidr;
 
 import com.google.common.collect.ImmutableList;
 
@@ -75,6 +77,18 @@ public class DoveNetworkImpl extends SdnProviderImpl implements DoveNetwork {
         getAgents().removeMember(agent);
         Entities.unmanage(agent);
         if (LOG.isDebugEnabled()) LOG.debug("{} removed dove agent {}", this, agent);
+    }
+
+    @Override
+    public InetAddress getNextContainerAddress(Entity entity) {
+        synchronized (addressMutex) {
+            Cidr cidr = getNetworks().get(entity.getApplicationId());
+            Integer allocated = getNetworkAllocations().get(entity.getApplicationId());
+            if (allocated == null) allocated = 1;
+            InetAddress next = cidr.addressAtOffset(allocated + 1);
+            getNetworkAllocations().put(entity.getApplicationId(), allocated + 1);
+            return next;
+        }
     }
 
 }

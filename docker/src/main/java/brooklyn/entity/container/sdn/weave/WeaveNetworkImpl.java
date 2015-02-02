@@ -104,12 +104,7 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
     }
 
     @Override
-    public Map<String, InetAddress> getContainerAddresses() {
-        return getAgentAddresses();
-    }
-
-    @Override
-    public InetAddress getNextContainerAddress() {
+    public InetAddress getNextContainerAddress(Entity entity) {
         return getNextAddress();
     }
 
