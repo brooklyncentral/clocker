@@ -13,6 +13,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.entity.Entity;
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityLocal;
@@ -140,21 +141,37 @@ public class DoveAgentSshDriver extends AbstractSoftwareProcessSshDriver impleme
         String createNetwork = copyJsonTemplate("create_network.json", createNetworkData);
         callRestApi(createNetwork, "v2.0/networks");
 
-        Cidr networkCidr = getEntity().getAttribute(DoveAgent.SDN_PROVIDER).getConfig(DoveNetwork.CONTAINER_CIDR);
-        InetAddress gatewayIp = networkCidr.addressAtOffset(1);
+        int doveNetworkId = getNetworkIdForName(networkId);
+        return doveNetworkId;
+    }
+
+    private void createSubnetForEntity(String networkId, String tenantId, Entity entity) {
+        String subnetId = entity.getApplicationId();
+        Map<String, Cidr> networks = getEntity().getAttribute(DoveAgent.SDN_PROVIDER).getNetworks();
+        if (networks.containsKey(subnetId)) return;
+
+        String subnetName = entity.getApplication().getDisplayName();
+        Cidr networkCidr = getEntity().getAttribute(DoveAgent.SDN_PROVIDER).getConfig(DoveNetwork.CONTAINER_NETWORK_CIDR);
+        Integer networkSize = getEntity().getAttribute(DoveAgent.SDN_PROVIDER).getConfig(DoveNetwork.CONTAINER_NETWORK_SIZE);
+        Integer allocated = getEntity().getAttribute(DoveAgent.SDN_PROVIDER).getAttribute(DoveNetwork.ALLOCATED_NETWORKS);
+
+        InetAddress baseAddress = networkCidr.addressAtOffset(allocated * (2 << (32 - networkSize)));
+        Cidr subnetCidr = new Cidr(baseAddress.getHostAddress() + "/" + networkSize);
+        InetAddress gatewayIp = subnetCidr.addressAtOffset(1);
+
+        networks.put(subnetId, subnetCidr);
+        Entities.deproxy(getEntity().getAttribute(DoveAgent.SDN_PROVIDER)).setAttribute(DoveNetwork.ALLOCATED_NETWORKS, allocated + 1);
+
         Map<String, String> createSubnetData = ImmutableMap.<String, String>builder()
-                .put("subnetId", networkId)
-                .put("subnetName", networkId)
+                .put("subnetId", subnetId)
+                .put("subnetName", subnetName)
                 .put("networkId", networkId)
                 .put("gatewayIp", gatewayIp.getHostAddress())
-                .put("networkCidr", networkCidr.toString())
+                .put("networkCidr", subnetCidr.toString())
                 .put("tenantId", tenantId)
                 .build();
         String createSubnet = copyJsonTemplate("create_subnet.json", createSubnetData);
         callRestApi(createSubnet, "v2.0/subnets");
-
-        int doveNetworkId = getNetworkIdForName(networkId);
-        return doveNetworkId;
     }
 
     private String copyJsonTemplate(String fileName, Map<String, String> substitutions) {
@@ -238,23 +255,29 @@ public class DoveAgentSshDriver extends AbstractSoftwareProcessSshDriver impleme
     }
 
     @Override
-    public void attachNetwork(String containerId, InetAddress address) {
+    public InetAddress attachNetwork(String containerId, Entity entity) {
         Tasks.setBlockingDetails("Attach to " + containerId);
         try {
+            createSubnetForEntity(getEntity().getApplicationId(), "clocker", entity);
+
+            InetAddress address = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getNextContainerAddress(entity);
+
             String networkScript = Urls.mergePaths(getRunDir(), "network.sh");
             Integer bridgeId = getEntity().getAttribute(DoveNetwork.DOVE_BRIDGE_ID);
-            Cidr cidr = getEntity().getConfig(DoveNetwork.CONTAINER_CIDR);
-            Integer allocatedAddresses = getEntity().getAttribute(DoveAgent.SDN_PROVIDER).getAttribute(DoveNetwork.ALLOCATED_CONTAINER_IPS);
+            Cidr cidr = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getNetworks().get(entity.getApplicationId());
+
             /* ./setup_network_v2.sh containerid network_1 12345678 fa:16:50:00:01:e1 50.0.0.2/24 50.0.0.1 8064181 */
-            String command = String.format("%s %s %s %s fa:16:50:00:01:%02x %s/%d %s %d", networkScript,
+            String command = String.format("%s %s %s %s fa:16:%02x:%02x:%02x:%02x %s/%d %s %d", networkScript,
                     containerId, // UUID of the Container instance
                     getEntity().getApplicationId(), // Network ID
-                    containerId.substring(0, 16), // Port ID unique to container
-                    allocatedAddresses, // Container MAC address
+                    containerId.substring(0, 8), // Port ID unique to container
+                    address.getAddress()[3], address.getAddress()[2], address.getAddress()[1], address.getAddress()[0], // Container MAC address
                     address.getHostAddress(), cidr.getLength(), // CIDR IP address assigned to the above interface
                     cidr.addressAtOffset(1).getHostAddress(), // Default gateway assigned to the Container
                     bridgeId); // VNID to be used
             getEntity().getConfig(DoveAgent.DOCKER_HOST).execCommand(sudo(command));
+            
+            return address;
         } finally {
             Tasks.resetBlockingDetails();
         }

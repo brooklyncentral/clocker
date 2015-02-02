@@ -17,6 +17,7 @@ import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityLocal;
+import brooklyn.entity.container.sdn.SdnAgent;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.net.Cidr;
@@ -109,12 +110,14 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
     }
 
     @Override
-    public void attachNetwork(String containerId, InetAddress address) {
+    public InetAddress attachNetwork(String containerId, Entity entity) {
         Tasks.setBlockingDetails("Attach Weave to " + containerId);
         try {
             Cidr cidr = getEntity().getConfig(WeaveNetwork.CIDR);
+            InetAddress address = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getNextContainerAddress(entity);
             ((WeaveContainer) getEntity()).getDockerHost().execCommand(BashCommands.sudo(String.format("%s attach %s/%d %s",
                     getWeaveCommand(), address.getHostAddress(), cidr.getLength(), containerId)));
+            return address;
         } finally {
             Tasks.resetBlockingDetails();
         }
