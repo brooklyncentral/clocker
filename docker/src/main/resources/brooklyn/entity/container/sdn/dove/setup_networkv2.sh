@@ -9,8 +9,9 @@ NETWORK_ID=$2
 PORT_ID=$3
 # Container mac address
 MAC=$4
-# Container ethernet interface name, i.e. eth0
-INTF_NAME=eth0
+# Container ethernet interface name
+# eth1 because we have eth0 defined already
+INTF_NAME=eth1
 # CIDR IP address assigned to the above interface
 CIDR_IP=$5
 # Default gateway assigned to the Container
@@ -67,6 +68,6 @@ $DACTL register dockerport \
 
 
 ip netns exec $PID ip route add default via $GATEWAY
-ip netns exec $PID ping -c 3 $GATEWAY
+#ip netns exec $PID ping -c 3 $GATEWAY
 
 echo 'DONE'
