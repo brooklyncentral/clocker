@@ -22,9 +22,7 @@ import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.container.sdn.SdnProvider;
 import brooklyn.entity.proxying.ImplementedBy;
-import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
-import brooklyn.event.basic.Sensors;
 import brooklyn.util.flags.SetFromFlag;
 
 /**
@@ -39,8 +37,6 @@ public interface SdnVeNetwork extends SdnProvider {
 
     @SetFromFlag("vlanId")
     ConfigKey<Integer> VLAN_ID = ConfigKeys.newIntegerConfigKey("sdn.ibm.vlanId", "Softlayer VLAN ID");
-
-    AttributeSensor<Integer> DOVE_BRIDGE_ID = Sensors.newIntegerSensor("sdn.ibm.bridgeId", "IBM SDN VE Dove Bridge ID");
 
     AttributeSensorAndConfigKey<String, String> CONFIGURATION_XML_TEMPLATE = ConfigKeys.newStringSensorAndConfigKey("sdn.ibm.config.xml.url",
             "Configuration XML template for Dove SDN", "classpath://brooklyn/entity/container/sdn/ibm/dove.xml");

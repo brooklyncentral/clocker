@@ -20,7 +20,9 @@ import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.sdn.SdnAgent;
 import brooklyn.entity.proxying.ImplementedBy;
+import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.BasicAttributeSensorAndConfigKey;
+import brooklyn.event.basic.Sensors;
 import brooklyn.util.flags.SetFromFlag;
 
 /**
@@ -35,6 +37,8 @@ public interface SdnVeAgent extends SdnAgent {
     @SetFromFlag("downloadUrl")
     BasicAttributeSensorAndConfigKey<String> DOWNLOAD_URL = new BasicAttributeSensorAndConfigKey<String>(
             SoftwareProcess.DOWNLOAD_URL, "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/DoveAgent-${version}.x86_64.rpm.docker.works.rpm");
+
+    AttributeSensor<Integer> DOVE_BRIDGE_ID = Sensors.newIntegerSensor("sdn.ibm.bridgeId", "IBM SDN VE Dove Bridge ID");
 
     String getDmcAddress();
 

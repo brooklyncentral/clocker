@@ -43,13 +43,13 @@ import com.google.common.reflect.TypeToken;
  */
 public interface SdnProvider extends BasicStartable {
 
-    ConfigKey<Cidr> CIDR = ConfigKeys.newConfigKey(Cidr.class, "sdn.agent.cidr", "CIDR for address allocation");
+    ConfigKey<Cidr> AGENT_CIDR = ConfigKeys.newConfigKey(Cidr.class, "sdn.agent.cidr", "CIDR for agent address allocation");
 
     ConfigKey<Collection<String>> EXTRA_NETWORKS = ConfigKeys.newConfigKey(
             new TypeToken<Collection<String>>() { }, "sdn.extra.networks", "Collection of extra networks to create for an entity", Collections.<String>emptyList());
 
-    ConfigKey<Cidr> CONTAINER_NETWORK_CIDR = ConfigKeys.newConfigKey(Cidr.class, "sdn.network.cidr", "CIDR for network allocation to containers");
-    ConfigKey<Integer> CONTAINER_NETWORK_SIZE = ConfigKeys.newIntegerConfigKey("sdn.network.size", "Size of network CIDR allocation for containers");
+    ConfigKey<Cidr> CONTAINER_NETWORK_CIDR = ConfigKeys.newConfigKey(Cidr.class, "sdn.network.cidr", "Pool CIDR for network allocation to containers");
+    ConfigKey<Integer> CONTAINER_NETWORK_SIZE = ConfigKeys.newIntegerConfigKey("sdn.network.size", "Size of network subnets as CIDR length (e.g. 24 for 254 hosts)");
 
     AttributeSensor<Integer> ALLOCATED_NETWORKS = Sensors.newIntegerSensor("sdn.network.allocated", "Number of allocated networks");
     AttributeSensor<Map<String, Cidr>> NETWORKS = Sensors.newSensor(
@@ -81,7 +81,7 @@ public interface SdnProvider extends BasicStartable {
 
     InetAddress getNextContainerAddress(String networkId);
 
-    InetAddress getNextAddress();
+    InetAddress getNextAgentAddress(String agentId);
 
     Cidr getSubnet(String subnetId, String subnetName);
 
