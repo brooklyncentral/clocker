@@ -18,11 +18,34 @@ origin: "https://github.com/apache/incubator-brooklyn/"
 locations:
 - my-docker-cloud
 services:
+- type: brooklyn.networking.sdn.VirtualNetwork
+  name: public
+  brooklyn.config:
+    network.cidr: 8.1.2.0/27
+    network.securityGroup: nginx-security-group
+    network.firewall.enable: true
+    network.gateway: 8.1.2.6
+    network.addresses.excluded:
+    - 8.1.2.1
+    - 8.1.2.2
+    - 8.1.2.6
+    network.routing.enable: true
+- type: brooklyn.networking.sdn.VirtualNetwork
+  name: webapp
+  brooklyn.config:
+    network.cidr: 10.102.0.0/24
+    network.securityGroup: jboss-security-group
+    network.firewall.enable: true
+    network.routing.enable: false
+- type: brooklyn.entity.container.sdn.VirtualNetwork
+  name: riak
+  cidr: 100.0.0.0/16
 - type: brooklyn.entity.nosql.riak.RiakCluster
   initialSize: 3
   id: cluster
   brooklyn.config:
     install.version: 2.0.0
+    sdn.default.network: false
     sdn.extra.networks:
     - riak
 - type: brooklyn.entity.webapp.ControlledDynamicWebAppCluster

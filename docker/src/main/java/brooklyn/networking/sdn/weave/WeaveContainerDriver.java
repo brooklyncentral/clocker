@@ -1,9 +1,9 @@
 /*
  * Copyright 2014 by Cloudsoft Corporation Limited
  */
-package brooklyn.entity.container.sdn.weave;
+package brooklyn.networking.sdn.weave;
 
-import brooklyn.entity.container.sdn.SdnAgentDriver;
+import brooklyn.networking.sdn.SdnAgentDriver;
 
 public interface WeaveContainerDriver extends SdnAgentDriver {
 
