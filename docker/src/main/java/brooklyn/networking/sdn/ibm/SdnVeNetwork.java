@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.entity.container.sdn.ibm;
+package brooklyn.networking.sdn.ibm;
 
 import java.net.InetAddress;
 
 import brooklyn.catalog.Catalog;
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.entity.container.sdn.SdnProvider;
 import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
+import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.util.flags.SetFromFlag;
 
 /**
@@ -39,10 +39,10 @@ public interface SdnVeNetwork extends SdnProvider {
     ConfigKey<Integer> VLAN_ID = ConfigKeys.newIntegerConfigKey("sdn.ibm.vlanId", "Softlayer VLAN ID");
 
     AttributeSensorAndConfigKey<String, String> CONFIGURATION_XML_TEMPLATE = ConfigKeys.newStringSensorAndConfigKey("sdn.ibm.config.xml.url",
-            "Configuration XML template for Dove SDN", "classpath://brooklyn/entity/container/sdn/ibm/dove.xml");
+            "Configuration XML template for Dove SDN", "classpath://brooklyn/networking/sdn/ibm/dove.xml");
 
     AttributeSensorAndConfigKey<String, String> NETWORK_SETUP_SCRIPT_URL = ConfigKeys.newStringSensorAndConfigKey("sdn.ibm.networkSetup.script.url",
-            "Network setup script file for Dove SDN", "classpath://brooklyn/entity/container/sdn/ibm/setup_networkv2.sh");
+            "Network setup script file for Dove SDN", "classpath://brooklyn/networking/sdn/ibm/setup_networkv2.sh");
 
 
 }

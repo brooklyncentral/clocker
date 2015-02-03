@@ -13,23 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.entity.container.sdn.weave;
+package brooklyn.networking.sdn;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.entity.container.sdn.SdnAgentImpl;
+import brooklyn.entity.basic.BasicStartableImpl;
 
-/**
- * A single Docker container.
- */
-public class WeaveContainerImpl extends SdnAgentImpl implements WeaveContainer {
+public abstract class VirtualNetworkImpl extends BasicStartableImpl implements VirtualNetwork {
 
-    private static final Logger LOG = LoggerFactory.getLogger(WeaveContainer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SdnProvider.class);
+
+    protected transient Object addressMutex = new Object[0];
 
     @Override
-    public Class getDriverInterface() {
-        return WeaveContainerDriver.class;
+    public void init() {
+        LOG.info("Starting virtual network segment id {}", getId());
+        super.init();
     }
 
 }

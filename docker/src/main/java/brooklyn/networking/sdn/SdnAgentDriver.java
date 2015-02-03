@@ -1,7 +1,7 @@
 /*
  * Copyright 2014 by Cloudsoft Corporation Limited
  */
-package brooklyn.entity.container.sdn;
+package brooklyn.networking.sdn;
 
 import java.net.InetAddress;
 
