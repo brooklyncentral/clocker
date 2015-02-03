@@ -44,8 +44,8 @@ ln -s /proc/${PID}/ns/net /var/run/netns/${PID}
 
 # Create virtual ethernet interfaces
 IF_SUFFIX=$(echo ${PORT_ID} | cut -b 1-7)
-TAPIF=dockerbr_${IF_SUFFIX}
-NSIF=docker_${IF_SUFFIX}
+TAPIF=dbr_${IF_SUFFIX}
+NSIF=dnic_${IF_SUFFIX}
 ip link add name ${TAPIF} type veth peer name ${NSIF}
 ip link set ${TAPIF} up
 ip link set ${NSIF} netns ${PID}
@@ -65,7 +65,7 @@ echo "Bridge name is ${BRIDGE_NAME}"
 
 # Register to DOVE agent
 DACTL=/usr/bin/dactl
-${DACT}L register dockerport ${BRIDGE_NAME} ${TAPIF} ${NSIF} ${MAC} ${NSIP} ${VNID}
+${DACTL} register dockerport ${BRIDGE_NAME} ${TAPIF} ${NSIF} ${MAC} ${NSIP} ${VNID}
 
 #ip netns exec $PID ip route add default via ${GATEWAY}
 #ip netns exec $PID ping -c 3 ${GATEWAY}

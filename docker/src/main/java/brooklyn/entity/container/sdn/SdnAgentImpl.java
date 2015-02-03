@@ -72,11 +72,8 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
     @Override
     public void preStart() {
         synchronized (addressMutex) {
-            InetAddress address = getAttribute(SDN_PROVIDER).getNextAddress();
+            InetAddress address = getAttribute(SDN_PROVIDER).getNextAgentAddress(getId());
             setAttribute(SDN_AGENT_ADDRESS, address);
-            Map<String, InetAddress> addresses = getAttribute(SDN_PROVIDER).getAttribute(SdnProvider.ALLOCATED_ADDRESSES);
-            addresses.put(getId(), address);
-            Entities.deproxy(getAttribute(SdnAgent.SDN_PROVIDER)).setAttribute(SdnProvider.ALLOCATED_ADDRESSES, addresses);
         }
     }
 

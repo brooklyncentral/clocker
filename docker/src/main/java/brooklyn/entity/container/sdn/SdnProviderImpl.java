@@ -30,7 +30,6 @@ import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.container.docker.DockerInfrastructure;
-import brooklyn.entity.container.sdn.ibm.SdnVeNetwork;
 import brooklyn.entity.group.AbstractMembershipTrackingPolicy;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.proxying.EntitySpec;
@@ -77,12 +76,29 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
     }
 
     @Override
-    public synchronized InetAddress getNextAddress() {
+    public InetAddress getNextAgentAddress(String agentId) {
         synchronized (addressMutex) {
-            Cidr cidr = getConfig(CIDR);
+            Cidr cidr = getConfig(AGENT_CIDR);
             Integer allocated = getAttribute(ALLOCATED_IPS);
             InetAddress next = cidr.addressAtOffset(allocated + 1);
             setAttribute(ALLOCATED_IPS, allocated + 1);
+            Map<String, InetAddress> addresses = getAttribute(ALLOCATED_ADDRESSES);
+            addresses.put(agentId, next);
+            setAttribute(ALLOCATED_ADDRESSES, addresses);
+            return next;
+        }
+    }
+
+    @Override
+    public InetAddress getNextContainerAddress(String subnetId) {
+        synchronized (addressMutex) {
+            Cidr cidr = getAttribute(NETWORKS).get(subnetId);
+            Map<String, Integer> allocations = getAttribute(NETWORK_ALLOCATIONS);
+            Integer allocated = allocations.get(subnetId);
+            if (allocated == null) allocated = 1;
+            InetAddress next = cidr.addressAtOffset(allocated + 1);
+            allocations.put(subnetId, allocated + 1);
+            setAttribute(NETWORK_ALLOCATIONS, allocations);
             return next;
         }
     }
@@ -90,19 +106,20 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
     @Override
     public Cidr getSubnet(String subnetId, String subnetName) {
         synchronized (addressMutex) {
-            Map<String, Cidr> networks = getAttribute(SdnProvider.NETWORKS);
+            Map<String, Cidr> networks = getAttribute(NETWORKS);
             if (networks.containsKey(subnetId)) return networks.get(subnetId);
 
-            Cidr networkCidr = getConfig(SdnVeNetwork.CONTAINER_NETWORK_CIDR);
-            Integer networkSize = getConfig(SdnVeNetwork.CONTAINER_NETWORK_SIZE);
-            Integer allocated = getAttribute(SdnVeNetwork.ALLOCATED_NETWORKS);
+            Cidr networkCidr = getConfig(CONTAINER_NETWORK_CIDR);
+            Integer networkSize = getConfig(CONTAINER_NETWORK_SIZE);
+            Integer allocated = getAttribute(ALLOCATED_NETWORKS);
 
-            InetAddress baseAddress = networkCidr.addressAtOffset(allocated * (2 << (32 - networkSize)));
+            InetAddress baseAddress = networkCidr.addressAtOffset(allocated * (1 << (32 - networkSize)));
             Cidr subnetCidr = new Cidr(baseAddress.getHostAddress() + "/" + networkSize);
+            LOG.debug("Allocated {} as {} from {} for subnet #{}", new Object[] { subnetCidr, subnetId, networkCidr, allocated });
 
             networks.put(subnetId, subnetCidr);
-            setAttribute(SdnVeNetwork.ALLOCATED_NETWORKS, allocated + 1);
-            setAttribute(SdnVeNetwork.NETWORKS, networks);
+            setAttribute(ALLOCATED_NETWORKS, allocated + 1);
+            setAttribute(NETWORKS, networks);
 
             return subnetCidr;
         }

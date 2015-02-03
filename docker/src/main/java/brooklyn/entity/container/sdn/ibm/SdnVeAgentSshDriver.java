@@ -147,7 +147,7 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
         return doveNetworkId;
     }
 
-    private void createSubnetForEntity(String subnetId, String subnetName) {
+    private void createSubnet(String subnetId, String subnetName) {
         String networkId = getEntity().getApplicationId();
         String tenantId = "clocker";
 
@@ -204,7 +204,7 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .execute();
 
         int networkId = createNetwork();
-        getEntity().setAttribute(SdnVeNetwork.DOVE_BRIDGE_ID, networkId);
+        getEntity().setAttribute(SdnVeAgent.DOVE_BRIDGE_ID, networkId);
 
         Map<String, String> createBridgeData = ImmutableMap.<String, String>builder()
                 .put("networkId", Integer.toString(networkId))
@@ -250,12 +250,12 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
     public InetAddress attachNetwork(String containerId, String subnetId, String subnetName) {
         Tasks.setBlockingDetails("Attach to " + containerId);
         try {
-            createSubnetForEntity(subnetId, subnetName);
+            createSubnet(subnetId, subnetName);
 
             InetAddress address = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getNextContainerAddress(subnetId);
 
             String networkScript = Urls.mergePaths(getRunDir(), "network.sh");
-            Integer bridgeId = getEntity().getAttribute(SdnVeNetwork.DOVE_BRIDGE_ID);
+            Integer bridgeId = getEntity().getAttribute(SdnVeAgent.DOVE_BRIDGE_ID);
             Map<String, Cidr> networks = getEntity().getAttribute(SdnVeAgent.SDN_PROVIDER).getAttribute(SdnProvider.NETWORKS);
             Cidr cidr = networks.get(entity.getApplicationId());
 
