@@ -13,31 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.entity.container.sdn.weave;
+package brooklyn.networking.sdn.weave;
 
+import brooklyn.catalog.Catalog;
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.entity.basic.SoftwareProcess;
-import brooklyn.entity.container.sdn.SdnAgent;
 import brooklyn.entity.proxying.ImplementedBy;
-import brooklyn.event.basic.BasicAttributeSensorAndConfigKey;
+import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.util.flags.SetFromFlag;
 
 /**
- * The Weave container.
+ * A collection of machines running Weave.
  */
-@ImplementedBy(WeaveContainerImpl.class)
-public interface WeaveContainer extends SdnAgent {
+@Catalog(name = "Weave Infrastructure", description = "Weave SDN")
+@ImplementedBy(WeaveNetworkImpl.class)
+public interface WeaveNetwork extends SdnProvider {
 
     @SetFromFlag("version")
-    ConfigKey<String> SUGGESTED_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "0.8.0");
+    ConfigKey<String> WEAVE_VERSION = ConfigKeys.newStringConfigKey("weave.version", "The Weave SDN version number");
 
     @SetFromFlag("weavePort")
-    ConfigKey<Integer> WEAVE_PORT = ConfigKeys.newIntegerConfigKey("weave.port", "Weave port", 6783);
-
-    @SetFromFlag("downloadUrl")
-    BasicAttributeSensorAndConfigKey<String> DOWNLOAD_URL = new BasicAttributeSensorAndConfigKey<String>(
-            SoftwareProcess.DOWNLOAD_URL, "https://raw.githubusercontent.com/zettio/weave/v${version}/weave");
-
+    ConfigKey<Integer> WEAVE_PORT = WeaveContainer.WEAVE_PORT;
 
 }

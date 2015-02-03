@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.entity.container.sdn.ibm;
+package brooklyn.networking.sdn.ibm;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.entity.container.sdn.SdnAgentImpl;
+import brooklyn.networking.sdn.SdnAgentImpl;
 
 /**
  * A single Docker container.

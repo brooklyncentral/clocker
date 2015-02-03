@@ -34,7 +34,7 @@ services:
     sdn.enable: true
     sdn.provider.spec:
       $brooklyn:entitySpec:
-        type: brooklyn.entity.container.sdn.ibm.SdnVeNetwork
+        type: brooklyn.networking.sdn.ibm.SdnVeNetwork
         brooklyn.config:
           install.version: 1.1.90-06
           sdn.ibm.dmc.address: 10.52.36.66

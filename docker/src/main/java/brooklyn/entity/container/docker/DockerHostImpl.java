@@ -41,8 +41,6 @@ import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
-import brooklyn.entity.container.sdn.SdnAgent;
-import brooklyn.entity.container.sdn.ibm.SdnVeNetwork;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.machine.MachineEntityImpl;
@@ -66,6 +64,8 @@ import brooklyn.location.jclouds.networking.JcloudsLocationSecurityGroupCustomiz
 import brooklyn.location.jclouds.templates.PortableTemplateBuilder;
 import brooklyn.management.LocationManager;
 import brooklyn.networking.portforwarding.DockerPortForwarder;
+import brooklyn.networking.sdn.SdnAgent;
+import brooklyn.networking.sdn.ibm.SdnVeNetwork;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.networking.subnet.SubnetTierImpl;
 import brooklyn.policy.PolicySpec;

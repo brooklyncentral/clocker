@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.entity.container.sdn;
+package brooklyn.networking.sdn;
 
 import java.net.InetAddress;
 import java.util.Collection;
@@ -37,10 +37,12 @@ import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
 
 import com.google.common.reflect.TypeToken;
+import com.google.inject.ImplementedBy;
 
 /**
  * An SDN provider implementation.
  */
+@ImplementedBy(SdnProviderImpl.class)
 public interface SdnProvider extends BasicStartable {
 
     ConfigKey<Cidr> AGENT_CIDR = ConfigKeys.newConfigKey(Cidr.class, "sdn.agent.cidr", "CIDR for agent address allocation");

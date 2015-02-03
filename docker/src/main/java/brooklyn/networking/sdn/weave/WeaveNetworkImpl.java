@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.entity.container.sdn.weave;
+package brooklyn.networking.sdn.weave;
 
 import java.net.InetAddress;
 import java.util.Collection;
@@ -27,11 +27,11 @@ import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.docker.DockerHost;
-import brooklyn.entity.container.sdn.SdnAgent;
-import brooklyn.entity.container.sdn.SdnProvider;
-import brooklyn.entity.container.sdn.SdnProviderImpl;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.location.basic.SshMachineLocation;
+import brooklyn.networking.sdn.SdnAgent;
+import brooklyn.networking.sdn.SdnProvider;
+import brooklyn.networking.sdn.SdnProviderImpl;
 import brooklyn.util.collections.MutableList;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.text.Strings;

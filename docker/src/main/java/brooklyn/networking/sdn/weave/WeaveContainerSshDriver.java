@@ -1,7 +1,7 @@
 /*
  * Copyright 2014 by Cloudsoft Corporation Limited
  */
-package brooklyn.entity.container.sdn.weave;
+package brooklyn.networking.sdn.weave;
 
 import java.net.InetAddress;
 import java.util.List;
@@ -17,8 +17,8 @@ import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityLocal;
-import brooklyn.entity.container.sdn.SdnAgent;
 import brooklyn.location.basic.SshMachineLocation;
+import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.Networking;
