@@ -238,6 +238,15 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             Entities.deproxy(entity).setAttribute(DockerContainer.CONTAINER, dockerContainer);
             Entities.deproxy(entity).setAttribute(DockerContainer.CONTAINER_ID, dockerContainer.getContainerId());
 
+            // record SDN application network details
+            if (getOwner().getConfig(DockerAttributes.SDN_ENABLE)) {
+                SdnAgent agent = getOwner().getAttribute(SdnAgent.SDN_AGENT);
+                Map<String, Cidr> networks = agent.getAttribute(SdnAgent.SDN_PROVIDER).getAttribute(SdnProvider.NETWORKS);
+                Cidr applicationCidr = networks.get(entity.getApplicationId());
+                Entities.deproxy(entity).setAttribute(SdnProvider.APPLICATION_CIDR, applicationCidr);
+                Entities.deproxy(dockerContainer).setAttribute(SdnProvider.APPLICATION_CIDR, applicationCidr);
+            }
+
             return dockerContainer.getDynamicLocation();
         } finally {
             lock.readLock().unlock();
