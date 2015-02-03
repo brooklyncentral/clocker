@@ -29,6 +29,7 @@ import brooklyn.util.net.Urls;
 import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.task.DynamicTasks;
 import brooklyn.util.task.Tasks;
+import brooklyn.util.text.Identifiers;
 import brooklyn.util.text.StringPredicates;
 import brooklyn.util.text.Strings;
 
@@ -151,6 +152,8 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
         String networkId = getEntity().getApplicationId();
         String tenantId = "clocker";
 
+        Map<String, Cidr> networks = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getAttribute(SdnProvider.NETWORKS);
+        if (networks.containsKey(subnetId)) return;
         Cidr subnetCidr = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getSubnet(subnetId, subnetName);
         InetAddress gatewayIp = subnetCidr.addressAtOffset(1);
 
@@ -257,14 +260,14 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
             String networkScript = Urls.mergePaths(getRunDir(), "network.sh");
             Integer bridgeId = getEntity().getAttribute(SdnVeAgent.DOVE_BRIDGE_ID);
             Map<String, Cidr> networks = getEntity().getAttribute(SdnVeAgent.SDN_PROVIDER).getAttribute(SdnProvider.NETWORKS);
-            Cidr cidr = networks.get(entity.getApplicationId());
+            Cidr cidr = networks.get(subnetId);
 
             /* ./setup_network_v2.sh containerid network_1 12345678 fa:16:50:00:01:e1 50.0.0.2/24 50.0.0.1 8064181 */
             String command = String.format("%s %s %s %s fa:16:%02x:%02x:%02x:%02x %s/%d %s %d %s", networkScript,
                     containerId, // UUID of the Container instance
                     getEntity().getApplicationId(), // Network ID
-                    containerId.substring(0, 8), // Port ID unique to container
-                    address.getAddress()[3], address.getAddress()[2], address.getAddress()[1], address.getAddress()[0], // Container MAC address
+                    Identifiers.getBase64IdFromValue(address.hashCode(), 8), // Port ID unique to container
+                    address.getAddress()[0], address.getAddress()[1], address.getAddress()[2], address.getAddress()[3], // Container MAC address
                     address.getHostAddress(), cidr.getLength(), // CIDR IP address assigned to the above interface
                     cidr.addressAtOffset(1).getHostAddress(), // Default gateway assigned to the Container
                     bridgeId, // VNID to be used

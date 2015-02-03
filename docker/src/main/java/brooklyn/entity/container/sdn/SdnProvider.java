@@ -44,6 +44,7 @@ import com.google.common.reflect.TypeToken;
 public interface SdnProvider extends BasicStartable {
 
     ConfigKey<Cidr> AGENT_CIDR = ConfigKeys.newConfigKey(Cidr.class, "sdn.agent.cidr", "CIDR for agent address allocation");
+    AttributeSensor<Cidr> APPLICATION_CIDR = Sensors.newSensor(Cidr.class, "sdn.application.cidr", "CIDR for application running in container");
 
     ConfigKey<Collection<String>> EXTRA_NETWORKS = ConfigKeys.newConfigKey(
             new TypeToken<Collection<String>>() { }, "sdn.extra.networks", "Collection of extra networks to create for an entity", Collections.<String>emptyList());
