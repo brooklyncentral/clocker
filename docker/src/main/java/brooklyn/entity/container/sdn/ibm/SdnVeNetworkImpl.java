@@ -15,9 +15,7 @@
  */
 package brooklyn.entity.container.sdn.ibm;
 
-import java.net.InetAddress;
 import java.util.Collection;
-import java.util.Map;
 
 import org.jclouds.net.domain.IpPermission;
 import org.slf4j.Logger;
@@ -32,7 +30,6 @@ import brooklyn.entity.container.sdn.SdnProviderImpl;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.util.collections.MutableList;
-import brooklyn.util.net.Cidr;
 
 import com.google.common.collect.ImmutableList;
 
@@ -78,20 +75,6 @@ public class SdnVeNetworkImpl extends SdnProviderImpl implements SdnVeNetwork {
         getAgents().removeMember(agent);
         Entities.unmanage(agent);
         if (LOG.isDebugEnabled()) LOG.debug("{} removed IBM SDN VE agent {}", this, agent);
-    }
-
-    @Override
-    public InetAddress getNextContainerAddress(String networkId) {
-        synchronized (addressMutex) {
-            Cidr cidr = getAttribute(NETWORKS).get(networkId);
-            Map<String, Integer> allocations = getAttribute(NETWORK_ALLOCATIONS);
-            Integer allocated = allocations.get(networkId);
-            if (allocated == null) allocated = 1;
-            InetAddress next = cidr.addressAtOffset(allocated + 1);
-            allocations.put(networkId, allocated + 1);
-            setAttribute(NETWORK_ALLOCATIONS, allocations);
-            return next;
-        }
     }
 
 }

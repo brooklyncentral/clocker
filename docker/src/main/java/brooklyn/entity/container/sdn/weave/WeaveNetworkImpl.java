@@ -58,7 +58,7 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
         setAttribute(SdnProvider.SDN_AGENT_SPEC, agentSpec);
 
         Cidr weaveCidr = getSubnet(getApplicationId(), "Weave");
-        setConfig(CIDR,  weaveCidr);
+        setConfig(AGENT_CIDR,  weaveCidr);
     }
 
     @Override
@@ -103,11 +103,6 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
         getAgents().removeMember(agent);
         Entities.unmanage(agent);
         if (LOG.isDebugEnabled()) LOG.debug("{} removed weave service {}", this, agent);
-    }
-
-    @Override
-    public InetAddress getNextContainerAddress(String networkId) {
-        return getNextAddress();
     }
 
 }

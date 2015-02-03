@@ -29,7 +29,6 @@ import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.util.flags.SetFromFlag;
-import brooklyn.util.net.Cidr;
 
 /**
  * An SDN agent process.

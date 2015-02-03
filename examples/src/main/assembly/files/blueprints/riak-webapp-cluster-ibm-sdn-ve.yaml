@@ -16,34 +16,30 @@ id: riak-webapp-cluster
 name: Riak Cluster with Webapp Cluster
 origin: "https://github.com/apache/incubator-brooklyn/"
 locations:
-- my-docker-cloud:
-    sdn.network.spec:
-      public: 50.0.1.0/24
-      webapp: 50.0.2.0/24
+- my-docker-cloud
 services:
 - type: brooklyn.entity.nosql.riak.RiakCluster
-  initialSize: 5
+  initialSize: 3
   id: cluster
   brooklyn.config:
     install.version: 2.0.0
-    sdn.networks:
-    - webapp
+    sdn.extra.networks:
+    - riak
 - type: brooklyn.entity.webapp.ControlledDynamicWebAppCluster
   name: Web Cluster
   brooklyn.config:
-    initialSize: 3
+    initialSize: 2
     dynamiccluster.memberspec:
       $brooklyn:entitySpec:
         type: brooklyn.entity.webapp.jboss.JBoss7Server
         brooklyn.config:
-          sdn.networks:
+          sdn.extra.networks:
           - webapp
-          member.sensor.hostname: "host.subnet.hostname"
     controlleddynamicwebappcluster.controllerSpec:
       $brooklyn:entitySpec:
         type: brooklyn.entity.proxy.nginx.NginxController
         brooklyn.config:
-          sdn.networks:
+          sdn.extra.networks:
           - webapp
           - public
           member.sensor.hostname: "host.subnet.hostname"
