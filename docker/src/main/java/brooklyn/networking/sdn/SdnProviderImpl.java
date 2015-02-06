@@ -45,8 +45,11 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
 
     private static final Logger LOG = LoggerFactory.getLogger(SdnProvider.class);
 
-    protected transient Object addressMutex = new Object[0];
-    protected transient Object hostMutex = new Object[0];
+    /** Held while obtaining new IP addresses for containers. */
+    protected transient final Object addressMutex = new Object[0];
+
+    /** Held while adding or removing new {@link SdnAgent} entities on hosts. */
+    protected transient final Object hostMutex = new Object[0];
 
     @Override
     public void init() {

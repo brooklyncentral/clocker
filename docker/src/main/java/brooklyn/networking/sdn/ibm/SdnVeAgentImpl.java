@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 import brooklyn.networking.sdn.SdnAgentImpl;
 
 /**
- * A single Docker container.
+ * A single SDN VE agent on a {@link DockerHost}.
  */
 public class SdnVeAgentImpl extends SdnAgentImpl implements SdnVeAgent {
 

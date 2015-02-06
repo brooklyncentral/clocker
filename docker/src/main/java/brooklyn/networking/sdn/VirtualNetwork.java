@@ -36,7 +36,7 @@ import com.google.inject.ImplementedBy;
 public interface VirtualNetwork extends BasicStartable {
 
     @SetFromFlag("cidr")
-    ConfigKey<Cidr> CIDR = ConfigKeys.newConfigKey(Cidr.class, "network.cidr", "CIDR for ihe network segment");
+    ConfigKey<Cidr> CIDR = ConfigKeys.newConfigKey(Cidr.class, "network.cidr", "CIDR for the network segment");
  
     @SetFromFlag("gateway")
     ConfigKey<InetAddress> GATEWAY = ConfigKeys.newConfigKey(InetAddress.class, "network.gateway", "Default gateway for the network segment");

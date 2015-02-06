@@ -42,7 +42,7 @@ public interface SdnAgent extends SoftwareProcess {
     @SetFromFlag("provider")
     AttributeSensorAndConfigKey<SdnProvider,SdnProvider> SDN_PROVIDER = ConfigKeys.newSensorAndConfigKey(SdnProvider.class, "sdn.provider", "SDN provider entity");
  
-    AttributeSensor<InetAddress> SDN_AGENT_ADDRESS = Sensors.newSensor(InetAddress.class, "sdn.agent.address", "IP address of SDFN agent service");
+    AttributeSensor<InetAddress> SDN_AGENT_ADDRESS = Sensors.newSensor(InetAddress.class, "sdn.agent.address", "IP address of SDN agent service");
     AttributeSensor<SdnAgent> SDN_AGENT = Sensors.newSensor(SdnAgent.class, "sdn.agent.entity", "SDN agent entity");
 
     DockerHost getDockerHost();
