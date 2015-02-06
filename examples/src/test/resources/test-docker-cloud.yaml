@@ -1,0 +1,32 @@
+# Copyright 2014 by Cloudsoft Corporation Limited
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+id: test-docker-cloud
+name: "Docker Infrastructure for tests"
+origin: "https://github.com/brooklyncentral/clocker/"
+
+description: >
+  Used in acceptance tests.
+
+location: ${testLocation}
+
+services:
+- serviceType: brooklyn.entity.container.docker.DockerInfrastructure
+  id: infrastructure
+  brooklyn.config:
+    docker.version: "1.2"
+    entity.dynamicLocation.name: "my-docker-cloud"
+    docker.host.initial.size: 1
+    weave.enabled: true
+    install.skip: false
