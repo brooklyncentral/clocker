@@ -37,7 +37,7 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
 
     private static final Logger LOG = LoggerFactory.getLogger(SdnAgent.class);
 
-    protected transient Object addressMutex = new Object[0];
+    protected transient final Object addressMutex = new Object[0];
 
     @Override
     public void init() {

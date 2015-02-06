@@ -24,8 +24,6 @@ public abstract class VirtualNetworkImpl extends BasicStartableImpl implements V
 
     private static final Logger LOG = LoggerFactory.getLogger(SdnProvider.class);
 
-    protected transient Object addressMutex = new Object[0];
-
     @Override
     public void init() {
         LOG.info("Starting virtual network segment id {}", getId());
