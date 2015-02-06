@@ -55,10 +55,6 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     @Override
-    public void postLaunch() {
-    }
-
-    @Override
     public Set<Integer> getPortsUsed() {
         return ImmutableSet.<Integer>builder()
                 .addAll(super.getPortsUsed())

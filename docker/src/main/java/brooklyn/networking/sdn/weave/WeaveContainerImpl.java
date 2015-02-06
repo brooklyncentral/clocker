@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 import brooklyn.networking.sdn.SdnAgentImpl;
 
 /**
- * A single Docker container.
+ * A single Weave router running in a {@link DockerContainer}.
  */
 public class WeaveContainerImpl extends SdnAgentImpl implements WeaveContainer {
 
