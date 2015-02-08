@@ -215,7 +215,9 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Empty Docker host: {}", host);
                 }
-                if (getOwner().config().get(DockerInfrastructure.REMOVE_EMPTY_DOCKER_HOSTS)) {
+
+                // Remove hosts when it has no containers, except for the last one
+                if (getOwner().config().get(DockerInfrastructure.REMOVE_EMPTY_DOCKER_HOSTS) && set.size() > 1) {
                     LOG.info("Removing empty Docker host: {}", host);
                     remove(host);
                 }
