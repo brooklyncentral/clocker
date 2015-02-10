@@ -43,15 +43,10 @@ services:
 - type: brooklyn.storage.softlayer.IScsiVolume
   name: public
   brooklyn.config:
-    network.cidr: 8.1.2.0/27
-    network.securityGroup: nginx-security-group
-    network.firewall.enable: true
-    network.gateway: 8.1.2.6
-    network.addresses.excluded:
-    - 8.1.2.1
-    - 8.1.2.2
-    - 8.1.2.6
-    network.routing.enable: true
+    storage.source: 12345678
+    storage.identity: shwetas
+    storage.credential: secretsecretsecretsecret
+    storage.size: 100g
 - type: brooklyn.entity.nosql.riak.RiakCluster
   initialSize: 3
   id: cluster
