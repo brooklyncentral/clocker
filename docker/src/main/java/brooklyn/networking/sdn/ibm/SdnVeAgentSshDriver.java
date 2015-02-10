@@ -131,7 +131,8 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     private int createNetwork() {
         String networkId = getEntity().getApplicationId();
-        String tenantId = "clocker";
+        String tenantId = networkId;
+
         Map<String, String> createNetworkData = ImmutableMap.<String, String>builder()
                 .put("networkId", networkId)
                 .put("networkName", networkId)
@@ -146,7 +147,7 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     private void createSubnet(String subnetId, String subnetName) {
         String networkId = getEntity().getApplicationId();
-        String tenantId = "clocker";
+        String tenantId = networkId;
 
         Map<String, Cidr> networks = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getAttribute(SdnProvider.NETWORKS);
         if (networks.containsKey(subnetId)) return;
