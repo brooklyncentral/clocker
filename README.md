@@ -121,4 +121,4 @@ community [mailing list](https://brooklyn.incubator.apache.org/community/). We a
 Please visit the [Wiki](https://github.com/brooklyncentral/clocker/wiki) for more details.
 
 ----
-Copyright 2014 by Cloudsoft Corporation Limited.
+Copyright 2014-2015 by Cloudsoft Corporation Limited.

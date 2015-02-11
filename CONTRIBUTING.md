@@ -14,4 +14,4 @@ Thanks!
 _Andrew Kennedy_ [**@grkvlt**](http://github.com/grkvlt/) / [abstractvisitorpattern.co.uk](http://blog.abstractvisitorpattern.co.uk)
 
 ----
-Copyright 2014 by Cloudsoft Corporation and licensed under CC-BY-SA 4.0
+Copyright 2014-2015 by Cloudsoft Corporation and licensed under CC-BY-SA 4.0
