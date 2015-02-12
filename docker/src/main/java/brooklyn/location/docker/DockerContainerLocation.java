@@ -127,6 +127,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
         if (publicPort == null) {
             LOG.warn("Unable to map port {} for Container {}. Mappings: {}",
                     new Object[]{portNumber, containerId, Joiner.on(", ").withKeyValueSeparator("=").join(mapping)});
+            publicPort = -1;
         } else {
             LOG.debug("Docker mapped port {} to {} for Container {}", new Object[]{portNumber, publicPort, containerId});
         }
@@ -199,7 +200,9 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
         if (DockerCallbacks.COMMIT.equalsIgnoreCase(command)) {
             String containerId = getOwner().getContainerId();
             String imageName = getOwner().getAttribute(DockerContainer.IMAGE_NAME);
-            String output = getOwner().getDockerHost().runDockerCommandTimeout(format("commit %s %s", containerId, Os.mergePaths(getRepository(), imageName)), Duration.minutes(20));
+            String output = getOwner().getDockerHost().runDockerCommandTimeout(
+                    format("commit %s %s", containerId, Os.mergePaths(getRepository(), imageName)),
+                    Duration.minutes(20));
             String imageId = DockerUtils.checkId(output);
             ((EntityLocal) getOwner().getRunningEntity()).setAttribute(DockerContainer.IMAGE_ID, imageId);
             ((EntityLocal) getOwner()).setAttribute(DockerContainer.IMAGE_ID, imageId);
@@ -257,7 +260,8 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
 
     @Override
     public String getSubnetIp() {
-        String containerAddress = getOwner().getDockerHost().runDockerCommand("inspect --format={{.NetworkSettings.IPAddress}} " + getOwner().getContainerId());
+        String containerAddress = getOwner().getDockerHost().runDockerCommand(
+                "inspect --format={{.NetworkSettings.IPAddress}} " + getOwner().getContainerId());
         return containerAddress.trim();
     }
 

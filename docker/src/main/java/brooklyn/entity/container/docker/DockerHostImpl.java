@@ -229,8 +229,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                     flags.put("securityGroups", securityGroup);
                 }
             } else {
-                flags.put(JcloudsLocationConfig.JCLOUDS_LOCATION_CUSTOMIZER.getName(),
-                        JcloudsLocationSecurityGroupCustomizer.getInstance(getApplicationId()));
+                flags.put(JcloudsLocationConfig.JCLOUDS_LOCATION_CUSTOMIZERS.getName(),
+                        ImmutableList.of(JcloudsLocationSecurityGroupCustomizer.getInstance(getApplicationId())));
             }
         }
         return flags;

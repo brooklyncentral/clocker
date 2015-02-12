@@ -42,6 +42,7 @@ import brooklyn.management.Task;
 import brooklyn.util.collections.MutableList;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.file.ArchiveUtils;
+import brooklyn.util.file.ArchiveUtils.ArchiveType;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.Networking;
 import brooklyn.util.net.Urls;
@@ -72,8 +73,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         ports.put("dockerPort", getDockerPort());
         ports.put("dockerSslPort", getDockerSslPort());
         if (getEntity().getConfig(DockerInfrastructure.WEAVE_ENABLED)) {
-            // Best guess at available port, as Weave is started _after_ the
-            // DockerHost
+            // Best guess at available port, as Weave is started _after_ the DockerHost
             Integer weavePort = getEntity()
                     .getAttribute(DockerHost.DOCKER_INFRASTRUCTURE)
                     .getAttribute(DockerInfrastructure.WEAVE_INFRASTRUCTURE)
@@ -109,7 +109,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     /** {@inheritDoc} */
     @Override
     public String buildImage(String dockerFile, String name) {
-        if (ArchiveUtils.ArchiveType.UNKNOWN != ArchiveUtils.ArchiveType.of(dockerFile) || Urls.isDirectory(dockerFile)) {
+        if (!ArchiveType.UNKNOWN.equals(ArchiveType.of(dockerFile)) || Urls.isDirectory(dockerFile)) {
             ArchiveUtils.deploy(dockerFile, getMachine(), Os.mergePaths(getRunDir(), name));
             String baseImageId = buildDockerfileDirectory(name);
             log.info("Created base Dockerfile image with ID {}", baseImageId);
@@ -138,14 +138,17 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     private Map<String, Object> getExtraTemplateSubstitutions(String imageName) {
-        Map<String, Object> templateSubstitutions = MutableMap.<String, Object> of("repository", getRepository(), "imageName", imageName);
+        Map<String, Object> templateSubstitutions = MutableMap.<String, Object>of(
+                "fullyQualifiedImageName", Os.mergePaths(getRepository(), imageName));
         DockerHost host = (DockerHost) getEntity();
         templateSubstitutions.putAll(host.getInfrastructure().getConfig(DockerInfrastructure.DOCKERFILE_SUBSTITUTIONS));
         return templateSubstitutions;
     }
 
     private String buildDockerfileDirectory(String name) {
-        String build = format("build --rm -t %s %s", Os.mergePaths(getRepository(), name), Os.mergePaths(getRunDir(), name));
+        String build = format("build --rm -t %s %s",
+                Os.mergePaths(getRepository(), name),
+                Os.mergePaths(getRunDir(), name));
         String stdout = ((DockerHost) getEntity()).runDockerCommandTimeout(build, Duration.minutes(20));
         String prefix = Strings.getFirstWordAfter(stdout, "Successfully built");
 
@@ -153,7 +156,9 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     private String buildDockerfile(String dockerfile, String name) {
-        String build = format("build --rm -t %s - < %s", Os.mergePaths(getRepository(), name), Os.mergePaths(getRunDir(), name, dockerfile));
+        String build = format("build --rm -t %s - < %s",
+                Os.mergePaths(getRepository(), name),
+                Os.mergePaths(getRunDir(), name, dockerfile));
         String stdout = ((DockerHost) getEntity()).runDockerCommandTimeout(build, Duration.minutes(20));
         String prefix = Strings.getFirstWordAfter(stdout, "Successfully built");
 

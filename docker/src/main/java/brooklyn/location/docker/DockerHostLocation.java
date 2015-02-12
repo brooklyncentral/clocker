@@ -78,7 +78,6 @@ import com.google.common.collect.Maps;
 public class DockerHostLocation extends AbstractLocation implements MachineProvisioningLocation<DockerContainerLocation>, DockerVirtualLocation,
         DynamicLocation<DockerHost, DockerHostLocation>, Closeable {
 
-    /** serialVersionUID */
     private static final long serialVersionUID = -1453203257759956820L;
 
     private static final Logger LOG = LoggerFactory.getLogger(DockerHostLocation.class);
@@ -264,7 +263,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                     !DockerUtils.BLACKLIST_URL_SENSOR_NAMES.contains(sensor.getName())) {
                 AttributeSensor<String> target = DockerUtils.<String>mappedSensor(sensor);
                 entity.addEnricher(dockerHost.getSubnetTier().uriTransformingEnricher(
-                        EntityAndAttribute.supplier(entity, sensor), target));
+                        EntityAndAttribute.create(entity, sensor), target));
                 Set<Hint<?>> hints = RendererHints.getHintsFor(sensor);
                 for (Hint<?> hint : hints) {
                     RendererHints.register(target, (NamedActionWithUrl) hint);
@@ -275,7 +274,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             } else if (PortAttributeSensorAndConfigKey.class.isAssignableFrom(sensor.getClass())) {
                 AttributeSensor<String> target = DockerUtils.mappedPortSensor((PortAttributeSensorAndConfigKey) sensor);
                 entity.addEnricher(dockerHost.getSubnetTier().hostAndPortTransformingEnricher(
-                        EntityAndAttribute.supplier(entity, sensor), target));
+                        EntityAndAttribute.create(entity, sensor), target));
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Mapped port sensor: origin={}, mapped={}", sensor.getName(), target.getName());
                 }

@@ -189,7 +189,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     @Override
     public void shutDown() {
         String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
-        LOG.info("Shut-Down {}", dockerContainerName);
+        LOG.info("Stopping {}", dockerContainerName);
         getDockerHost().runDockerCommand("kill " + getContainerId());
     }
 
@@ -203,7 +203,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     @Override
     public void resume() {
         String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
-        LOG.info("Resume {}", dockerContainerName);
+        LOG.info("Resuming {}", dockerContainerName);
         getDockerHost().runDockerCommand("start" + getContainerId());
     }
 
@@ -214,7 +214,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
      */
     private void removeContainer() {
         final String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
-        LOG.info("Remove container {}", dockerContainerName);
+        LOG.info("Removing {}", dockerContainerName);
         getDockerHost().runDockerCommand("rm " + getContainerId());
     }
 
