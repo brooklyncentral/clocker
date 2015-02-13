@@ -16,6 +16,10 @@ id: docker-cloud
 name: "Docker Cloud"
 origin: https://github.com/brooklyncentral/clocker/
 services:
+- type: brooklyn.networking.VirtualNetwork
+  name: clocker
+  brooklyn.config:
+    softlayer.network.vlanId: 425232
 - type: brooklyn.entity.container.docker.DockerInfrastructure
   brooklyn.config:
     entity.dynamicLocation.name: "my-docker-cloud"
@@ -43,7 +47,6 @@ services:
           sdn.ibm.dmc.address: 10.52.36.66
           sdn.ibm.dmc.username: admin
           sdn.ibm.dmc.password: admin
-          sdn.ibm.vlanId: 425232
           sdn.agent.cidr: 10.52.36.80/29
           sdn.network.cidr: 65.0.0.0/8
           sdn.network.size: 24
@@ -51,6 +54,8 @@ services:
       $brooklyn:entitySpec:
         type: brooklyn.entity.container.docker.DockerHost
         brooklyn.config:
+          network.list:
+          - clocker
           docker.host.flags:
             minRam: 12g
             minCores: 8
