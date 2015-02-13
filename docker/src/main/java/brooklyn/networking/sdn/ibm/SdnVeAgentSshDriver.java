@@ -174,14 +174,17 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     private String callRestApi(String jsonData, String apiPath) {
-        String command = String.format("curl -i -u admin:admin -X POST -H \"Content-Type: application/json\" -d @- http://%s/%s < %s",
+        String command = String.format("curl -i -u %s:%s -X POST -H \"Content-Type: application/json\" -d @- http://%s/%s < %s",
+                getEntity().getConfig(SdnVeNetwork.DOVE_CONTROLLER_USERNAME), getEntity().getConfig(SdnVeNetwork.DOVE_CONTROLLER_PASSWORD),
                 getEntity().getConfig(SdnVeNetwork.DOVE_CONTROLLER).getHostAddress(), apiPath, jsonData);
         String output = getEntity().getAttribute(SdnVeAgent.DOCKER_HOST).execCommand(command);
         return output;
     }
 
     private int getNetworkIdForName(String networkName) {
-        String command = String.format("curl -s -u admin:admin http://%s/networks", getEntity().getConfig(SdnVeNetwork.DOVE_CONTROLLER).getHostAddress());
+        String command = String.format("curl -s -u  %s:%s http://%s/networks",
+                getEntity().getConfig(SdnVeNetwork.DOVE_CONTROLLER_USERNAME), getEntity().getConfig(SdnVeNetwork.DOVE_CONTROLLER_PASSWORD),
+                getEntity().getConfig(SdnVeNetwork.DOVE_CONTROLLER).getHostAddress());
         String output = getEntity().getAttribute(SdnVeAgent.DOCKER_HOST).execCommand(command);
         JsonParser parser = new JsonParser();
         JsonElement json = parser.parse(output);
