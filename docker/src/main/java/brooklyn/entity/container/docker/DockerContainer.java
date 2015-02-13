@@ -17,6 +17,7 @@ package brooklyn.entity.container.docker;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
@@ -38,6 +39,7 @@ import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.location.dynamic.LocationOwner;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.util.flags.SetFromFlag;
+import brooklyn.util.net.HasNetworkAddresses;
 
 import com.google.common.reflect.TypeToken;
 
@@ -49,7 +51,7 @@ import com.google.common.reflect.TypeToken;
  * deployed to the {@link DockerInfrastructure}.
  */
 @ImplementedBy(DockerContainerImpl.class)
-public interface DockerContainer extends BasicStartable, HasShortName, LocationOwner<DockerContainerLocation, DockerContainer> {
+public interface DockerContainer extends BasicStartable, HasNetworkAddresses, HasShortName, LocationOwner<DockerContainerLocation, DockerContainer> {
 
     @SetFromFlag("dockerHost")
     AttributeSensorAndConfigKey<Entity, Entity> DOCKER_HOST = ConfigKeys.newSensorAndConfigKey(Entity.class, "docker.host", "The parent Docker host");
@@ -98,6 +100,9 @@ public interface DockerContainer extends BasicStartable, HasShortName, LocationO
     AttributeSensor<String> IMAGE_NAME = Sensors.newStringSensor("docker.container.imageName", "The Docker container image name");
     AttributeSensor<String> HARDWARE_ID = Sensors.newStringSensor("docker.container.hardwareId", "The Docker container hardware ID");
     AttributeSensor<String> CONTAINER_ID = Sensors.newStringSensor("docker.container.id", "The Docker container ID");
+
+    AttributeSensor<Set<String>> CONTAINER_ADDRESSES = Sensors.newSensor(new TypeToken<Set<String>>() { },
+            "docker.container.addresses", "The set of Docker container IP addresses");
 
     AttributeSensor<Entity> CONTAINER = Sensors.newSensor(Entity.class, "docker.container", "The Docker container entity");
 

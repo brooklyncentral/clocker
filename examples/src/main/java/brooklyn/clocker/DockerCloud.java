@@ -24,7 +24,6 @@ import brooklyn.entity.Entity;
 import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.SoftwareProcess;
-import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
@@ -35,6 +34,7 @@ import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
 import brooklyn.location.docker.strategy.MaxContainersPlacementStrategy;
 import brooklyn.location.docker.strategy.MaxCpuUsagePlacementStrategy;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
+import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.text.Strings;
@@ -54,7 +54,7 @@ public class DockerCloud extends AbstractApplication {
     public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_VERSION, "1.4.1");
 
     @CatalogConfig(label="SDN Provider", priority=90)
-    public static final ConfigKey<String> SDN_PROVIDER = ConfigKeys.newStringConfigKey("sdn.provider", "SDN provider specification", "brooklyn.entity.container.weave.WeaveInfrastructure");
+    public static final ConfigKey<String> SDN_PROVIDER = ConfigKeys.newStringConfigKey("sdn.provider", "SDN provider specification", "brooklyn.networking.sdn.weave.WeaveNetwork");
 
     @CatalogConfig(label="SDN Version", priority=90)
     public static final ConfigKey<String> SDN_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "0.8.0");
@@ -117,7 +117,7 @@ public class DockerCloud extends AbstractApplication {
                         maxContainers, 
                         breadthFirst, 
                         cpuUsage))
-                .configure(DockerAttributes.SDN_ENABLE, Strings.isNonEmpty(getConfig(SDN_PROVIDER)))
+                .configure(SdnAttributes.SDN_ENABLE, true)
                 .configure(DockerInfrastructure.SDN_PROVIDER_SPEC, EntitySpec.create(sdnProviderClass)
                         .configure(SoftwareProcess.SUGGESTED_VERSION, getConfig(SDN_VERSION)))
                 .configure(DockerInfrastructure.DOCKER_HOST_SPEC, EntitySpec.create(DockerHost.class)
@@ -126,9 +126,9 @@ public class DockerCloud extends AbstractApplication {
                                 JcloudsLocationConfig.MIN_RAM.getName(), 8000,
                                 JcloudsLocationConfig.STOP_IPTABLES.getName(), true))
                         .configure(SoftwareProcess.START_TIMEOUT, Duration.minutes(15))
-                        .configure(DockerHost.DOCKER_HOST_NAME_FORMAT, "docker-%1$s")
+                        .configure(DockerHost.DOCKER_HOST_NAME_FORMAT, "docker-host-%1$s")
                         .configure(DockerHost.DOCKER_CONTAINER_SPEC, EntitySpec.create(DockerContainer.class)
-                                .configure(DockerContainer.DOCKER_CONTAINER_NAME_FORMAT, "docker-%2$d")))
+                                .configure(DockerContainer.DOCKER_CONTAINER_NAME_FORMAT, "container-%2$d")))
                 .displayName("Docker Cloud"));
     }
 }

@@ -19,8 +19,10 @@ location: localhost
 services:
 - type: brooklyn.entity.container.docker.DockerInfrastructure
   brooklyn.config:
-    docker.version: 1.4.1
-    entity.dynamicLocation.name: "my-docker-cloud"
+    entity.dynamicLocation.name: "docker-localhost"
+    docker.version: 1.5.0
+    docker.tls.certificate: conf/server-cert.pem
+    docker.tls.certificate: conf/server-key.pem
     docker.host.initial.size: 1
     docker.host.register: false
     sdn.enable: false

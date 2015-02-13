@@ -18,17 +18,19 @@ origin: https://github.com/brooklyncentral/clocker/
 services:
 - type: brooklyn.entity.container.docker.DockerInfrastructure
   brooklyn.config:
-    docker.version: 1.4.1
     entity.dynamicLocation.name: "my-docker-cloud"
+    docker.version: 1.5.0
+    docker.tls.certificate: conf/server-cert.pem
+    docker.tls.key: conf/server-key.pem
     docker.host.cluster.initial.size: 2
     docker.host.register: false
-    docker.container.cluster.headroom.count: 0
+    docker.container.cluster.headroom.count: 4
     docker.policy.ha.enable: false
     docker.container.strategies:
     - $brooklyn:object:
         type: brooklyn.location.docker.strategy.MaxContainersPlacementStrategy
         brooklyn.config:
-          maxContainers: 8
+          maxContainers: 12
     - $brooklyn:object:
         type: brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy
     sdn.enable: true
@@ -44,10 +46,11 @@ services:
         type: brooklyn.entity.container.docker.DockerHost
         brooklyn.config:
           docker.host.flags:
-            minRam: 7g
+            minRam: 12g
+            minCores: 8
             stopIptables: true
           start.timeout: 15m
-          docker.host.nameFormat: "host-%2$02x"
+          docker.host.nameFormat: "docker-host-%2$d"
           docker.container.spec:
             $brooklyn:entitySpec:
               type: brooklyn.entity.container.docker.DockerContainer

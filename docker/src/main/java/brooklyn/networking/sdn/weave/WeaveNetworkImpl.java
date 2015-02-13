@@ -82,10 +82,11 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
         return permissions;
     }
 
-    public void addHost(Entity item) {
-        SshMachineLocation machine = ((DockerHost) item).getDynamicLocation().getMachine();
+    @Override
+    public void addHost(DockerHost host) {
+        SshMachineLocation machine = host.getDynamicLocation().getMachine();
         EntitySpec<?> spec = EntitySpec.create(getAttribute(SDN_AGENT_SPEC))
-                .configure(WeaveContainer.DOCKER_HOST, (DockerHost) item);
+                .configure(WeaveContainer.DOCKER_HOST, host);
         WeaveContainer agent = (WeaveContainer) getAgents().addChild(spec);
         Entities.manage(agent);
         getAgents().addMember(agent);
@@ -93,10 +94,11 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
         if (LOG.isDebugEnabled()) LOG.debug("{} added weave service {}", this, agent);
     }
 
-    public void removeHost(Entity item) {
-        SdnAgent agent = item.getAttribute(SdnAgent.SDN_AGENT);
+    @Override
+    public void removeHost(DockerHost host) {
+        SdnAgent agent = host.getAttribute(SdnAgent.SDN_AGENT);
         if (agent == null) {
-            LOG.warn("{} cannot find weave service: {}", this, item);
+            LOG.warn("{} cannot find weave service: {}", this, host);
             return;
         }
         agent.stop();

@@ -15,7 +15,15 @@
  */
 package brooklyn.entity.container.docker;
 
-import static brooklyn.util.ssh.BashCommands.*;
+import static brooklyn.util.ssh.BashCommands.INSTALL_CURL;
+import static brooklyn.util.ssh.BashCommands.INSTALL_WGET;
+import static brooklyn.util.ssh.BashCommands.alternatives;
+import static brooklyn.util.ssh.BashCommands.chainGroup;
+import static brooklyn.util.ssh.BashCommands.fail;
+import static brooklyn.util.ssh.BashCommands.ifExecutableElse0;
+import static brooklyn.util.ssh.BashCommands.ifExecutableElse1;
+import static brooklyn.util.ssh.BashCommands.installPackage;
+import static brooklyn.util.ssh.BashCommands.sudo;
 import static java.lang.String.format;
 
 import java.util.Collection;
@@ -37,7 +45,7 @@ import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.location.jclouds.networking.JcloudsLocationSecurityGroupCustomizer;
 import brooklyn.management.Task;
-import brooklyn.networking.sdn.SdnAgent;
+import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.networking.sdn.weave.WeaveNetwork;
 import brooklyn.util.collections.MutableList;
@@ -71,7 +79,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     protected Map<String, Integer> getPortMap() {
         Map<String, Integer> ports = MutableMap.of();
         ports.put("dockerPort", getDockerPort());
-        if (getEntity().getConfig(DockerInfrastructure.SDN_ENABLE)) {
+        if (getEntity().getConfig(SdnAttributes.SDN_ENABLE)) {
             // XXX make generic
             // Best guess at available port, as Weave is started _after_ the DockerHost
             Integer weavePort = getEntity()
@@ -398,8 +406,8 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .build();
         List<IpPermission> permissions = MutableList.of(dockerPort, dockerSslPort, dockerPortForwarding);
 
-        if (getEntity().getConfig(DockerInfrastructure.SDN_ENABLE)) {
-            SdnProvider provider = (SdnProvider) getEntity().getAttribute(DockerHost.DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER);
+        if (getEntity().getConfig(SdnAttributes.SDN_ENABLE)) {
+            SdnProvider provider = (SdnProvider) (getEntity().getAttribute(DockerHost.DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER));
             Collection<IpPermission> sdnPermissions = provider.getIpPermissions();
             permissions.addAll(sdnPermissions);
         }

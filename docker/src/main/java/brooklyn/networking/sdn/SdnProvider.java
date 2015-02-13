@@ -17,7 +17,6 @@ package brooklyn.networking.sdn;
 
 import java.net.InetAddress;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 
 import org.jclouds.net.domain.IpPermission;
@@ -28,6 +27,7 @@ import brooklyn.entity.Group;
 import brooklyn.entity.basic.BasicStartable;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.container.DockerAttributes;
+import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.event.AttributeSensor;
@@ -36,6 +36,7 @@ import brooklyn.event.basic.Sensors;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
 
+import com.google.common.collect.Multimap;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.ImplementedBy;
 
@@ -48,9 +49,6 @@ public interface SdnProvider extends BasicStartable {
     ConfigKey<Cidr> AGENT_CIDR = ConfigKeys.newConfigKey(Cidr.class, "sdn.agent.cidr", "CIDR for agent address allocation");
     AttributeSensor<Cidr> APPLICATION_CIDR = Sensors.newSensor(Cidr.class, "sdn.application.cidr", "CIDR for application running in container");
 
-    ConfigKey<Collection<String>> EXTRA_NETWORKS = ConfigKeys.newConfigKey(
-            new TypeToken<Collection<String>>() { }, "sdn.extra.networks", "Collection of extra networks to create for an entity", Collections.<String>emptyList());
-
     ConfigKey<Cidr> CONTAINER_NETWORK_CIDR = ConfigKeys.newConfigKey(Cidr.class, "sdn.network.cidr", "Pool CIDR for network allocation to containers");
     ConfigKey<Integer> CONTAINER_NETWORK_SIZE = ConfigKeys.newIntegerConfigKey("sdn.network.size", "Size of network subnets as CIDR length (e.g. 24 for 254 hosts)");
 
@@ -60,8 +58,8 @@ public interface SdnProvider extends BasicStartable {
     AttributeSensor<Map<String, Integer>> NETWORK_ALLOCATIONS = Sensors.newSensor(
             new TypeToken<Map<String, Integer>>() { }, "sdn.networks.allocated", "Map of allocated address count on network subnets");
 
-    AttributeSensor<Map<String, InetAddress>> CONTAINER_ADDRESSES = Sensors.newSensor(
-            new TypeToken<Map<String, InetAddress>>() { }, "sdn.container.addresses", "Map of container ID to IP addresses on network");
+    AttributeSensor<Multimap<String, InetAddress>> CONTAINER_ADDRESSES = Sensors.newSensor(
+            new TypeToken<Multimap<String, InetAddress>>() { }, "sdn.container.addresses", "Map of container ID to IP addresses on network");
 
     AttributeSensor<Group> SDN_AGENTS = Sensors.newSensor(Group.class, "sdn.agents", "Group of SDN agent services");
 
@@ -88,7 +86,8 @@ public interface SdnProvider extends BasicStartable {
 
     Cidr getSubnet(String subnetId, String subnetName);
 
-    void addHost(Entity host);
+    void addHost(DockerHost host);
 
-    void removeHost(Entity host);
+    void removeHost(DockerHost host);
+
 }
