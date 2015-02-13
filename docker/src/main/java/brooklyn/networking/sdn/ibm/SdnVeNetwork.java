@@ -35,6 +35,12 @@ public interface SdnVeNetwork extends SdnProvider {
     @SetFromFlag("dmc")
     ConfigKey<InetAddress> DOVE_CONTROLLER = ConfigKeys.newConfigKey(InetAddress.class, "sdn.ibm.dmc.address", "The IBM SDN VE DMC IP address");
 
+    @SetFromFlag("dmcUser")
+    ConfigKey<String> DOVE_CONTROLLER_USERNAME = ConfigKeys.newStringConfigKey("sdn.ibm.dmc.username", "The IBM SDN VE DMC username");
+
+    @SetFromFlag("dmcPassword")
+    ConfigKey<String> DOVE_CONTROLLER_PASSWORD = ConfigKeys.newStringConfigKey("sdn.ibm.dmc.password", "The IBM SDN VE DMC password");
+
     @SetFromFlag("vlanId")
     ConfigKey<Integer> VLAN_ID = ConfigKeys.newIntegerConfigKey("sdn.ibm.vlanId", "Softlayer VLAN ID");
 
