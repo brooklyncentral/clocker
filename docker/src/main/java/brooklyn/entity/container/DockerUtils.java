@@ -80,6 +80,7 @@ public class DockerUtils {
     public static final String DEFAULT_DOCKER_HOST_NAME_FORMAT = "docker-host-brooklyn-%1$s";
 
     public static final String UBUNTU_DOCKERFILE = "classpath://brooklyn/entity/container/docker/ubuntu/Dockerfile";
+    public static final String UBUNTU_NETWORKING_DOCKERFILE = "classpath://brooklyn/entity/container/docker/ubuntu/NetworkingDockerfile";
     public static final String UBUNTU_USES_JAVA_DOCKERFILE = "classpath://brooklyn/entity/container/docker/ubuntu/UsesJavaDockerfile";
 
     public static final String CENTOS_DOCKERFILE = "classpath://brooklyn/entity/container/docker/centos/Dockerfile";

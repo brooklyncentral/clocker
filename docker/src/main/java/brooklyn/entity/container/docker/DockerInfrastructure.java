@@ -40,6 +40,7 @@ import brooklyn.location.docker.strategy.DepthFirstPlacementStrategy;
 import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
 import brooklyn.location.docker.strategy.affinity.AffinityRules;
 import brooklyn.location.dynamic.LocationOwner;
+import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.util.collections.MutableList;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.flags.SetFromFlag;
@@ -77,7 +78,7 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
             "Remove empty Docker Hosts with no containers", Boolean.FALSE);
 
     @SetFromFlag("enableSdn")
-    ConfigKey<Boolean> SDN_ENABLE = DockerAttributes.SDN_ENABLE;
+    ConfigKey<Boolean> SDN_ENABLE = SdnAttributes.SDN_ENABLE;
 
     @SetFromFlag("sdnProviderSpec")
     ConfigKey<EntitySpec> SDN_PROVIDER_SPEC = ConfigKeys.newConfigKey(EntitySpec.class, "sdn.provider.spec", "SDN provider entity specification");

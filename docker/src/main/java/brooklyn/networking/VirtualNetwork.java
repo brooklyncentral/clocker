@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.networking.sdn;
+package brooklyn.networking;
 
 import java.net.InetAddress;
 import java.util.Collection;
