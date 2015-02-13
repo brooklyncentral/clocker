@@ -354,6 +354,17 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     @Override
     public SubnetTier getSubnetTier() { return getAttribute(DOCKER_HOST_SUBNET_TIER); }
 
+    @Override
+    public Optional<String> getImageNamed(String repository) {
+        return getImageNamed(repository, "latest");
+    }
+
+    @Override
+    public Optional<String> getImageNamed(String repository, String tag) {
+        String imageList = runDockerCommand("images --no-trunc " + repository);
+        return Optional.fromNullable(Strings.getFirstWordAfter(imageList, tag));
+    }
+
     /**
      * Create a new {@link DockerHostLocation} wrapping the machine we are starting in.
      */

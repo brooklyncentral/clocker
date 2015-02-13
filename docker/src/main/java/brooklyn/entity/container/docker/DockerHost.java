@@ -49,6 +49,7 @@ import brooklyn.util.collections.MutableMap;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.time.Duration;
 
+import com.google.common.base.Optional;
 import com.google.common.reflect.TypeToken;
 
 /**
@@ -152,6 +153,17 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
     List<Entity> getDockerContainerList();
 
     DockerInfrastructure getInfrastructure();
+
+
+    /**
+     * As {@link #getImageNamed(String, String)} and looking for the latest image.
+     */
+    Optional<String> getImageNamed(String name);
+
+    /**
+     * @return an Optional containing the ID of the named and tagged image.
+     */
+    Optional<String> getImageNamed(String name, String tag);
 
     MethodEffector<String> CREATE_SSHABLE_IMAGE = new MethodEffector<String>(DockerHost.class, "createSshableImage");
     MethodEffector<String> RUN_DOCKER_COMMAND = new MethodEffector<String>(DockerHost.class, "runDockerCommand");
