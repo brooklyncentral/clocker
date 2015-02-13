@@ -54,10 +54,11 @@ public class SdnVeNetworkImpl extends SdnProviderImpl implements SdnVeNetwork {
         return permissions;
     }
 
-    public void addHost(Entity item) {
-        SshMachineLocation machine = ((DockerHost) item).getDynamicLocation().getMachine();
+    @Override
+    public void addHost(DockerHost host) {
+        SshMachineLocation machine = host.getDynamicLocation().getMachine();
         EntitySpec<?> spec = EntitySpec.create(getAttribute(SDN_AGENT_SPEC))
-                .configure(SdnVeAgent.DOCKER_HOST, (DockerHost) item);
+                .configure(SdnVeAgent.DOCKER_HOST, host);
         SdnVeAgent agent = (SdnVeAgent) getAgents().addChild(spec);
         Entities.manage(agent);
         getAgents().addMember(agent);
@@ -65,10 +66,11 @@ public class SdnVeNetworkImpl extends SdnProviderImpl implements SdnVeNetwork {
         if (LOG.isDebugEnabled()) LOG.debug("{} added IBM SDN VE agent {}", this, agent);
     }
 
-    public void removeHost(Entity item) {
-        SdnAgent agent = item.getAttribute(SdnAgent.SDN_AGENT);
+    @Override
+    public void removeHost(DockerHost host) {
+        SdnAgent agent = host.getAttribute(SdnAgent.SDN_AGENT);
         if (agent == null) {
-            LOG.warn("{} cannot find dove agent: {}", this, item);
+            LOG.warn("{} cannot find dove agent: {}", this, host);
             return;
         }
         agent.stop();

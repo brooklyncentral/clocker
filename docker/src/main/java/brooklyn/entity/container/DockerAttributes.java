@@ -26,7 +26,6 @@ import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
-import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.flags.TypeCoercions;
 import brooklyn.util.internal.ssh.SshTool;
 import brooklyn.util.javalang.Reflections;
@@ -91,8 +90,6 @@ public class DockerAttributes {
 
     public static final AttributeSensorAndConfigKey<Entity, Entity> DOCKER_INFRASTRUCTURE = ConfigKeys.newSensorAndConfigKey(Entity.class,
             "docker.infrastructure", "The Docker infrastructure");
-
-    public static final ConfigKey<Boolean> SDN_ENABLE = ConfigKeys.newBooleanConfigKey("sdn.enable", "Enable Sofware Defined Networking", Boolean.FALSE);
 
     /*
      * Counter attributes.

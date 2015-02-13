@@ -18,6 +18,25 @@ origin: "https://github.com/apache/incubator-brooklyn/"
 locations:
 - my-docker-cloud
 services:
+- type: brooklyn.networking.VirtualNetwork
+  name: public
+  brooklyn.config:
+    network.cidr: 8.1.2.0/27
+    network.securityGroup: nginx-security-group
+    network.gateway: 8.1.2.6
+    network.routing.enable: true
+- type: brooklyn.networking.VirtualNetwork
+  name: webapp
+  cidr: 100.52.0.0/16
+- type: brooklyn.entity.container.sdn.VirtualNetwork
+  name: riak
+  cidr: 100.52.0.0/16
+- type: brooklyn.storage.StorageVolume
+  name: public
+  brooklyn.config:
+    storage.source: 12345678
+    storage.size: 100g
+    mount: "/vol/riak"
 - type: brooklyn.entity.nosql.riak.RiakCluster
   initialSize: 3
   id: cluster
@@ -26,6 +45,8 @@ services:
     sdn.default.network: false
     network.list:
     - riak
+    docker.host.volumes:
+      "/vol/riak": "/var/run/riak/persist"
 - type: brooklyn.entity.webapp.ControlledDynamicWebAppCluster
   name: Web Cluster
   brooklyn.config:
@@ -43,8 +64,11 @@ services:
               $brooklyn:component("cluster").attributeWhenReady("riak.cluster.nodeList")
     controlleddynamicwebappcluster.controllerSpec:
       $brooklyn:entitySpec:
-        type: brooklyn.entity.proxy.Nginx
+        type: brooklyn.networking.entity.HaProxy
         brooklyn.config:
+          docker.imageUrl: http://source/path.zip
+          entity.started: true
+          runDir: /var/run/haproxy
           network.list:
           - webapp
           - public

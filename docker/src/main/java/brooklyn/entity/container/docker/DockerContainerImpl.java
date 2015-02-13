@@ -66,6 +66,7 @@ import brooklyn.location.jclouds.templates.PortableTemplateBuilder;
 import brooklyn.management.LocationManager;
 import brooklyn.networking.portforwarding.subnet.JcloudsPortforwardingSubnetLocation;
 import brooklyn.networking.sdn.SdnAgent;
+import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.util.collections.MutableList;
 import brooklyn.util.collections.MutableMap;
@@ -79,6 +80,7 @@ import brooklyn.util.time.Duration;
 
 import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
+import com.google.common.collect.Sets;
 
 /**
  * A single Docker container.
@@ -374,14 +376,30 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         try {
             // Create a new container using jclouds Docker driver
             JcloudsSshMachineLocation container = host.getJcloudsLocation().obtain(dockerFlags);
-            setAttribute(CONTAINER_ID, container.getNode().getId());
+            String containerId = container.getNode().getId();
+            setAttribute(CONTAINER_ID, containerId);
 
-            // If SDN is enabled, attach to the network
-            if (getConfig(DockerInfrastructure.SDN_ENABLE)) {
+            // If SDN is enabled, attach networks
+            if (getConfig(SdnAttributes.SDN_ENABLE)) {
                 Entity entity = getRunningEntity();
                 SdnAgent agent = Entities.attributeSupplierWhenReady(dockerHost, SdnAgent.SDN_AGENT).get();
-                InetAddress subnetAddress = agent.attachNetwork(getAttribute(CONTAINER_ID), entity);
+                Set<String> addresses = Sets.newHashSet();
+
+                String networkId = entity.getApplicationId();
+                String networkName = entity.getApplication().getDisplayName();
+                InetAddress subnetAddress = agent.attachNetwork(containerId, networkId, networkName);
                 setAttribute(Attributes.SUBNET_ADDRESS, subnetAddress.getHostAddress());
+                addresses.add(subnetAddress.getHostAddress().toString());
+
+                Collection<String> extra = entity.getConfig(SdnAttributes.NETWORK_LIST);
+                if (extra != null) {
+                    for (String extraId : extra) {
+                        InetAddress extraAddress = agent.attachNetwork(getAttribute(CONTAINER_ID), extraId, extraId);
+                        addresses.add(extraAddress.getHostAddress().toString());
+                    }
+                }
+
+                setAttribute(CONTAINER_ADDRESSES, addresses);
             }
 
             // Create our wrapper location around the container
@@ -498,6 +516,21 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         }
 
         ServiceStateLogic.setExpectedState(this, Lifecycle.STOPPED);
+    }
+
+    @Override
+    public String getHostname() {
+        return getDockerContainerName(); // XXX or SUBNET_ADDRESS attribute?
+    }
+
+    @Override
+    public Set<String> getPublicAddresses() {
+        return Sets.newHashSet(getAttribute(SoftwareProcess.SUBNET_ADDRESS));
+    }
+
+    @Override
+    public Set<String> getPrivateAddresses() {
+        return getAttribute(CONTAINER_ADDRESSES);
     }
 
     static {

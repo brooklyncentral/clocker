@@ -29,6 +29,7 @@ import brooklyn.entity.basic.BasicGroup;
 import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
+import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.group.AbstractMembershipTrackingPolicy;
 import brooklyn.entity.group.DynamicCluster;
@@ -39,6 +40,7 @@ import brooklyn.policy.PolicySpec;
 import brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import brooklyn.util.net.Cidr;
 
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
 
 public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnProvider {
@@ -75,7 +77,7 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
         setAttribute(ALLOCATED_NETWORKS, 0);
         setAttribute(NETWORKS, Maps.<String, Cidr>newConcurrentMap());
         setAttribute(NETWORK_ALLOCATIONS, Maps.<String, Integer>newConcurrentMap());
-        setAttribute(CONTAINER_ADDRESSES, Maps.<String, InetAddress>newConcurrentMap());
+        setAttribute(CONTAINER_ADDRESSES, HashMultimap.<String, InetAddress>create());
     }
 
     @Override
@@ -159,6 +161,12 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
         super.stop();
     }
 
+    @Override
+    public void rebind() {
+        super.rebind();
+        // TODO implement custom SDN provider rebind logic
+    }
+
     protected void addHostTrackerPolicy() {
         Group hosts = getDockerHostCluster();
         if (hosts != null) {
@@ -171,13 +179,17 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
 
     private void onHostAdded(Entity item) {
         synchronized (hostMutex) {
-            addHost(item);
+            if (item instanceof DockerHost) {
+                addHost((DockerHost) item);
+            }
         }
     }
 
     private void onHostRemoved(Entity item) {
         synchronized (hostMutex) {
-            removeHost(item);
+            if (item instanceof DockerHost) {
+                removeHost((DockerHost) item);
+            }
         }
     }
 

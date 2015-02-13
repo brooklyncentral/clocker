@@ -13,18 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.networking.sdn;
+package brooklyn.networking;
 
-import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import brooklyn.util.net.Cidr;
+import brooklyn.entity.basic.BasicStartableImpl;
+import brooklyn.networking.sdn.SdnProvider;
 
-/**
- * A {@link Location} extension that can provision new networks.
- */
-public interface NetworkProvisioningExtension {
+public abstract class VirtualNetworkImpl extends BasicStartableImpl implements VirtualNetwork {
 
-    Map<String, Cidr> listManagedNetworks();
+    private static final Logger LOG = LoggerFactory.getLogger(SdnProvider.class);
 
-    String addNetwork(Map<String, Object> flags);
+    @Override
+    public void init() {
+        LOG.info("Starting virtual network segment id {}", getId());
+        super.init();
+    }
+
 }

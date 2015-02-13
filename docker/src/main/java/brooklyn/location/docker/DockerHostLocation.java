@@ -58,6 +58,7 @@ import brooklyn.location.dynamic.DynamicLocation;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.networking.common.subnet.PortForwarder;
 import brooklyn.networking.sdn.SdnAgent;
+import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.util.collections.MutableMap;
@@ -144,7 +145,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             LOG.info("Configuring entity {} via subnet {}", entity, dockerHost.getSubnetTier());
             Entities.deproxy(entity).setConfigEvenIfOwned(SubnetTier.PORT_FORWARDING_MANAGER, dockerHost.getSubnetTier().getPortForwardManager());
             Entities.deproxy(entity).setConfigEvenIfOwned(SubnetTier.PORT_FORWARDER, portForwarder);
-            if (getOwner().getConfig(DockerAttributes.SDN_ENABLE)) {
+            if (getOwner().getConfig(SdnAttributes.SDN_ENABLE)) {
                 SdnAgent agent = getOwner().getAttribute(SdnAgent.SDN_AGENT);
                 if (agent == null) {
                     throw new IllegalStateException("SDN agent entity on " + getOwner() + " is null");
@@ -239,7 +240,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             Entities.deproxy(entity).setAttribute(DockerContainer.CONTAINER_ID, dockerContainer.getContainerId());
 
             // record SDN application network details
-            if (getOwner().getConfig(DockerAttributes.SDN_ENABLE)) {
+            if (getOwner().getConfig(SdnAttributes.SDN_ENABLE)) {
                 SdnAgent agent = getOwner().getAttribute(SdnAgent.SDN_AGENT);
                 Map<String, Cidr> networks = agent.getAttribute(SdnAgent.SDN_PROVIDER).getAttribute(SdnProvider.NETWORKS);
                 Cidr applicationCidr = networks.get(entity.getApplicationId());

@@ -27,6 +27,7 @@ import org.jclouds.compute.domain.OsFamily;
 import org.jclouds.compute.domain.TemplateBuilder;
 import org.jclouds.compute.domain.Volume;
 import org.jclouds.softlayer.compute.options.SoftLayerTemplateOptions;
+import org.jclouds.softlayer.reference.SoftLayerConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,6 +66,7 @@ import brooklyn.location.jclouds.templates.PortableTemplateBuilder;
 import brooklyn.management.LocationManager;
 import brooklyn.networking.portforwarding.DockerPortForwarder;
 import brooklyn.networking.sdn.SdnAgent;
+import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.networking.sdn.ibm.SdnVeNetwork;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.networking.subnet.SubnetTierImpl;
@@ -202,7 +204,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 template = new PortableTemplateBuilder();
                 if (isJcloudsLocation(location, "google-compute-engine")) {
                     template.osFamily(OsFamily.CENTOS).osVersionMatches("6");
-                } else if (isJcloudsLocation(location, "softlayer")) {
+                } else if (isJcloudsLocation(location, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME)) {
                     template.osFamily(OsFamily.CENTOS).osVersionMatches("6");
                 } else {
                     template.osFamily(OsFamily.UBUNTU).osVersionMatches("14.04");
@@ -239,7 +241,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
             // Setup SoftLayer template options required for IBM SDN VE
             // TODO Move this into a callback on the SdnProvider interface
-            if (isJcloudsLocation(location, "softlayer") && isSdnProvider("SdnVeNetwork")) {
+            if (isJcloudsLocation(location, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME) && isSdnProvider("SdnVeNetwork")) {
                 if (template == null) template = new PortableTemplateBuilder();
                 Integer vlanId = getAttribute(DOCKER_INFRASTRUCTURE)
                         .getAttribute(DockerInfrastructure.SDN_PROVIDER)
@@ -463,7 +465,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     public void postStart() {
-        if (Boolean.TRUE.equals(getAttribute(DOCKER_INFRASTRUCTURE).getConfig(DockerInfrastructure.SDN_ENABLE))) {
+        if (Boolean.TRUE.equals(getAttribute(DOCKER_INFRASTRUCTURE).getConfig(SdnAttributes.SDN_ENABLE))) {
             LOG.info("Waiting on SDN agent");
             SdnAgent agent = Entities.attributeSupplierWhenReady(this, SdnAgent.SDN_AGENT).get();
             Entities.waitForServiceUp(agent);

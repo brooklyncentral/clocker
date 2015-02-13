@@ -58,6 +58,7 @@ import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.DockerResolver;
 import brooklyn.management.LocationManager;
 import brooklyn.management.ManagementContext;
+import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.policy.EnricherSpec;
 import brooklyn.policy.PolicySpec;
 import brooklyn.policy.autoscaling.AutoScalerPolicy;
@@ -95,6 +96,9 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         String dockerVersion = getConfig(DOCKER_VERSION);
         if (Strings.isNonBlank(dockerVersion)) {
             dockerHostSpec.configure(SoftwareProcess.SUGGESTED_VERSION, dockerVersion);
+        }
+        if (Boolean.TRUE.equals(getConfig(SdnAttributes.SDN_DEBUG))) {
+            dockerHostSpec.configure(DockerAttributes.DOCKERFILE_URL, DockerUtils.UBUNTU_NETWORKING_DOCKERFILE);
         }
 
         DynamicCluster hosts = addChild(EntitySpec.create(DynamicCluster.class)
