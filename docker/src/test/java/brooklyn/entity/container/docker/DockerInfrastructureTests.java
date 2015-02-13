@@ -40,7 +40,7 @@ public class DockerInfrastructureTests {
 
     private DockerInfrastructureTests() {}
 
-    public static void testDeploysTrivialApplication(TestApplication app, Location location) {
+    public static DockerInfrastructure deployAndWaitForDockerInfrastructure(TestApplication app, Location location) {
         DockerInfrastructure dockerInfrastructure = app.createAndManageChild(EntitySpec.create(DockerInfrastructure.class)
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 1)
                 .configure(DockerInfrastructure.WEAVE_ENABLED, false)
@@ -50,7 +50,11 @@ public class DockerInfrastructureTests {
         LOG.info("Waiting {} for {} to have started", Duration.TWO_MINUTES, dockerInfrastructure);
         EntityTestUtils.assertAttributeEqualsEventually(ImmutableMap.of("timeout", Duration.FIVE_MINUTES),
                 dockerInfrastructure, Attributes.SERVICE_UP, true);
+        return dockerInfrastructure;
+    }
 
+    public static void testDeploysTrivialApplication(TestApplication app, Location location) {
+        DockerInfrastructure dockerInfrastructure = deployAndWaitForDockerInfrastructure(app, location);
         int existingCount = dockerInfrastructure.getAttribute(DockerInfrastructure.DOCKER_CONTAINER_COUNT);
 
         TestApplication deployment = ApplicationBuilder.newManagedApp(TestApplication.class, app.getManagementContext());

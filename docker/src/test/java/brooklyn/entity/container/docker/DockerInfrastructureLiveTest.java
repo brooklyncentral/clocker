@@ -53,36 +53,7 @@ import brooklyn.util.time.Duration;
 /**
  * Brooklyn managed basic Docker infrastructure.
  */
-public class DockerInfrastructureLiveTest extends BrooklynAppLiveTestSupport  {
-
-    private static final String DEFAULT_LOCATION_SPEC = "jclouds:softlayer:ams01";
-    private static final Logger LOG = LoggerFactory.getLogger(DockerInfrastructureLiveTest.class);
-
-    private BrooklynLauncher launcher;
-    private Location testLocation;
-    private String testLocationSpec;
-
-    @BeforeClass(alwaysRun = true)
-    @Parameters({"locationSpec"})
-    public void setSpec(@Optional String locationSpec) {
-        testLocationSpec = Strings.isBlank(locationSpec) ? DEFAULT_LOCATION_SPEC : locationSpec;
-        LOG.info("Running {} in {}", getClass().getName(), testLocationSpec);
-    }
-
-    @BeforeMethod(alwaysRun = true)
-    public void setUp() throws Exception {
-        super.setUp();
-        testLocation = mgmt.getLocationRegistry().resolve(testLocationSpec);
-        launcher = BrooklynLauncher.newInstance()
-                .managementContext(mgmt)
-                .start();
-    }
-
-    @AfterMethod(alwaysRun = true)
-    public void tearDown() throws Exception {
-        if (mgmt != null) Entities.destroyAll(mgmt);
-        if (launcher != null) launcher.terminate();
-    }
+public class DockerInfrastructureLiveTest extends AbstractClockerIntegrationTest {
 
     @Test(groups="Live")
     public void testRegistersLocation() throws Exception {
