@@ -17,9 +17,12 @@ package brooklyn.networking.sdn;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Set;
 
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
+import brooklyn.event.AttributeSensor;
+import brooklyn.event.basic.Sensors;
 
 import com.google.common.reflect.TypeToken;
 
@@ -33,5 +36,8 @@ public class SdnAttributes {
 
     public static final ConfigKey<Boolean> SDN_ENABLE = ConfigKeys.newBooleanConfigKey("sdn.enable", "Enable Sofware-Defined Networking", Boolean.FALSE);
     public static final ConfigKey<Boolean> SDN_DEBUG = ConfigKeys.newBooleanConfigKey("sdn.debug", "Enable SDN debugging utility installation", Boolean.FALSE);
+
+    public static final AttributeSensor<Set<String>> ATTACHED_NETWORKS = Sensors.newSensor(new TypeToken<Set<String>>() { },
+            "sdn.networks.attached", "The set of networks that an entity is attached to");
 
 }

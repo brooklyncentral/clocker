@@ -9,6 +9,7 @@ import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +21,7 @@ import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.basic.lifecycle.ScriptHelper;
 import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.location.basic.SshMachineLocation;
+import brooklyn.networking.ManagedNetwork;
 import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.util.collections.MutableMap;
@@ -149,7 +151,7 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
         String networkId = getEntity().getApplicationId();
         String tenantId = networkId;
 
-        Map<String, Cidr> networks = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getAttribute(SdnProvider.NETWORKS);
+        Map<String, Cidr> networks = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getAttribute(SdnProvider.SUBNETS);
         if (networks.containsKey(subnetId)) return;
         Cidr subnetCidr = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getSubnet(subnetId, subnetName);
         InetAddress gatewayIp = subnetCidr.addressAtOffset(1);
@@ -182,7 +184,7 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     private int getNetworkIdForName(String networkName) {
-        String command = String.format("curl -s -u  %s:%s http://%s/networks",
+        String command = String.format("curl -s -u %s:%s http://%s/networks",
                 getEntity().getConfig(SdnVeNetwork.DOVE_CONTROLLER_USERNAME), getEntity().getConfig(SdnVeNetwork.DOVE_CONTROLLER_PASSWORD),
                 getEntity().getConfig(SdnVeNetwork.DOVE_CONTROLLER).getHostAddress());
         String output = getEntity().getAttribute(SdnVeAgent.DOCKER_HOST).execCommand(command);
@@ -192,8 +194,11 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
         for (JsonElement element : networks) {
             JsonObject network = element.getAsJsonObject();
             int networkId = network.get("network_id").getAsInt();
+            int domainId = network.get("domain_id").getAsInt();
             String name = network.get("name").getAsString();
             if (name.endsWith(networkName)) {
+                getEntity().setAttribute(SdnVeAgent.DOVE_BRIDGE_ID, networkId);
+                getEntity().setAttribute(SdnVeAgent.DOVE_DOMAIN_ID, domainId);
                 return networkId;
             }
         }
@@ -207,7 +212,6 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .execute();
 
         int networkId = createNetwork();
-        getEntity().setAttribute(SdnVeAgent.DOVE_BRIDGE_ID, networkId);
 
         Map<String, String> createBridgeData = ImmutableMap.<String, String>builder()
                 .put("networkId", Integer.toString(networkId))
@@ -250,16 +254,21 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     @Override
-    public InetAddress attachNetwork(String containerId, String subnetId, String subnetName) {
+    public InetAddress attachNetwork(final String containerId, final String subnetId, final String subnetName) {
         Tasks.setBlockingDetails("Attach to " + containerId);
         try {
-            createSubnet(subnetId, subnetName);
+            getEntity().getAttribute(SdnAgent.SDN_PROVIDER).createSubnet(subnetId, subnetName, new Callable<Void>() {
+                public Void call() {
+                    createSubnet(subnetId, subnetName);
+                    return null;
+                }
+            });
 
             InetAddress address = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getNextContainerAddress(subnetId);
 
             String networkScript = Urls.mergePaths(getRunDir(), "network.sh");
             Integer bridgeId = getEntity().getAttribute(SdnVeAgent.DOVE_BRIDGE_ID);
-            Map<String, Cidr> networks = getEntity().getAttribute(SdnVeAgent.SDN_PROVIDER).getAttribute(SdnProvider.NETWORKS);
+            Map<String, Cidr> networks = getEntity().getAttribute(SdnVeAgent.SDN_PROVIDER).getAttribute(SdnProvider.SUBNETS);
             Cidr cidr = networks.get(subnetId);
 
             /* ./setup_network_v2.sh containerid network_1 12345678 fa:16:50:00:01:e1 50.0.0.2/24 50.0.0.1 8064181 */

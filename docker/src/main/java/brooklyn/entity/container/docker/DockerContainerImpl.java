@@ -383,22 +383,29 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 Entity entity = getRunningEntity();
                 SdnAgent agent = Entities.attributeSupplierWhenReady(dockerHost, SdnAgent.SDN_AGENT).get();
                 Set<String> addresses = Sets.newHashSet();
+                Set<String> networks = Sets.newHashSet();
 
                 String networkId = entity.getApplicationId();
                 String networkName = entity.getApplication().getDisplayName();
                 InetAddress subnetAddress = agent.attachNetwork(containerId, networkId, networkName);
                 setAttribute(Attributes.SUBNET_ADDRESS, subnetAddress.getHostAddress());
                 addresses.add(subnetAddress.getHostAddress().toString());
+                networks.add(networkId);
 
                 Collection<String> extra = entity.getConfig(SdnAttributes.NETWORK_LIST);
                 if (extra != null) {
                     for (String extraId : extra) {
                         InetAddress extraAddress = agent.attachNetwork(getAttribute(CONTAINER_ID), extraId, extraId);
                         addresses.add(extraAddress.getHostAddress().toString());
+                        networks.add(extraId);
                     }
                 }
 
+                // Save attributes on container and running entity
                 setAttribute(CONTAINER_ADDRESSES, addresses);
+                setAttribute(SdnAttributes.ATTACHED_NETWORKS, networks);
+                Entities.deproxy(entity).setAttribute(CONTAINER_ADDRESSES, addresses);
+                Entities.deproxy(entity).setAttribute(SdnAttributes.ATTACHED_NETWORKS, networks);
             }
 
             // Create our wrapper location around the container

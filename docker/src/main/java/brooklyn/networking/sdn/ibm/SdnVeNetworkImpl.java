@@ -16,24 +16,32 @@
 package brooklyn.networking.sdn.ibm;
 
 import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 
 import org.jclouds.net.domain.IpPermission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.proxying.EntitySpec;
+import brooklyn.location.Location;
 import brooklyn.location.basic.SshMachineLocation;
+import brooklyn.location.docker.DockerLocation;
+import brooklyn.networking.ManagedNetwork;
+import brooklyn.networking.location.NetworkProvisioningExtension;
 import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.networking.sdn.SdnProviderImpl;
 import brooklyn.util.collections.MutableList;
+import brooklyn.util.net.Cidr;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
-public class SdnVeNetworkImpl extends SdnProviderImpl implements SdnVeNetwork {
+public class SdnVeNetworkImpl extends SdnProviderImpl implements SdnVeNetwork, NetworkProvisioningExtension {
 
     private static final Logger LOG = LoggerFactory.getLogger(SdnProvider.class);
 
@@ -46,6 +54,14 @@ public class SdnVeNetworkImpl extends SdnProviderImpl implements SdnVeNetwork {
                 .configure(SdnVeAgent.SDN_PROVIDER, this);
 
         setAttribute(SdnProvider.SDN_AGENT_SPEC, agentSpec);
+    }
+
+    @Override
+    public void start(Collection<? extends Location> locations) {
+        super.start(locations);
+
+        DockerLocation dockerLocation = Iterables.getOnlyElement(Iterables.filter(getLocations(), DockerLocation.class));
+        dockerLocation.addExtension(NetworkProvisioningExtension.class, this);
     }
 
     @Override
@@ -77,6 +93,35 @@ public class SdnVeNetworkImpl extends SdnProviderImpl implements SdnVeNetwork {
         getAgents().removeMember(agent);
         Entities.unmanage(agent);
         if (LOG.isDebugEnabled()) LOG.debug("{} removed IBM SDN VE agent {}", this, agent);
+    }
+
+    @Override
+    public Map<String, Cidr> listManagedNetworkAddressSpace() {
+        return null;
+    }
+
+    @Override
+    public Set<ManagedNetwork> getNetworks() {
+        return ImmutableSet.copyOf(getAttribute(SUBNET_ENTITIES).values());
+    }
+
+    @Override
+    public ManagedNetwork addNetwork(String subnetId, Cidr subnetCidr, Map<String, Object> flags) {
+        synchronized (addressMutex) {
+            Map<String, ManagedNetwork> networks = getAttribute(SUBNET_ENTITIES);
+            if (networks.containsKey(subnetId)) return networks.get(subnetId);
+
+            Map<String, Cidr> subnets = getAttribute(SUBNETS);
+            subnets.put(subnetId, subnetCidr);
+            setAttribute(SUBNETS, subnets);
+
+            EntitySpec<SdnVeSubnet> networkSpec = EntitySpec.create(SdnVeSubnet.class);
+            SdnVeSubnet subnet = getAttribute(SDN_NETWORKS).addMemberChild(networkSpec);
+            Entities.manage(subnet);
+
+            networks.put(subnetId, subnet);
+            setAttribute(SUBNET_ENTITIES, networks);
+        }
     }
 
 }

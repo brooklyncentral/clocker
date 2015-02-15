@@ -29,6 +29,7 @@ import brooklyn.entity.basic.BasicGroup;
 import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.Lifecycle.Transition;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.group.AbstractMembershipTrackingPolicy;
@@ -36,9 +37,11 @@ import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.event.feed.ConfigToAttributes;
 import brooklyn.location.Location;
+import brooklyn.networking.ManagedNetwork;
 import brooklyn.policy.PolicySpec;
 import brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import brooklyn.util.net.Cidr;
+import brooklyn.util.text.StringFunctions;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
@@ -65,18 +68,26 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
                 .configure(BasicGroup.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .displayName("SDN Host Agents"));
 
+        BasicGroup networks = addChild(EntitySpec.create(BasicGroup.class)
+                .configure(BasicGroup.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
+                .configure(BasicGroup.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
+                .displayName("SDN Networks"));
+
         if (Entities.isManaged(this)) {
             Entities.manage(agents);
+            Entities.manage(networks);
         }
 
         setAttribute(SDN_AGENTS, agents);
+        setAttribute(SDN_NETWORKS, networks);
 
         setAttribute(ALLOCATED_IPS, 0);
         setAttribute(ALLOCATED_ADDRESSES, Maps.<String, InetAddress>newConcurrentMap());
 
         setAttribute(ALLOCATED_NETWORKS, 0);
-        setAttribute(NETWORKS, Maps.<String, Cidr>newConcurrentMap());
-        setAttribute(NETWORK_ALLOCATIONS, Maps.<String, Integer>newConcurrentMap());
+        setAttribute(SUBNETS, Maps.<String, Cidr>newConcurrentMap());
+        setAttribute(SUBNET_ENTITIES, Maps.<String, ManagedNetwork>newConcurrentMap());
+        setAttribute(SUBNET_ADDRESS_ALLOCATIONS, Maps.<String, Integer>newConcurrentMap());
         setAttribute(CONTAINER_ADDRESSES, HashMultimap.<String, InetAddress>create());
     }
 
@@ -97,13 +108,13 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
     @Override
     public InetAddress getNextContainerAddress(String subnetId) {
         synchronized (addressMutex) {
-            Cidr cidr = getAttribute(NETWORKS).get(subnetId);
-            Map<String, Integer> allocations = getAttribute(NETWORK_ALLOCATIONS);
+            Cidr cidr = getAttribute(SUBNETS).get(subnetId);
+            Map<String, Integer> allocations = getAttribute(SUBNET_ADDRESS_ALLOCATIONS);
             Integer allocated = allocations.get(subnetId);
             if (allocated == null) allocated = 1;
             InetAddress next = cidr.addressAtOffset(allocated + 1);
             allocations.put(subnetId, allocated + 1);
-            setAttribute(NETWORK_ALLOCATIONS, allocations);
+            setAttribute(SUBNET_ADDRESS_ALLOCATIONS, allocations);
             return next;
         }
     }
@@ -111,7 +122,7 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
     @Override
     public Cidr getSubnet(String subnetId, String subnetName) {
         synchronized (addressMutex) {
-            Map<String, Cidr> networks = getAttribute(NETWORKS);
+            Map<String, Cidr> networks = getAttribute(SUBNETS);
             if (networks.containsKey(subnetId)) return networks.get(subnetId);
 
             Cidr networkCidr = getConfig(CONTAINER_NETWORK_CIDR);
@@ -124,7 +135,7 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
 
             networks.put(subnetId, subnetCidr);
             setAttribute(ALLOCATED_NETWORKS, allocated + 1);
-            setAttribute(NETWORKS, networks);
+            setAttribute(SUBNETS, networks);
 
             return subnetCidr;
         }
@@ -207,6 +218,8 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
 
     static {
         RendererHints.register(SDN_AGENTS, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(SDN_NETWORKS, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(SDN_APPLICATIONS, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(DOCKER_INFRASTRUCTURE, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
     }
 

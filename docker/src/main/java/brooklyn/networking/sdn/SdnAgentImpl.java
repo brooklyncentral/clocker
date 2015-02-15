@@ -90,6 +90,7 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
     @Override
     public InetAddress attachNetwork(String containerId, String networkId, String networkName) {
         synchronized (addressMutex) {
+            
             InetAddress address = getDriver().attachNetwork(containerId, networkId, networkName);
             LOG.info("Attached container ID {} to {}: {}", new Object[] { containerId, networkId,  address.getHostAddress() });
 
