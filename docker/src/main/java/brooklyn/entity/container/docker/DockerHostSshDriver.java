@@ -266,11 +266,13 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         }
 
         List<String> commands = Lists.newArrayList();
+        commands.add(INSTALL_CURL);
         if (osDetails.getName().equalsIgnoreCase("ubuntu")) {
             commands.add(installDockerOnUbuntu());
-        } else if (osDetails.getName().equalsIgnoreCase("centos")) {
-            commands.add(ifExecutableElse0("yum", useYum(osVersion, arch, getEpelRelease())));
+        } else if (osDetails.getName().equalsIgnoreCase("centos")) { // should work for RHEL also?
+            commands.add(ifExecutableElse1("yum", useYum(osVersion, arch, getEpelRelease())));
             commands.add(installPackage(ImmutableMap.of("yum", "docker-io"), null));
+            commands.add(sudo(format("curl https://get.docker.com/builds/Linux/x86_64/docker-%s -o /usr/bin/docker", getVersion())));
         } else {
             commands.add(installDockerFallback());
         }
@@ -288,20 +290,24 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     private String useYum(String osVersion, String arch, String epelRelease) {
         String osMajorVersion = osVersion.substring(0, osVersion.lastIndexOf("."));
         return chainGroup(
-                INSTALL_WGET,
                 alternatives(
                         sudo("rpm -qa | grep epel-release"),
                         sudo(format("rpm -Uvh http://dl.fedoraproject.org/pub/epel/%s/%s/epel-release-%s.noarch.rpm", osMajorVersion, arch, epelRelease))));
     }
 
-    private String installDockerOnUbuntu() {
-        String version = getVersion();
+    @Override
+    public String getVersion() {
+        String version = super.getVersion();
         if (version.matches("^[0-9]+\\.[0-9]+$")) {
             version += ".0"; // Append minor version
         }
+        return version;
+    }
+
+    private String installDockerOnUbuntu() {
+        String version = getVersion();
         if (log.isDebugEnabled()) log.debug("Installing Docker version {} on Ubuntu", version);
         return chainGroup(
-                INSTALL_CURL,
                 installPackage("apt-transport-https"),
                 executeCommandThenAsUserTeeOutputToFile("echo deb https://get.docker.com/ubuntu docker main", "root", "/etc/apt/sources.list.d/docker.list"),
                 sudo("apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9"),
@@ -314,7 +320,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
      * jclouds driver.
      */
     private String installDockerFallback() {
-        return chainGroup(INSTALL_CURL, "curl -s https://get.docker.com/ | " + sudo("sh"));
+        return "curl -s https://get.docker.com/ | " + sudo("sh");
     }
 
     @Override
