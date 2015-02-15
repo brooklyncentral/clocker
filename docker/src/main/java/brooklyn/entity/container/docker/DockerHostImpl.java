@@ -100,7 +100,7 @@ import com.google.common.collect.Iterables;
  */
 public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DockerHostImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DockerHost.class);
 
     private transient FunctionFeed scan;
 

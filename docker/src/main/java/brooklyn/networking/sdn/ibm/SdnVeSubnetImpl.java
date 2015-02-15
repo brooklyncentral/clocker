@@ -15,27 +15,18 @@
  */
 package brooklyn.networking.sdn.ibm;
 
-import java.util.Collection;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.entity.basic.BasicStartableImpl;
-import brooklyn.location.Location;
-import brooklyn.networking.sdn.SdnProvider;
+import brooklyn.networking.ManagedNetworkImpl;
 
-public abstract class SdnVeSubnetImpl extends BasicStartableImpl implements SdnVeSubnet {
+public abstract class SdnVeSubnetImpl extends ManagedNetworkImpl implements SdnVeSubnet {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SdnProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SdnVeSubnet.class);
 
     @Override
     public void init() {
         super.init();
-    }
-
-    @Override
-    public void start(Collection<? extends Location> locations) {
-        super.start(locations);
     }
 
 }

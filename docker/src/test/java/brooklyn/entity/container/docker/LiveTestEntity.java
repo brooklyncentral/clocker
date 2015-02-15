@@ -29,7 +29,7 @@ public interface LiveTestEntity extends TestEntity {
 
     public static class LiveTestEntityImpl extends TestEntityImpl implements LiveTestEntity {
 
-        private static final Logger LOG = LoggerFactory.getLogger(LiveTestEntityImpl.class);
+        private static final Logger LOG = LoggerFactory.getLogger(LiveTestEntity.class);
         private DockerLocation provisioningLocation;
         private MachineLocation obtainedLocation;
 

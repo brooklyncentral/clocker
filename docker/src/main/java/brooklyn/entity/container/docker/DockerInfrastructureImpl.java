@@ -77,7 +77,7 @@ import com.google.common.collect.Iterables;
 
 public class DockerInfrastructureImpl extends BasicStartableImpl implements DockerInfrastructure {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DockerInfrastructureImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DockerInfrastructure.class);
 
     @Override
     public void init() {

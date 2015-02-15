@@ -16,7 +16,6 @@
 package brooklyn.entity.container.docker;
 
 import static brooklyn.util.ssh.BashCommands.INSTALL_CURL;
-import static brooklyn.util.ssh.BashCommands.INSTALL_WGET;
 import static brooklyn.util.ssh.BashCommands.alternatives;
 import static brooklyn.util.ssh.BashCommands.chainGroup;
 import static brooklyn.util.ssh.BashCommands.fail;

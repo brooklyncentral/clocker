@@ -29,7 +29,6 @@ import brooklyn.entity.basic.BasicGroup;
 import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
-import brooklyn.entity.basic.Lifecycle.Transition;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.group.AbstractMembershipTrackingPolicy;
@@ -41,7 +40,6 @@ import brooklyn.networking.ManagedNetwork;
 import brooklyn.policy.PolicySpec;
 import brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import brooklyn.util.net.Cidr;
-import brooklyn.util.text.StringFunctions;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;

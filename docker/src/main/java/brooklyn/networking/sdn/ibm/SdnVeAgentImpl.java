@@ -18,6 +18,7 @@ package brooklyn.networking.sdn.ibm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.networking.sdn.SdnAgentImpl;
 
 /**
