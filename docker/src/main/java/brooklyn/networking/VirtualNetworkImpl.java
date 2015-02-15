@@ -26,7 +26,6 @@ import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.location.Location;
 import brooklyn.networking.location.NetworkProvisioningExtension;
-import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.text.StringFunctions;
 import brooklyn.util.text.Strings;
@@ -37,7 +36,7 @@ import com.google.common.collect.Iterables;
 
 public class VirtualNetworkImpl extends BasicStartableImpl implements VirtualNetwork {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SdnProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(VirtualNetwork.class);
 
     @Override
     public void init() {
@@ -58,7 +57,7 @@ public class VirtualNetworkImpl extends BasicStartableImpl implements VirtualNet
         if (!found.isPresent()) {
             throw new IllegalStateException("Cannot start a virtual network in any location: " + Iterables.toString(getLocations()));
         }
-        NetworkProvisioningExtension<ManagedNetwork> provisioner = found.get().getExtension(NetworkProvisioningExtension.class);
+        NetworkProvisioningExtension provisioner = found.get().getExtension(NetworkProvisioningExtension.class);
 
         String networkId = getConfig(NETWORK_NAME);
         Cidr cidr = getConfig(NETWORK_CIDR);

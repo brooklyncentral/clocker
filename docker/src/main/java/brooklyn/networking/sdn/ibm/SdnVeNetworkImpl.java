@@ -43,7 +43,7 @@ import com.google.common.collect.Iterables;
 
 public class SdnVeNetworkImpl extends SdnProviderImpl implements SdnVeNetwork, NetworkProvisioningExtension {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SdnProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SdnVeNetwork.class);
 
     @Override
     public void init() {

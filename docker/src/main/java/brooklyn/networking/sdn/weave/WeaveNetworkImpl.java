@@ -15,7 +15,6 @@
  */
 package brooklyn.networking.sdn.weave;
 
-import java.net.InetAddress;
 import java.util.Collection;
 
 import org.jclouds.net.domain.IpPermission;
@@ -23,7 +22,6 @@ import org.jclouds.net.domain.IpProtocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.docker.DockerHost;
@@ -40,7 +38,7 @@ import com.google.common.collect.ImmutableList;
 
 public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SdnProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WeaveNetwork.class);
 
     @Override
     public void init() {

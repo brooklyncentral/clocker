@@ -87,7 +87,7 @@ import com.google.common.collect.Sets;
  */
 public class DockerContainerImpl extends BasicStartableImpl implements DockerContainer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DockerContainerImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DockerContainer.class);
 
     private transient FunctionFeed status;
 

@@ -13,24 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.networking.sdn.weave;
+package brooklyn.networking;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.entity.container.docker.DockerContainer;
-import brooklyn.networking.sdn.SdnAgentImpl;
+import brooklyn.entity.basic.DynamicGroupImpl;
 
-/**
- * A single Weave router running in a {@link DockerContainer}.
- */
-public class WeaveContainerImpl extends SdnAgentImpl implements WeaveContainer {
+public class ManagedNetworkImpl extends DynamicGroupImpl implements ManagedNetwork {
 
-    private static final Logger LOG = LoggerFactory.getLogger(WeaveContainer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ManagedNetwork.class);
 
     @Override
-    public Class getDriverInterface() {
-        return WeaveContainerDriver.class;
+    public void init() {
+        LOG.info("Starting managed network id {}", getId());
+        super.init();
     }
 
 }

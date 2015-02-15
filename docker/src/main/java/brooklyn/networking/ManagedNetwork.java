@@ -16,7 +16,7 @@
 package brooklyn.networking;
 
 import brooklyn.entity.Entity;
-import brooklyn.entity.basic.BasicStartable;
+import brooklyn.entity.basic.DynamicGroup;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.Sensors;
 import brooklyn.networking.location.NetworkProvisioningExtension;
@@ -27,7 +27,7 @@ import brooklyn.networking.location.NetworkProvisioningExtension;
  * Different {@link NetworkProvisioningExtension} implementations will create their own subclasses
  * of this entity.
  */
-public interface ManagedNetwork extends BasicStartable {
+public interface ManagedNetwork extends DynamicGroup {
 
     AttributeSensor<Entity> VIRTUAL_NETWORK = Sensors.newSensor(Entity.class, "network.entity.virtual", "Virtual network Entity");
 
