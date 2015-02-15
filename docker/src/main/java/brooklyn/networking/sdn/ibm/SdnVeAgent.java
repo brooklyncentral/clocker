@@ -39,6 +39,7 @@ public interface SdnVeAgent extends SdnAgent {
             SoftwareProcess.DOWNLOAD_URL, "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/DoveAgent-${version}.x86_64.rpm.docker.works.rpm");
 
     AttributeSensor<Integer> DOVE_BRIDGE_ID = Sensors.newIntegerSensor("sdn.ibm.bridgeId", "IBM SDN VE Dove Bridge ID");
+    AttributeSensor<Integer> DOVE_DOMAIN_ID = Sensors.newIntegerSensor("sdn.ibm.domainId", "IBM SDN VE Dove Domain ID");
 
     String getDmcAddress();
 

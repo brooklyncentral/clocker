@@ -150,7 +150,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                 if (agent == null) {
                     throw new IllegalStateException("SDN agent entity on " + getOwner() + " is null");
                 }
-                Map<String, Cidr> networks = agent.getAttribute(SdnAgent.SDN_PROVIDER).getAttribute(SdnProvider.NETWORKS);
+                Map<String, Cidr> networks = agent.getAttribute(SdnAgent.SDN_PROVIDER).getAttribute(SdnProvider.SUBNETS);
                 Entities.deproxy(entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, networks.get(entity.getApplicationId()));
             } else {
                 Entities.deproxy(entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL);
@@ -242,7 +242,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             // record SDN application network details
             if (getOwner().getConfig(SdnAttributes.SDN_ENABLE)) {
                 SdnAgent agent = getOwner().getAttribute(SdnAgent.SDN_AGENT);
-                Map<String, Cidr> networks = agent.getAttribute(SdnAgent.SDN_PROVIDER).getAttribute(SdnProvider.NETWORKS);
+                Map<String, Cidr> networks = agent.getAttribute(SdnAgent.SDN_PROVIDER).getAttribute(SdnProvider.SUBNETS);
                 Cidr applicationCidr = networks.get(entity.getApplicationId());
                 Entities.deproxy(entity).setAttribute(SdnProvider.APPLICATION_CIDR, applicationCidr);
                 Entities.deproxy(dockerContainer).setAttribute(SdnProvider.APPLICATION_CIDR, applicationCidr);

@@ -15,8 +15,7 @@
  */
 package brooklyn.networking;
 
-import java.net.InetAddress;
-import java.util.Collection;
+import java.util.Map;
 
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.BasicStartable;
@@ -26,6 +25,7 @@ import brooklyn.event.basic.Sensors;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
 
+import com.google.common.collect.Maps;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.ImplementedBy;
 
@@ -35,25 +35,22 @@ import com.google.inject.ImplementedBy;
 @ImplementedBy(VirtualNetworkImpl.class)
 public interface VirtualNetwork extends BasicStartable {
 
-    @SetFromFlag("cidr")
-    ConfigKey<Cidr> CIDR = ConfigKeys.newConfigKey(Cidr.class, "network.cidr", "CIDR for the network segment");
- 
-    @SetFromFlag("gateway")
-    ConfigKey<InetAddress> GATEWAY = ConfigKeys.newConfigKey(InetAddress.class, "network.gateway", "Default gateway for the network segment");
- 
-    @SetFromFlag("excluded")
-    ConfigKey<Collection<InetAddress>> EXCLUDED_ADDRESSES = ConfigKeys.newConfigKey(
-            new TypeToken<Collection<InetAddress>>() { }, "network.addresses.excluded", "Collection of excluded IP addresses");
- 
-    @SetFromFlag("securityGroup")
-    ConfigKey<String> SECURITY_GROUP = ConfigKeys.newStringConfigKey("network.securityGroup", "Security group to apply to the network");
- 
-    @SetFromFlag("firewall")
-    ConfigKey<Boolean> ENABLE_FIREWALL = ConfigKeys.newBooleanConfigKey("network.firewall.enable", "Enable IP firewalling", Boolean.FALSE);
- 
-    @SetFromFlag("routing")
-    ConfigKey<Boolean> ENABLE_ROUTING = ConfigKeys.newBooleanConfigKey("network.routing.enable", "Enable external routing", Boolean.FALSE);
+    @SetFromFlag("networkId")
+    ConfigKey<String> NETWORK_NAME = ConfigKeys.newStringConfigKey("network.id", "Name of the network segment");
 
+    @SetFromFlag("cidr")
+    ConfigKey<Cidr> NETWORK_CIDR = ConfigKeys.newConfigKey(Cidr.class, "network.cidr", "CIDR for the network segment");
+
+    @SetFromFlag("flags")
+    ConfigKey<Map<String, Object>> NETWORK_PROVISIONING_FLAGS = ConfigKeys.newConfigKey(
+            new TypeToken<Map<String, Object>>() { },
+            "network.flags", "Extra configuration properties to set when provisioning the managed network segment",
+            Maps.<String, Object>newHashMap());
+ 
     AttributeSensor<Integer> ALLOCATED_ADDRESSES = Sensors.newIntegerSensor("network.allocated", "Allocated IP addresses");
+
+    AttributeSensor<ManagedNetwork> MANAGED_NETWORK = Sensors.newSensor(ManagedNetwork.class, "network.entity.managed", "The managed network entity this represents");
+
+    ManagedNetwork getManagedNetwork();
 
 }

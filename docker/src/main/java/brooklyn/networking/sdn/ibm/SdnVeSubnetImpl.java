@@ -13,23 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.networking.location;
+package brooklyn.networking.sdn.ibm;
 
-import java.util.Map;
-import java.util.Set;
+import java.util.Collection;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.location.Location;
-import brooklyn.networking.ManagedNetwork;
-import brooklyn.util.net.Cidr;
+import brooklyn.networking.sdn.SdnProvider;
 
-/**
- * A {@link Location} extension that can provision new networks.
- */
-public interface NetworkProvisioningExtension {
+public abstract class SdnVeSubnetImpl extends BasicStartableImpl implements SdnVeSubnet {
 
-    Map<String, Cidr> listManagedNetworkAddressSpace();
+    private static final Logger LOG = LoggerFactory.getLogger(SdnProvider.class);
 
-    Set<ManagedNetwork> getNetworks();
+    @Override
+    public void init() {
+        super.init();
+    }
 
-    ManagedNetwork addNetwork(String id, Cidr addresses, Map<String, Object> flags);
+    @Override
+    public void start(Collection<? extends Location> locations) {
+        super.start(locations);
+    }
+
 }
