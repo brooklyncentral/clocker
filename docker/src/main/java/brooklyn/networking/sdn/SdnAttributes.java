@@ -19,11 +19,17 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import brooklyn.config.ConfigKey;
+import brooklyn.entity.Entity;
 import brooklyn.entity.basic.ConfigKeys;
+import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.Sensors;
 
+import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.reflect.TypeToken;
 
 /**
@@ -39,5 +45,25 @@ public class SdnAttributes {
 
     public static final AttributeSensor<Set<String>> ATTACHED_NETWORKS = Sensors.newSensor(new TypeToken<Set<String>>() { },
             "sdn.networks.attached", "The set of networks that an entity is attached to");
+
+    public static final Predicate<Entity> containerAttached(String networkId) {
+        Preconditions.checkNotNull(networkId, "networkId");
+        return new ContainerAttachedPredicate(networkId);
+    }
+
+    public static class ContainerAttachedPredicate implements Predicate<Entity> {
+
+        private final String id;
+
+        public ContainerAttachedPredicate(String id) {
+            this.id = Preconditions.checkNotNull(id, "id");
+        }
+
+        @Override
+        public boolean apply(@Nullable Entity input) {
+            return input instanceof DockerContainer &&
+                    input.getAttribute(SdnAttributes.ATTACHED_NETWORKS).contains(id);
+        }
+    };
 
 }

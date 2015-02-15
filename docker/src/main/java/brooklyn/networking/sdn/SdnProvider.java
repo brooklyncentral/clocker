@@ -29,12 +29,12 @@ import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.group.DynamicCluster;
-import brooklyn.entity.group.DynamicMultiGroup;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
-import brooklyn.networking.ManagedNetwork;
+import brooklyn.networking.VirtualNetwork;
+import brooklyn.networking.location.NetworkProvisioningExtension;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
 
@@ -46,7 +46,7 @@ import com.google.inject.ImplementedBy;
  * An SDN provider implementation.
  */
 @ImplementedBy(SdnProviderImpl.class)
-public interface SdnProvider extends BasicStartable {
+public interface SdnProvider extends BasicStartable, NetworkProvisioningExtension {
 
     ConfigKey<Cidr> AGENT_CIDR = ConfigKeys.newConfigKey(Cidr.class, "sdn.agent.cidr", "CIDR for agent address allocation");
     AttributeSensor<Cidr> APPLICATION_CIDR = Sensors.newSensor(Cidr.class, "sdn.application.cidr", "CIDR for application running in container");
@@ -58,8 +58,8 @@ public interface SdnProvider extends BasicStartable {
 
     AttributeSensor<Map<String, Cidr>> SUBNETS = Sensors.newSensor(
             new TypeToken<Map<String, Cidr>>() { }, "sdn.networks.addresses", "Map of network subnets that have been created");
-    AttributeSensor<Map<String, ManagedNetwork>> SUBNET_ENTITIES = Sensors.newSensor(
-            new TypeToken<Map<String, ManagedNetwork>>() { }, "sdn.networks.entities", "Map of managed network entities that have been created");
+    AttributeSensor<Map<String, VirtualNetwork>> SUBNET_ENTITIES = Sensors.newSensor(
+            new TypeToken<Map<String, VirtualNetwork>>() { }, "sdn.networks.entities", "Map of managed network entities that have been created by this SDN");
     AttributeSensor<Map<String, Integer>> SUBNET_ADDRESS_ALLOCATIONS = Sensors.newSensor(
             new TypeToken<Map<String, Integer>>() { }, "sdn.networks.addresses.allocated", "Map of allocated address count on network subnets");
 
@@ -79,8 +79,8 @@ public interface SdnProvider extends BasicStartable {
     @SetFromFlag("dockerInfrastructure")
     AttributeSensorAndConfigKey<Entity, Entity> DOCKER_INFRASTRUCTURE = DockerAttributes.DOCKER_INFRASTRUCTURE;
 
-    AttributeSensor<Group> SDN_NETWORKS = Sensors.newSensor(Group.class, "sdn.networks.group", "Docker host cluster");
-    AttributeSensor<DynamicMultiGroup> SDN_APPLICATIONS = Sensors.newSensor(DynamicMultiGroup.class, "docker.buckets", "Docker applications");
+    AttributeSensor<Group> SDN_NETWORKS = Sensors.newSensor(Group.class, "sdn.networks.managed", "Collection of virtual network entites managed by this SDN");
+    AttributeSensor<Group> SDN_APPLICATIONS = Sensors.newSensor(Group.class, "sdn.networks.applications", "Groupings of application containers attached to each managed network");
 
     Collection<IpPermission> getIpPermissions();
 
@@ -92,7 +92,9 @@ public interface SdnProvider extends BasicStartable {
 
     InetAddress getNextAgentAddress(String agentId);
 
-    Cidr getSubnet(String subnetId, String subnetName);
+    Cidr getNextSubnetCidr();
+
+    Cidr getSubnetCidr(String subnetId);
 
     void addHost(DockerHost host);
 

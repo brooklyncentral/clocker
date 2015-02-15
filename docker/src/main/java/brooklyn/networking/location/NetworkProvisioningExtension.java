@@ -16,10 +16,9 @@
 package brooklyn.networking.location;
 
 import java.util.Map;
-import java.util.Set;
 
 import brooklyn.location.Location;
-import brooklyn.networking.ManagedNetwork;
+import brooklyn.networking.VirtualNetwork;
 import brooklyn.util.net.Cidr;
 
 /**
@@ -29,7 +28,6 @@ public interface NetworkProvisioningExtension {
 
     Map<String, Cidr> listManagedNetworkAddressSpace();
 
-    Set<ManagedNetwork> getNetworks();
+    void provisionNetwork(VirtualNetwork network);
 
-    ManagedNetwork addNetwork(String id, Cidr addresses, Map<String, Object> flags);
 }
