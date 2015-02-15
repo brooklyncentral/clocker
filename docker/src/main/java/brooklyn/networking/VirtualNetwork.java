@@ -36,7 +36,10 @@ import com.google.inject.ImplementedBy;
 public interface VirtualNetwork extends BasicStartable {
 
     @SetFromFlag("networkId")
-    ConfigKey<String> NETWORK_NAME = ConfigKeys.newStringConfigKey("network.id", "Name of the network segment");
+    ConfigKey<String> NETWORK_ID = ConfigKeys.newStringConfigKey("network.id", "ID of the network segment");
+
+    @SetFromFlag("networkName")
+    ConfigKey<String> NETWORK_NAME = ConfigKeys.newStringConfigKey("network.name", "Name of the network segment");
 
     @SetFromFlag("cidr")
     ConfigKey<Cidr> NETWORK_CIDR = ConfigKeys.newConfigKey(Cidr.class, "network.cidr", "CIDR for the network segment");
@@ -48,9 +51,5 @@ public interface VirtualNetwork extends BasicStartable {
             Maps.<String, Object>newHashMap());
  
     AttributeSensor<Integer> ALLOCATED_ADDRESSES = Sensors.newIntegerSensor("network.allocated", "Allocated IP addresses");
-
-    AttributeSensor<ManagedNetwork> MANAGED_NETWORK = Sensors.newSensor(ManagedNetwork.class, "network.entity.managed", "The managed network entity this represents");
-
-    ManagedNetwork getManagedNetwork();
 
 }

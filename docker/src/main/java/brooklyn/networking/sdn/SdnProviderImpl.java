@@ -28,7 +28,9 @@ import brooklyn.entity.Group;
 import brooklyn.entity.basic.BasicGroup;
 import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.DelegateEntity;
+import brooklyn.entity.basic.DynamicGroup;
 import brooklyn.entity.basic.Entities;
+import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.group.AbstractMembershipTrackingPolicy;
@@ -36,12 +38,15 @@ import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.event.feed.ConfigToAttributes;
 import brooklyn.location.Location;
-import brooklyn.networking.ManagedNetwork;
+import brooklyn.networking.VirtualNetwork;
 import brooklyn.policy.PolicySpec;
 import brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import brooklyn.util.net.Cidr;
+import brooklyn.util.text.Strings;
 
+import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
 public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnProvider {
@@ -69,22 +74,29 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
         BasicGroup networks = addChild(EntitySpec.create(BasicGroup.class)
                 .configure(BasicGroup.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .configure(BasicGroup.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
-                .displayName("SDN Networks"));
+                .displayName("SDN Managed Networks"));
+
+        BasicGroup applications = addChild(EntitySpec.create(BasicGroup.class)
+                .configure(BasicGroup.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
+                .configure(BasicGroup.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
+                .displayName("SDN Networked Applications"));
 
         if (Entities.isManaged(this)) {
             Entities.manage(agents);
             Entities.manage(networks);
+            Entities.manage(applications);
         }
 
         setAttribute(SDN_AGENTS, agents);
         setAttribute(SDN_NETWORKS, networks);
+        setAttribute(SDN_APPLICATIONS, applications);
 
         setAttribute(ALLOCATED_IPS, 0);
         setAttribute(ALLOCATED_ADDRESSES, Maps.<String, InetAddress>newConcurrentMap());
 
         setAttribute(ALLOCATED_NETWORKS, 0);
         setAttribute(SUBNETS, Maps.<String, Cidr>newConcurrentMap());
-        setAttribute(SUBNET_ENTITIES, Maps.<String, ManagedNetwork>newConcurrentMap());
+        setAttribute(SUBNET_ENTITIES, Maps.<String, VirtualNetwork>newConcurrentMap());
         setAttribute(SUBNET_ADDRESS_ALLOCATIONS, Maps.<String, Integer>newConcurrentMap());
         setAttribute(CONTAINER_ADDRESSES, HashMultimap.<String, InetAddress>create());
     }
@@ -118,21 +130,28 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
     }
 
     @Override
-    public Cidr getSubnet(String subnetId, String subnetName) {
+    public Cidr getNextSubnetCidr() {
+        synchronized (addressMutex) {
+            Cidr networkCidr = getConfig(CONTAINER_NETWORK_CIDR);
+            Integer networkSize = getConfig(CONTAINER_NETWORK_SIZE);
+            Integer allocated = getAttribute(ALLOCATED_NETWORKS);
+            InetAddress baseAddress = networkCidr.addressAtOffset(allocated * (1 << (32 - networkSize)));
+            Cidr subnetCidr = new Cidr(baseAddress.getHostAddress() + "/" + networkSize);
+            LOG.debug("Allocated {} from {} for subnet #{}", new Object[] { subnetCidr, networkCidr, allocated });
+            setAttribute(ALLOCATED_NETWORKS, allocated + 1);
+            return subnetCidr;
+        }
+    }
+
+    @Override
+    public Cidr getSubnetCidr(String subnetId) {
         synchronized (addressMutex) {
             Map<String, Cidr> networks = getAttribute(SUBNETS);
             if (networks.containsKey(subnetId)) return networks.get(subnetId);
 
-            Cidr networkCidr = getConfig(CONTAINER_NETWORK_CIDR);
-            Integer networkSize = getConfig(CONTAINER_NETWORK_SIZE);
-            Integer allocated = getAttribute(ALLOCATED_NETWORKS);
-
-            InetAddress baseAddress = networkCidr.addressAtOffset(allocated * (1 << (32 - networkSize)));
-            Cidr subnetCidr = new Cidr(baseAddress.getHostAddress() + "/" + networkSize);
-            LOG.debug("Allocated {} as {} from {} for subnet #{}", new Object[] { subnetCidr, subnetId, networkCidr, allocated });
+            Cidr subnetCidr = getNextSubnetCidr();
 
             networks.put(subnetId, subnetCidr);
-            setAttribute(ALLOCATED_NETWORKS, allocated + 1);
             setAttribute(SUBNETS, networks);
 
             return subnetCidr;
@@ -211,6 +230,33 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
             } else if (!exists) {
                 onHostRemoved(item);
             }
+        }
+    }
+
+    @Override
+    public Map<String, Cidr> listManagedNetworkAddressSpace() {
+        return ImmutableMap.copyOf(getAttribute(SUBNETS));
+    }
+
+    @Override
+    public void provisionNetwork(VirtualNetwork network) {
+        synchronized (addressMutex) {
+            String networkId = network.getConfig(VirtualNetwork.NETWORK_ID);
+            if (Strings.isEmpty(networkId)) networkId = network.getId();
+            String networkName = network.getConfig(VirtualNetwork.NETWORK_NAME);
+            if (Strings.isEmpty(networkName)) networkName = networkId;
+            Cidr subnetCidr = network.getConfig(VirtualNetwork.NETWORK_CIDR);
+
+            Map<String, Cidr> subnets = getAttribute(SUBNETS);
+            subnets.put(networkId, subnetCidr);
+            setAttribute(SUBNETS, subnets);
+
+            EntitySpec<DynamicGroup> networkSpec = EntitySpec.create(DynamicGroup.class)
+                    .configure(DynamicGroup.ENTITY_FILTER, Predicates.and(DockerUtils.sameInfrastructure(this), SdnAttributes.containerAttached(networkId)));
+            DynamicGroup subnet = getAttribute(SDN_APPLICATIONS).addMemberChild(networkSpec);
+            Entities.manage(subnet);
+
+            getAttribute(SDN_NETWORKS).addMember(network);
         }
     }
 

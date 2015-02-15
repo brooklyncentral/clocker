@@ -110,7 +110,7 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
     }
 
     @Override
-    public InetAddress attachNetwork(String containerId, String subnetId, String subnetName) {
+    public InetAddress attachNetwork(String containerId, String subnetId) {
         Tasks.setBlockingDetails("Attach Weave to " + containerId);
         try {
             Cidr cidr = getEntity().getConfig(WeaveNetwork.AGENT_CIDR);
@@ -121,6 +121,11 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
         } finally {
             Tasks.resetBlockingDetails();
         }
+    }
+
+    @Override
+    public Cidr createSubnet(String subnetId, String subnetName) {
+        return null; // FIXME
     }
 
 }

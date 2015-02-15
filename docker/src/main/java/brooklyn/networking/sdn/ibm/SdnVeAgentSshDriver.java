@@ -9,7 +9,6 @@ import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -146,14 +145,9 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
         return doveNetworkId;
     }
 
-    private void createSubnet(String subnetId, String subnetName) {
+    private void createSubnet(String subnetId, String subnetName, InetAddress gatewayIp, Cidr subnetCidr) {
         String networkId = getEntity().getApplicationId();
         String tenantId = networkId;
-
-        Map<String, Cidr> networks = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getAttribute(SdnProvider.SUBNETS);
-        if (networks.containsKey(subnetId)) return;
-        Cidr subnetCidr = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getSubnet(subnetId, subnetName);
-        InetAddress gatewayIp = subnetCidr.addressAtOffset(1);
 
         Map<String, String> createSubnetData = ImmutableMap.<String, String>builder()
                 .put("subnetId", subnetId)
@@ -253,16 +247,24 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     @Override
-    public InetAddress attachNetwork(final String containerId, final String subnetId, final String subnetName) {
+    public Cidr createSubnet(String subnetId, String subnetName) {
+        Tasks.setBlockingDetails("Creating " + subnetId);
+        try {
+            Cidr subnetCidr = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getNextSubnetCidr();
+            InetAddress gatewayIp = subnetCidr.addressAtOffset(1);
+
+            createSubnet(subnetId, subnetName, gatewayIp, subnetCidr);
+
+            return subnetCidr;
+        } finally {
+            Tasks.resetBlockingDetails();
+        }
+    }
+
+    @Override
+    public InetAddress attachNetwork(final String containerId, final String subnetId) {
         Tasks.setBlockingDetails("Attach to " + containerId);
         try {
-            getEntity().getAttribute(SdnAgent.SDN_PROVIDER).createSubnet(subnetId, subnetName, new Callable<Void>() {
-                public Void call() {
-                    createSubnet(subnetId, subnetName);
-                    return null;
-                }
-            });
-
             InetAddress address = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getNextContainerAddress(subnetId);
 
             String networkScript = Urls.mergePaths(getRunDir(), "network.sh");
@@ -281,7 +283,7 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
                     bridgeId, // VNID to be used
                     subnetId); // Interface name
             getEntity().getConfig(SdnVeAgent.DOCKER_HOST).execCommand(sudo(command));
-            
+
             return address;
         } finally {
             Tasks.resetBlockingDetails();

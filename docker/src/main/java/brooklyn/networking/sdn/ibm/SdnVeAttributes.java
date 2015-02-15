@@ -13,21 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.networking;
+package brooklyn.networking.sdn.ibm;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.net.InetAddress;
 
-import brooklyn.entity.basic.DynamicGroupImpl;
+import brooklyn.config.ConfigKey;
+import brooklyn.entity.basic.ConfigKeys;
 
-public class ManagedNetworkImpl extends DynamicGroupImpl implements ManagedNetwork {
+/**
+ * IBM SDN VE configuration and attributes.
+ */
+public class SdnVeAttributes {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ManagedNetwork.class);
+    public static final ConfigKey<InetAddress> GATEWAY = ConfigKeys.newConfigKey(InetAddress.class, "sdn.ibm.network.gateway", "Default gateway for the network segment");
 
-    @Override
-    public void init() {
-        LOG.info("Starting managed network id {}", getId());
-        super.init();
-    }
+    public static final ConfigKey<Boolean> ENABLE_ROUTING = ConfigKeys.newBooleanConfigKey("sdn.ibm.network.routing.enable", "Enable external routing", Boolean.FALSE);
 
 }

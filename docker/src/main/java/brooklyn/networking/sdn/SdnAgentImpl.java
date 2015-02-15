@@ -16,6 +16,7 @@
 package brooklyn.networking.sdn;
 
 import java.net.InetAddress;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +26,10 @@ import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.SoftwareProcessImpl;
 import brooklyn.entity.container.docker.DockerHost;
+import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.event.feed.ConfigToAttributes;
+import brooklyn.networking.VirtualNetwork;
+import brooklyn.util.net.Cidr;
 
 import com.google.common.collect.Multimap;
 
@@ -90,8 +94,17 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
     @Override
     public InetAddress attachNetwork(String containerId, String networkId, String networkName) {
         synchronized (addressMutex) {
-            
-            InetAddress address = getDriver().attachNetwork(containerId, networkId, networkName);
+            Map<String, Cidr> networks = getAttribute(SDN_PROVIDER).getAttribute(SdnProvider.SUBNETS);
+            if (!networks.containsKey(networkId)) {
+                Cidr subnetCidr = getAttribute(SdnAgent.SDN_PROVIDER).getNextSubnetCidr();
+                EntitySpec<VirtualNetwork> neyworkSpec = EntitySpec.create(VirtualNetwork.class)
+                        .configure(VirtualNetwork.NETWORK_ID, networkId)
+                        .configure(VirtualNetwork.NETWORK_NAME, networkName)
+                        .configure(VirtualNetwork.NETWORK_CIDR, subnetCidr);
+                // Start and then add this virtual network as a child of SDN_NETWORKS
+            }
+
+            InetAddress address = getDriver().attachNetwork(containerId, networkId);
             LOG.info("Attached container ID {} to {}: {}", new Object[] { containerId, networkId,  address.getHostAddress() });
 
             Multimap<String, InetAddress> addresses = getAttribute(SDN_PROVIDER).getAttribute(SdnProvider.CONTAINER_ADDRESSES);

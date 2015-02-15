@@ -55,7 +55,7 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
 
         setAttribute(SdnProvider.SDN_AGENT_SPEC, agentSpec);
 
-        Cidr weaveCidr = getSubnet(getApplicationId(), "Weave");
+        Cidr weaveCidr = getNextSubnetCidr();
         setConfig(AGENT_CIDR,  weaveCidr);
     }
 

@@ -13,20 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.networking.sdn.ibm;
+package brooklyn.networking.sdn.weave;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import brooklyn.config.ConfigKey;
+import brooklyn.entity.basic.ConfigKeys;
 
-import brooklyn.networking.ManagedNetworkImpl;
+/**
+ * Weave networking configuration and attributes.
+ */
+public class WeaveAttributes {
 
-public abstract class SdnVeSubnetImpl extends ManagedNetworkImpl implements SdnVeSubnet {
-
-    private static final Logger LOG = LoggerFactory.getLogger(SdnVeSubnet.class);
-
-    @Override
-    public void init() {
-        super.init();
-    }
+    public static final ConfigKey<Boolean> ENABLE_FIREWALL = ConfigKeys.newBooleanConfigKey("sdn.network.firewall.enable", "Enable IP firewalling", Boolean.FALSE);
 
 }

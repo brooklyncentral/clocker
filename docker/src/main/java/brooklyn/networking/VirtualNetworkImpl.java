@@ -16,19 +16,16 @@
 package brooklyn.networking;
 
 import java.util.Collection;
-import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import brooklyn.config.render.RendererHints;
 import brooklyn.entity.basic.BasicStartableImpl;
-import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.location.Location;
 import brooklyn.networking.location.NetworkProvisioningExtension;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.text.StringFunctions;
-import brooklyn.util.text.Strings;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
@@ -58,21 +55,10 @@ public class VirtualNetworkImpl extends BasicStartableImpl implements VirtualNet
             throw new IllegalStateException("Cannot start a virtual network in any location: " + Iterables.toString(getLocations()));
         }
         NetworkProvisioningExtension provisioner = found.get().getExtension(NetworkProvisioningExtension.class);
-
-        String networkId = getConfig(NETWORK_NAME);
-        Cidr cidr = getConfig(NETWORK_CIDR);
-        Map<String, Object> flags = getConfig(NETWORK_PROVISIONING_FLAGS);
-        if (Strings.isBlank(networkId)) networkId = getId(); // Use our Entity ID for unique name
-
-        ManagedNetwork network = provisioner.addNetwork(networkId, cidr, flags);
-        setAttribute(MANAGED_NETWORK, network);
+        provisioner.provisionNetwork(this);
     }
 
-    @Override
-    public ManagedNetwork getManagedNetwork() { return getAttribute(MANAGED_NETWORK); }
-
     static {
-        RendererHints.register(MANAGED_NETWORK, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(Cidr.class, RendererHints.displayValue(StringFunctions.toStringFunction()));
     }
 }
