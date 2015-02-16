@@ -21,7 +21,7 @@ services:
 - type: brooklyn.networking.VirtualNetwork
   networkId: public
   brooklyn.config:
-    sdn.ibm.public.enable
+    sdn.ibm.public.enable: true
     sdn.ibm.public.cidr: 50.23.74.156/30
 - type: brooklyn.networking.VirtualNetwork
   networkId: riak
@@ -50,7 +50,7 @@ services:
               $brooklyn:component("cluster").attributeWhenReady("riak.cluster.nodeList")
     controlleddynamicwebappcluster.controllerSpec:
       $brooklyn:entitySpec:
-        type: brooklyn.entity.proxy.Nginx
+        type: brooklyn.entity.proxy.nginx.NginxController
         brooklyn.config:
           network.list:
           - webapp

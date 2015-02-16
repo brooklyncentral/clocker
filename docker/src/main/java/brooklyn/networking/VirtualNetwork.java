@@ -20,6 +20,7 @@ import java.util.Map;
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.BasicStartable;
 import brooklyn.entity.basic.ConfigKeys;
+import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
@@ -28,7 +29,6 @@ import brooklyn.util.net.Cidr;
 
 import com.google.common.collect.Maps;
 import com.google.common.reflect.TypeToken;
-import com.google.inject.ImplementedBy;
 
 /**
  * A virtual network segment.
