@@ -26,6 +26,7 @@ import brooklyn.location.Location;
 import brooklyn.networking.location.NetworkProvisioningExtension;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.text.StringFunctions;
+import brooklyn.util.text.Strings;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
@@ -39,6 +40,14 @@ public class VirtualNetworkImpl extends BasicStartableImpl implements VirtualNet
     public void init() {
         LOG.info("Starting virtual network segment id {}", getId());
         super.init();
+
+        String networkId = getConfig(NETWORK_ID);
+        if (Strings.isEmpty(networkId)) networkId = getId();
+        String networkName = getConfig(NETWORK_NAME);
+        if (Strings.isEmpty(networkName)) networkName = networkId;
+
+        setAttribute(NETWORK_ID, networkId);
+        setAttribute(NETWORK_NAME, networkName);
     }
 
     @Override

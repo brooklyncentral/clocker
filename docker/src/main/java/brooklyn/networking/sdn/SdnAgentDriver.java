@@ -10,7 +10,7 @@ import brooklyn.util.net.Cidr;
 
 public interface SdnAgentDriver extends SoftwareProcessDriver {
 
-    Cidr createSubnet(String subnetId, String subnetName);
+    void createSubnet(String subnetId, String subnetName, Cidr subnetCidr);
 
     InetAddress attachNetwork(String containerId, String subnetId);
 

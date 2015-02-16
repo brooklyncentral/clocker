@@ -94,8 +94,6 @@ public interface SdnProvider extends BasicStartable, NetworkProvisioningExtensio
 
     Cidr getNextSubnetCidr();
 
-    Cidr getSubnetCidr(String subnetId);
-
     void addHost(DockerHost host);
 
     void removeHost(DockerHost host);

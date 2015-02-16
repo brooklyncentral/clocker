@@ -19,6 +19,7 @@ import java.net.InetAddress;
 
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
+import brooklyn.util.net.Cidr;
 
 /**
  * IBM SDN VE configuration and attributes.
@@ -27,6 +28,8 @@ public class SdnVeAttributes {
 
     public static final ConfigKey<InetAddress> GATEWAY = ConfigKeys.newConfigKey(InetAddress.class, "sdn.ibm.network.gateway", "Default gateway for the network segment");
 
-    public static final ConfigKey<Boolean> ENABLE_ROUTING = ConfigKeys.newBooleanConfigKey("sdn.ibm.network.routing.enable", "Enable external routing", Boolean.FALSE);
+    public static final ConfigKey<Boolean> ENABLE_PUBLIC_ACCESS = ConfigKeys.newBooleanConfigKey("sdn.ibm.public.enable", "Enable external routing for public access", Boolean.FALSE);
+
+    public static final ConfigKey<Cidr> PUBLIC_CIDR = ConfigKeys.newConfigKey(Cidr.class, "sdn.ibm.public.cidr", "Enable external routing");
 
 }
