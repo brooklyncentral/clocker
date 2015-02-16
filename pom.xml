@@ -200,6 +200,24 @@
 
         <plugins>
             <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>2.6.1</version>
+                <configuration>
+                    <filesets>
+                        <fileset>
+                            <directory>.</directory>
+                            <includes>
+                                <include>brooklyn*.log</include>
+                                <include>brooklyn*.log.*</include>
+                                <include>stacktrace.log</include>
+                                <include>test-output</include>
+                                <include>prodDb.*</include>
+                            </includes>
+                        </fileset>
+                    </filesets>
+                </configuration>
+            </plugin>
+            <plugin>
                 <artifactId>maven-eclipse-plugin</artifactId>
                 <configuration>
                     <additionalProjectnatures>
