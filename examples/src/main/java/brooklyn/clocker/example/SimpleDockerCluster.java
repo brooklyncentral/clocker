@@ -22,12 +22,12 @@ import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.container.DockerAttributes;
-import brooklyn.entity.container.docker.application.DockerfileApplication;
+import brooklyn.entity.container.docker.application.VanillaDockerApplication;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.proxying.EntitySpec;
 
 /**
- * Brooklyn managed {@link DockerfileApplication} cluster
+ * Brooklyn managed {@link VanillaDockerApplication} cluster
  */
 @Catalog(name="Application Cluster",
         description="Simple cluster of applications defined by a Dockerfile",
@@ -45,8 +45,8 @@ public class SimpleDockerCluster extends AbstractApplication {
         addChild(EntitySpec.create(DynamicCluster.class)
                 .displayName("Docker Application Cluster")
                 .configure(DynamicCluster.INITIAL_SIZE, getConfig(INITIAL_SIZE))
-                .configure(DynamicCluster.MEMBER_SPEC, EntitySpec.create(DockerfileApplication.class)
-                        .configure(DockerfileApplication.DOCKERFILE_URL, Entities.getRequiredUrlConfig(this, DOCKERFILE_URL))));
+                .configure(DynamicCluster.MEMBER_SPEC, EntitySpec.create(VanillaDockerApplication.class)
+                        .configure(VanillaDockerApplication.DOCKERFILE_URL, Entities.getRequiredUrlConfig(this, DOCKERFILE_URL))));
     }
 
 }
