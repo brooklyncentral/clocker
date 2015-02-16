@@ -206,15 +206,16 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         String arch = osDetails.getArch();
         if (!osDetails.is64bit()) { throw new IllegalStateException("Docker supports only 64bit OS"); }
         if (osDetails.isLinux()) {
-            if (osDetails.getName().equalsIgnoreCase("ubuntu") && osVersion.equals("12.04")) {
-                List<String> commands = ImmutableList.<String> builder().add(installPackage("linux-image-generic-lts-raring"))
+            if ("ubuntu".equalsIgnoreCase(osDetails.getName()) && "12.04".equalsIgnoreCase(osVersion)) {
+                List<String> commands = ImmutableList.<String> builder()
+                        .add(installPackage("linux-image-generic-lts-raring"))
                         .add(installPackage("linux-headers-generic-lts-raring"))
                         .add(sudo("reboot"))
                         .build();
                 executeKernelInstallation(commands);
             }
-            if (osDetails.getName().equalsIgnoreCase("centos")) {
-                List<String> commands = ImmutableList.<String> builder()
+            if ("centos".equalsIgnoreCase(osDetails.getName())) {
+                List<String> commands = ImmutableList.<String>builder()
                         .add(sudo("yum -y --nogpgcheck upgrade kernel"))
                         .add(sudo("reboot"))
                         .build();
@@ -267,9 +268,9 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
         List<String> commands = Lists.newArrayList();
         commands.add(INSTALL_CURL);
-        if (osDetails.getName().equalsIgnoreCase("ubuntu")) {
+        if ("ubuntu".equalsIgnoreCase(osDetails.getName())) {
             commands.add(installDockerOnUbuntu());
-        } else if (osDetails.getName().equalsIgnoreCase("centos")) { // should work for RHEL also?
+        } else if ("centos".equalsIgnoreCase(osDetails.getName())) { // should work for RHEL also?
             commands.add(ifExecutableElse1("yum", useYum(osVersion, arch, getEpelRelease())));
             commands.add(installPackage(ImmutableMap.of("yum", "docker-io"), null));
             commands.add(sudo(format("curl https://get.docker.com/builds/Linux/x86_64/docker-%s -o /usr/bin/docker", getVersion())));
