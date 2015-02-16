@@ -49,16 +49,19 @@ public class DockerAttributes {
             "docker.dockerfile.name", "Name for the image created by the Dockerfile being used");
 
     public static final AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_ID = ConfigKeys.newStringSensorAndConfigKey(
-            "docker.imageId", "The ID of a Docker image to use for a container");
+            "docker.image.id", "The ID of a Docker image to use for a container");
 
     public static final AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_NAME = ConfigKeys.newStringSensorAndConfigKey(
-            "docker.imageName", "The name of the Docker image use used by a container");
+            "docker.image.name", "The name of the Docker image used by a container");
+
+    public static final AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_TAG = ConfigKeys.newStringSensorAndConfigKey(
+            "docker.image.tag", "The tag of the image to use", "latest");
 
     public static final AttributeSensorAndConfigKey<String, String> DOCKER_HARDWARE_ID = ConfigKeys.newStringSensorAndConfigKey(
             "docker.hardwareId", "The ID of a Docker hardware type to use for a container", "small");
 
     public static final ConfigKey<String> DOCKER_PASSWORD = ConfigKeys.newConfigKeyWithPrefix(
-            "docker.", SshTool.PROP_PASSWORD);
+            "docker.password", SshTool.PROP_PASSWORD);
 
     public static final ConfigKey<Boolean> DOCKER_USE_HOST_DNS_NAME = ConfigKeys.newBooleanConfigKey(
             "docker.useHostDnsName", "Container uses same DNS hostname as Docker host", Boolean.TRUE);

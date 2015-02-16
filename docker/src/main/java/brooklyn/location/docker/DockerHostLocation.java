@@ -70,6 +70,7 @@ import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.text.Strings;
 
 import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -146,6 +147,9 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.PORT_FORWARDER, portForwarder);
             if (getOwner().getConfig(DockerAttributes.WEAVE_ENABLED)) {
                 WeaveContainer weave = getOwner().getAttribute(WeaveContainer.WEAVE_CONTAINER);
+                if (weave == null) {
+                    throw new IllegalStateException("Weave container on " + getOwner() + " is null");
+                }
                 ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, weave.getConfig(WeaveContainer.WEAVE_CIDR));
             } else {
                 ((AbstractEntity) entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL);
@@ -155,24 +159,33 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             // Add the entity Dockerfile if configured
             String dockerfile = entity.getConfig(DockerAttributes.DOCKERFILE_URL);
             String imageId = entity.getConfig(DockerAttributes.DOCKER_IMAGE_ID);
-            String imageName = DockerUtils.imageName(entity, dockerfile, repository);
+
+            Optional<String> baseImage = Optional.fromNullable(entity.getConfig(DockerAttributes.DOCKER_IMAGE_NAME));
+            String imageTag = Optional.fromNullable(entity.getConfig(DockerAttributes.DOCKER_IMAGE_TAG)).or("latest");
+            // TODO incorporate more info
+            final String imageName = DockerUtils.imageName(entity, dockerfile, repository);
+            final String fullyQualifiedImageName = Os.mergePaths(repository, imageName);
 
             // Lookup image ID or build new image from Dockerfile
-            LOG.warn("ImageName for entity {}: {}", entity, imageName);
-            String imageList = dockerHost.runDockerCommand("images --no-trunc " + Os.mergePaths(repository, imageName));
-            if (Strings.containsLiteral(imageList, imageName)) {
-                // Wait until committed before continuing
+            LOG.info("ImageName for entity {}: {}", entity, imageName);
+
+            if (dockerHost.getImageNamed(fullyQualifiedImageName, imageTag).isPresent()) {
+                // Wait until committed before continuing - Brooklyn may be midway through its creation.
                 waitForImage(imageName);
 
                 // Look up imageId again
-                imageList = dockerHost.runDockerCommand("images --no-trunc " + Os.mergePaths(repository, imageName));
-                imageId = Strings.getFirstWordAfter(imageList, "latest");
+                imageId = dockerHost.getImageNamed(fullyQualifiedImageName, imageTag).get();
                 LOG.info("Found image {} for entity: {}", imageName, imageId);
 
                 // Skip install phase
                 ((AbstractEntity) entity).setConfigEvenIfOwned(SoftwareProcess.SKIP_INSTALLATION, true);
+            } else if (baseImage.isPresent()) {
+                // Create an SSHable image from the one configured
+                imageId = dockerHost.layerSshableImageOn(baseImage.get(), imageTag);
+                LOG.info("Created SSHable image from {}: {}", baseImage.get(), imageId);
+                ((AbstractEntity) entity).setConfigEvenIfOwned(SoftwareProcess.SKIP_INSTALLATION, true);
             } else {
-                // Set commit command at post-install
+                // Otherwise Clocker is going to make an image for the entity once it is installed.
                 insertCallback(entity, SoftwareProcess.POST_INSTALL_COMMAND, DockerCallbacks.commit());
 
                 if (Strings.isNonBlank(dockerfile)) {
@@ -185,7 +198,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                     imageId = getOwner().getAttribute(DockerHost.DOCKER_IMAGE_ID);
                 }
 
-                // Tag image name and create latch
+                // Tag the image name and create its latch
                 images.putIfAbsent(imageName, new CountDownLatch(1));
                 dockerHost.runDockerCommand(String.format("tag %s %s:latest", imageId, Os.mergePaths(repository, imageName)));
             }

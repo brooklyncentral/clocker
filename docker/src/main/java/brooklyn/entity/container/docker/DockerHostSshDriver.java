@@ -16,6 +16,7 @@
 package brooklyn.entity.container.docker;
 
 import static brooklyn.util.ssh.BashCommands.*;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.format;
 
 import java.util.Collection;
@@ -133,6 +134,19 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 false, getExtraTemplateSubstitutions(name));
         String sshdImageId = buildDockerfile("Sshd" + DockerUtils.DOCKERFILE, name);
         log.info("Created SSHable Dockerfile image with ID {}", sshdImageId);
+
+        return sshdImageId;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public String layerSshableImageOn(String name, String tag) {
+        checkNotNull(name, "name");
+        checkNotNull(tag, "tag");
+        copyTemplate(DockerUtils.SSHD_DOCKERFILE, Os.mergePaths(name, "Sshd" + DockerUtils.DOCKERFILE),
+                true, ImmutableMap.<String, Object>of("fullyQualifiedImageName", Os.mergePaths(name) + ":" + tag));
+        String sshdImageId = buildDockerfile("Sshd" + DockerUtils.DOCKERFILE, name);
+        log.info("Created SSH-based image from {} with ID {}", name, sshdImageId);
 
         return sshdImageId;
     }

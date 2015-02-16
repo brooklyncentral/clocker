@@ -105,6 +105,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     }
 
     protected void connectSensors() {
+        // is this swappable for a feed that runs one command rather than three?
         status = FunctionFeed.builder()
                 .entity(this)
                 .period(Duration.seconds(15))
@@ -241,8 +242,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         if (cpuShares == null) cpuShares = getConfig(DOCKER_CPU_SHARES);
         if (cpuShares != null) {
             // TODO set based on number of cores available in host divided by cores requested in flags
-            Integer hostCores = (int) getDockerHost().getDynamicLocation().getMachine().getMachineDetails().getHardwareDetails().getCpuCount();
-            Integer minCores = (Integer) entity.getConfig(JcloudsLocationConfig.MIN_CORES);
+            Integer hostCores = getDockerHost().getDynamicLocation().getMachine().getMachineDetails().getHardwareDetails().getCpuCount();
+            Integer minCores = entity.getConfig(JcloudsLocationConfig.MIN_CORES);
             Map flags = entity.getConfig(SoftwareProcess.PROVISIONING_PROPERTIES);
             if (minCores == null && flags != null) {
                 minCores = (Integer) flags.get(JcloudsLocationConfig.MIN_CORES.getName());
@@ -257,7 +258,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 }
             }
             if (minCores != null) {
-                double ratio = (double) minCores / (double) hostCores;
+                double ratio = (double) minCores / (double) (hostCores != null ? hostCores : 1);
                 LOG.info("Cores: host {}, min {}, ratio {}", new Object[] { hostCores, minCores, ratio });
             }
         }
