@@ -242,8 +242,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             // record SDN application network details
             if (getOwner().getConfig(SdnAttributes.SDN_ENABLE)) {
                 SdnAgent agent = getOwner().getAttribute(SdnAgent.SDN_AGENT);
-                Map<String, Cidr> networks = agent.getAttribute(SdnAgent.SDN_PROVIDER).getAttribute(SdnProvider.SUBNETS);
-                Cidr applicationCidr = networks.get(entity.getApplicationId());
+                Cidr applicationCidr =  agent.getAttribute(SdnAgent.SDN_PROVIDER).getSubnetCidr(entity.getApplicationId());
                 Entities.deproxy(entity).setAttribute(SdnProvider.APPLICATION_CIDR, applicationCidr);
                 Entities.deproxy(dockerContainer).setAttribute(SdnProvider.APPLICATION_CIDR, applicationCidr);
             }

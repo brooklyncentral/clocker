@@ -396,7 +396,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 Collection<String> extra = entity.getConfig(SdnAttributes.NETWORK_LIST);
                 if (extra != null) {
                     for (String extraId : extra) {
-                        InetAddress extraAddress = agent.attachNetwork(getAttribute(CONTAINER_ID), extraId, extraId);
+                        InetAddress extraAddress = agent.attachNetwork(containerId, extraId, extraId);
                         addresses.add(extraAddress.getHostAddress().toString());
                         networks.add(extraId);
                     }

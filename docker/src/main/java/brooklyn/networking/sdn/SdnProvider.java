@@ -88,14 +88,28 @@ public interface SdnProvider extends BasicStartable, NetworkProvisioningExtensio
 
     Group getAgents();
 
+    /* IP address management. */
+
     InetAddress getNextContainerAddress(String networkId);
 
     InetAddress getNextAgentAddress(String agentId);
 
+    /* Access for network subnet CIDRs this SDN provder manages. */
+
+    Cidr getNextSubnetCidr(String networkId);
+
     Cidr getNextSubnetCidr();
+
+    void recordSubnetCidr(String networkId, Cidr subnetCidr);
+
+    Cidr getSubnetCidr(String networkId);
+
+    /* Callbacks for hosts using this SDN provider. */
 
     void addHost(DockerHost host);
 
     void removeHost(DockerHost host);
+
+    Object getNetworkMutex();
 
 }

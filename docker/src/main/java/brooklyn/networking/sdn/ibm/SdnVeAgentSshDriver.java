@@ -106,12 +106,18 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
         LOG.debug("Found gateway {} and address {}", gateway, address);
 
         List<String> commands = Lists.newLinkedList();
+
+        // Add the DOVE bridge device and configure it appropriately
         commands.add(sudo("brctl addbr br_mgmt_1"));
         commands.add(sudo(String.format("ifconfig br_mgmt_1 %s netmask 255.255.255.224", getEntity().getAttribute(SdnAgent.SDN_AGENT_ADDRESS).getHostAddress())));
         commands.add(sudo("ifconfig eth0 0.0.0.0"));
         commands.add(sudo(String.format("ifconfig br_mgmt_1:1 %s netmask 255.255.255.192", address)));
         commands.add(sudo("brctl addif br_mgmt_1 eth0"));
         commands.add(sudo(String.format("route add -net 10.0.0.0 netmask 255.0.0.0 gw %s", gateway)));
+
+        // Sort out network management and configuration services 
+        commands.add(sudo("mv /etc/sysconfig/network-scripts/ifcfg-eth0 /etc/sysconfig/network-scripts/_ifcfg-eth0"));
+        commands.add(BashCommands.ok(sudo("service dhcpd stop")));
         commands.add(BashCommands.alternatives(sudo("service libvirtd start"), sudo("service libvirt-bin start"), "true"));
         commands.add("echo 'nameserver 8.8.8.8' | " + sudo("tee /etc/resolv.conf"));
 
@@ -168,7 +174,7 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
     private String copyJsonTemplate(String fileName, Map<String, String> substitutions) {
         String contents = processTemplate("classpath://brooklyn/networking/sdn/ibm/" + fileName, substitutions);
         String target = Urls.mergePaths(getRunDir(), fileName);
-        DynamicTasks.queueIfPossible(SshEffectorTasks.put(target).contents(contents)).andWaitForSuccess();
+        DynamicTasks.queueIfPossible(SshEffectorTasks.put(target).machine(getMachine()).contents(contents)).andWaitForSuccess();
         return target;
     }
 
@@ -252,6 +258,11 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     @Override
     public boolean isRunning() {
+        String pingData = getEntity().getAttribute(SdnVeAgent.DOCKER_HOST).execCommand(String.format("ping -c 10 -q %s",
+                getEntity().getConfig(SdnVeNetwork.DOVE_CONTROLLER).getHostAddress()));
+        Double packetLoss = Integer.valueOf(Strings.getFirstWordAfter(pingData, "packets transmitted,")) / 10d;
+        // Maybe save as attribute? Check valididty of this reault...
+
         ScriptHelper helper = newScript(MutableMap.of(USE_PID_FILE, false), CHECK_RUNNING)
                 .body.append(sudo("status doved"))
                 .noExtraOutput()
@@ -281,7 +292,7 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     @Override
     public InetAddress attachNetwork(String containerId, String subnetId) {
-        Tasks.setBlockingDetails("Attach to " + containerId);
+        Tasks.setBlockingDetails(String.format("Attach %s to %s", containerId, subnetId));
         try {
             InetAddress address = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getNextContainerAddress(subnetId);
 
@@ -302,19 +313,20 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
                     subnetId); // Interface name
             getEntity().getConfig(SdnVeAgent.DOCKER_HOST).execCommand(sudo(command));
 
-            // Now lookup the VirtualNetwork entity and check for special requirements (e.g. public address mapping)
+            // Lookup the VirtualNetwork entity and check for special requirements (e.g. public address mapping)
             Optional<Entity> found = Iterables.tryFind(getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getAttribute(SdnProvider.SDN_NETWORKS).getMembers(),
                     EntityPredicates.attributeEqualTo(VirtualNetwork.NETWORK_ID, subnetId));
-            if (found.isPresent()) {
-                VirtualNetwork network = (VirtualNetwork) found.get();
-                if (Boolean.TRUE.equals(network.getConfig(SdnVeAttributes.ENABLE_PUBLIC_ACCESS))) {
-                    Cidr publicCidr = network.getConfig(SdnVeAttributes.PUBLIC_CIDR);
-                    if (!networks.containsKey(publicCidr)) {
-                        networks.put(subnetId + ".public", publicCidr);
-                    }
-                    InetAddress publicAddress = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getNextContainerAddress(subnetId + ".public");
-                    attachPublicAddress(containerId, address, publicAddress);
+            if (!found.isPresent()) {
+                throw new IllegalStateException(String.format("Cannot find virtual network entity for %s", subnetId));
+            }
+            VirtualNetwork network = (VirtualNetwork) found.get();
+            if (Boolean.TRUE.equals(network.getConfig(SdnVeAttributes.ENABLE_PUBLIC_ACCESS))) {
+                Cidr publicCidr = network.getConfig(SdnVeAttributes.PUBLIC_CIDR);
+                if (!networks.containsKey(publicCidr)) {
+                    networks.put(subnetId + ".public", publicCidr);
                 }
+                InetAddress publicAddress = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getNextContainerAddress(subnetId + ".public");
+                attachPublicAddress(containerId, address, publicAddress);
             }
 
             return address;

@@ -48,13 +48,16 @@ public class VirtualNetworkImpl extends BasicStartableImpl implements VirtualNet
 
         setAttribute(NETWORK_ID, networkId);
         setAttribute(NETWORK_NAME, networkName);
+        setDisplayName(String.format("%s Network (%s)", Strings.isEmpty(getConfig(NETWORK_NAME)) ? "Virtual" : networkName, networkId));
     }
 
     @Override
     public void start(Collection<? extends Location> locations) {
+        setAttribute(SERVICE_UP, Boolean.FALSE);
+
         super.start(locations);
 
-        Optional<Location> found = Iterables.tryFind(getLocations(), new Predicate<Location>() {
+        Optional<? extends Location> found = Iterables.tryFind(locations, new Predicate<Location>() {
             @Override
             public boolean apply(Location input) {
                 return input.hasExtension(NetworkProvisioningExtension.class);
@@ -65,6 +68,17 @@ public class VirtualNetworkImpl extends BasicStartableImpl implements VirtualNet
         }
         NetworkProvisioningExtension provisioner = found.get().getExtension(NetworkProvisioningExtension.class);
         provisioner.provisionNetwork(this);
+
+        setAttribute(SERVICE_UP, Boolean.TRUE);
+    }
+
+    @Override
+    public void stop() {
+        setAttribute(SERVICE_UP, Boolean.FALSE);
+
+        // TODO network detele operations?
+
+        super.stop();
     }
 
     static {
