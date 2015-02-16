@@ -18,25 +18,23 @@ origin: "https://github.com/apache/incubator-brooklyn/"
 locations:
 - my-docker-cloud
 services:
+
 - type: brooklyn.networking.VirtualNetwork
-  name: public
+  networkId: public
   brooklyn.config:
-    network.cidr: 8.1.2.0/27
-    network.securityGroup: nginx-security-group
-    network.gateway: 8.1.2.6
-    network.routing.enable: true
+    sdn.ibm.public.enable: true
+    sdn.ibm.public.cidr: 50.23.74.156/30
 - type: brooklyn.networking.VirtualNetwork
-  name: webapp
+  networkId: riak
   cidr: 100.52.0.0/16
-- type: brooklyn.entity.container.sdn.VirtualNetwork
-  name: riak
-  cidr: 100.52.0.0/16
+
 - type: brooklyn.storage.StorageVolume
-  name: public
+  name: riak-storage
   brooklyn.config:
-    storage.source: 12345678
+    stotage.class: softlayer-iscsi
     storage.size: 100g
     mount: "/vol/riak"
+
 - type: brooklyn.entity.nosql.riak.RiakCluster
   initialSize: 3
   id: cluster
@@ -47,6 +45,8 @@ services:
     - riak
     docker.host.volumes:
       "/vol/riak": "/var/run/riak/persist"
+    launch.latch: $brooklyn:component("riak-storage").attributeWhenReady("service.isUp")
+ 
 - type: brooklyn.entity.webapp.ControlledDynamicWebAppCluster
   name: Web Cluster
   brooklyn.config:
@@ -64,9 +64,9 @@ services:
               $brooklyn:component("cluster").attributeWhenReady("riak.cluster.nodeList")
     controlleddynamicwebappcluster.controllerSpec:
       $brooklyn:entitySpec:
-        type: brooklyn.networking.entity.HaProxy
+        type: brooklyn.entity.proxy.ibm.HaProxy
         brooklyn.config:
-          docker.imageUrl: http://source/path.zip
+          docker.imageUrl: https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/haproxy_image
           entity.started: true
           runDir: /var/run/haproxy
           network.list:

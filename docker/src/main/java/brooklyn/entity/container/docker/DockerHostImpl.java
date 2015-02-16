@@ -447,6 +447,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     public void postStart() {
+        Entities.deproxy(getAttribute(DOCKER_CONTAINER_CLUSTER)).setAttribute(SERVICE_UP, Boolean.TRUE);
+
         if (Boolean.TRUE.equals(getAttribute(DOCKER_INFRASTRUCTURE).getConfig(SdnAttributes.SDN_ENABLE))) {
             LOG.info("Waiting on SDN agent");
             SdnAgent agent = Entities.attributeSupplierWhenReady(this, SdnAgent.SDN_AGENT).get();

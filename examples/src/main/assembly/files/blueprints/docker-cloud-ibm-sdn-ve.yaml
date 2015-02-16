@@ -44,8 +44,8 @@ services:
           sdn.ibm.dmc.username: admin
           sdn.ibm.dmc.password: admin
           sdn.ibm.vlanId: 425232
-          sdn.agent.cidr: 10.52.36.80/29
-          sdn.network.cidr: 65.0.0.0/8
+          sdn.agent.cidr: 10.52.36.88/29
+          sdn.network.cidr: 60.70.0.0/16
           sdn.network.size: 24
     docker.host.spec:
       $brooklyn:entitySpec:

@@ -16,21 +16,32 @@
 package brooklyn.networking.sdn;
 
 import java.net.InetAddress;
-import java.util.Map;
+import java.util.Collections;
+import java.util.concurrent.Callable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import brooklyn.config.render.RendererHints;
+import brooklyn.entity.Entity;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.EntityPredicates;
 import brooklyn.entity.basic.SoftwareProcessImpl;
 import brooklyn.entity.container.docker.DockerHost;
+import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.event.feed.ConfigToAttributes;
+import brooklyn.management.Task;
 import brooklyn.networking.VirtualNetwork;
 import brooklyn.util.net.Cidr;
+import brooklyn.util.repeat.Repeater;
+import brooklyn.util.task.DynamicTasks;
+import brooklyn.util.task.TaskBuilder;
+import brooklyn.util.time.Duration;
 
+import com.google.common.base.Optional;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 
 /**
@@ -39,8 +50,6 @@ import com.google.common.collect.Multimap;
 public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAgent {
 
     private static final Logger LOG = LoggerFactory.getLogger(SdnAgent.class);
-
-    protected transient final Object addressMutex = new Object[0];
 
     @Override
     public void init() {
@@ -74,10 +83,8 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
 
     @Override
     public void preStart() {
-        synchronized (addressMutex) {
-            InetAddress address = getAttribute(SDN_PROVIDER).getNextAgentAddress(getId());
-            setAttribute(SDN_AGENT_ADDRESS, address);
-        }
+        InetAddress address = getAttribute(SDN_PROVIDER).getNextAgentAddress(getId());
+        setAttribute(SDN_AGENT_ADDRESS, address);
     }
 
     @Override
@@ -92,32 +99,65 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
     }
 
     @Override
-    public InetAddress attachNetwork(String containerId, String networkId, String networkName) {
-        synchronized (addressMutex) {
-            Map<String, Cidr> networks = getAttribute(SDN_PROVIDER).getAttribute(SdnProvider.SUBNETS);
-            if (!networks.containsKey(networkId)) {
-                // Get a CIDR for the subnet from the availabkle pool and create a virtual network
-                Cidr subnetCidr = getAttribute(SdnAgent.SDN_PROVIDER).getNextSubnetCidr();
-                EntitySpec<VirtualNetwork> networkSpec = EntitySpec.create(VirtualNetwork.class)
-                        .configure(VirtualNetwork.NETWORK_ID, networkId)
-                        .configure(VirtualNetwork.NETWORK_NAME, networkName)
-                        .configure(VirtualNetwork.NETWORK_CIDR, subnetCidr);
-
-                // Start and then add this virtual network as a child of SDN_NETWORKS
-                VirtualNetwork network = getAttribute(SDN_PROVIDER).getAttribute(SdnProvider.SDN_NETWORKS).addChild(networkSpec);
-                Entities.manage(network);
-                Entities.waitForServiceUp(network);
+    public InetAddress attachNetwork(String containerId, final String networkId, String networkName) {
+        final SdnProvider provider = getAttribute(SDN_PROVIDER);
+        boolean createNetwork = false;
+        Cidr subnetCidr = null;
+        synchronized (provider.getNetworkMutex()) {
+            subnetCidr = provider.getSubnetCidr(networkId);
+            if (subnetCidr == null) {
+                subnetCidr = provider.getNextSubnetCidr(networkId);
+                createNetwork = true;
             }
-
-            InetAddress address = getDriver().attachNetwork(containerId, networkId);
-            LOG.info("Attached container ID {} to {}: {}", new Object[] { containerId, networkId,  address.getHostAddress() });
-
-            Multimap<String, InetAddress> addresses = getAttribute(SDN_PROVIDER).getAttribute(SdnProvider.CONTAINER_ADDRESSES);
-            addresses.put(containerId, address);
-            Entities.deproxy(getAttribute(SDN_PROVIDER)).setAttribute(SdnProvider.CONTAINER_ADDRESSES, addresses);
-
-            return address;
         }
+        if (createNetwork) {
+            // Get a CIDR for the subnet from the availabkle pool and create a virtual network
+            EntitySpec<VirtualNetwork> networkSpec = EntitySpec.create(VirtualNetwork.class)
+                    .configure(VirtualNetwork.NETWORK_ID, networkId)
+                    .configure(VirtualNetwork.NETWORK_NAME, networkName)
+                    .configure(VirtualNetwork.NETWORK_CIDR, subnetCidr);
+
+            // Start and then add this virtual network as a child of SDN_NETWORKS
+            VirtualNetwork network = provider.getAttribute(SdnProvider.SDN_NETWORKS).addChild(networkSpec);
+            Entities.manage(network);
+            Entities.start(network, Collections.singleton(((DockerInfrastructure) provider.getAttribute(SdnProvider.DOCKER_INFRASTRUCTURE)).getDynamicLocation()));
+            Entities.waitForServiceUp(network);
+        } else {
+            Task<Boolean> lookup = TaskBuilder.<Boolean> builder()
+                    .name("Waiting until virtual network is available")
+                    .body(new Callable<Boolean>() {
+                        @Override
+                        public Boolean call() throws Exception {
+                            return Repeater.create()
+                                    .every(Duration.TEN_SECONDS)
+                                    .until(new Callable<Boolean>() {
+                                        public Boolean call() {
+                                            Optional<Entity> found = Iterables.tryFind(provider.getAttribute(SdnProvider.SDN_NETWORKS).getMembers(),
+                                                    EntityPredicates.attributeEqualTo(VirtualNetwork.NETWORK_ID, networkId));
+                                            return found.isPresent();
+                                        }
+                                    })
+                                    .limitTimeTo(Duration.ONE_MINUTE)
+                                    .run();
+                        }
+                    })
+                    .build();
+            Boolean result = DynamicTasks.queueIfPossible(lookup)
+                    .orSubmitAndBlock()
+                    .andWaitForSuccess();
+            if (!result) {
+                throw new IllegalStateException(String.format("Cannot find virtual network entity for %s", networkId));
+            }
+        }
+
+        InetAddress address = getDriver().attachNetwork(containerId, networkId);
+        LOG.info("Attached container ID {} to {}: {}", new Object[] { containerId, networkId,  address.getHostAddress() });
+
+        Multimap<String, InetAddress> addresses = provider.getAttribute(SdnProvider.CONTAINER_ADDRESSES);
+        addresses.put(containerId, address);
+        Entities.deproxy(provider).setAttribute(SdnProvider.CONTAINER_ADDRESSES, addresses);
+
+        return address;
     }
 
     @Override
@@ -128,12 +168,11 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
         // Record the network CIDR being provisioned, allocating if required
         Cidr subnetCidr = network.getConfig(VirtualNetwork.NETWORK_CIDR);
         if (subnetCidr == null) {
-            subnetCidr = getAttribute(SDN_PROVIDER).getNextSubnetCidr();
+            subnetCidr = getAttribute(SDN_PROVIDER).getNextSubnetCidr(networkId);
+        } else {
+            getAttribute(SDN_PROVIDER).recordSubnetCidr(networkId, subnetCidr);
         }
         Entities.deproxy(network).setAttribute(VirtualNetwork.NETWORK_CIDR, subnetCidr);
-        Map<String, Cidr> subnets = getAttribute(SDN_PROVIDER).getAttribute(SdnProvider.SUBNETS);
-        subnets.put(networkId, subnetCidr);
-        Entities.deproxy(getAttribute(SDN_PROVIDER)).setAttribute(SdnProvider.SUBNETS, subnets);
 
         // Create the netwoek using the SDN driver
         getDriver().createSubnet(networkId, networkName, subnetCidr);
