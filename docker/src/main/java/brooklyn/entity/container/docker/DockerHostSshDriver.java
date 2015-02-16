@@ -36,6 +36,7 @@ import brooklyn.entity.container.weave.WeaveInfrastructure;
 import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.location.OsDetails;
 import brooklyn.location.basic.SshMachineLocation;
+import brooklyn.location.geo.LocalhostExternalIpLoader;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.location.jclouds.networking.JcloudsLocationSecurityGroupCustomizer;
 import brooklyn.management.Task;
@@ -394,13 +395,13 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .ipProtocol(IpProtocol.TCP)
                 .fromPort(getEntity().getAttribute(DockerHost.DOCKER_PORT))
                 .toPort(getEntity().getAttribute(DockerHost.DOCKER_PORT))
-                .cidrBlock(customizer.getBrooklynCidrBlock())
+                .cidrBlock(LocalhostExternalIpLoader.getLocalhostIpWithin(Duration.THIRTY_SECONDS) + "/32")
                 .build();
         IpPermission dockerSslPort = IpPermission.builder()
                 .ipProtocol(IpProtocol.TCP)
                 .fromPort(getEntity().getAttribute(DockerHost.DOCKER_SSL_PORT))
                 .toPort(getEntity().getAttribute(DockerHost.DOCKER_SSL_PORT))
-                .cidrBlock(customizer.getBrooklynCidrBlock())
+                .cidrBlock(LocalhostExternalIpLoader.getLocalhostIpWithin(Duration.THIRTY_SECONDS) + "/32")
                 .build();
         IpPermission dockerPortForwarding = IpPermission.builder()
                 .ipProtocol(IpProtocol.TCP)
