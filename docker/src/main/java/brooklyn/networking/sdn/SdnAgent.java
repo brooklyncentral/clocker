@@ -26,6 +26,7 @@ import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
+import brooklyn.networking.VirtualNetwork;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.util.flags.SetFromFlag;
 
@@ -45,6 +46,8 @@ public interface SdnAgent extends SoftwareProcess {
     AttributeSensor<SdnAgent> SDN_AGENT = Sensors.newSensor(SdnAgent.class, "sdn.agent.entity", "SDN agent entity");
 
     DockerHost getDockerHost();
+
+    String provisionNetwork(VirtualNetwork network);
 
     MethodEffector<InetAddress> ATTACH_NETWORK = new MethodEffector<InetAddress>(SdnAgent.class, "attachNetwork");
 

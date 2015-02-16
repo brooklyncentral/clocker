@@ -13,13 +13,16 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.entity.Entity;
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityLocal;
+import brooklyn.entity.basic.EntityPredicates;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.basic.lifecycle.ScriptHelper;
 import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.location.basic.SshMachineLocation;
+import brooklyn.networking.VirtualNetwork;
 import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.util.collections.MutableMap;
@@ -34,6 +37,7 @@ import brooklyn.util.text.StringPredicates;
 import brooklyn.util.text.Strings;
 
 import com.google.common.base.CharMatcher;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
 import com.google.common.base.Splitter;
@@ -198,6 +202,23 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
         throw new IllegalStateException("Cannot find network: " + networkName);
     }
 
+    private void attachPublicAddress(String containerId, InetAddress privateAddress, InetAddress publicAddress) {
+        Map<String, String> createSnatRulesData = ImmutableMap.<String, String>builder()
+                .put("networkId", Integer.toString(getEntity().getAttribute(SdnVeAgent.DOVE_BRIDGE_ID)))
+                .put("domainId", Integer.toString(getEntity().getAttribute(SdnVeAgent.DOVE_DOMAIN_ID)))
+                .build();
+        String createSnatRules = copyJsonTemplate("create_snat_rules.json", createSnatRulesData);
+        callRestApi(createSnatRules, "api/dove/dgw/service/ext-gw");
+
+        Map<String, String> createForwarduingRuleData = ImmutableMap.<String, String>builder()
+                .put("networkId", Integer.toString(getEntity().getAttribute(SdnVeAgent.DOVE_BRIDGE_ID)))
+                .put("sourceIp", privateAddress.getHostAddress())
+                .put("targetIp", publicAddress.getHostAddress())
+                .build();
+        String createForwarduingRule = copyJsonTemplate("create_forwarding_rule.json", createForwarduingRuleData);
+        callRestApi(createForwarduingRule, "api/dove/dgw/service/rule");
+    }
+
     @Override
     public void launch() {
         newScript(MutableMap.of(USE_PID_FILE, false), LAUNCHING)
@@ -247,22 +268,19 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     @Override
-    public Cidr createSubnet(String subnetId, String subnetName) {
+    public void createSubnet(String subnetId, String subnetName, Cidr subnetCidr) {
         Tasks.setBlockingDetails("Creating " + subnetId);
         try {
-            Cidr subnetCidr = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getNextSubnetCidr();
             InetAddress gatewayIp = subnetCidr.addressAtOffset(1);
 
             createSubnet(subnetId, subnetName, gatewayIp, subnetCidr);
-
-            return subnetCidr;
         } finally {
             Tasks.resetBlockingDetails();
         }
     }
 
     @Override
-    public InetAddress attachNetwork(final String containerId, final String subnetId) {
+    public InetAddress attachNetwork(String containerId, String subnetId) {
         Tasks.setBlockingDetails("Attach to " + containerId);
         try {
             InetAddress address = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getNextContainerAddress(subnetId);
@@ -283,6 +301,21 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
                     bridgeId, // VNID to be used
                     subnetId); // Interface name
             getEntity().getConfig(SdnVeAgent.DOCKER_HOST).execCommand(sudo(command));
+
+            // Now lookup the VirtualNetwork entity and check for special requirements (e.g. public address mapping)
+            Optional<Entity> found = Iterables.tryFind(getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getAttribute(SdnProvider.SDN_NETWORKS).getMembers(),
+                    EntityPredicates.attributeEqualTo(VirtualNetwork.NETWORK_ID, subnetId));
+            if (found.isPresent()) {
+                VirtualNetwork network = (VirtualNetwork) found.get();
+                if (Boolean.TRUE.equals(network.getConfig(SdnVeAttributes.ENABLE_PUBLIC_ACCESS))) {
+                    Cidr publicCidr = network.getConfig(SdnVeAttributes.PUBLIC_CIDR);
+                    if (!networks.containsKey(publicCidr)) {
+                        networks.put(subnetId + ".public", publicCidr);
+                    }
+                    InetAddress publicAddress = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getNextContainerAddress(subnetId + ".public");
+                    attachPublicAddress(containerId, address, publicAddress);
+                }
+            }
 
             return address;
         } finally {

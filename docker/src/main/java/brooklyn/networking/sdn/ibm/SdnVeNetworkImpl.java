@@ -24,17 +24,13 @@ import org.slf4j.LoggerFactory;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.proxying.EntitySpec;
-import brooklyn.location.Location;
 import brooklyn.location.basic.SshMachineLocation;
-import brooklyn.location.docker.DockerLocation;
-import brooklyn.networking.location.NetworkProvisioningExtension;
 import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.networking.sdn.SdnProviderImpl;
 import brooklyn.util.collections.MutableList;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 
 public class SdnVeNetworkImpl extends SdnProviderImpl implements SdnVeNetwork {
 
@@ -49,14 +45,6 @@ public class SdnVeNetworkImpl extends SdnProviderImpl implements SdnVeNetwork {
                 .configure(SdnVeAgent.SDN_PROVIDER, this);
 
         setAttribute(SdnProvider.SDN_AGENT_SPEC, agentSpec);
-    }
-
-    @Override
-    public void start(Collection<? extends Location> locations) {
-        super.start(locations);
-
-        DockerLocation dockerLocation = Iterables.getOnlyElement(Iterables.filter(getLocations(), DockerLocation.class));
-        dockerLocation.addExtension(NetworkProvisioningExtension.class, this);
     }
 
     @Override

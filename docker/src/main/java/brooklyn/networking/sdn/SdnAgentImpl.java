@@ -96,12 +96,17 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
         synchronized (addressMutex) {
             Map<String, Cidr> networks = getAttribute(SDN_PROVIDER).getAttribute(SdnProvider.SUBNETS);
             if (!networks.containsKey(networkId)) {
+                // Get a CIDR for the subnet from the availabkle pool and create a virtual network
                 Cidr subnetCidr = getAttribute(SdnAgent.SDN_PROVIDER).getNextSubnetCidr();
-                EntitySpec<VirtualNetwork> neyworkSpec = EntitySpec.create(VirtualNetwork.class)
+                EntitySpec<VirtualNetwork> networkSpec = EntitySpec.create(VirtualNetwork.class)
                         .configure(VirtualNetwork.NETWORK_ID, networkId)
                         .configure(VirtualNetwork.NETWORK_NAME, networkName)
                         .configure(VirtualNetwork.NETWORK_CIDR, subnetCidr);
+
                 // Start and then add this virtual network as a child of SDN_NETWORKS
+                VirtualNetwork network = getAttribute(SDN_PROVIDER).getAttribute(SdnProvider.SDN_NETWORKS).addChild(networkSpec);
+                Entities.manage(network);
+                Entities.waitForServiceUp(network);
             }
 
             InetAddress address = getDriver().attachNetwork(containerId, networkId);
@@ -113,6 +118,27 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
 
             return address;
         }
+    }
+
+    @Override
+    public String provisionNetwork(VirtualNetwork network) {
+        String networkId = network.getAttribute(VirtualNetwork.NETWORK_ID);
+        String networkName = network.getAttribute(VirtualNetwork.NETWORK_NAME);
+
+        // Record the network CIDR being provisioned, allocating if required
+        Cidr subnetCidr = network.getConfig(VirtualNetwork.NETWORK_CIDR);
+        if (subnetCidr == null) {
+            subnetCidr = getAttribute(SDN_PROVIDER).getNextSubnetCidr();
+        }
+        Entities.deproxy(network).setAttribute(VirtualNetwork.NETWORK_CIDR, subnetCidr);
+        Map<String, Cidr> subnets = getAttribute(SDN_PROVIDER).getAttribute(SdnProvider.SUBNETS);
+        subnets.put(networkId, subnetCidr);
+        Entities.deproxy(getAttribute(SDN_PROVIDER)).setAttribute(SdnProvider.SUBNETS, subnets);
+
+        // Create the netwoek using the SDN driver
+        getDriver().createSubnet(networkId, networkName, subnetCidr);
+
+        return networkId;
     }
 
     static {

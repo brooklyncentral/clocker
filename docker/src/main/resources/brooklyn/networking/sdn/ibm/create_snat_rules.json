@@ -1,0 +1,11 @@
+[#ftl]
+{
+    "dgw_index": 3,
+    "min_ip": "50.23.75.152", 
+    "max_ip": "50.23.75.153", 
+    "domain_id": ${domainId},
+    "net_id": ${networkId},
+    "min_port": 2000,
+    "max_port": 3000
+ }
+ 

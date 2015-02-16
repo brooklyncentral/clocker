@@ -21,6 +21,7 @@ import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.BasicStartable;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.event.AttributeSensor;
+import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
@@ -36,13 +37,13 @@ import com.google.inject.ImplementedBy;
 public interface VirtualNetwork extends BasicStartable {
 
     @SetFromFlag("networkId")
-    ConfigKey<String> NETWORK_ID = ConfigKeys.newStringConfigKey("network.id", "ID of the network segment");
+    AttributeSensorAndConfigKey<String, String> NETWORK_ID = ConfigKeys.newStringSensorAndConfigKey("network.id", "ID of the network segment");
 
     @SetFromFlag("networkName")
-    ConfigKey<String> NETWORK_NAME = ConfigKeys.newStringConfigKey("network.name", "Name of the network segment");
+    AttributeSensorAndConfigKey<String, String> NETWORK_NAME = ConfigKeys.newStringSensorAndConfigKey("network.name", "Name of the network segment");
 
     @SetFromFlag("cidr")
-    ConfigKey<Cidr> NETWORK_CIDR = ConfigKeys.newConfigKey(Cidr.class, "network.cidr", "CIDR for the network segment");
+    AttributeSensorAndConfigKey<Cidr, Cidr> NETWORK_CIDR = ConfigKeys.newSensorAndConfigKey(Cidr.class, "network.cidr", "CIDR for the network segment");
 
     @SetFromFlag("flags")
     ConfigKey<Map<String, Object>> NETWORK_PROVISIONING_FLAGS = ConfigKeys.newConfigKey(
