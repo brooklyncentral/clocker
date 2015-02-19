@@ -18,7 +18,7 @@ origin: "https://registry.hub.docker.com/_/mysql/"
 locations:
 - my-docker-cloud
 services:
-- serviceType: brooklyn.entity.container.docker.application.VanillaDockerApplicationion
+- type: brooklyn.entity.container.docker.application.VanillaDockerApplication
   id: mysql
   name: "MySQL"
   brooklyn.config:
