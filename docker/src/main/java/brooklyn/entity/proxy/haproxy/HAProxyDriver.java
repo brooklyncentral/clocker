@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 by Cloudsoft Corporation Limited
+ * Copyright 2014 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.entity.container.docker.application;
+package brooklyn.entity.proxy.haproxy;
 
 import brooklyn.entity.basic.SoftwareProcessDriver;
 
-public interface DockerfileApplicationDriver extends SoftwareProcessDriver {
+public interface HAProxyDriver extends SoftwareProcessDriver {
+
+    void reconfigureService();
 
 }

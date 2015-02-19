@@ -29,8 +29,9 @@ services:
     proxy.http.port: "8000+"
     java.sysprops:
       brooklyn.example.db.url: >
-        $brooklyn:formatString("jdbc:%s%s?user=%s&password=%s",
-        component("mysql").attributeWhenReady("datastore.url"),
+        $brooklyn:formatString("jdbc:mysql://%s:%s/%s?user=%s&password=%s",
+        component("mysql").attributeWhenReady("host.subnet.address"),
+        component("mysql").attributeWhenReady("mysql.port"),
         "visitors", "brooklyn", "br00k11n")
     memberSpec:
       $brooklyn:entitySpec:
@@ -48,10 +49,14 @@ services:
         type: brooklyn.entity.webapp.DynamicWebAppCluster
     controlleddynamicwebappcluster.controllerSpec:
       $brooklyn:entitySpec:
-        type: brooklyn.entity.proxy.nginx.NginxController
+        type: brooklyn.entity.proxy.haproxy.HAProxyController
         brooklyn.config:
+          docker.image.name: haproxy
+          docker.image.tag: latest
+          install.dir: /usr/local/sbin/
+          run.dir: /usr/local/etc/haproxy/
           member.sensor.hostname: "host.subnet.hostname"
-- serviceType: brooklyn.entity.database.mysql.MySqlNode
+- type: brooklyn.entity.database.mysql.MySqlNode
   id: mysql
   name: MySQL Database
   brooklyn.config:

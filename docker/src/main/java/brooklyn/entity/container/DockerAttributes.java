@@ -43,27 +43,46 @@ public class DockerAttributes {
      * Configuration.
      */
 
-    public static final ConfigKey<String> DOCKERFILE_URL = ConfigKeys.newStringConfigKey("docker.dockerfile.url", "URL of a Dockerfile to use");
-    public static final ConfigKey<String> DOCKERFILE_NAME = ConfigKeys.newStringConfigKey("docker.dockerfile.name", "Name for the image created by the Dockerfile being used");
+    public static final ConfigKey<String> DOCKERFILE_URL = ConfigKeys.newStringConfigKey(
+            "docker.dockerfile.url", "URL of a Dockerfile to use");
 
-    public static final AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_ID = ConfigKeys.newStringSensorAndConfigKey("docker.imageId", "The ID of a Docker image to use for a container");
+    public static final ConfigKey<String> DOCKERFILE_NAME = ConfigKeys.newStringConfigKey(
+            "docker.dockerfile.name", "Name for the image created by the Dockerfile being used");
 
-    public static final AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_NAME = ConfigKeys.newStringSensorAndConfigKey("docker.imageName", "The name of the Docker image use used by a container");
+    public static final AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_ID = ConfigKeys.newStringSensorAndConfigKey(
+            "docker.image.id", "The ID of a Docker image to use for a container");
 
-    public static final AttributeSensorAndConfigKey<String, String> DOCKER_HARDWARE_ID = ConfigKeys.newSensorAndConfigKey(String.class, "docker.hardwareId", "The ID of a Docker hardware type to use for a container", "small");
+    public static final AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_NAME = ConfigKeys.newStringSensorAndConfigKey(
+            "docker.image.name", "The name of the Docker image used by a container");
 
-    public static final ConfigKey<String> DOCKER_PASSWORD = ConfigKeys.newConfigKeyWithPrefix("docker.", SshTool.PROP_PASSWORD);
+    public static final AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_TAG = ConfigKeys.newStringSensorAndConfigKey(
+            "docker.image.tag", "The tag of the image to use", "latest");
 
-    public static final ConfigKey<Boolean> DOCKER_USE_HOST_DNS_NAME = ConfigKeys.newBooleanConfigKey("docker.useHostDnsName", "Container uses same DNS hostname as Docker host", Boolean.TRUE);
-    public static final ConfigKey<Integer> DOCKER_CPU_SHARES = ConfigKeys.newIntegerConfigKey("docker.cpuShares", "Container CPU shares configuration");
-    public static final ConfigKey<Integer> DOCKER_MEMORY = ConfigKeys.newIntegerConfigKey("docker.memory", "Container memory configuration");
+    public static final AttributeSensorAndConfigKey<String, String> DOCKER_HARDWARE_ID = ConfigKeys.newStringSensorAndConfigKey(
+            "docker.hardwareId", "The ID of a Docker hardware type to use for a container", "small");
 
-    public static final ConfigKey<Boolean> MANAGED = ConfigKeys.newBooleanConfigKey("docker.container.managed", "Set to false if the container is not managed by Brooklyn and Clocker", Boolean.TRUE);
+    public static final ConfigKey<String> DOCKER_PASSWORD = ConfigKeys.newConfigKeyWithPrefix(
+            "docker.password", SshTool.PROP_PASSWORD);
+
+    public static final ConfigKey<Boolean> DOCKER_USE_HOST_DNS_NAME = ConfigKeys.newBooleanConfigKey(
+            "docker.useHostDnsName", "Container uses same DNS hostname as Docker host", Boolean.TRUE);
+
+    public static final ConfigKey<Integer> DOCKER_CPU_SHARES = ConfigKeys.newIntegerConfigKey(
+            "docker.cpuShares", "Container CPU shares configuration");
+
+    public static final ConfigKey<Integer> DOCKER_MEMORY = ConfigKeys.newIntegerConfigKey(
+            "docker.memory", "Container memory configuration");
+
+    public static final ConfigKey<Boolean> MANAGED = ConfigKeys.newBooleanConfigKey(
+            "docker.container.managed", "Set to false if the container is not managed by Brooklyn and Clocker", Boolean.TRUE);
 
     public static final AttributeSensorAndConfigKey<Map<String, String>, Map<String, String>> DOCKER_HOST_VOLUME_MAPPING = ConfigKeys.newSensorAndConfigKey(
-            new TypeToken<Map<String, String>>() { }, "docker.host.volumes", "Host volume mapping configuration");
+            new TypeToken<Map<String, String>>() { },
+            "docker.host.volumes", "Host volume mapping configuration");
+
     public static final ConfigKey<List<String>> DOCKER_CONTAINER_VOLUME_EXPORT = ConfigKeys.newConfigKey(
-            new TypeToken<List<String>>() { }, "docker.container.volumes", "Container volume export configuration");
+            new TypeToken<List<String>>() { },
+            "docker.container.volumes", "Container volume export configuration");
 
     public static final ConfigKey<List<DockerAwarePlacementStrategy>> PLACEMENT_STRATEGIES = ConfigKeys.newConfigKey(
             new TypeToken<List<DockerAwarePlacementStrategy>>() { },
@@ -75,11 +94,17 @@ public class DockerAttributes {
     /*
      * Counter attributes.
      */
+    public static final AttributeSensor<Integer> DOCKER_HOST_COUNT = Sensors.newIntegerSensor(
+            "docker.hosts.total", "Number of Docker hosts");
 
-    public static final AttributeSensor<Integer> DOCKER_HOST_COUNT = Sensors.newIntegerSensor("docker.hosts.total", "Number of Docker hosts");
-    public static final AttributeSensor<Integer> DOCKER_CONTAINER_COUNT = Sensors.newIntegerSensor("docker.containers.total", "Number of Docker containers");
-    public static final AttributeSensor<Integer> DOCKER_IDLE_HOST_COUNT = Sensors.newIntegerSensor("docker.hosts.idle", "Number of idle Docker hosts");
-    public static final AttributeSensor<Integer> DOCKER_IDLE_CONTAINER_COUNT = Sensors.newIntegerSensor("docker.containers.idle", "Number of idle Docker containers");
+    public static final AttributeSensor<Integer> DOCKER_CONTAINER_COUNT = Sensors.newIntegerSensor(
+            "docker.containers.total", "Number of Docker containers");
+
+    public static final AttributeSensor<Integer> DOCKER_IDLE_HOST_COUNT = Sensors.newIntegerSensor(
+            "docker.hosts.idle", "Number of idle Docker hosts");
+
+    public static final AttributeSensor<Integer> DOCKER_IDLE_CONTAINER_COUNT = Sensors.newIntegerSensor(
+            "docker.containers.idle", "Number of idle Docker containers");
 
     private static AtomicBoolean initialized = new AtomicBoolean(false);
 

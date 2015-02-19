@@ -18,7 +18,7 @@
 #
 # VERSION 0.0.4
 
-FROM ${repository}/${imageName}
+FROM ${fullyQualifiedImageName}
 MAINTAINER Cloudsoft "brooklyn@cloudsoftcorp.com"
 
 # setup locale

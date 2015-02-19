@@ -107,6 +107,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     }
 
     protected void connectSensors() {
+        // is this swappable for a feed that runs one command rather than three?
         status = FunctionFeed.builder()
                 .entity(this)
                 .period(Duration.seconds(15))
@@ -191,7 +192,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     @Override
     public void shutDown() {
         String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
-        LOG.info("Shut-Down {}", dockerContainerName);
+        LOG.info("Stopping {}", dockerContainerName);
         getDockerHost().runDockerCommand("kill " + getContainerId());
     }
 
@@ -205,7 +206,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     @Override
     public void resume() {
         String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
-        LOG.info("Resume {}", dockerContainerName);
+        LOG.info("Resuming {}", dockerContainerName);
         getDockerHost().runDockerCommand("start" + getContainerId());
     }
 
@@ -216,7 +217,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
      */
     private void removeContainer() {
         final String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
-        LOG.info("Remove container {}", dockerContainerName);
+        LOG.info("Removing {}", dockerContainerName);
         getDockerHost().runDockerCommand("rm " + getContainerId());
     }
 
@@ -243,8 +244,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         if (cpuShares == null) cpuShares = getConfig(DOCKER_CPU_SHARES);
         if (cpuShares != null) {
             // TODO set based on number of cores available in host divided by cores requested in flags
-            Integer hostCores = (int) getDockerHost().getDynamicLocation().getMachine().getMachineDetails().getHardwareDetails().getCpuCount();
-            Integer minCores = (Integer) entity.getConfig(JcloudsLocationConfig.MIN_CORES);
+            Integer hostCores = getDockerHost().getDynamicLocation().getMachine().getMachineDetails().getHardwareDetails().getCpuCount();
+            Integer minCores = entity.getConfig(JcloudsLocationConfig.MIN_CORES);
             Map flags = entity.getConfig(SoftwareProcess.PROVISIONING_PROPERTIES);
             if (minCores == null && flags != null) {
                 minCores = (Integer) flags.get(JcloudsLocationConfig.MIN_CORES.getName());
@@ -259,7 +260,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 }
             }
             if (minCores != null) {
-                double ratio = (double) minCores / (double) hostCores;
+                double ratio = (double) minCores / (double) (hostCores != null ? hostCores : 1);
                 LOG.info("Cores: host {}, min {}, ratio {}", new Object[] { hostCores, minCores, ratio });
             }
         }
@@ -500,6 +501,13 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
     @Override
     public void stop() {
+        Lifecycle state = getAttribute(SERVICE_STATE_ACTUAL);
+        if (Lifecycle.STOPPING.equals(state) || Lifecycle.STOPPED.equals(state)) {
+            LOG.debug("Ignoring request to stop {} when it is already {}", this, state);
+            LOG.trace("Duplicate stop came from: \n" + Joiner.on("\n").join(Thread.getAllStackTraces().get(Thread.currentThread())));
+            return;
+        }
+        LOG.info("Stopping {} when its state is {}", this, getAttribute(SERVICE_STATE_ACTUAL));
         ServiceStateLogic.setExpectedState(this, Lifecycle.STOPPING);
 
         disconnectSensors();

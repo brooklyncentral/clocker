@@ -49,13 +49,14 @@ import brooklyn.util.collections.MutableMap;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.time.Duration;
 
+import com.google.common.base.Optional;
 import com.google.common.reflect.TypeToken;
 
 /**
  * A single machine running Docker.
  * <p>
  * This entity controls the {@link DockerHostLocation} location, and creates
- * and wraps a {@link JcloudsLocatiopn} representing the API for the Docker
+ * and wraps a {@link JcloudsLocation} representing the API for the Docker
  * service on this machine.
  */
 @ImplementedBy(DockerHostImpl.class)
@@ -150,6 +151,17 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
 
     DockerInfrastructure getInfrastructure();
 
+
+    /**
+     * As {@link #getImageNamed(String, String)} and looking for the latest image.
+     */
+    Optional<String> getImageNamed(String name);
+
+    /**
+     * @return an Optional containing the ID of the named and tagged image.
+     */
+    Optional<String> getImageNamed(String name, String tag);
+
     MethodEffector<String> CREATE_SSHABLE_IMAGE = new MethodEffector<String>(DockerHost.class, "createSshableImage");
     MethodEffector<String> RUN_DOCKER_COMMAND = new MethodEffector<String>(DockerHost.class, "runDockerCommand");
     MethodEffector<String> RUN_DOCKER_COMMAND_TIMEOUT = new MethodEffector<String>(DockerHost.class, "runDockerCommandTimeout");
@@ -165,7 +177,19 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
     @Effector(description="Create an SSHable image and returns the image ID")
     String createSshableImage(
             @EffectorParam(name="dockerFile", description="URL of Dockerfile to copy") String dockerFile,
-            @EffectorParam(name="folder", description="Repository name") String name);
+            @EffectorParam(name="name", description="Repository name") String name);
+
+    /**
+     * Create an SSHable image based on the image with the given name.
+     *
+     * @param baseImage The parent image to base the new image on, e.g. "tomcat" or "redis"
+     * @param tag The tag of the parent image, e.g. "latest"
+     * @return the new image's ID
+     */
+    @Effector(description="Create an SSHable image based on the named image and return its ID")
+    String layerSshableImageOn(
+            @EffectorParam(name="baseImage", description="The image's name") String baseImage,
+            @EffectorParam(name="tag", description="The image's tag, e.g. latest") String tag);
 
     /**
      * Execute a Docker command and return the output.

@@ -23,6 +23,7 @@ import static brooklyn.util.ssh.BashCommands.ifExecutableElse0;
 import static brooklyn.util.ssh.BashCommands.ifExecutableElse1;
 import static brooklyn.util.ssh.BashCommands.installPackage;
 import static brooklyn.util.ssh.BashCommands.sudo;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.format;
 
 import java.util.Collection;
@@ -51,6 +52,7 @@ import brooklyn.networking.sdn.weave.WeaveNetwork;
 import brooklyn.util.collections.MutableList;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.file.ArchiveUtils;
+import brooklyn.util.file.ArchiveUtils.ArchiveType;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.Networking;
 import brooklyn.util.net.Urls;
@@ -79,6 +81,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     protected Map<String, Integer> getPortMap() {
         Map<String, Integer> ports = MutableMap.of();
         ports.put("dockerPort", getDockerPort());
+        ports.put("dockerSslPort", getDockerSslPort());
         if (getEntity().getConfig(SdnAttributes.SDN_ENABLE)) {
             // XXX make generic
             // Best guess at available port, as Weave is started _after_ the DockerHost
@@ -112,7 +115,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     /** {@inheritDoc} */
     @Override
     public String buildImage(String dockerFile, String name) {
-        if (ArchiveUtils.ArchiveType.UNKNOWN != ArchiveUtils.ArchiveType.of(dockerFile) || Urls.isDirectory(dockerFile)) {
+        if (!ArchiveType.UNKNOWN.equals(ArchiveType.of(dockerFile)) || Urls.isDirectory(dockerFile)) {
             ArchiveUtils.deploy(dockerFile, getMachine(), Os.mergePaths(getRunDir(), name));
             String baseImageId = buildDockerfileDirectory(name);
             log.info("Created base Dockerfile image with ID {}", baseImageId);
@@ -140,15 +143,31 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         return sshdImageId;
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public String layerSshableImageOn(String name, String tag) {
+        checkNotNull(name, "name");
+        checkNotNull(tag, "tag");
+        copyTemplate(DockerUtils.SSHD_DOCKERFILE, Os.mergePaths(name, "Sshd" + DockerUtils.DOCKERFILE),
+                true, ImmutableMap.<String, Object>of("fullyQualifiedImageName", Os.mergePaths(name) + ":" + tag));
+        String sshdImageId = buildDockerfile("Sshd" + DockerUtils.DOCKERFILE, name);
+        log.info("Created SSH-based image from {} with ID {}", name, sshdImageId);
+
+        return sshdImageId;
+    }
+
     private Map<String, Object> getExtraTemplateSubstitutions(String imageName) {
-        Map<String, Object> templateSubstitutions = MutableMap.<String, Object> of("repository", getRepository(), "imageName", imageName);
+        Map<String, Object> templateSubstitutions = MutableMap.<String, Object>of(
+                "fullyQualifiedImageName", Os.mergePaths(getRepository(), imageName));
         DockerHost host = (DockerHost) getEntity();
         templateSubstitutions.putAll(host.getInfrastructure().getConfig(DockerInfrastructure.DOCKERFILE_SUBSTITUTIONS));
         return templateSubstitutions;
     }
 
     private String buildDockerfileDirectory(String name) {
-        String build = format("build --rm -t %s %s", Os.mergePaths(getRepository(), name), Os.mergePaths(getRunDir(), name));
+        String build = format("build --rm -t %s %s",
+                Os.mergePaths(getRepository(), name),
+                Os.mergePaths(getRunDir(), name));
         String stdout = ((DockerHost) getEntity()).runDockerCommandTimeout(build, Duration.minutes(20));
         String prefix = Strings.getFirstWordAfter(stdout, "Successfully built");
 
@@ -156,7 +175,9 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     private String buildDockerfile(String dockerfile, String name) {
-        String build = format("build --rm -t %s - < %s", Os.mergePaths(getRepository(), name), Os.mergePaths(getRunDir(), name, dockerfile));
+        String build = format("build --rm -t %s - < %s",
+                Os.mergePaths(getRepository(), name),
+                Os.mergePaths(getRunDir(), name, dockerfile));
         String stdout = ((DockerHost) getEntity()).runDockerCommandTimeout(build, Duration.minutes(20));
         String prefix = Strings.getFirstWordAfter(stdout, "Successfully built");
 
@@ -209,15 +230,16 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         String arch = osDetails.getArch();
         if (!osDetails.is64bit()) { throw new IllegalStateException("Docker supports only 64bit OS"); }
         if (osDetails.isLinux()) {
-            if (osDetails.getName().equalsIgnoreCase("ubuntu") && osVersion.equals("12.04")) {
-                List<String> commands = ImmutableList.<String> builder().add(installPackage("linux-image-generic-lts-raring"))
+            if ("ubuntu".equalsIgnoreCase(osDetails.getName()) && "12.04".equalsIgnoreCase(osVersion)) {
+                List<String> commands = ImmutableList.<String> builder()
+                        .add(installPackage("linux-image-generic-lts-raring"))
                         .add(installPackage("linux-headers-generic-lts-raring"))
                         .add(sudo("reboot"))
                         .build();
                 executeKernelInstallation(commands);
             }
-            if (osDetails.getName().equalsIgnoreCase("centos")) {
-                List<String> commands = ImmutableList.<String> builder()
+            if ("centos".equalsIgnoreCase(osDetails.getName())) {
+                List<String> commands = ImmutableList.<String>builder()
                         .add(sudo("yum -y --nogpgcheck upgrade kernel"))
                         .add(sudo("reboot"))
                         .build();
@@ -270,9 +292,9 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
         List<String> commands = Lists.newArrayList();
         commands.add(INSTALL_CURL);
-        if (osDetails.getName().equalsIgnoreCase("ubuntu")) {
+        if ("ubuntu".equalsIgnoreCase(osDetails.getName())) {
             commands.add(installDockerOnUbuntu());
-        } else if (osDetails.getName().equalsIgnoreCase("centos")) { // should work for RHEL also?
+        } else if ("centos".equalsIgnoreCase(osDetails.getName())) { // should work for RHEL also?
             commands.add(ifExecutableElse1("yum", useYum(osVersion, arch, getEpelRelease())));
             commands.add(installPackage(ImmutableMap.of("yum", "docker-io"), null));
             commands.add(sudo(format("curl https://get.docker.com/builds/Linux/x86_64/docker-%s -o /usr/bin/docker", getVersion())));

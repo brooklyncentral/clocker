@@ -235,8 +235,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                     flags.put("securityGroups", securityGroup);
                 }
             } else {
-                flags.put(JcloudsLocationConfig.JCLOUDS_LOCATION_CUSTOMIZER.getName(),
-                        JcloudsLocationSecurityGroupCustomizer.getInstance(getApplicationId()));
+                flags.put(JcloudsLocationConfig.JCLOUDS_LOCATION_CUSTOMIZERS.getName(),
+                        ImmutableList.of(JcloudsLocationSecurityGroupCustomizer.getInstance(getApplicationId())));
             }
 
             // Setup SoftLayer template options required for IBM SDN VE
@@ -326,7 +326,14 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     @Override
     public String createSshableImage(String dockerFile, String name) {
         String imageId = getDriver().buildImage(dockerFile, name);
-        if (LOG.isDebugEnabled()) LOG.debug("Successfully created image {} ({}/{})", new Object[] { imageId, getRepository(), name });
+        LOG.debug("Successfully created image {} ({}/{})", new Object[] { imageId, getRepository(), name });
+        return imageId;
+    }
+
+    @Override
+    public String layerSshableImageOn(String baseImage, String tag) {
+        String imageId = getDriver().layerSshableImageOn(baseImage, tag);
+        LOG.debug("Successfully created SSHable image {} from {}", imageId, baseImage);
         return imageId;
     }
 
@@ -374,6 +381,17 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     public SubnetTier getSubnetTier() { return getAttribute(DOCKER_HOST_SUBNET_TIER); }
+
+    @Override
+    public Optional<String> getImageNamed(String name) {
+        return getImageNamed(name, "latest");
+    }
+
+    @Override
+    public Optional<String> getImageNamed(String name, String tag) {
+        String imageList = runDockerCommand("images --no-trunc " + name);
+        return Optional.fromNullable(Strings.getFirstWordAfter(imageList, tag));
+    }
 
     /**
      * Create a new {@link DockerHostLocation} wrapping the machine we are starting in.

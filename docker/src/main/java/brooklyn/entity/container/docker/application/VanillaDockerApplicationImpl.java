@@ -28,9 +28,9 @@ import brooklyn.location.docker.DockerContainerLocation;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 
-public class DockerfileApplicationImpl extends SoftwareProcessImpl implements DockerfileApplication {
+public class VanillaDockerApplicationImpl extends SoftwareProcessImpl implements VanillaDockerApplication {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DockerfileApplication.class);
+    private static final Logger LOG = LoggerFactory.getLogger(VanillaDockerApplicationImpl.class);
 
     @Override
     public void init() {
@@ -59,8 +59,8 @@ public class DockerfileApplicationImpl extends SoftwareProcessImpl implements Do
     }
 
     @Override
-    public Class<? extends DockerfileApplicationDriver> getDriverInterface() {
-        return DockerfileApplicationDriver.class;
+    public Class<? extends VanillaDockerApplicationDriver> getDriverInterface() {
+        return VanillaDockerApplicationDriver.class;
     }
 
     @Override
