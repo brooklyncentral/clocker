@@ -6,6 +6,7 @@ package brooklyn.networking.sdn.ibm;
 import static brooklyn.util.ssh.BashCommands.sudo;
 
 import java.net.InetAddress;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -20,6 +21,8 @@ import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.basic.EntityPredicates;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.basic.lifecycle.ScriptHelper;
+import brooklyn.entity.container.docker.DockerContainer;
+import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.networking.VirtualNetwork;
@@ -327,6 +330,17 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
                 }
                 InetAddress publicAddress = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getNextContainerAddress(subnetId + ".public");
                 attachPublicAddress(containerId, address, publicAddress);
+                Collection<Entity> containers = getEntity().getAttribute(SdnAgent.SDN_PROVIDER)
+                        .getAttribute(SdnProvider.DOCKER_INFRASTRUCTURE)
+                        .getAttribute(DockerInfrastructure.DOCKER_CONTAINER_FABRIC)
+                        .getMembers();
+                Optional<DockerContainer> container = Iterables.tryFind(Iterables.filter(containers, DockerContainer.class),
+                        EntityPredicates.attributeEqualTo(DockerContainer.CONTAINER_ID, containerId));
+                if (!container.isPresent()) {
+                    throw new IllegalStateException(String.format("Cannot find container entity for %s", containerId));
+                }
+                Entities.deproxy(container.get()).setAttribute(SdnVeAttributes.PUBLIC_CIDR, publicCidr);
+                Entities.deproxy(container.get()).setAttribute(SdnVeAttributes.PUBLIC_ADDRESS, publicAddress);
             }
 
             return address;

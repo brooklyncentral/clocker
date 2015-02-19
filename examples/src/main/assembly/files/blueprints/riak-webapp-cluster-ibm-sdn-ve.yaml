@@ -23,10 +23,10 @@ services:
   networkId: public
   brooklyn.config:
     sdn.ibm.public.enable: true
-    sdn.ibm.public.cidr: 50.23.74.156/30
+    sdn.ibm.public.cidr: 50.23.75.156/30
 - type: brooklyn.networking.VirtualNetwork
   networkId: riak
-  cidr: 110.10.0.0/16
+  cidr: 120.20.0.0/16
 
 - type: brooklyn.entity.nosql.riak.RiakCluster
   initialSize: 3

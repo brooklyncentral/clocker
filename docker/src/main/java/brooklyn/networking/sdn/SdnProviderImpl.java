@@ -30,6 +30,7 @@ import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.DynamicGroup;
 import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.EntityPredicates;
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
@@ -276,7 +277,10 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
 
         // Create a DynamicGroup with all attached containers
         EntitySpec<DynamicGroup> networkSpec = EntitySpec.create(DynamicGroup.class)
-                .configure(DynamicGroup.ENTITY_FILTER, Predicates.and(Predicates.instanceOf(DockerContainer.class), DockerUtils.sameInfrastructure(getAttribute(DOCKER_INFRASTRUCTURE)), SdnAttributes.containerAttached(networkId)))
+                .configure(DynamicGroup.ENTITY_FILTER, Predicates.and(
+                        Predicates.instanceOf(DockerContainer.class),
+                        EntityPredicates.attributeEqualTo(DockerContainer.DOCKER_INFRASTRUCTURE, getAttribute(DOCKER_INFRASTRUCTURE)),
+                        SdnAttributes.containerAttached(networkId)))
                 .configure(DynamicGroup.MEMBER_DELEGATE_CHILDREN, true)
                 .displayName(network.getDisplayName());
         DynamicGroup subnet = getAttribute(SDN_APPLICATIONS).addMemberChild(networkSpec);
