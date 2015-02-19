@@ -40,17 +40,21 @@ public class DockerInfrastructureTests {
 
     private DockerInfrastructureTests() {}
 
-    public static void testDeploysTrivialApplication(TestApplication app, Location location) {
+    public static DockerInfrastructure deployAndWaitForDockerInfrastructure(TestApplication app, Location location) {
         DockerInfrastructure dockerInfrastructure = app.createAndManageChild(EntitySpec.create(DockerInfrastructure.class)
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 1)
-                .configure(DockerInfrastructure.WEAVE_ENABLED, false)
+                .configure(DockerInfrastructure.WEAVE_ENABLED, true)
                 .displayName("Docker Infrastructure"));
         LOG.info("Starting {} in {}", dockerInfrastructure, location);
         app.start(ImmutableList.of(location));
-        LOG.info("Waiting {} for {} to have started", Duration.FIVE_MINUTES, dockerInfrastructure);
+        LOG.info("Waiting {} for {} to have started", Duration.TWO_MINUTES, dockerInfrastructure);
         EntityTestUtils.assertAttributeEqualsEventually(ImmutableMap.of("timeout", Duration.FIVE_MINUTES),
                 dockerInfrastructure, Attributes.SERVICE_UP, true);
+        return dockerInfrastructure;
+    }
 
+    public static void testDeploysTrivialApplication(TestApplication app, Location location) {
+        DockerInfrastructure dockerInfrastructure = deployAndWaitForDockerInfrastructure(app, location);
         int existingCount = dockerInfrastructure.getAttribute(DockerInfrastructure.DOCKER_CONTAINER_COUNT);
 
         TestApplication deployment = ApplicationBuilder.newManagedApp(TestApplication.class, app.getManagementContext());
@@ -60,5 +64,7 @@ public class DockerInfrastructureTests {
         EntityTestUtils.assertAttributeEqualsEventually(deployment, Attributes.SERVICE_STATE_ACTUAL, Lifecycle.RUNNING);
         EntityTestUtils.assertAttributeEqualsEventually(dockerInfrastructure, DockerInfrastructure.DOCKER_CONTAINER_COUNT,
                 existingCount + 1);
+
+        deployment.stop();
     }
 }

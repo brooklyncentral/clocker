@@ -25,13 +25,13 @@ import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.docker.DockerContainerLocation;
 
 /**
- * The SSH implementation of the {@link DockerfileApplicationDriver}.
+ * The SSH implementation of the {@link VanillaDockerApplicationDriver}.
  */
-public class DockerfileApplicationSshDriver extends AbstractSoftwareProcessSshDriver implements DockerfileApplicationDriver {
+public class VanillaDockerApplicationSshDriver extends AbstractSoftwareProcessSshDriver implements VanillaDockerApplicationDriver {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DockerfileApplication.class);
+    private static final Logger LOG = LoggerFactory.getLogger(VanillaDockerApplicationSshDriver.class);
 
-    public DockerfileApplicationSshDriver(DockerfileApplicationImpl entity, SshMachineLocation machine) {
+    public VanillaDockerApplicationSshDriver(VanillaDockerApplicationImpl entity, SshMachineLocation machine) {
         super(entity, machine);
     }
 
@@ -44,7 +44,7 @@ public class DockerfileApplicationSshDriver extends AbstractSoftwareProcessSshDr
     }
 
     public String getDockerfile() {
-        return getEntity().getConfig(DockerfileApplication.DOCKERFILE_URL);
+        return getEntity().getConfig(VanillaDockerApplication.DOCKERFILE_URL);
     }
 
     @Override

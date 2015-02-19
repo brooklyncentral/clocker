@@ -18,7 +18,7 @@ origin: "https://registry.hub.docker.com/_/mysql/"
 locations:
 - my-docker-cloud
 services:
-- serviceType: brooklyn.entity.container.docker.application.DockerfileApplication
+- serviceType: brooklyn.entity.container.docker.application.VanillaDockerApplicationion
   id: mysql
   name: "MySQL"
   brooklyn.config:
@@ -28,3 +28,4 @@ services:
       MYSQL_ROOT_PASSWORD: "s3cr3t"
 
 # mysql-5.6.tgz contains ./docker-entrypoint.sh and ./Dockerfile from GitHub
+# https://github.com/docker-library/mysql

@@ -66,6 +66,12 @@ public interface DockerContainer extends BasicStartable, HasShortName, LocationO
     @SetFromFlag("imageId")
     ConfigKey<String> DOCKER_IMAGE_ID = DockerAttributes.DOCKER_IMAGE_ID.getConfigKey();
 
+    @SetFromFlag("imageName")
+    ConfigKey<String> DOCKER_IMAGE_NAME = DockerAttributes.DOCKER_IMAGE_NAME.getConfigKey();
+
+    @SetFromFlag("imageTag")
+    ConfigKey<String> DOCKER_IMAGE_TAG = DockerAttributes.DOCKER_IMAGE_TAG.getConfigKey();
+
     @SetFromFlag("hardwareId")
     ConfigKey<String> DOCKER_HARDWARE_ID = DockerAttributes.DOCKER_HARDWARE_ID.getConfigKey();
 
@@ -87,15 +93,16 @@ public interface DockerContainer extends BasicStartable, HasShortName, LocationO
             "docker.container.environment", "Environment variables for the Docker container");
 
     @SetFromFlag("entity")
-    AttributeSensorAndConfigKey<Entity, Entity> ENTITY = ConfigKeys.newSensorAndConfigKey(Entity.class, "docker.container.entity", "The entity running in this Docker container");
+    AttributeSensorAndConfigKey<Entity, Entity> ENTITY = ConfigKeys.newSensorAndConfigKey(Entity.class,
+            "docker.container.entity", "The entity running in this Docker container");
 
     ConfigKey<String> DOCKER_CONTAINER_NAME_FORMAT = ConfigKeys.newStringConfigKey("docker.container.nameFormat",
             "Format for generating Docker container names", DockerUtils.DEFAULT_DOCKER_CONTAINER_NAME_FORMAT);
 
     AttributeSensor<String> DOCKER_CONTAINER_NAME = Sensors.newStringSensor("docker.container.name", "The name of the Docker container");
 
-    AttributeSensor<String> IMAGE_ID = Sensors.newStringSensor("docker.container.imageId", "The Docker container image ID");
-    AttributeSensor<String> IMAGE_NAME = Sensors.newStringSensor("docker.container.imageName", "The Docker container image name");
+    AttributeSensor<String> IMAGE_ID = Sensors.newStringSensor("docker.container.image.id", "The Docker container image ID");
+    AttributeSensor<String> IMAGE_NAME = Sensors.newStringSensor("docker.container.image.name", "The Docker container image name");
     AttributeSensor<String> HARDWARE_ID = Sensors.newStringSensor("docker.container.hardwareId", "The Docker container hardware ID");
     AttributeSensor<String> CONTAINER_ID = Sensors.newStringSensor("docker.container.id", "The Docker container ID");
 

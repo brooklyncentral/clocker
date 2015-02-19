@@ -40,6 +40,14 @@ public interface DockerHostDriver extends SoftwareProcessDriver {
      */
     String buildImage(String dockerFile, String name);
 
+    /**
+     * Build an SSHable Docker image that is based from an image with the given name.
+     *
+     * @param name e.g. tomcat:8.0
+     * @return the new image's ID
+     */
+    String layerSshableImageOn(String name, String tag);
+
     String deployArchive(String url);
 
     void configureSecurityGroups();

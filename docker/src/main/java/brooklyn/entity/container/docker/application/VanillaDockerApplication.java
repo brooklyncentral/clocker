@@ -31,8 +31,8 @@ import brooklyn.util.time.Duration;
 import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
 
-@ImplementedBy(DockerfileApplicationImpl.class)
-public interface DockerfileApplication extends VanillaSoftwareProcess {
+@ImplementedBy(VanillaDockerApplicationImpl.class)
+public interface VanillaDockerApplication extends VanillaSoftwareProcess {
 
     @SetFromFlag("startTimeout")
     ConfigKey<Duration> START_TIMEOUT = ConfigKeys.newConfigKeyWithDefault(BrooklynConfigKeys.START_TIMEOUT, Duration.FIVE_MINUTES);
@@ -40,9 +40,15 @@ public interface DockerfileApplication extends VanillaSoftwareProcess {
     @SetFromFlag("dockerfileUrl")
     ConfigKey<String> DOCKERFILE_URL = DockerAttributes.DOCKERFILE_URL;
 
+    @SetFromFlag("imageName")
+    ConfigKey<String> IMAGE_NAME = DockerAttributes.DOCKER_IMAGE_NAME.getConfigKey();
+
+    @SetFromFlag("imageTag")
+    ConfigKey<String> IMAGE_TAG = DockerAttributes.DOCKER_IMAGE_TAG.getConfigKey();
+
     @SetFromFlag("openPorts")
-    ConfigKey<List<Integer>> CONTAINER_PORT_LIST = ConfigKeys.newConfigKey(
-            new TypeToken<List<Integer>>() { }, "docker.container.openPorts", "List of ports to open on the container for forwarding", ImmutableList.<Integer>of());
+    ConfigKey<List<Integer>> CONTAINER_PORT_LIST = ConfigKeys.newConfigKey(new TypeToken<List<Integer>>() {},
+            "docker.container.openPorts", "List of ports to open on the container for forwarding", ImmutableList.<Integer>of());
 
     DockerContainer getDockerContainer();
     DockerHost getDockerHost();
