@@ -39,9 +39,6 @@ public interface VirtualNetwork extends BasicStartable {
     @SetFromFlag("networkId")
     AttributeSensorAndConfigKey<String, String> NETWORK_ID = ConfigKeys.newStringSensorAndConfigKey("network.id", "ID of the network segment");
 
-    @SetFromFlag("networkName")
-    AttributeSensorAndConfigKey<String, String> NETWORK_NAME = ConfigKeys.newStringSensorAndConfigKey("network.name", "Name of the network segment");
-
     @SetFromFlag("cidr")
     AttributeSensorAndConfigKey<Cidr, Cidr> NETWORK_CIDR = ConfigKeys.newSensorAndConfigKey(Cidr.class, "network.cidr", "CIDR for the network segment");
 

@@ -61,8 +61,11 @@ public class SdnAttributes {
 
         @Override
         public boolean apply(@Nullable Entity input) {
-            return input instanceof DockerContainer &&
-                    input.getAttribute(SdnAttributes.ATTACHED_NETWORKS).contains(id);
+            if (input instanceof DockerContainer) {
+                Set<String> networks = input.getAttribute(SdnAttributes.ATTACHED_NETWORKS);
+                if (networks != null) return networks.contains(id);
+            }
+            return false;
         }
     };
 

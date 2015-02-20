@@ -23,10 +23,10 @@ services:
   networkId: public
   brooklyn.config:
     sdn.ibm.public.enable: true
-    sdn.ibm.public.cidr: 50.23.74.156/30
+    sdn.ibm.public.cidr: 50.23.75.154/31
 - type: brooklyn.networking.VirtualNetwork
   networkId: riak
-  cidr: 100.52.0.0/16
+  cidr: 123.0.0.0/16
 
 - type: brooklyn.storage.StorageVolume
   name: riak-storage
@@ -40,11 +40,10 @@ services:
   id: cluster
   brooklyn.config:
     install.version: 2.0.0
-    sdn.default.network: false
     network.list:
     - riak
     docker.host.volumes:
-      "/vol/riak": "/var/run/riak/persist"
+      "/vol/riak": "/var/log/riak"
     launch.latch: $brooklyn:component("riak-storage").attributeWhenReady("service.isUp")
  
 - type: brooklyn.entity.webapp.ControlledDynamicWebAppCluster

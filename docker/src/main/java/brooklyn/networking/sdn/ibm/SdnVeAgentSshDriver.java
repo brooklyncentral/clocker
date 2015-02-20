@@ -176,7 +176,7 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     private String copyJsonTemplate(String fileName, Map<String, String> substitutions) {
         String contents = processTemplate("classpath://brooklyn/networking/sdn/ibm/" + fileName, substitutions);
-        String target = Urls.mergePaths(getRunDir(), fileName);
+        String target = Urls.mergePaths(getRunDir(), Identifiers.makeRandomId(8) + ".json");
         DynamicTasks.queueIfPossible(SshEffectorTasks.put(target).machine(getMachine()).contents(contents)).andWaitForSuccess();
         return target;
     }
@@ -301,14 +301,13 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
 
             String networkScript = Urls.mergePaths(getRunDir(), "network.sh");
             Integer bridgeId = getEntity().getAttribute(SdnVeAgent.DOVE_BRIDGE_ID);
-            Map<String, Cidr> networks = getEntity().getAttribute(SdnVeAgent.SDN_PROVIDER).getAttribute(SdnProvider.SUBNETS);
-            Cidr cidr = networks.get(subnetId);
+            Cidr cidr = getEntity().getAttribute(SdnVeAgent.SDN_PROVIDER).getSubnetCidr(subnetId);
 
             /* ./setup_network_v2.sh containerid network_1 12345678 fa:16:50:00:01:e1 50.0.0.2/24 50.0.0.1 8064181 */
             String command = String.format("%s %s %s %s fa:16:%02x:%02x:%02x:%02x %s/%d %s %d %s", networkScript,
                     containerId, // UUID of the Container instance
                     getEntity().getApplicationId(), // Network ID
-                    Identifiers.getBase64IdFromValue(address.hashCode(), 8), // Port ID unique to container
+                    Identifiers.makeRandomId(8), // Port ID unique to container
                     address.getAddress()[0], address.getAddress()[1], address.getAddress()[2], address.getAddress()[3], // Container MAC address
                     address.getHostAddress(), cidr.getLength(), // CIDR IP address assigned to the above interface
                     cidr.addressAtOffset(1).getHostAddress(), // Default gateway assigned to the Container
@@ -325,9 +324,7 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
             VirtualNetwork network = (VirtualNetwork) found.get();
             if (Boolean.TRUE.equals(network.getConfig(SdnVeAttributes.ENABLE_PUBLIC_ACCESS))) {
                 Cidr publicCidr = network.getConfig(SdnVeAttributes.PUBLIC_CIDR);
-                if (!networks.containsKey(publicCidr)) {
-                    networks.put(subnetId + ".public", publicCidr);
-                }
+                getEntity().getAttribute(SdnVeAgent.SDN_PROVIDER).recordSubnetCidr(subnetId + ".public", publicCidr, -1);
                 InetAddress publicAddress = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getNextContainerAddress(subnetId + ".public");
                 attachPublicAddress(containerId, address, publicAddress);
                 Collection<Entity> containers = getEntity().getAttribute(SdnAgent.SDN_PROVIDER)

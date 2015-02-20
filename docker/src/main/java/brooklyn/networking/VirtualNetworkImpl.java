@@ -43,12 +43,9 @@ public class VirtualNetworkImpl extends BasicStartableImpl implements VirtualNet
 
         String networkId = getConfig(NETWORK_ID);
         if (Strings.isEmpty(networkId)) networkId = getId();
-        String networkName = getConfig(NETWORK_NAME);
-        if (Strings.isEmpty(networkName)) networkName = networkId;
 
         setAttribute(NETWORK_ID, networkId);
-        setAttribute(NETWORK_NAME, networkName);
-        setDisplayName(String.format("%s Network (%s)", Strings.isEmpty(getConfig(NETWORK_NAME)) ? "Virtual" : networkName, networkId));
+        setDisplayName(String.format("Virtual Network (%s)", networkId));
     }
 
     @Override

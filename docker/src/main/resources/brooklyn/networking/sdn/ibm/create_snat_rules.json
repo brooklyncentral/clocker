@@ -5,7 +5,7 @@
     "max_ip": "50.23.75.153", 
     "domain_id": ${domainId},
     "net_id": ${networkId},
-    "min_port": 2000,
-    "max_port": 3000
+    "min_port": 1,
+    "max_port": 65535
  }
  

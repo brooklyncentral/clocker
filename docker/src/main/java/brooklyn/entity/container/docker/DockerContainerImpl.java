@@ -383,30 +383,25 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             if (getConfig(SdnAttributes.SDN_ENABLE)) {
                 Entity entity = getRunningEntity();
                 SdnAgent agent = Entities.attributeSupplierWhenReady(dockerHost, SdnAgent.SDN_AGENT).get();
-                Set<String> addresses = Sets.newHashSet();
-                Set<String> networks = Sets.newHashSet();
 
-                String networkId = entity.getApplicationId();
-                String networkName = entity.getApplication().getDisplayName();
-                InetAddress subnetAddress = agent.attachNetwork(containerId, networkId, networkName);
-                setAttribute(Attributes.SUBNET_ADDRESS, subnetAddress.getHostAddress());
-                addresses.add(subnetAddress.getHostAddress().toString());
-                networks.add(networkId);
-
+                // Save attached network list
+                Set<String> networks = Sets.newHashSet(entity.getApplicationId());
                 Collection<String> extra = entity.getConfig(SdnAttributes.NETWORK_LIST);
-                if (extra != null) {
-                    for (String extraId : extra) {
-                        InetAddress extraAddress = agent.attachNetwork(containerId, extraId, extraId);
-                        addresses.add(extraAddress.getHostAddress().toString());
-                        networks.add(extraId);
+                if (extra != null) networks.addAll(extra);
+                setAttribute(SdnAttributes.ATTACHED_NETWORKS, networks);
+                Entities.deproxy(entity).setAttribute(SdnAttributes.ATTACHED_NETWORKS, networks);
+
+                // Save container addresses
+                Set<String> addresses = Sets.newHashSet();
+                for (String networkId : networks) {
+                    InetAddress address = agent.attachNetwork(containerId, networkId);
+                    addresses.add(address.getHostAddress().toString());
+                    if (networkId.equals(entity.getApplicationId())) {
+                        setAttribute(Attributes.SUBNET_ADDRESS, address.getHostAddress());
                     }
                 }
-
-                // Save attributes on container and running entity
                 setAttribute(CONTAINER_ADDRESSES, addresses);
-                setAttribute(SdnAttributes.ATTACHED_NETWORKS, networks);
                 Entities.deproxy(entity).setAttribute(CONTAINER_ADDRESSES, addresses);
-                Entities.deproxy(entity).setAttribute(SdnAttributes.ATTACHED_NETWORKS, networks);
             }
 
             // Create our wrapper location around the container

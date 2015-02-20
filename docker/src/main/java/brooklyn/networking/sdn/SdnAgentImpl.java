@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import brooklyn.config.render.RendererHints;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.DelegateEntity;
+import brooklyn.entity.basic.DynamicGroup;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityPredicates;
 import brooklyn.entity.basic.SoftwareProcessImpl;
@@ -99,7 +100,7 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
     }
 
     @Override
-    public InetAddress attachNetwork(String containerId, final String networkId, String networkName) {
+    public InetAddress attachNetwork(String containerId, final String networkId) {
         final SdnProvider provider = getAttribute(SDN_PROVIDER);
         boolean createNetwork = false;
         Cidr subnetCidr = null;
@@ -114,7 +115,6 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
             // Get a CIDR for the subnet from the availabkle pool and create a virtual network
             EntitySpec<VirtualNetwork> networkSpec = EntitySpec.create(VirtualNetwork.class)
                     .configure(VirtualNetwork.NETWORK_ID, networkId)
-                    .configure(VirtualNetwork.NETWORK_NAME, networkName)
                     .configure(VirtualNetwork.NETWORK_CIDR, subnetCidr);
 
             // Start and then add this virtual network as a child of SDN_NETWORKS
@@ -157,13 +157,17 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
         addresses.put(containerId, address);
         Entities.deproxy(provider).setAttribute(SdnProvider.CONTAINER_ADDRESSES, addresses);
 
+        // Rescan SDN network groups for containers
+        DynamicGroup network = (DynamicGroup) Iterables.find(provider.getAttribute(SdnProvider.SDN_APPLICATIONS).getMembers(),
+                EntityPredicates.attributeEqualTo(VirtualNetwork.NETWORK_ID, networkId));
+        network.rescanEntities();
+
         return address;
     }
 
     @Override
     public String provisionNetwork(VirtualNetwork network) {
         String networkId = network.getAttribute(VirtualNetwork.NETWORK_ID);
-        String networkName = network.getAttribute(VirtualNetwork.NETWORK_NAME);
 
         // Record the network CIDR being provisioned, allocating if required
         Cidr subnetCidr = network.getConfig(VirtualNetwork.NETWORK_CIDR);
@@ -175,7 +179,7 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
         Entities.deproxy(network).setAttribute(VirtualNetwork.NETWORK_CIDR, subnetCidr);
 
         // Create the netwoek using the SDN driver
-        getDriver().createSubnet(networkId, networkName, subnetCidr);
+        getDriver().createSubnet(network.getId(), networkId, subnetCidr);
 
         return networkId;
     }

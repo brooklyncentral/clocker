@@ -56,13 +56,11 @@ public interface SdnAgent extends SoftwareProcess {
      *
      * @param containerId the container ID
      * @param networkId the network ID to attach
-     * @param networkName the name of the network to attach (for use when the network must be created)
      * @return the {@link SubnetTier} IP address
      */
     @Effector(description="Attach a container to a network")
     InetAddress attachNetwork(
             @EffectorParam(name="containerId", description="Container ID") String containerId,
-            @EffectorParam(name="networkId", description="Network ID") String networkId,
-            @EffectorParam(name="networkName", description="Network Name") String networkName);
+            @EffectorParam(name="networkId", description="Network ID") String networkId);
 
 }

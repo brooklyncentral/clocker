@@ -102,6 +102,8 @@ public interface SdnProvider extends BasicStartable, NetworkProvisioningExtensio
 
     void recordSubnetCidr(String networkId, Cidr subnetCidr);
 
+    void recordSubnetCidr(String networkId, Cidr subnetCidr, int allocated);
+
     Cidr getSubnetCidr(String networkId);
 
     /* Callbacks for hosts using this SDN provider. */

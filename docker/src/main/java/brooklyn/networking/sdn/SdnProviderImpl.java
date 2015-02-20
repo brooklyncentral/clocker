@@ -174,6 +174,16 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
     }
 
     @Override
+    public void recordSubnetCidr(String networkId, Cidr subnetCidr, int allocated) {
+        synchronized (networkMutex) {
+            recordSubnetCidr(networkId, subnetCidr);
+            Map<String, Integer> allocations = getAttribute(SUBNET_ADDRESS_ALLOCATIONS);
+            allocations.put(networkId, allocated);
+            setAttribute(SUBNET_ADDRESS_ALLOCATIONS, allocations);
+        }
+    }
+
+    @Override
     public Cidr getSubnetCidr(String networkId) {
         synchronized (networkMutex) {
             Map<String, Cidr> subnets = getAttribute(SdnProvider.SUBNETS);
@@ -285,6 +295,7 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
                 .displayName(network.getDisplayName());
         DynamicGroup subnet = getAttribute(SDN_APPLICATIONS).addMemberChild(networkSpec);
         Entities.manage(subnet);
+        Entities.deproxy(subnet).setAttribute(VirtualNetwork.NETWORK_ID, networkId);
 
         getAttribute(SDN_NETWORKS).addMember(network);
     }
