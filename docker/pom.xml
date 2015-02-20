@@ -50,6 +50,11 @@
             <version>${brooklyn.version}</version>
         </dependency>
         <dependency>
+            <groupId>io.brooklyn.networking</groupId>
+            <artifactId>brooklyn-networking-cloudstack</artifactId>
+            <version>${brooklyn.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.brooklyn.clocker</groupId>
             <artifactId>brooklyn-clocker-patches</artifactId>
             <version>${project.version}</version>
