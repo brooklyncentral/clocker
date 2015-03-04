@@ -14,13 +14,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-# base ubuntu 12.04
+# base ubuntu 14.04
 #
-# VERSION 0.0.5
+# VERSION 0.0.6
 
-FROM ubuntu:12.04
+FROM ubuntu:14.04
 MAINTAINER Cloudsoft "brooklyn@cloudsoftcorp.com"
 
 # make sure the package repository is up to date
-RUN ( echo "deb http://archive.ubuntu.com/ubuntu precise main universe" ; echo "deb http://archive.ubuntu.com/ubuntu precise-updates main universe" ) > /etc/apt/sources.list
+RUN ( echo "deb http://archive.ubuntu.com/ubuntu trusty main universe" ; echo "deb http://archive.ubuntu.com/ubuntu trusty-updates main universe" ) > /etc/apt/sources.list
 RUN apt-get update
