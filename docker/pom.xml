@@ -39,7 +39,7 @@
             <version>${brooklyn.version}</version>
             <exclusions>
                 <exclusion>
-                    <groupId>org.apache.jclouds.labs</groupId>
+                    <groupId>${jclouds.groupId}.labs</groupId>
                     <artifactId>docker</artifactId>
                 </exclusion>
             </exclusions>

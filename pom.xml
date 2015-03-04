@@ -47,11 +47,12 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <!-- Dependencies -->
-        <jclouds.version>2.0.0-SNAPSHOT</jclouds.version>
+        <jclouds.groupId>io.cloudsoft.jclouds</jclouds.groupId>
+        <jclouds.version>1.9.0-ea-cloudsoft.1</jclouds.version>
 
         <!-- Testing -->
         <testng.version>6.8</testng.version>
-        <brooklyn.version>0.7.0-SNAPSHOT</brooklyn.version> <!-- BROOKLYN_VERSION -->
+        <brooklyn.version>0.7.0-ea-cloudsoft.1</brooklyn.version> <!-- BROOKLYN_VERSION -->
         <includedTestGroups/>
         <excludedTestGroups>Integration,Live,WIP</excludedTestGroups>
     </properties>
