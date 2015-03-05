@@ -204,8 +204,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 template = new PortableTemplateBuilder();
                 if (isJcloudsLocation(location, "google-compute-engine")) {
                     template.osFamily(OsFamily.CENTOS).osVersionMatches("6");
-                } else if (isJcloudsLocation(location, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME)) {
-                    template.osFamily(OsFamily.CENTOS).osVersionMatches("6");
                 } else {
                     template.osFamily(OsFamily.UBUNTU).osVersionMatches("14.04");
                 }
@@ -243,6 +241,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             // TODO Move this into a callback on the SdnProvider interface
             if (isJcloudsLocation(location, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME) && isSdnProvider("SdnVeNetwork")) {
                 if (template == null) template = new PortableTemplateBuilder();
+                template.osFamily(OsFamily.CENTOS).osVersionMatches("6").os64Bit(true);
                 Integer vlanId = getAttribute(DOCKER_INFRASTRUCTURE)
                         .getAttribute(DockerInfrastructure.SDN_PROVIDER)
                         .getConfig(SdnVeNetwork.VLAN_ID);

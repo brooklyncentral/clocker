@@ -27,7 +27,7 @@ RUN type locale-gen ; if [ "$?" -eq "0" ] ; then locale-gen en_US.UTF-8 ; fi
 # setup root account
 RUN echo 'root:${entity.password}' | chpasswd
 
-# install sshd
+# install and configure sshd
 RUN type apt-get ; \
   if [ "$?" -eq "0" ] ; then \
     apt-get update ; \
@@ -35,6 +35,8 @@ RUN type apt-get ; \
   else \
     yum -y install openssh-server ; \
   fi ; \
+  echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config ; \
+  echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config ; \
   mkdir /var/run/sshd ; \
   chmod 600 /var/run/sshd ; \
   /usr/sbin/sshd ;

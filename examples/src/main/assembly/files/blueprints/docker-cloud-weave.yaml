@@ -38,7 +38,7 @@ services:
       $brooklyn:entitySpec:
         type: brooklyn.networking.sdn.weave.WeaveNetwork
         brooklyn.config:
-          install.version: 0.8.0
+          install.version: 0.9.0
           sdn.network.cidr: 169.254.0.0/16
           sdn.network.size: 24
     docker.host.spec:
@@ -49,6 +49,8 @@ services:
             minRam: 12g
             minCores: 8
             stopIptables: true
+            osFamily: ubuntu
+            osVersionRegex: 14.04
           start.timeout: 15m
           docker.host.nameFormat: "docker-host-%2$d"
           docker.container.spec:

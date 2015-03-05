@@ -228,11 +228,21 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         String osVersion = osDetails.getVersion();
         String arch = osDetails.getArch();
         if (!osDetails.is64bit()) { throw new IllegalStateException("Docker supports only 64bit OS"); }
+        log.debug("Installing Docker on {} version {}", osDetails.getName(), osVersion);
         if (osDetails.isLinux()) {
             if ("ubuntu".equalsIgnoreCase(osDetails.getName()) && "12.04".equalsIgnoreCase(osVersion)) {
                 List<String> commands = ImmutableList.<String> builder()
                         .add(installPackage("linux-image-generic-lts-raring"))
                         .add(installPackage("linux-headers-generic-lts-raring"))
+                        .add(sudo("reboot"))
+                        .build();
+                executeKernelInstallation(commands);
+            }
+            if ("ubuntu".equalsIgnoreCase(osDetails.getName()) && "14.04".equalsIgnoreCase(osVersion)) {
+                List<String> commands = ImmutableList.<String> builder()
+                        .add("export KERNEL=$(uname -r)")
+                        .add(installPackage("linux-image-extra-$KERNEL"))
+                        .add(installPackage("linux-headers-$KERNEL"))
                         .add(sudo("reboot"))
                         .build();
                 executeKernelInstallation(commands);

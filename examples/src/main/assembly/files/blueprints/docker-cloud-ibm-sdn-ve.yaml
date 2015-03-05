@@ -55,6 +55,8 @@ services:
             minRam: 12g
             minCores: 8
             stopIptables: true
+            osFamily: centos
+            osVersionRegex: 6
           start.timeout: 15m
           docker.host.nameFormat: "docker-host-%2$d"
           docker.container.spec:
