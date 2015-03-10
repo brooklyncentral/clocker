@@ -27,7 +27,7 @@ RUN type locale-gen ; if [ "$?" -eq "0" ] ; then locale-gen en_US.UTF-8 ; fi
 # setup root account
 RUN echo 'root:${entity.password}' | chpasswd
 
-# install and configure sshd
+# install sshd
 RUN type apt-get ; \
   if [ "$?" -eq "0" ] ; then \
     apt-get update ; \
@@ -35,11 +35,15 @@ RUN type apt-get ; \
   else \
     yum -y install openssh-server ; \
   fi ; \
-  echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config ; \
-  echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config ; \
   mkdir /var/run/sshd ; \
-  chmod 600 /var/run/sshd ; \
-  /usr/sbin/sshd ;
+  chmod 600 /var/run/sshd ;
+
+# configure sshd to allow login
+RUN sed -i.bk 's/PermitRootLogin.*$/PermitRootLogin yes/g' /etc/ssh/sshd_config ; \
+  echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config
+
+# SSH login fix. Otherwise user is kicked off after login
+RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
 
 EXPOSE 22
 

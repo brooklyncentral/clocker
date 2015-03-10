@@ -26,7 +26,7 @@ services:
     sdn.ibm.public.cidr: 50.23.75.156/30
 - type: brooklyn.networking.VirtualNetwork
   networkId: riak
-  cidr: 123.0.0.0/16
+  cidr: 110.10.0.0/16
 
 - type: brooklyn.entity.nosql.riak.RiakCluster
   initialSize: 3

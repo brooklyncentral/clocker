@@ -21,12 +21,8 @@ services:
 
 - type: brooklyn.networking.VirtualNetwork
   networkId: public
-  brooklyn.config:
-    sdn.ibm.public.enable: true
-    sdn.ibm.public.cidr: 50.23.75.154/31
 - type: brooklyn.networking.VirtualNetwork
   networkId: riak
-  cidr: 10.0.0.0/8
 
 - type: brooklyn.entity.nosql.riak.RiakCluster
   initialSize: 3
@@ -53,12 +49,8 @@ services:
               $brooklyn:component("cluster").attributeWhenReady("riak.cluster.nodeList")
     controlleddynamicwebappcluster.controllerSpec:
       $brooklyn:entitySpec:
-        type: brooklyn.entity.proxy.haproxy.HAProxyController
+        type: brooklyn.entity.proxy.nginx.NginxController
         brooklyn.config:
-          docker.image.name: haproxy
-          docker.image.tag: latest
-          install.dir: /usr/local/sbin/
-          run.dir: /usr/local/etc/haproxy/
           network.list:
           - webapp
           - public

@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jclouds.compute.config.ComputeServiceProperties;
@@ -35,6 +36,7 @@ import brooklyn.config.ConfigKey;
 import brooklyn.config.render.RendererHints;
 import brooklyn.enricher.Enrichers;
 import brooklyn.entity.Entity;
+import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityFunctions;
@@ -46,6 +48,7 @@ import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.machine.MachineEntityImpl;
 import brooklyn.entity.proxying.EntitySpec;
+import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.entity.trait.Startable;
 import brooklyn.event.feed.ConfigToAttributes;
 import brooklyn.event.feed.function.FunctionFeed;
@@ -76,10 +79,13 @@ import brooklyn.policy.ha.ServiceReplacer;
 import brooklyn.policy.ha.ServiceRestarter;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.collections.QuorumCheck.QuorumChecks;
+import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.ssh.BashCommands;
+import brooklyn.util.task.DynamicTasks;
 import brooklyn.util.task.Tasks;
+import brooklyn.util.task.system.ProcessTaskWrapper;
 import brooklyn.util.text.Identifiers;
 import brooklyn.util.text.StringPredicates;
 import brooklyn.util.text.Strings;
@@ -380,6 +386,30 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     public SubnetTier getSubnetTier() { return getAttribute(DOCKER_HOST_SUBNET_TIER); }
+
+    @Override
+    public String execCommandTimeout(String command, Duration timeout) {
+        try {
+            ProcessTaskWrapper<Integer> task = SshEffectorTasks.ssh(command)
+                    .environmentVariables(((AbstractSoftwareProcessSshDriver) getDriver()).getShellEnvironment())
+                    .machine(getMachine())
+                    .summary(command)
+                    .newTask();
+            Integer result = DynamicTasks.queueIfPossible(task)
+                    .executionContext(this)
+                    .orSubmitAsync()
+                    .asTask()
+                    .get(timeout);
+            if (result != 0) {
+                LOG.warn("Command failed (result {}): {}", result, task.getStderr());
+            }
+            return task.getStdout();
+        } catch (TimeoutException te) {
+            throw new IllegalStateException("Timed out running command: " + command);
+        } catch (Exception e) {
+            throw Exceptions.propagate(e);
+        }
+    }
 
     @Override
     public Optional<String> getImageNamed(String name) {

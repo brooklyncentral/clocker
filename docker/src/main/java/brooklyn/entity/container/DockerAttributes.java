@@ -52,6 +52,9 @@ public class DockerAttributes {
     public static final AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_ID = ConfigKeys.newStringSensorAndConfigKey(
             "docker.image.id", "The ID of a Docker image to use for a container");
 
+    public static final AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_REPOSITORY = ConfigKeys.newStringSensorAndConfigKey(
+            "docker.image.repository", "The repository of the Docker image used by a container");
+
     public static final AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_NAME = ConfigKeys.newStringSensorAndConfigKey(
             "docker.image.name", "The name of the Docker image used by a container");
 
