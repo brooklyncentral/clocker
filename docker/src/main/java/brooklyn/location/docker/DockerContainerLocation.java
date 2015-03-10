@@ -16,6 +16,7 @@
 package brooklyn.location.docker;
 
 import static brooklyn.util.ssh.BashCommands.sudo;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.format;
 
 import java.io.IOException;
@@ -260,8 +261,9 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
 
     @Override
     public String getSubnetIp() {
+        String containerId = checkNotNull(getOwner().getContainerId(), "containerId");
         String containerAddress = getOwner().getDockerHost().runDockerCommand(
-                "inspect --format={{.NetworkSettings.IPAddress}} " + getOwner().getContainerId());
+                "inspect --format={{.NetworkSettings.IPAddress}} " + containerId);
         return containerAddress.trim();
     }
 
