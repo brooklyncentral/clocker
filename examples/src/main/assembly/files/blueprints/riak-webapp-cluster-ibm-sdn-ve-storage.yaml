@@ -63,11 +63,12 @@ services:
               $brooklyn:component("cluster").attributeWhenReady("riak.cluster.nodeList")
     controlleddynamicwebappcluster.controllerSpec:
       $brooklyn:entitySpec:
-        type: brooklyn.entity.proxy.ibm.HaProxy
+        type: brooklyn.entity.proxy.haproxy.HAProxyController
         brooklyn.config:
-          docker.imageUrl: https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/haproxy_image
-          entity.started: true
-          runDir: /var/run/haproxy
+          docker.image.name: haproxy
+          docker.image.tag: latest
+          install.dir: /usr/local/sbin/
+          run.dir: /usr/local/etc/haproxy/
           network.list:
           - webapp
           - public
