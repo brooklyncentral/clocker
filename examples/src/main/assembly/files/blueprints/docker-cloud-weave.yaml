@@ -45,6 +45,7 @@ services:
       $brooklyn:entitySpec:
         type: brooklyn.entity.container.docker.DockerHost
         brooklyn.config:
+          docker.host.driver.storage: overlay
           docker.host.flags:
             minRam: 12g
             minCores: 8

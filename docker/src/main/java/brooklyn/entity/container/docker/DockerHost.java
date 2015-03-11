@@ -97,8 +97,11 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
     AttributeSensorAndConfigKey<String, String>  DOCKER_REPOSITORY = ConfigKeys.newStringSensorAndConfigKey("docker.repository",
             "The name of the Docker repository for images");
 
-    ConfigKey<? extends String> EPEL_RELEASE = ConfigKeys.newStringConfigKey("docker.host.epel.release",
+    ConfigKey<String> EPEL_RELEASE = ConfigKeys.newStringConfigKey("docker.host.epel.release",
             "EPEL release for yum based OS", "6-8");
+
+    ConfigKey<String> DOCKER_STORAGE_DRIVER = ConfigKeys.newStringConfigKey("docker.host.driver.storage",
+            "The Docker storage driver type (default is 'overlay')", "overlay");
 
     AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_ID = DockerAttributes.DOCKER_IMAGE_ID;
 
