@@ -301,7 +301,7 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
 
             String networkScript = Urls.mergePaths(getRunDir(), "network.sh");
             Integer bridgeId = getEntity().getAttribute(SdnVeAgent.DOVE_BRIDGE_ID);
-            Cidr cidr = getEntity().getAttribute(SdnVeAgent.SDN_PROVIDER).getSubnetCidr(subnetId);
+            Cidr cidr = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getSubnetCidr(subnetId);
 
             /* ./setup_network_v2.sh containerid network_1 12345678 fa:16:50:00:01:e1 50.0.0.2/24 50.0.0.1 8064181 */
             String command = String.format("%s %s %s %s fa:16:%02x:%02x:%02x:%02x %s/%d %s %d %s", networkScript,

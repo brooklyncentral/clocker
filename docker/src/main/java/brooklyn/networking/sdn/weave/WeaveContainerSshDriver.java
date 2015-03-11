@@ -65,7 +65,6 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
     @Override
     public void install() {
         List<String> commands = Lists.newLinkedList();
-        commands.add(BashCommands.installPackage("ethtool conntrack"));
         commands.addAll(BashCommands.commandsToDownloadUrlsAs(resolver.getTargets(), getWeaveCommand()));
         commands.add("chmod 755 " + getWeaveCommand());
 
@@ -97,9 +96,15 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
 
     @Override
     public boolean isRunning() {
-        return newScript(MutableMap.of(USE_PID_FILE, false), CHECK_RUNNING)
-                .body.append(BashCommands.sudo(getWeaveCommand() + " status"))
-                .execute() == 0;
+        // Spawns a container for duration of command, so take the host lock
+        getEntity().getAttribute(SdnAgent.DOCKER_HOST).getDynamicLocation().getLock().lock();
+        try {
+            return newScript(MutableMap.of(USE_PID_FILE, false), CHECK_RUNNING)
+                    .body.append(BashCommands.sudo(getWeaveCommand() + " status"))
+                    .execute() == 0;
+        } finally {
+            getEntity().getAttribute(SdnAgent.DOCKER_HOST).getDynamicLocation().getLock().unlock();
+        }
     }
 
     @Override
@@ -116,9 +121,9 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
 
     @Override
     public InetAddress attachNetwork(String containerId, String subnetId) {
-        Tasks.setBlockingDetails("Attach Weave to " + containerId);
+        Tasks.setBlockingDetails(String.format("Attach %s to %s", containerId, subnetId));
         try {
-            Cidr cidr = getEntity().getConfig(WeaveNetwork.AGENT_CIDR);
+            Cidr cidr = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getSubnetCidr(subnetId);
             InetAddress address = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getNextContainerAddress(subnetId);
             ((WeaveContainer) getEntity()).getDockerHost().execCommand(BashCommands.sudo(String.format("%s attach %s/%d %s",
                     getWeaveCommand(), address.getHostAddress(), cidr.getLength(), containerId)));

@@ -115,8 +115,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                         .callable(new Callable<Boolean>() {
                                 @Override
                                 public Boolean call() throws Exception {
-                                    getDockerHost().runDockerCommand("inspect -f {{.Id}} " + getContainerId());
-                                    return Boolean.TRUE;
+                                    return Strings.isNonBlank(getDockerHost().runDockerCommand("inspect -f {{.Id}} " + getContainerId()));
                                 }
                         })
                         .onFailureOrException(Functions.constant(Boolean.FALSE)))
@@ -125,7 +124,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                                 @Override
                                 public Boolean call() throws Exception {
                                     String running = getDockerHost().runDockerCommand("inspect -f {{.State.Running}} " + getContainerId());
-                                    return Boolean.parseBoolean(Strings.trim(running));
+                                    return Strings.isNonBlank(running) && Boolean.parseBoolean(Strings.trim(running));
                                 }
                         })
                         .onFailureOrException(Functions.constant(Boolean.FALSE)))
@@ -134,7 +133,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                                 @Override
                                 public Boolean call() throws Exception {
                                     String running = getDockerHost().runDockerCommand("inspect -f {{.State.Paused}} " + getContainerId());
-                                    return Boolean.parseBoolean(Strings.trim(running));
+                                    return Strings.isNonBlank(running) && Boolean.parseBoolean(Strings.trim(running));
                                 }
                         })
                         .onFailureOrException(Functions.constant(Boolean.FALSE)))
