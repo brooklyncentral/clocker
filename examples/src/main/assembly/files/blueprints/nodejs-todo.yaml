@@ -17,8 +17,9 @@ name: "Node.JS Todo Application"
 origin: "https://github.com/amirrajan/nodejs-todo/"
 locations:
 - my-docker-cloud
+
 services:
-- serviceType: brooklyn.entity.nosql.redis.RedisStore
+- type: brooklyn.entity.nosql.redis.RedisStore
   id: redis
   name: "Redis"
   brooklyn.config:
@@ -27,7 +28,8 @@ services:
         type: "brooklyn.location.docker.strategy.ProvisioningFlagsPlacementStrategy"
         brooklyn.config:
           minRam: 1000
-- serviceType: brooklyn.entity.webapp.nodejs.NodeJsWebAppService
+
+- type: brooklyn.entity.webapp.nodejs.NodeJsWebAppService
   id: nodejs
   name: "Node.JS"
   brooklyn.config:

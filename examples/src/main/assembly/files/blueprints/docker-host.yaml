@@ -16,6 +16,7 @@ id: docker-host
 name: "Docker Host"
 origin: https://github.com/brooklyncentral/clocker/
 location: jclouds:softlayer:ams01
+
 services:
 - type: brooklyn.entity.container.docker.DockerInfrastructure
   brooklyn.config:

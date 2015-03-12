@@ -17,6 +17,7 @@ name: Couchbase with Pillow Fight
 origin: "https://github.com/apache/incubator-brooklyn/"
 locations:
 - my-docker-cloud
+
 services:
 - type: brooklyn.entity.nosql.couchbase.CouchbaseCluster
   id: couchbase
@@ -28,6 +29,7 @@ services:
     bucket-port: 11211
   brooklyn.config:
     couchbase.clusterInitRamSize: 4000
+
 - type: brooklyn.entity.basic.VanillaSoftwareProcess
   name: CBC Pillowfight
   launch.command: |

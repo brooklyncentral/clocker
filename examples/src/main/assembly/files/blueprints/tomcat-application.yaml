@@ -17,6 +17,7 @@ name: "Tomcat Web Application"
 origin: "https://github.com/apache/incubator-brooklyn/"
 locations:
 - my-docker-cloud
+
 services:
 - serviceType: brooklyn.entity.webapp.tomcat.TomcatServer
   brooklyn.config:

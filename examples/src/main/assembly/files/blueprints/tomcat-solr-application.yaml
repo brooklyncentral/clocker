@@ -17,8 +17,9 @@ name: "Tomcat Solr Application"
 origin: "http://brooklyncentral.github.io/clocker/"
 locations:
 - my-docker-cloud
+
 services:
-- serviceType: brooklyn.entity.nosql.solr.SolrServer
+- type: brooklyn.entity.nosql.solr.SolrServer
   brooklyn.config:
     jmx.enabled: true
     jmx.agent.mode: "JMX_RMI"
@@ -27,7 +28,8 @@ services:
     solr.core.config:
       example:
         "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/example.tgz"
-- serviceType: brooklyn.entity.webapp.tomcat.TomcatServer
+
+- type: brooklyn.entity.webapp.tomcat.TomcatServer
   brooklyn.config:
     docker.dockerfile.url:
       "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/UsesJavaDockerfile"

@@ -17,8 +17,9 @@ name: "Tomcat Application Server Cluster with MySQL Database"
 origin: "https://github.com/apache/incubator-brooklyn/"
 locations:
 - my-docker-cloud
+
 services:
-- serviceType: brooklyn.entity.webapp.ControlledDynamicWebAppCluster
+- type: brooklyn.entity.webapp.ControlledDynamicWebAppCluster
   id: tomcat-cluster
   name: "Tomcat Cluster"
   brooklyn.config:
@@ -56,6 +57,7 @@ services:
           install.dir: /usr/local/sbin/
           run.dir: /usr/local/etc/haproxy/
           member.sensor.hostname: "host.subnet.hostname"
+
 - type: brooklyn.entity.database.mysql.MySqlNode
   id: mysql
   name: MySQL Database

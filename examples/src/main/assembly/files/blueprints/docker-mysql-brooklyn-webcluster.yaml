@@ -18,7 +18,8 @@
 
 id: docker-mysql-brooklyn-webcluster
 name: "Run mysql on docker and webcluster on VM"
-origin: "https://registry.hub.docker.com/_/mysql/"
+origin: "https://github.com/apache/incubator-brooklyn/"
+
 services:
 - type: brooklyn.entity.webapp.ControlledDynamicWebAppCluster
   location: jclouds:softlayer:ams01
@@ -32,6 +33,7 @@ services:
         java.sysprops:
           brooklyn.example.db.url: $brooklyn:formatString("jdbc:%s%s?user=%s\\&password=%s",
               component("db").attributeWhenReady("mapped.datastore.url"), "visitors", "brooklyn", "br00k11n")
+
 - type: brooklyn.entity.database.mysql.MySqlNode
   id: db
   name: DB HelloWorld Visitors

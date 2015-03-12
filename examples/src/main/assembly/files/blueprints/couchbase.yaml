@@ -17,6 +17,7 @@ name: Couchbase Two Buckets
 origin: "https://github.com/apache/incubator-brooklyn/"
 locations:
 - my-docker-cloud
+
 services:
 - type: brooklyn.entity.nosql.couchbase.CouchbaseCluster
   initialSize: 3

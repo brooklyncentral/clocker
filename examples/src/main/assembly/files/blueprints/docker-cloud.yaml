@@ -15,6 +15,7 @@
 id: docker-cloud
 name: "Docker Cloud"
 origin: https://github.com/brooklyncentral/clocker/
+
 services:
 - type: brooklyn.entity.container.docker.DockerInfrastructure
   brooklyn.config:

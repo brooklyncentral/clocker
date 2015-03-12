@@ -16,6 +16,7 @@ id: docker-localhost
 name: "Docker Localhost"
 origin: https://github.com/brooklyncentral/clocker/
 location: localhost
+
 services:
 - type: brooklyn.entity.container.docker.DockerInfrastructure
   brooklyn.config:

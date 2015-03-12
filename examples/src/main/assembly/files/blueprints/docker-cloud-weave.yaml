@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-id: docker-cloud
-name: "Docker Cloud"
+id: docker-cloud-weave
+name: "Docker Cloud with Weave"
 origin: https://github.com/brooklyncentral/clocker/
+
 services:
 - type: brooklyn.entity.container.docker.DockerInfrastructure
   brooklyn.config:
@@ -23,7 +24,6 @@ services:
     docker.tls.certificate: conf/server-cert.pem
     docker.tls.key: conf/server-key.pem
     docker.host.cluster.initial.size: 2
-    docker.host.register: false
     docker.container.cluster.headroom.count: 4
     docker.policy.ha.enable: false
     docker.container.strategies:
@@ -47,8 +47,8 @@ services:
         brooklyn.config:
           docker.host.driver.storage: overlay
           docker.host.flags:
-            minRam: 12g
-            minCores: 8
+            minRam: 7g
+            minCores: 2
             stopIptables: true
             osFamily: ubuntu
             osVersionRegex: 14.04
