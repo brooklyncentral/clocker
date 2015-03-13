@@ -18,12 +18,14 @@ package brooklyn.networking;
 import java.util.Map;
 
 import brooklyn.config.ConfigKey;
+import brooklyn.entity.Group;
 import brooklyn.entity.basic.BasicStartable;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
+import brooklyn.networking.location.NetworkProvisioningExtension;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
 
@@ -49,5 +51,8 @@ public interface VirtualNetwork extends BasicStartable {
             Maps.<String, Object>newHashMap());
  
     AttributeSensor<Integer> ALLOCATED_ADDRESSES = Sensors.newIntegerSensor("network.allocated", "Allocated IP addresses");
+
+    AttributeSensor<NetworkProvisioningExtension> NETWORK_PROVISIONER = Sensors.newSensor(NetworkProvisioningExtension.class, "network.provsioner", "Location extension for provisioning networks");
+    AttributeSensor<Group> NETWORKED_APPLICATIONS = Sensors.newSensor(Group.class, "network.aplications", "Group containing entiities attached to the network");
 
 }

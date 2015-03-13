@@ -30,4 +30,6 @@ public interface NetworkProvisioningExtension {
 
     void provisionNetwork(VirtualNetwork network);
 
+    void deallocateNetwork(VirtualNetwork network);
+
 }

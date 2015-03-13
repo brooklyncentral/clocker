@@ -31,7 +31,6 @@ import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.DynamicGroup;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityPredicates;
-import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
@@ -46,9 +45,11 @@ import brooklyn.policy.PolicySpec;
 import brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import brooklyn.util.net.Cidr;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 
 public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnProvider{
@@ -285,19 +286,33 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
         SdnAgent agent = (SdnAgent) (getAgents().getMembers().iterator().next());
         String networkId = agent.provisionNetwork(network);
 
-        // Create a DynamicGroup with all attached containers
+        // Create a DynamicGroup with all attached entities
         EntitySpec<DynamicGroup> networkSpec = EntitySpec.create(DynamicGroup.class)
                 .configure(DynamicGroup.ENTITY_FILTER, Predicates.and(
-                        Predicates.instanceOf(DockerContainer.class),
+                        Predicates.not(Predicates.instanceOf(DockerContainer.class)),
                         EntityPredicates.attributeEqualTo(DockerContainer.DOCKER_INFRASTRUCTURE, getAttribute(DOCKER_INFRASTRUCTURE)),
-                        SdnAttributes.containerAttached(networkId)))
+                        SdnAttributes.attachedToNetwork(networkId)))
                 .configure(DynamicGroup.MEMBER_DELEGATE_CHILDREN, true)
                 .displayName(network.getDisplayName());
         DynamicGroup subnet = getAttribute(SDN_APPLICATIONS).addMemberChild(networkSpec);
         Entities.manage(subnet);
         Entities.deproxy(subnet).setAttribute(VirtualNetwork.NETWORK_ID, networkId);
+        Entities.deproxy(network).setAttribute(VirtualNetwork.NETWORKED_APPLICATIONS, subnet);
 
         getAttribute(SDN_NETWORKS).addMember(network);
+    }
+
+    @Override
+    public void deallocateNetwork(VirtualNetwork network) {
+        String networkId = network.getAttribute(VirtualNetwork.NETWORK_ID);
+        Optional<Entity> found = Iterables.tryFind(getAttribute(SDN_APPLICATIONS).getMembers(), EntityPredicates.attributeEqualTo(VirtualNetwork.NETWORK_ID, networkId));
+        if (found.isPresent()) {
+            getAttribute(SDN_APPLICATIONS).removeChild(found.get());
+        } else {
+            LOG.warn("Cannot find group containing {} network entities", networkId);
+        }
+
+        // TODO actually deprovision the network if possible?
     }
 
     static {

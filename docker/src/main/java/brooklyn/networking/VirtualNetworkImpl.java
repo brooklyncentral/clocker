@@ -54,6 +54,14 @@ public class VirtualNetworkImpl extends BasicStartableImpl implements VirtualNet
 
         super.start(locations);
 
+        NetworkProvisioningExtension provisioner = findNetworkProvisioner(locations);
+        setAttribute(NETWORK_PROVISIONER, provisioner);
+        provisioner.provisionNetwork(this);
+
+        setAttribute(SERVICE_UP, Boolean.TRUE);
+    }
+
+    public NetworkProvisioningExtension findNetworkProvisioner(Collection<? extends Location> locations) {
         Optional<? extends Location> found = Iterables.tryFind(locations, new Predicate<Location>() {
             @Override
             public boolean apply(Location input) {
@@ -64,16 +72,15 @@ public class VirtualNetworkImpl extends BasicStartableImpl implements VirtualNet
             throw new IllegalStateException("Cannot start a virtual network in any location: " + Iterables.toString(getLocations()));
         }
         NetworkProvisioningExtension provisioner = found.get().getExtension(NetworkProvisioningExtension.class);
-        provisioner.provisionNetwork(this);
-
-        setAttribute(SERVICE_UP, Boolean.TRUE);
+        return provisioner;
     }
 
     @Override
     public void stop() {
         setAttribute(SERVICE_UP, Boolean.FALSE);
 
-        // TODO network detele operations?
+        NetworkProvisioningExtension provisioner = getAttribute(NETWORK_PROVISIONER);
+        provisioner.deallocateNetwork(this);
 
         super.stop();
     }

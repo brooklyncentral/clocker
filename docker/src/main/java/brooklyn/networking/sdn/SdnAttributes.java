@@ -46,26 +46,27 @@ public class SdnAttributes {
     public static final AttributeSensor<Set<String>> ATTACHED_NETWORKS = Sensors.newSensor(new TypeToken<Set<String>>() { },
             "sdn.networks.attached", "The set of networks that an entity is attached to");
 
-    public static final Predicate<Entity> containerAttached(String networkId) {
+    public static final Predicate<Entity> attachedToNetwork(String networkId) {
         Preconditions.checkNotNull(networkId, "networkId");
-        return new ContainerAttachedPredicate(networkId);
+        return new AttachedToNetworkPredicate(networkId);
     }
 
-    public static class ContainerAttachedPredicate implements Predicate<Entity> {
+    public static class AttachedToNetworkPredicate implements Predicate<Entity> {
 
         private final String id;
 
-        public ContainerAttachedPredicate(String id) {
+        public AttachedToNetworkPredicate(String id) {
             this.id = Preconditions.checkNotNull(id, "id");
         }
 
         @Override
         public boolean apply(@Nullable Entity input) {
-            if (input instanceof DockerContainer) {
-                Set<String> networks = input.getAttribute(SdnAttributes.ATTACHED_NETWORKS);
-                if (networks != null) return networks.contains(id);
+            Set<String> networks = input.getAttribute(SdnAttributes.ATTACHED_NETWORKS);
+            if (networks != null) {
+                return networks.contains(id);
+            } else {
+                return false;
             }
-            return false;
         }
     };
 
