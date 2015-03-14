@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 by Cloudsoft Corporation Limited
+ * Copyright 2014-2015 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,9 @@ import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.group.DynamicCluster;
+import brooklyn.entity.rebind.BasicLocationRebindSupport;
+import brooklyn.entity.rebind.RebindContext;
+import brooklyn.entity.rebind.RebindSupport;
 import brooklyn.location.MachineLocation;
 import brooklyn.location.MachineProvisioningLocation;
 import brooklyn.location.NoMachinesAvailableException;
@@ -42,6 +45,8 @@ import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
 import brooklyn.location.docker.strategy.DockerAwareProvisioningStrategy;
 import brooklyn.location.dynamic.DynamicLocation;
+import brooklyn.mementos.LocationMemento;
+import brooklyn.networking.location.NetworkProvisioningExtension;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.flags.SetFromFlag;
@@ -267,6 +272,29 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
     @Override
     public void close() throws IOException {
         LOG.info("Close called on Docker infrastructure: {}", this);
+    }
+
+    // FIXME this should be supported in core Brooklyn for all extension tyoes
+    @Override
+    public RebindSupport<LocationMemento> getRebindSupport() {
+        NetworkProvisioningExtension networkProvisioningExtension = null;
+        if (hasExtension(NetworkProvisioningExtension.class)) {
+            networkProvisioningExtension = getExtension(NetworkProvisioningExtension.class);
+        }
+        final Optional<NetworkProvisioningExtension> extension = Optional.fromNullable(networkProvisioningExtension);
+        return new BasicLocationRebindSupport(this) {
+            @Override public LocationMemento getMemento() {
+                return getMementoWithProperties(MutableMap.<String, Object>of("networkProvisioningExtension", extension));
+            }
+            @Override
+            protected void doReconstruct(RebindContext rebindContext, LocationMemento memento) {
+                super.doReconstruct(rebindContext, memento);
+                Optional<NetworkProvisioningExtension> extension = (Optional<NetworkProvisioningExtension>) memento.getCustomField("networkProvisioningExtension");
+                if (extension.isPresent()) {
+                    addExtension(NetworkProvisioningExtension.class, extension.get());
+                }
+            }
+        };
     }
 
     @Override

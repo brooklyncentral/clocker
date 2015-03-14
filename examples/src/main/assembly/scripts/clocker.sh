@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2014 by Cloudsoft Corporation Limited
+# Copyright 2014-2015 by Cloudsoft Corporation Limited
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ ROOT=$(cd "$(dirname "$0")/.." && pwd -P)
 
 # check command line arguments for location
 if [ $# -eq 1 ] ; then
-    LAUNCH_FLAGS="--app ${ROOT}/blueprints/docker-cloud.yaml --location $1"
+    LAUNCH_FLAGS="--app ${ROOT}/blueprints/docker-cloud-weave.yaml --location $1"
 elif [ $# -ne 0 ] ; then
     echo "Too many arguments; Usage: clocker.sh [location]"
     exit 1
@@ -35,7 +35,4 @@ export JAVA_OPTS
 # launch clocker
 ${ROOT}/bin/brooklyn.sh clocker ${LAUNCH_FLAGS} \
     --ignoreManagedAppsStartupErrors \
-    --ignorePersistenceStartupErrors \
-    --persist auto \
-    --persistenceDir ${HOME}/.clocker \
     --stopOnShutdown none 2>&1 | tee -a ${ROOT}/console.log

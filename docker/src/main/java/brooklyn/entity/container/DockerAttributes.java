@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 by Cloudsoft Corporation Limited
+ * Copyright 2014-2015 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import brooklyn.config.ConfigKey;
+import brooklyn.entity.Entity;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
@@ -50,6 +51,9 @@ public class DockerAttributes {
 
     public static final AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_ID = ConfigKeys.newStringSensorAndConfigKey(
             "docker.image.id", "The ID of a Docker image to use for a container");
+
+    public static final AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_REPOSITORY = ConfigKeys.newStringSensorAndConfigKey(
+            "docker.image.repository", "The repository of the Docker image used by a container");
 
     public static final AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_NAME = ConfigKeys.newStringSensorAndConfigKey(
             "docker.image.name", "The name of the Docker image used by a container");
@@ -87,8 +91,8 @@ public class DockerAttributes {
             new TypeToken<List<DockerAwarePlacementStrategy>>() { },
             "docker.container.strategies", "Placement strategy list for Docker containers");
 
-    public static final ConfigKey<Boolean> WEAVE_ENABLED = ConfigKeys.newBooleanConfigKey(
-            "weave.enabled",  "Enable Weave SDN", Boolean.TRUE);
+    public static final AttributeSensorAndConfigKey<Entity, Entity> DOCKER_INFRASTRUCTURE = ConfigKeys.newSensorAndConfigKey(Entity.class,
+            "docker.infrastructure", "The Docker infrastructure");
 
     /*
      * Counter attributes.

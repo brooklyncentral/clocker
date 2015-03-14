@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 by Cloudsoft Corporation Limited
+ * Copyright 2014-2015 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jclouds.compute.config.ComputeServiceProperties;
 import org.jclouds.compute.domain.OsFamily;
 import org.jclouds.compute.domain.TemplateBuilder;
-import org.jclouds.googlecomputeengine.GoogleComputeEngineConstants;
+import org.jclouds.compute.domain.Volume;
+import org.jclouds.softlayer.compute.options.SoftLayerTemplateOptions;
+import org.jclouds.softlayer.reference.SoftLayerConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +36,7 @@ import brooklyn.config.ConfigKey;
 import brooklyn.config.render.RendererHints;
 import brooklyn.enricher.Enrichers;
 import brooklyn.entity.Entity;
+import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityFunctions;
@@ -40,11 +44,11 @@ import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
-import brooklyn.entity.container.weave.WeaveContainer;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.machine.MachineEntityImpl;
 import brooklyn.entity.proxying.EntitySpec;
+import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.entity.trait.Startable;
 import brooklyn.event.feed.ConfigToAttributes;
 import brooklyn.event.feed.function.FunctionFeed;
@@ -64,6 +68,9 @@ import brooklyn.location.jclouds.networking.JcloudsLocationSecurityGroupCustomiz
 import brooklyn.location.jclouds.templates.PortableTemplateBuilder;
 import brooklyn.management.LocationManager;
 import brooklyn.networking.portforwarding.DockerPortForwarder;
+import brooklyn.networking.sdn.SdnAgent;
+import brooklyn.networking.sdn.SdnAttributes;
+import brooklyn.networking.sdn.ibm.SdnVeNetwork;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.networking.subnet.SubnetTierImpl;
 import brooklyn.policy.PolicySpec;
@@ -72,10 +79,13 @@ import brooklyn.policy.ha.ServiceReplacer;
 import brooklyn.policy.ha.ServiceRestarter;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.collections.QuorumCheck.QuorumChecks;
+import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.ssh.BashCommands;
+import brooklyn.util.task.DynamicTasks;
 import brooklyn.util.task.Tasks;
+import brooklyn.util.task.system.ProcessTaskWrapper;
 import brooklyn.util.text.Identifiers;
 import brooklyn.util.text.StringPredicates;
 import brooklyn.util.text.Strings;
@@ -96,7 +106,7 @@ import com.google.common.collect.Iterables;
  */
 public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DockerHostImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DockerHost.class);
 
     private transient FunctionFeed scan;
 
@@ -198,10 +208,10 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             if (overrideImageChoice) {
                 LOG.debug("Customising image choice for {}", this);
                 template = new PortableTemplateBuilder();
-                if (isJcloudsLocation(location, GoogleComputeEngineConstants.GCE_PROVIDER_NAME)) {
+                if (isJcloudsLocation(location, "google-compute-engine")) {
                     template.osFamily(OsFamily.CENTOS).osVersionMatches("6");
                 } else {
-                    template.osFamily(OsFamily.UBUNTU).osVersionMatches("12.04");
+                    template.osFamily(OsFamily.UBUNTU).osVersionMatches("14.04");
                 }
                 template.os64Bit(true);
                 flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), template);
@@ -223,7 +233,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             // Configure security groups for host virtual machine
             String securityGroup = getConfig(DockerInfrastructure.SECURITY_GROUP);
             if (Strings.isNonBlank(securityGroup)) {
-                if (isJcloudsLocation(location, GoogleComputeEngineConstants.GCE_PROVIDER_NAME)) {
+                if (isJcloudsLocation(location, "google-compute-engine")) {
                     flags.put("networkName", securityGroup);
                 } else {
                     flags.put("securityGroups", securityGroup);
@@ -232,6 +242,21 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 flags.put(JcloudsLocationConfig.JCLOUDS_LOCATION_CUSTOMIZERS.getName(),
                         ImmutableList.of(JcloudsLocationSecurityGroupCustomizer.getInstance(getApplicationId())));
             }
+
+            // Setup SoftLayer template options required for IBM SDN VE
+            // TODO Move this into a callback on the SdnProvider interface
+            if (isJcloudsLocation(location, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME) && isSdnProvider("SdnVeNetwork")) {
+                if (template == null) template = new PortableTemplateBuilder();
+                template.osFamily(OsFamily.CENTOS).osVersionMatches("6").os64Bit(true);
+                Integer vlanId = getAttribute(DOCKER_INFRASTRUCTURE)
+                        .getAttribute(DockerInfrastructure.SDN_PROVIDER)
+                        .getConfig(SdnVeNetwork.VLAN_ID);
+                template.options(SoftLayerTemplateOptions.Builder
+                        .diskType(Volume.Type.LOCAL.name()) // FIXME Temporary setting overriding capacity limitation on account
+                        .primaryBackendNetworkComponentNetworkVlanId(vlanId)
+                        .portSpeed(1000)); // TODO Make configurable
+                flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), template);
+            }
         }
         return flags;
     }
@@ -239,6 +264,12 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     private boolean isJcloudsLocation(MachineProvisioningLocation location, String providerName) {
         return location instanceof JcloudsLocation
                 && ((JcloudsLocation) location).getProvider().equals(providerName);
+    }
+
+    private boolean isSdnProvider(String providerName) {
+        Entity sdn = getAttribute(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER);
+        if (sdn == null) return false;
+        return sdn.getEntityType().getSimpleName().equalsIgnoreCase(providerName);
     }
 
     @Override
@@ -268,11 +299,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     public Integer getDockerPort() {
-        return getAttribute(DOCKER_PORT);
-    }
-
-    @Override
-    public Integer getDockerSslPort() {
         return getAttribute(DOCKER_SSL_PORT);
     }
 
@@ -362,6 +388,30 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     public SubnetTier getSubnetTier() { return getAttribute(DOCKER_HOST_SUBNET_TIER); }
 
     @Override
+    public String execCommandTimeout(String command, Duration timeout) {
+        try {
+            ProcessTaskWrapper<Integer> task = SshEffectorTasks.ssh(command)
+                    .environmentVariables(((AbstractSoftwareProcessSshDriver) getDriver()).getShellEnvironment())
+                    .machine(getMachine())
+                    .summary(command)
+                    .newTask();
+            Integer result = DynamicTasks.queueIfPossible(task)
+                    .executionContext(this)
+                    .orSubmitAsync()
+                    .asTask()
+                    .get(timeout);
+            if (result != 0) {
+                LOG.warn("Command failed (result {}): {}", result, task.getStderr());
+            }
+            return task.getStdout();
+        } catch (TimeoutException te) {
+            throw new IllegalStateException("Timed out running command: " + command);
+        } catch (Exception e) {
+            throw Exceptions.propagate(e);
+        }
+    }
+
+    @Override
     public Optional<String> getImageNamed(String name) {
         return getImageNamed(name, "latest");
     }
@@ -414,10 +464,12 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         getDriver().configureSecurityGroups();
 
         Maybe<SshMachineLocation> found = Machines.findUniqueSshMachineLocation(getLocations());
-        String dockerLocationSpec = String.format("jclouds:docker:http://%s:%s",
+        String dockerLocationSpec = String.format("jclouds:docker:https://%s:%s",
                 found.get().getSshHostAndPort().getHostText(), getDockerPort());
+        String certificatePath = getConfig(DockerInfrastructure.DOCKER_CERTIFICATE_PATH);
+        String keyPath = getConfig(DockerInfrastructure.DOCKER_KEY_PATH);
         JcloudsLocation jcloudsLocation = (JcloudsLocation) getManagementContext().getLocationRegistry()
-                .resolve(dockerLocationSpec, MutableMap.of("identity", "docker", "credential", "docker", ComputeServiceProperties.IMAGE_LOGIN_USER, "root:" + getPassword()));
+                .resolve(dockerLocationSpec, MutableMap.of("identity", certificatePath, "credential", keyPath, ComputeServiceProperties.IMAGE_LOGIN_USER, "root:" + getPassword()));
         setAttribute(JCLOUDS_DOCKER_LOCATION, jcloudsLocation);
 
         DockerPortForwarder portForwarder = new DockerPortForwarder();
@@ -442,6 +494,15 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     public void postStart() {
+        Entities.deproxy(getAttribute(DOCKER_CONTAINER_CLUSTER)).setAttribute(SERVICE_UP, Boolean.TRUE);
+
+        if (Boolean.TRUE.equals(getAttribute(DOCKER_INFRASTRUCTURE).getConfig(SdnAttributes.SDN_ENABLE))) {
+            LOG.info("Waiting on SDN agent");
+            SdnAgent agent = Entities.attributeSupplierWhenReady(this, SdnAgent.SDN_AGENT).get();
+            Entities.waitForServiceUp(agent);
+            LOG.info("SDN agent running: " + agent.getAttribute(SERVICE_UP));
+        }
+
         String imageId = getConfig(DOCKER_IMAGE_ID);
 
         if (Strings.isBlank(imageId)) {
@@ -488,14 +549,14 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     public void preStop() {
         if (scan != null && scan.isActivated()) scan.stop();
 
-        WeaveContainer weave = getAttribute(WeaveContainer.WEAVE_CONTAINER);
-        if (weave != null) {
-            // Avoid DockerHost -> Weave -> DockerHost stop recursion by invoking
-            // the effector instead of weave.stop().
-            boolean weaveStopped = Entities.invokeEffector(this, weave, Startable.STOP)
+        SdnAgent agent = getAttribute(SdnAgent.SDN_AGENT);
+        if (agent != null) {
+            // Avoid DockerHost -> SdnAgent -> DockerHost stop recursion by invoking
+            // the effector instead of agent.stop().
+            boolean agentStopped = Entities.invokeEffector(this, agent, Startable.STOP)
                     .blockUntilEnded(Duration.TEN_SECONDS);
-            if (!weaveStopped) {
-                LOG.debug("{} may not have stopped. Proceeding to stop {} anyway", weave, this);
+            if (!agentStopped) {
+                LOG.debug("{} may not have stopped. Proceeding to stop {} anyway", agent, this);
             }
         }
 

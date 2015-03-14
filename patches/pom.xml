@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    Copyright 2014 by Cloudsoft Corporation Limited
+    Copyright 2014-2015 by Cloudsoft Corporation Limited
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -37,21 +37,6 @@
             <groupId>org.apache.brooklyn</groupId>
             <artifactId>brooklyn-all</artifactId>
             <version>${brooklyn.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.jclouds.labs</groupId>
-                    <artifactId>docker</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <!-- See https://github.com/andreaturli/jclouds-labs,
-                 branch docker.1.8.2-alpha-cloudsoft.6,
-                 commit 6656e240cac6d13f6bbd84d3bbb940ed3af89da5
-             -->
-            <groupId>io.cloudsoft.jclouds.labs</groupId>
-            <artifactId>docker</artifactId>
-            <version>1.8.2-alpha-cloudsoft.6</version>
         </dependency>
     </dependencies>
 

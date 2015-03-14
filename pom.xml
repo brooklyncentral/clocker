@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    Copyright 2014 by Cloudsoft Corporation Limited
+    Copyright 2014-2015 by Cloudsoft Corporation Limited
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -47,11 +47,12 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <!-- Dependencies -->
-        <jclouds.version>1.8.1</jclouds.version>
+        <jclouds.groupId>io.cloudsoft.jclouds</jclouds.groupId>
+        <jclouds.version>1.9.0-ea-cloudsoft.1</jclouds.version>
 
         <!-- Testing -->
         <testng.version>6.8</testng.version>
-        <brooklyn.version>0.7.0-SNAPSHOT</brooklyn.version> <!-- BROOKLYN_VERSION -->
+        <brooklyn.version>0.7.0-ea-cloudsoft.2</brooklyn.version> <!-- BROOKLYN_VERSION -->
         <includedTestGroups/>
         <excludedTestGroups>Integration,Live,WIP</excludedTestGroups>
     </properties>

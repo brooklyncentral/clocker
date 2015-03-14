@@ -1,4 +1,4 @@
-# Copyright 2014 by Cloudsoft Corporation Limited
+# Copyright 2014-2015 by Cloudsoft Corporation Limited
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,16 +17,17 @@ name: Riak Cluster with Webapp Cluster
 origin: "https://github.com/apache/incubator-brooklyn/"
 locations:
 - my-docker-cloud
+
 services:
 - type: brooklyn.entity.nosql.riak.RiakCluster
-  initialSize: 5
+  initialSize: 2
   id: cluster
   brooklyn.config:
     install.version: 2.0.0
 - type: brooklyn.entity.webapp.ControlledDynamicWebAppCluster
   name: Web Cluster
   brooklyn.config:
-    initialSize: 3
+    initialSize: 2
     controlleddynamicwebappcluster.controllerSpec:
       $brooklyn:entitySpec:
         type: brooklyn.entity.proxy.nginx.NginxController

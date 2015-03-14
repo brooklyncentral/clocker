@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 by Cloudsoft Corporation Limited
+ * Copyright 2014-2015 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,6 @@ import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.basic.ServiceStateLogic;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
-import brooklyn.entity.container.weave.WeaveContainer;
 import brooklyn.event.feed.ConfigToAttributes;
 import brooklyn.event.feed.function.FunctionFeed;
 import brooklyn.event.feed.function.FunctionPollConfig;
@@ -66,6 +65,8 @@ import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.location.jclouds.templates.PortableTemplateBuilder;
 import brooklyn.management.LocationManager;
 import brooklyn.networking.portforwarding.subnet.JcloudsPortforwardingSubnetLocation;
+import brooklyn.networking.sdn.SdnAgent;
+import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.util.collections.MutableList;
 import brooklyn.util.collections.MutableMap;
@@ -79,13 +80,14 @@ import brooklyn.util.time.Duration;
 
 import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
+import com.google.common.collect.Sets;
 
 /**
  * A single Docker container.
  */
 public class DockerContainerImpl extends BasicStartableImpl implements DockerContainer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DockerContainerImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DockerContainer.class);
 
     private transient FunctionFeed status;
 
@@ -113,8 +115,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                         .callable(new Callable<Boolean>() {
                                 @Override
                                 public Boolean call() throws Exception {
-                                    getDockerHost().runDockerCommand("inspect -f {{.Id}} " + getContainerId());
-                                    return Boolean.TRUE;
+                                    return Strings.isNonBlank(getDockerHost().runDockerCommand("inspect -f {{.Id}} " + getContainerId()));
                                 }
                         })
                         .onFailureOrException(Functions.constant(Boolean.FALSE)))
@@ -123,7 +124,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                                 @Override
                                 public Boolean call() throws Exception {
                                     String running = getDockerHost().runDockerCommand("inspect -f {{.State.Running}} " + getContainerId());
-                                    return Boolean.parseBoolean(Strings.trim(running));
+                                    return Strings.isNonBlank(running) && Boolean.parseBoolean(Strings.trim(running));
                                 }
                         })
                         .onFailureOrException(Functions.constant(Boolean.FALSE)))
@@ -132,7 +133,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                                 @Override
                                 public Boolean call() throws Exception {
                                     String running = getDockerHost().runDockerCommand("inspect -f {{.State.Paused}} " + getContainerId());
-                                    return Boolean.parseBoolean(Strings.trim(running));
+                                    return Strings.isNonBlank(running) && Boolean.parseBoolean(Strings.trim(running));
                                 }
                         })
                         .onFailureOrException(Functions.constant(Boolean.FALSE)))
@@ -374,13 +375,32 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         try {
             // Create a new container using jclouds Docker driver
             JcloudsSshMachineLocation container = host.getJcloudsLocation().obtain(dockerFlags);
-            setAttribute(CONTAINER_ID, container.getNode().getId());
+            String containerId = container.getNode().getId();
+            setAttribute(CONTAINER_ID, containerId);
 
-            // If Weave is enabled, attach to the network
-            if (getConfig(DockerInfrastructure.WEAVE_ENABLED)) {
-                WeaveContainer weave = Entities.attributeSupplierWhenReady(dockerHost, WeaveContainer.WEAVE_CONTAINER).get();
-                InetAddress subnetAddress = weave.attachNetwork(getAttribute(CONTAINER_ID));
-                setAttribute(Attributes.SUBNET_ADDRESS, subnetAddress.getHostAddress());
+            // If SDN is enabled, attach networks
+            if (getConfig(SdnAttributes.SDN_ENABLE)) {
+                Entity entity = getRunningEntity();
+                SdnAgent agent = Entities.attributeSupplierWhenReady(dockerHost, SdnAgent.SDN_AGENT).get();
+
+                // Save attached network list
+                Set<String> networks = Sets.newHashSet(entity.getApplicationId());
+                Collection<String> extra = entity.getConfig(SdnAttributes.NETWORK_LIST);
+                if (extra != null) networks.addAll(extra);
+                setAttribute(SdnAttributes.ATTACHED_NETWORKS, networks);
+                Entities.deproxy(entity).setAttribute(SdnAttributes.ATTACHED_NETWORKS, networks);
+
+                // Save container addresses
+                Set<String> addresses = Sets.newHashSet();
+                for (String networkId : networks) {
+                    InetAddress address = agent.attachNetwork(containerId, networkId);
+                    addresses.add(address.getHostAddress().toString());
+                    if (networkId.equals(entity.getApplicationId())) {
+                        setAttribute(Attributes.SUBNET_ADDRESS, address.getHostAddress());
+                    }
+                }
+                setAttribute(CONTAINER_ADDRESSES, addresses);
+                Entities.deproxy(entity).setAttribute(CONTAINER_ADDRESSES, addresses);
             }
 
             // Create our wrapper location around the container
@@ -497,6 +517,21 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         }
 
         ServiceStateLogic.setExpectedState(this, Lifecycle.STOPPED);
+    }
+
+    @Override
+    public String getHostname() {
+        return getDockerContainerName(); // XXX or SUBNET_ADDRESS attribute?
+    }
+
+    @Override
+    public Set<String> getPublicAddresses() {
+        return Sets.newHashSet(getAttribute(SoftwareProcess.SUBNET_ADDRESS));
+    }
+
+    @Override
+    public Set<String> getPrivateAddresses() {
+        return getAttribute(CONTAINER_ADDRESSES);
     }
 
     static {

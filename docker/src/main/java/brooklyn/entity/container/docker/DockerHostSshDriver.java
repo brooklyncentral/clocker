@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 by Cloudsoft Corporation Limited
+ * Copyright 2014-2015 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,14 @@
  */
 package brooklyn.entity.container.docker;
 
-import static brooklyn.util.ssh.BashCommands.*;
+import static brooklyn.util.ssh.BashCommands.INSTALL_CURL;
+import static brooklyn.util.ssh.BashCommands.alternatives;
+import static brooklyn.util.ssh.BashCommands.chainGroup;
+import static brooklyn.util.ssh.BashCommands.fail;
+import static brooklyn.util.ssh.BashCommands.ifExecutableElse0;
+import static brooklyn.util.ssh.BashCommands.ifExecutableElse1;
+import static brooklyn.util.ssh.BashCommands.installPackage;
+import static brooklyn.util.ssh.BashCommands.sudo;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.format;
 
@@ -32,8 +39,6 @@ import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.lifecycle.ScriptHelper;
 import brooklyn.entity.container.DockerUtils;
-import brooklyn.entity.container.weave.WeaveContainer;
-import brooklyn.entity.container.weave.WeaveInfrastructure;
 import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.location.OsDetails;
 import brooklyn.location.basic.SshMachineLocation;
@@ -41,6 +46,9 @@ import brooklyn.location.geo.LocalhostExternalIpLoader;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.location.jclouds.networking.JcloudsLocationSecurityGroupCustomizer;
 import brooklyn.management.Task;
+import brooklyn.networking.sdn.SdnAttributes;
+import brooklyn.networking.sdn.SdnProvider;
+import brooklyn.networking.sdn.weave.WeaveNetwork;
 import brooklyn.util.collections.MutableList;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.file.ArchiveUtils;
@@ -73,14 +81,14 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     protected Map<String, Integer> getPortMap() {
         Map<String, Integer> ports = MutableMap.of();
         ports.put("dockerPort", getDockerPort());
-        ports.put("dockerSslPort", getDockerSslPort());
-        if (getEntity().getConfig(DockerInfrastructure.WEAVE_ENABLED)) {
+        if (getEntity().getConfig(SdnAttributes.SDN_ENABLE)) {
+            // XXX make generic
             // Best guess at available port, as Weave is started _after_ the DockerHost
             Integer weavePort = getEntity()
                     .getAttribute(DockerHost.DOCKER_INFRASTRUCTURE)
-                    .getAttribute(DockerInfrastructure.WEAVE_INFRASTRUCTURE)
-                    .getConfig(WeaveInfrastructure.WEAVE_PORT);
-            ports.put("weavePort", weavePort);
+                    .getAttribute(DockerInfrastructure.SDN_PROVIDER)
+                    .getConfig(WeaveNetwork.WEAVE_PORT);
+            if (weavePort != null) ports.put("weavePort", weavePort);
         }
         return ports;
     }
@@ -95,11 +103,6 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     @Override
     public Integer getDockerPort() {
-        return getEntity().getAttribute(DockerHost.DOCKER_PORT);
-    }
-
-    @Override
-    public Integer getDockerSslPort() {
         return getEntity().getAttribute(DockerHost.DOCKER_SSL_PORT);
     }
 
@@ -191,195 +194,8 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         return getEntity().getConfig(DockerHost.EPEL_RELEASE);
     }
 
-    @Override
-    public boolean isRunning() {
-        ScriptHelper helper = newScript(CHECK_RUNNING)
-                .body.append(alternatives(
-                        ifExecutableElse1("boot2docker", "boot2docker status"),
-                        ifExecutableElse1("service", sudo("service docker status"))))
-                // otherwise Brooklyn appends 'check-running' and the method always returns true.
-                .noExtraOutput()
-                .gatherOutput();
-        helper.execute();
-        return helper.getResultStdout().contains("running");
-    }
-
-    @Override
-    public void stop() {
-        newScript(STOPPING).body.append(alternatives(
-                ifExecutableElse1("boot2docker", "boot2docker down"),
-                ifExecutableElse1("service", sudo("service docker stop"))))
-                .failOnNonZeroResultCode()
-                .execute();
-    }
-
-    @Override
-    public void preInstall() {
-        resolver = Entities.newDownloader(this);
-        setExpandedInstallDir(Os.mergePaths(getInstallDir(), resolver.getUnpackedDirectoryName(format("docker-%s", getVersion()))));
-    }
-
-    @Override
-    public void install() {
-        OsDetails osDetails = getMachine().getMachineDetails().getOsDetails();
-        String osVersion = osDetails.getVersion();
-        String arch = osDetails.getArch();
-        if (!osDetails.is64bit()) { throw new IllegalStateException("Docker supports only 64bit OS"); }
-        if (osDetails.isLinux()) {
-            if ("ubuntu".equalsIgnoreCase(osDetails.getName()) && "12.04".equalsIgnoreCase(osVersion)) {
-                List<String> commands = ImmutableList.<String> builder()
-                        .add(installPackage("linux-image-generic-lts-raring"))
-                        .add(installPackage("linux-headers-generic-lts-raring"))
-                        .add(sudo("reboot"))
-                        .build();
-                executeKernelInstallation(commands);
-            }
-            if ("centos".equalsIgnoreCase(osDetails.getName())) {
-                List<String> commands = ImmutableList.<String>builder()
-                        .add(sudo("yum -y --nogpgcheck upgrade kernel"))
-                        .add(sudo("reboot"))
-                        .build();
-                executeKernelInstallation(commands);
-            }
-        } else if (osDetails.isMac()) {
-            newScript(LAUNCHING).body.append(
-                            alternatives(
-                                    ifExecutableElse1("boot2docker", "boot2docker status || boot2docker init"),
-                                    fail("Mac OSX install requires Boot2Docker preinstalled", 1)))
-                    .failOnNonZeroResultCode()
-                    .execute();
-            return;
-        } else if (osDetails.isWindows()) {
-            throw new IllegalStateException("Windows operating system not yet supported by Docker");
-        } else {
-            throw new IllegalStateException("Unknown operating system: " + osDetails);
-        }
-
-        // Wait until the Docker host is SSHable after the reboot
-        // Don't check immediately; it could take a few seconds for rebooting to make the machine not ssh'able;
-        // must not accidentally think it's rebooted before we've actually rebooted!
-        Stopwatch stopwatchForReboot = Stopwatch.createStarted();
-        Time.sleep(Duration.seconds(30));
-        
-        Task<Boolean> sshable = TaskBuilder.<Boolean> builder()
-                .name("Waiting until host is SSHable")
-                .body(new Callable<Boolean>() {
-                    @Override
-                    public Boolean call() throws Exception {
-                        return Repeater.create()
-                                .every(Duration.TEN_SECONDS)
-                                .until(new Callable<Boolean>() {
-                                    public Boolean call() {
-                                        return getLocation().isSshable();
-                                    }
-                                })
-                                .limitTimeTo(Duration.minutes(15)) // Because of the reboot
-                                .run();
-                    }
-                })
-                .build();
-        Boolean result = DynamicTasks.queueIfPossible(sshable)
-                .orSubmitAndBlock()
-                .andWaitForSuccess();
-        if (!result) {
-            throw new IllegalStateException(String.format("The entity %s is not sshable after reboot (waited %s)", 
-                    entity, Time.makeTimeStringRounded(stopwatchForReboot)));
-        }
-
-        List<String> commands = Lists.newArrayList();
-        commands.add(INSTALL_CURL);
-        if ("ubuntu".equalsIgnoreCase(osDetails.getName())) {
-            commands.add(installDockerOnUbuntu());
-        } else if ("centos".equalsIgnoreCase(osDetails.getName())) { // should work for RHEL also?
-            commands.add(ifExecutableElse1("yum", useYum(osVersion, arch, getEpelRelease())));
-            commands.add(installPackage(ImmutableMap.of("yum", "docker-io"), null));
-            commands.add(sudo(format("curl https://get.docker.com/builds/Linux/x86_64/docker-%s -o /usr/bin/docker", getVersion())));
-        } else {
-            commands.add(installDockerFallback());
-        }
-        newScript(INSTALLING)
-                .failOnNonZeroResultCode()
-                .body.append(commands)
-                .execute();
-    }
-
-    private void executeKernelInstallation(List<String> commands) {
-        newScript(INSTALLING + "kernel").body.append(commands)
-                .execute();
-    }
-
-    private String useYum(String osVersion, String arch, String epelRelease) {
-        String osMajorVersion = osVersion.substring(0, osVersion.lastIndexOf("."));
-        return chainGroup(
-                alternatives(
-                        sudo("rpm -qa | grep epel-release"),
-                        sudo(format("rpm -Uvh http://dl.fedoraproject.org/pub/epel/%s/%s/epel-release-%s.noarch.rpm", osMajorVersion, arch, epelRelease))));
-    }
-
-    @Override
-    public String getVersion() {
-        String version = super.getVersion();
-        if (version.matches("^[0-9]+\\.[0-9]+$")) {
-            version += ".0"; // Append minor version
-        }
-        return version;
-    }
-
-    private String installDockerOnUbuntu() {
-        String version = getVersion();
-        if (log.isDebugEnabled()) log.debug("Installing Docker version {} on Ubuntu", version);
-        return chainGroup(
-                installPackage("apt-transport-https"),
-                executeCommandThenAsUserTeeOutputToFile("echo deb https://get.docker.com/ubuntu docker main", "root", "/etc/apt/sources.list.d/docker.list"),
-                sudo("apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9"),
-                installPackage("lxc-docker-" + version));
-    }
-
-    /**
-     * Uses the curl-able install.sh script provided at {@code get.docker.com}.
-     * This will install the latest version, which may be incompatible with the
-     * jclouds driver.
-     */
-    private String installDockerFallback() {
-        return "curl -s https://get.docker.com/ | " + sudo("sh");
-    }
-
-    @Override
-    public void customize() {
-        if (isRunning()) {
-            log.info("Stopping running Docker instance at {} before customising", getMachine());
-            stop();
-        }
-
-        Networking.checkPortsValid(getPortMap());
-
-        newScript(CUSTOMIZING)
-                .failOnNonZeroResultCode().body.append(
-                ifExecutableElse0("apt-get", chainGroup(
-                        executeCommandThenAsUserTeeOutputToFile(format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock\"'", getDockerPort()), "root", "/etc/default/docker"),
-                        sudo("groupadd -f docker"),
-                        sudo(format("gpasswd -a %s docker", getMachine().getUser())),
-                        sudo("newgrp docker"))),
-                ifExecutableElse0(
-                        "yum",
-                        executeCommandThenAsUserTeeOutputToFile(format("echo 'other_args=\"--selinux-enabled -H tcp://0.0.0.0:%s -H unix:///var/run/docker.sock -e lxc\"'", getDockerPort()), "root",
-                                "/etc/sysconfig/docker")))
-                .execute();
-
-        // Configure volume mappings for the host
-        Map<String, String> mapping = MutableMap.of();
-        Map<String, String> volumes = getEntity().getConfig(DockerHost.DOCKER_HOST_VOLUME_MAPPING);
-        if (volumes != null) {
-            for (String source : volumes.keySet()) {
-                if (Urls.isUrlWithProtocol(source)) {
-                    String path = deployArchive(source);
-                    mapping.put(path, volumes.get(source));
-                } else {
-                    mapping.put(source, volumes.get(source));
-                }
-            }
-        }
-        getEntity().setAttribute(DockerHost.DOCKER_HOST_VOLUME_MAPPING, mapping);
+    public String getStorageDriver() {
+        return getEntity().getConfig(DockerHost.DOCKER_STORAGE_DRIVER);
     }
 
     @Override
@@ -431,41 +247,222 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .build();
         List<IpPermission> permissions = MutableList.of(dockerPort, dockerSslPort, dockerPortForwarding);
 
-        if (getEntity().getConfig(DockerInfrastructure.WEAVE_ENABLED)) {
-            Integer weavePort = ((DockerHost) getEntity()).getInfrastructure()
-                    .getAttribute(DockerInfrastructure.WEAVE_INFRASTRUCTURE)
-                    .getConfig(WeaveContainer.WEAVE_PORT);
-            IpPermission weaveTcpPort = IpPermission.builder()
-                    .ipProtocol(IpProtocol.TCP)
-                    .fromPort(weavePort)
-                    .toPort(weavePort)
-                    .cidrBlock(Cidr.UNIVERSAL.toString()) // TODO could be tighter restricted?
-                    .build();
-            permissions.add(weaveTcpPort);
-            IpPermission weaveUdpPort = IpPermission.builder()
-                    .ipProtocol(IpProtocol.UDP)
-                    .fromPort(weavePort)
-                    .toPort(weavePort)
-                    .cidrBlock(Cidr.UNIVERSAL.toString()) // TODO could be tighter restricted?
-                    .build();
-            permissions.add(weaveUdpPort);
+        if (getEntity().getConfig(SdnAttributes.SDN_ENABLE)) {
+            SdnProvider provider = (SdnProvider) (getEntity().getAttribute(DockerHost.DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER));
+            Collection<IpPermission> sdnPermissions = provider.getIpPermissions();
+            permissions.addAll(sdnPermissions);
         }
 
         return permissions;
     }
 
     @Override
-    public void launch() {
-        newScript(LAUNCHING).body.append(alternatives(
-                ifExecutableElse1("boot2docker", "boot2docker up"),
-                ifExecutableElse1("service", sudo("service docker start"))))
+    public void preInstall() {
+        resolver = Entities.newDownloader(this);
+        setExpandedInstallDir(Os.mergePaths(getInstallDir(), resolver.getUnpackedDirectoryName(format("docker-%s", getVersion()))));
+    }
+
+    @Override
+    public void install() {
+        OsDetails osDetails = getMachine().getMachineDetails().getOsDetails();
+        String osVersion = osDetails.getVersion();
+        String arch = osDetails.getArch();
+        if (!osDetails.is64bit()) { throw new IllegalStateException("Docker supports only 64bit OS"); }
+        log.debug("Installing Docker on {} version {}", osDetails.getName(), osVersion);
+        if (osDetails.isLinux()) {
+            if ("ubuntu".equalsIgnoreCase(osDetails.getName())) {
+                List<String> commands = ImmutableList.<String> builder()
+                        .add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19-vivid/linux-headers-3.19.0-031900-generic_3.19.0-031900.201502091451_amd64.deb")
+                        .add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19-vivid/linux-headers-3.19.0-031900_3.19.0-031900.201502091451_all.deb")
+                        .add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19-vivid/linux-image-3.19.0-031900-generic_3.19.0-031900.201502091451_amd64.deb")
+                        .add("sudo dpkg -i linux-headers-3.19.0-*.deb linux-image-3.19.0-*.deb")
+                        .add(sudo("reboot"))
+                        .build();
+                executeKernelInstallation(commands);
+            }
+            if ("centos".equalsIgnoreCase(osDetails.getName())) {
+                List<String> commands = ImmutableList.<String>builder()
+                        .add(sudo("yum -y --nogpgcheck upgrade kernel"))
+                        .add(sudo("reboot"))
+                        .build();
+                executeKernelInstallation(commands);
+            }
+        } else if (osDetails.isMac()) {
+            newScript(INSTALLING)
+                    .body.append(
+                            alternatives(
+                                    ifExecutableElse1("boot2docker", "boot2docker status || boot2docker init"),
+                                    fail("Mac OSX install requires Boot2Docker preinstalled", 1)))
+                    .failOnNonZeroResultCode()
+                    .execute();
+            return;
+        } else if (osDetails.isWindows()) {
+            throw new IllegalStateException("Windows operating system not yet supported by Docker");
+        } else {
+            throw new IllegalStateException("Unknown operating system: " + osDetails);
+        }
+
+        // Wait until the Docker host is SSHable after the reboot
+        // Don't check immediately; it could take a few seconds for rebooting to make the machine not ssh'able;
+        // must not accidentally think it's rebooted before we've actually rebooted!
+        Stopwatch stopwatchForReboot = Stopwatch.createStarted();
+        Time.sleep(Duration.seconds(30));
+
+        Task<Boolean> sshable = TaskBuilder.<Boolean> builder()
+                .name("Waiting until host is SSHable")
+                .body(new Callable<Boolean>() {
+                    @Override
+                    public Boolean call() throws Exception {
+                        return Repeater.create()
+                                .every(Duration.TEN_SECONDS)
+                                .until(new Callable<Boolean>() {
+                                    public Boolean call() {
+                                        return getLocation().isSshable();
+                                    }
+                                })
+                                .limitTimeTo(Duration.minutes(15)) // Because of the reboot
+                                .run();
+                    }
+                })
+                .build();
+        Boolean result = DynamicTasks.queueIfPossible(sshable)
+                .orSubmitAndBlock()
+                .andWaitForSuccess();
+        if (!result) {
+            throw new IllegalStateException(String.format("The entity %s is not sshable after reboot (waited %s)", 
+                    entity, Time.makeTimeStringRounded(stopwatchForReboot)));
+        }
+
+        List<String> commands = Lists.newArrayList();
+        commands.add(INSTALL_CURL);
+        if ("ubuntu".equalsIgnoreCase(osDetails.getName())) {
+            commands.add(installDockerOnUbuntu());
+        } else if ("centos".equalsIgnoreCase(osDetails.getName())) { // should work for RHEL also?
+            commands.add(ifExecutableElse1("yum", useYum(osVersion, arch, getEpelRelease())));
+            commands.add(installPackage(ImmutableMap.of("yum", "docker-io"), null));
+            commands.add(sudo(format("curl https://get.docker.com/builds/Linux/x86_64/docker-%s -o /usr/bin/docker", getVersion())));
+        } else {
+            commands.add(installDockerFallback());
+        }
+        newScript(INSTALLING)
+                .body.append(commands)
                 .failOnNonZeroResultCode()
-                .uniqueSshConnection()
                 .execute();
     }
 
-    public String getPidFile() {
-        return "/var/run/docker.pid";
+    private void executeKernelInstallation(List<String> commands) {
+        newScript(INSTALLING + "kernel")
+                .body.append(commands)
+                .execute();
+    }
+
+    private String useYum(String osVersion, String arch, String epelRelease) {
+        String osMajorVersion = osVersion.substring(0, osVersion.lastIndexOf("."));
+        return chainGroup(
+                alternatives(
+                        sudo("rpm -qa | grep epel-release"),
+                        sudo(format("rpm -Uvh http://dl.fedoraproject.org/pub/epel/%s/%s/epel-release-%s.noarch.rpm", osMajorVersion, arch, epelRelease))));
+    }
+
+    @Override
+    public String getVersion() {
+        String version = super.getVersion();
+        if (version.matches("^[0-9]+\\.[0-9]+$")) {
+            version += ".0"; // Append minor version
+        }
+        return version;
+    }
+
+    private String installDockerOnUbuntu() {
+        String version = getVersion();
+        log.debug("Installing Docker version {} on Ubuntu", version);
+        return chainGroup(
+                installPackage("apt-transport-https"),
+                "echo 'deb https://get.docker.com/ubuntu docker main' | " + sudo("tee -a /etc/apt/sources.list.d/docker.list"),
+                sudo("apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9"),
+                installPackage("lxc-docker-" + version));
+    }
+
+    /**
+     * Uses the curl-able install.sh script provided at {@code get.docker.com}.
+     * This will install the latest version, which may be incompatible with the
+     * jclouds driver.
+     */
+    private String installDockerFallback() {
+        return "curl -s https://get.docker.com/ | " + sudo("sh");
+    }
+
+    @Override
+    public void customize() {
+        if (isRunning()) {
+            log.info("Stopping running Docker instance at {} before customising", getMachine());
+            stop();
+        }
+
+        Networking.checkPortsValid(getPortMap());
+
+        newScript(CUSTOMIZING)
+                .body.append(
+                        ifExecutableElse0("apt-get", chainGroup(
+                                format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock -s %s --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem\"' | ", getDockerPort(), getStorageDriver(), getRunDir()) + sudo("tee -a /etc/default/docker"),
+                                sudo("groupadd -f docker"),
+                                sudo(format("gpasswd -a %s docker", getMachine().getUser())),
+                                sudo("newgrp docker"))),
+                        ifExecutableElse0("yum",
+                                format("echo 'other_args=\"--selinux-enabled -H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock -e lxc -s %s --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem\"' | ", getDockerPort(), getStorageDriver(), getRunDir()) + sudo("tee -a /etc/sysconfig/docker")))
+                .failOnNonZeroResultCode()
+                .execute();
+
+        // Configure volume mappings for the host
+        Map<String, String> mapping = MutableMap.of();
+        Map<String, String> volumes = getEntity().getConfig(DockerHost.DOCKER_HOST_VOLUME_MAPPING);
+        if (volumes != null) {
+            for (String source : volumes.keySet()) {
+                if (Urls.isUrlWithProtocol(source)) {
+                    String path = deployArchive(source);
+                    mapping.put(path, volumes.get(source));
+                } else {
+                    mapping.put(source, volumes.get(source));
+                }
+            }
+        }
+        getEntity().setAttribute(DockerHost.DOCKER_HOST_VOLUME_MAPPING, mapping);
+    }
+
+    @Override
+    public boolean isRunning() {
+        ScriptHelper helper = newScript(CHECK_RUNNING)
+                .body.append(
+                        alternatives(
+                                ifExecutableElse1("boot2docker", "boot2docker status"),
+                                ifExecutableElse1("service", sudo("service docker status"))))
+                .noExtraOutput() // otherwise Brooklyn appends 'check-running' and the method always returns true.
+                .gatherOutput();
+        helper.execute();
+        return helper.getResultStdout().contains("running");
+    }
+
+    @Override
+    public void stop() {
+        newScript(STOPPING)
+                .body.append(
+                        alternatives(
+                                ifExecutableElse1("boot2docker", "boot2docker down"),
+                                ifExecutableElse1("service", sudo("service docker stop"))))
+                .failOnNonZeroResultCode()
+                .execute();
+    }
+
+    @Override
+    public void launch() {
+        newScript(LAUNCHING)
+                .body.append(
+                        alternatives(
+                                ifExecutableElse1("boot2docker", "boot2docker up"),
+                                ifExecutableElse1("service", sudo("service docker start"))))
+                .failOnNonZeroResultCode()
+                .uniqueSshConnection()
+                .execute();
     }
 
     @Override

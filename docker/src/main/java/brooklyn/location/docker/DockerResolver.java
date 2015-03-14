@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 by Cloudsoft Corporation Limited
+ * Copyright 2014-2015 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -146,8 +146,16 @@ public class DockerResolver implements EnableableLocationResolver {
         }
         final String locationName =  name.toString();
         DockerInfrastructure infrastructure = (DockerInfrastructure) managementContext.getEntityManager().getEntity(infrastructureId);
+        Iterable<Location> managedLocations = managementContext.getLocationManager().getLocations();
 
         if (dockerHostId == null) {
+            for (Location location : managedLocations) {
+                if (location instanceof DockerLocation) {
+                    if (((DockerLocation) location).getOwner().getId().equals(infrastructureId)) {
+                        return location;
+                    }
+                }
+            }
             LocationSpec<DockerLocation> locationSpec = LocationSpec.create(DockerLocation.class)
                     .configure(flags)
                     .configure(DynamicLocation.OWNER, infrastructure)
@@ -156,6 +164,13 @@ public class DockerResolver implements EnableableLocationResolver {
             return managementContext.getLocationManager().createLocation(locationSpec);
         } else {
             DockerHost dockerHost = (DockerHost) managementContext.getEntityManager().getEntity(dockerHostId);
+            for (Location location : managedLocations) {
+                if (location instanceof DockerHostLocation) {
+                    if (((DockerHostLocation) location).getOwner().getId().equals(dockerHostId)) {
+                        return location;
+                    }
+                }
+            }
 
             LocationSpec<DockerHostLocation> locationSpec = LocationSpec.create(DockerHostLocation.class)
                     .parent(infrastructure.getDynamicLocation())

@@ -1,7 +1,7 @@
 /*
- * Copyright 2014 by Cloudsoft Corporation Limited
+ * Copyright 2014-2015 by Cloudsoft Corporation Limited
  */
-package brooklyn.entity.container.weave;
+package brooklyn.networking.sdn.weave;
 
 import java.net.InetAddress;
 import java.util.List;
@@ -18,6 +18,7 @@ import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityLocal;
 import brooklyn.location.basic.SshMachineLocation;
+import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.Networking;
@@ -64,7 +65,6 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
     @Override
     public void install() {
         List<String> commands = Lists.newLinkedList();
-        commands.add(BashCommands.installPackage("ethtool conntrack"));
         commands.addAll(BashCommands.commandsToDownloadUrlsAs(resolver.getTargets(), getWeaveCommand()));
         commands.add("chmod 755 " + getWeaveCommand());
 
@@ -82,7 +82,7 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
 
     @Override
     public void launch() {
-        InetAddress address = getEntity().getAttribute(WeaveContainer.WEAVE_ADDRESS);
+        InetAddress address = getEntity().getAttribute(WeaveContainer.SDN_AGENT_ADDRESS);
         Boolean firstMember = getEntity().getAttribute(AbstractGroup.FIRST_MEMBER);
         Entity first = getEntity().getAttribute(AbstractGroup.FIRST);
         LOG.info("Launching {} Weave service at {}", Boolean.TRUE.equals(firstMember) ? "first" : "next", address.getHostAddress());
@@ -96,9 +96,15 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
 
     @Override
     public boolean isRunning() {
-        return newScript(MutableMap.of(USE_PID_FILE, false), CHECK_RUNNING)
-                .body.append(BashCommands.sudo(getWeaveCommand() + " status"))
-                .execute() == 0;
+        // Spawns a container for duration of command, so take the host lock
+        getEntity().getAttribute(SdnAgent.DOCKER_HOST).getDynamicLocation().getLock().lock();
+        try {
+            return newScript(MutableMap.of(USE_PID_FILE, false), CHECK_RUNNING)
+                    .body.append(BashCommands.sudo(getWeaveCommand() + " status"))
+                    .execute() == 0;
+        } finally {
+            getEntity().getAttribute(SdnAgent.DOCKER_HOST).getDynamicLocation().getLock().unlock();
+        }
     }
 
     @Override
@@ -109,11 +115,16 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
     }
 
     @Override
-    public InetAddress attachNetwork(String containerId) {
-        Tasks.setBlockingDetails("Attach Weave to " + containerId);
+    public void createSubnet(String subnetId, String subnetName, Cidr subnetCidr) {
+        LOG.debug("Nothing to do for Weave subnet creation");
+    }
+
+    @Override
+    public InetAddress attachNetwork(String containerId, String subnetId) {
+        Tasks.setBlockingDetails(String.format("Attach %s to %s", containerId, subnetId));
         try {
-            Cidr cidr = getEntity().getConfig(WeaveInfrastructure.WEAVE_CIDR);
-            InetAddress address = getEntity().getConfig(WeaveContainer.WEAVE_INFRASTRUCTURE).get();
+            Cidr cidr = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getSubnetCidr(subnetId);
+            InetAddress address = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getNextContainerAddress(subnetId);
             ((WeaveContainer) getEntity()).getDockerHost().execCommand(BashCommands.sudo(String.format("%s attach %s/%d %s",
                     getWeaveCommand(), address.getHostAddress(), cidr.getLength(), containerId)));
             return address;

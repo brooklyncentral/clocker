@@ -1,4 +1,4 @@
-# Copyright 2014 by Cloudsoft Corporation Limited
+# Copyright 2014-2015 by Cloudsoft Corporation Limited
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,15 +17,13 @@ name: "Docker Hub MySQL Application"
 origin: "https://registry.hub.docker.com/_/mysql/"
 locations:
 - my-docker-cloud
+
 services:
 - type: brooklyn.entity.container.docker.application.VanillaDockerApplication
   id: mysql
   name: "MySQL"
   brooklyn.config:
-    docker.dockerfile.url:
-      "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/mysql-5.6.tgz"
+    docker.image.name: mysql
+    docker.image.tag: 5.6
     docker.container.environment:
       MYSQL_ROOT_PASSWORD: "s3cr3t"
-
-# mysql-5.6.tgz contains ./docker-entrypoint.sh and ./Dockerfile from GitHub
-# https://github.com/docker-library/mysql

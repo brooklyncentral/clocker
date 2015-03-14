@@ -17,4 +17,4 @@ See [Trello](https://trello.com/b/lhS7ltyi/clocker) for the current Roadmap and 
 
 ----
 
-Copyright 2014 by Cloudsoft Corporation Limited and Licensed with [CC-BY-SA 4.0i](http://creativecommons.org/licenses/by-sa/4.0/)
+Copyright 2014-2015 by Cloudsoft Corporation Limited and Licensed with [CC-BY-SA 4.0i](http://creativecommons.org/licenses/by-sa/4.0/)

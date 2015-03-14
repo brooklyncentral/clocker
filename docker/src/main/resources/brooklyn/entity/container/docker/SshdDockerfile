@@ -1,6 +1,6 @@
 [#ftl]
 #
-#  Copyright 2014 by Cloudsoft Corporation Limited
+#  Copyright 2014-2015 by Cloudsoft Corporation Limited
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -36,8 +36,14 @@ RUN type apt-get ; \
     yum -y install openssh-server ; \
   fi ; \
   mkdir /var/run/sshd ; \
-  chmod 600 /var/run/sshd ; \
-  /usr/sbin/sshd ;
+  chmod 600 /var/run/sshd ;
+
+# configure sshd to allow login
+RUN sed -i.bk 's/PermitRootLogin.*$/PermitRootLogin yes/g' /etc/ssh/sshd_config ; \
+  echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config
+
+# SSH login fix. Otherwise user is kicked off after login
+RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
 
 EXPOSE 22
 

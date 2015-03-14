@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 by Cloudsoft Corporation Limited
+ * Copyright 2014-2015 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ public class DockerInfrastructureTests {
     public static DockerInfrastructure deployAndWaitForDockerInfrastructure(TestApplication app, Location location) {
         DockerInfrastructure dockerInfrastructure = app.createAndManageChild(EntitySpec.create(DockerInfrastructure.class)
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 1)
-                .configure(DockerInfrastructure.WEAVE_ENABLED, true)
+                .configure(DockerInfrastructure.SDN_ENABLE, false)
                 .displayName("Docker Infrastructure"));
         LOG.info("Starting {} in {}", dockerInfrastructure, location);
         app.start(ImmutableList.of(location));

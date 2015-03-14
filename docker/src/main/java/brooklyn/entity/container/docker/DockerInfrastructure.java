@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 by Cloudsoft Corporation Limited
+ * Copyright 2014-2015 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import brooklyn.location.docker.strategy.DepthFirstPlacementStrategy;
 import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
 import brooklyn.location.docker.strategy.affinity.AffinityRules;
 import brooklyn.location.dynamic.LocationOwner;
+import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.util.collections.MutableList;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.flags.SetFromFlag;
@@ -76,13 +77,19 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
     ConfigKey<Boolean> REMOVE_EMPTY_DOCKER_HOSTS = ConfigKeys.newBooleanConfigKey("docker.host.removeEmpty",
             "Remove empty Docker Hosts with no containers", Boolean.FALSE);
 
-    @SetFromFlag("enableWeave")
-    ConfigKey<Boolean> WEAVE_ENABLED = DockerAttributes.WEAVE_ENABLED;
+    @SetFromFlag("enableSdn")
+    ConfigKey<Boolean> SDN_ENABLE = SdnAttributes.SDN_ENABLE;
+
+    @SetFromFlag("sdnProviderSpec")
+    ConfigKey<EntitySpec> SDN_PROVIDER_SPEC = ConfigKeys.newConfigKey(EntitySpec.class, "sdn.provider.spec", "SDN provider entity specification");
 
     @SetFromFlag("hostSpec")
     AttributeSensorAndConfigKey<EntitySpec, EntitySpec> DOCKER_HOST_SPEC = ConfigKeys.newSensorAndConfigKey(
             EntitySpec.class, "docker.host.spec", "Specification to use when creating child Docker Hosts",
             EntitySpec.create(DockerHost.class));
+
+    ConfigKey<String> DOCKER_CERTIFICATE_PATH = ConfigKeys.newStringConfigKey("docker.tls.certificate", "The Docker Engine TLS certificate PEM file path", "conf/server-cert.pem");
+    ConfigKey<String> DOCKER_KEY_PATH = ConfigKeys.newStringConfigKey("docker.tls.key", "The Docker Engine TLS key PEM file path", "conf/server-key.pem");
 
     @SetFromFlag("dockerfileUrl")
     ConfigKey<String> DOCKERFILE_URL = ConfigKeys.newConfigKeyWithDefault(DockerAttributes.DOCKERFILE_URL, DockerUtils.UBUNTU_DOCKERFILE);
@@ -102,7 +109,7 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
     AttributeSensor<DynamicCluster> DOCKER_HOST_CLUSTER = Sensors.newSensor(DynamicCluster.class, "docker.hosts", "Docker host cluster");
     AttributeSensor<DynamicGroup> DOCKER_CONTAINER_FABRIC = Sensors.newSensor(DynamicGroup.class, "docker.fabric", "Docker container fabric");
     AttributeSensor<DynamicMultiGroup> DOCKER_APPLICATIONS = Sensors.newSensor(DynamicMultiGroup.class, "docker.buckets", "Docker applications");
-    AttributeSensor<Entity> WEAVE_INFRASTRUCTURE = Sensors.newSensor(Entity.class, "weave.infrastructure", "Weave infrastructure entity");
+    AttributeSensor<Entity> SDN_PROVIDER = Sensors.newSensor(Entity.class, "sdn.provider.network", "SDN provider network entity");
 
     AttributeSensor<AtomicInteger> DOCKER_HOST_COUNTER = Sensors.newSensor(AtomicInteger.class, "docker.hosts.counter", "Docker host counter");
     AttributeSensor<AtomicInteger> DOCKER_CONTAINER_COUNTER = Sensors.newSensor(AtomicInteger.class, "docker.containers.counter", "Docker container counter");;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 by Cloudsoft Corporation Limited
+ * Copyright 2014-2015 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,6 @@ import brooklyn.entity.basic.SoftwareProcess.ChildStartableMode;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.policy.ContainerHeadroomEnricher;
-import brooklyn.entity.container.weave.WeaveInfrastructure;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.group.DynamicMultiGroup;
@@ -59,6 +58,7 @@ import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.DockerResolver;
 import brooklyn.management.LocationManager;
 import brooklyn.management.ManagementContext;
+import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.policy.EnricherSpec;
 import brooklyn.policy.PolicySpec;
 import brooklyn.policy.autoscaling.AutoScalerPolicy;
@@ -77,7 +77,7 @@ import com.google.common.collect.Iterables;
 
 public class DockerInfrastructureImpl extends BasicStartableImpl implements DockerInfrastructure {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DockerInfrastructureImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DockerInfrastructure.class);
 
     @Override
     public void init() {
@@ -91,10 +91,14 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         int initialSize = getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE);
         EntitySpec<?> dockerHostSpec = EntitySpec.create(getConfig(DOCKER_HOST_SPEC))
                 .configure(DockerHost.DOCKER_INFRASTRUCTURE, this)
+                .configure(DockerHost.RUNTIME_FILES, ImmutableMap.of(getConfig(DOCKER_CERTIFICATE_PATH), "cert.pem", getConfig(DOCKER_KEY_PATH), "key.pem"))
                 .configure(SoftwareProcess.CHILDREN_STARTABLE_MODE, ChildStartableMode.BACKGROUND_LATE);
         String dockerVersion = getConfig(DOCKER_VERSION);
         if (Strings.isNonBlank(dockerVersion)) {
             dockerHostSpec.configure(SoftwareProcess.SUGGESTED_VERSION, dockerVersion);
+        }
+        if (Boolean.TRUE.equals(getConfig(SdnAttributes.SDN_DEBUG))) {
+            dockerHostSpec.configure(DockerAttributes.DOCKERFILE_URL, DockerUtils.UBUNTU_NETWORKING_DOCKERFILE);
         }
 
         DynamicCluster hosts = addChild(EntitySpec.create(DynamicCluster.class)
@@ -123,13 +127,13 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                         .configure(BasicGroup.MEMBER_DELEGATE_CHILDREN, true))
                 .displayName("Docker Applications"));
 
-        if (getConfig(WEAVE_ENABLED)) {
-            WeaveInfrastructure weave = addChild(EntitySpec.create(WeaveInfrastructure.class)
-                    .configure(WeaveInfrastructure.DOCKER_INFRASTRUCTURE, this));
-            setAttribute(WEAVE_INFRASTRUCTURE, weave);
+        if (getConfig(SDN_ENABLE) && getConfig(SDN_PROVIDER_SPEC) != null) {
+            Entity sdn = addChild(EntitySpec.create(getConfig(SDN_PROVIDER_SPEC))
+                    .configure(DockerAttributes.DOCKER_INFRASTRUCTURE, this));
+            setAttribute(SDN_PROVIDER, sdn);
 
             if (Entities.isManaged(this)) {
-                Entities.manage(weave);
+                Entities.manage(sdn);
             }
         }
 
@@ -362,7 +366,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         RendererHints.register(DOCKER_HOST_CLUSTER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(DOCKER_CONTAINER_FABRIC, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(DOCKER_APPLICATIONS, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(WEAVE_INFRASTRUCTURE, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(SDN_PROVIDER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }
