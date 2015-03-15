@@ -289,7 +289,7 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
         // Create a DynamicGroup with all attached entities
         EntitySpec<DynamicGroup> networkSpec = EntitySpec.create(DynamicGroup.class)
                 .configure(DynamicGroup.ENTITY_FILTER, Predicates.and(
-                        Predicates.not(Predicates.instanceOf(DockerContainer.class)),
+                        Predicates.not(Predicates.or(Predicates.instanceOf(DockerContainer.class), Predicates.instanceOf(DelegateEntity.class))),
                         EntityPredicates.attributeEqualTo(DockerContainer.DOCKER_INFRASTRUCTURE, getAttribute(DOCKER_INFRASTRUCTURE)),
                         SdnAttributes.attachedToNetwork(networkId)))
                 .configure(DynamicGroup.MEMBER_DELEGATE_CHILDREN, true)
