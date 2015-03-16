@@ -312,6 +312,7 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
         } else {
             LOG.warn("Cannot find group containing {} network entities", networkId);
         }
+        getAttribute(SDN_NETWORKS).removeMember(network);
 
         // TODO actually deprovision the network if possible?
     }
