@@ -377,10 +377,16 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             JcloudsSshMachineLocation container = host.getJcloudsLocation().obtain(dockerFlags);
             String containerId = container.getNode().getId();
             setAttribute(CONTAINER_ID, containerId);
+            Entity entity = getRunningEntity();
+
+            // Link the entity to the container
+            Entities.deproxy(entity).setAttribute(DockerContainer.DOCKER_INFRASTRUCTURE, dockerHost.getInfrastructure());
+            Entities.deproxy(entity).setAttribute(DockerContainer.DOCKER_HOST, dockerHost);
+            Entities.deproxy(entity).setAttribute(DockerContainer.CONTAINER, this);
+            Entities.deproxy(entity).setAttribute(DockerContainer.CONTAINER_ID, containerId);
 
             // If SDN is enabled, attach networks
             if (getConfig(SdnAttributes.SDN_ENABLE)) {
-                Entity entity = getRunningEntity();
                 SdnAgent agent = Entities.attributeSupplierWhenReady(dockerHost, SdnAgent.SDN_AGENT).get();
 
                 // Save attached network list

@@ -235,12 +235,6 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             Entities.deproxy(dockerContainer).setAttribute(DockerContainer.IMAGE_NAME, imageName);
             Entities.deproxy(dockerContainer).setAttribute(DockerContainer.HARDWARE_ID, hardwareId);
 
-            // Link the container to the entity
-            Entities.deproxy(entity).setAttribute(DockerContainer.DOCKER_INFRASTRUCTURE, getDockerInfrastructure());
-            Entities.deproxy(entity).setAttribute(DockerContainer.DOCKER_HOST, dockerHost);
-            Entities.deproxy(entity).setAttribute(DockerContainer.CONTAINER, dockerContainer);
-            Entities.deproxy(entity).setAttribute(DockerContainer.CONTAINER_ID, dockerContainer.getContainerId());
-
             // record SDN application network details
             if (getOwner().getConfig(SdnAttributes.SDN_ENABLE)) {
                 SdnAgent agent = getOwner().getAttribute(SdnAgent.SDN_AGENT);

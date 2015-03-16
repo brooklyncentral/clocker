@@ -130,7 +130,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         String password = getConfig(DOCKER_PASSWORD);
         if (Strings.isBlank(password)) {
             password = Identifiers.makeRandomId(8);
-            setConfig(DOCKER_PASSWORD, password);
+            config().set(DOCKER_PASSWORD, password);
         }
 
         ConfigToAttributes.apply(this, DOCKER_INFRASTRUCTURE);
