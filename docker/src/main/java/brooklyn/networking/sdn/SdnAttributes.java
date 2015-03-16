@@ -24,7 +24,6 @@ import javax.annotation.Nullable;
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.Sensors;
 

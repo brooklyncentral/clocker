@@ -30,6 +30,7 @@ import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.DynamicGroup;
 import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.basic.EntityPredicates;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
@@ -296,8 +297,8 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
                 .displayName(network.getDisplayName());
         DynamicGroup subnet = getAttribute(SDN_APPLICATIONS).addMemberChild(networkSpec);
         Entities.manage(subnet);
-        Entities.deproxy(subnet).setAttribute(VirtualNetwork.NETWORK_ID, networkId);
-        Entities.deproxy(network).setAttribute(VirtualNetwork.NETWORKED_APPLICATIONS, subnet);
+        ((EntityLocal) subnet).setAttribute(VirtualNetwork.NETWORK_ID, networkId);
+        ((EntityLocal) network).setAttribute(VirtualNetwork.NETWORKED_APPLICATIONS, subnet);
 
         getAttribute(SDN_NETWORKS).addMember(network);
     }

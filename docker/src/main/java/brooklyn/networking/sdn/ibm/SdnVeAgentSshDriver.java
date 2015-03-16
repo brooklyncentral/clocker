@@ -336,8 +336,8 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
                 if (!container.isPresent()) {
                     throw new IllegalStateException(String.format("Cannot find container entity for %s", containerId));
                 }
-                Entities.deproxy(container.get()).setAttribute(SdnVeAttributes.PUBLIC_CIDR, publicCidr);
-                Entities.deproxy(container.get()).setAttribute(SdnVeAttributes.PUBLIC_ADDRESS, publicAddress);
+                ((EntityLocal) container.get()).setAttribute(SdnVeAttributes.PUBLIC_CIDR, publicCidr);
+                ((EntityLocal) container.get()).setAttribute(SdnVeAttributes.PUBLIC_ADDRESS, publicAddress);
             }
 
             return address;

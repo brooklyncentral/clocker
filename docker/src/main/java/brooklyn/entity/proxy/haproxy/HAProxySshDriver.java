@@ -20,9 +20,6 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableMap;
-
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.EntityLocal;
@@ -32,6 +29,9 @@ import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.guava.Maybe;
 import brooklyn.util.os.Os;
+
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
 
 public class HAProxySshDriver extends AbstractSoftwareProcessSshDriver implements HAProxyDriver {
 

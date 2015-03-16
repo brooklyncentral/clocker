@@ -39,6 +39,7 @@ import brooklyn.config.render.RendererHints.NamedActionWithUrl;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityAndAttribute;
+import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerCallbacks;
@@ -143,17 +144,17 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
             // Configure the entity
             LOG.info("Configuring entity {} via subnet {}", entity, dockerHost.getSubnetTier());
-            Entities.deproxy(entity).setConfigEvenIfOwned(SubnetTier.PORT_FORWARDING_MANAGER, dockerHost.getSubnetTier().getPortForwardManager());
-            Entities.deproxy(entity).setConfigEvenIfOwned(SubnetTier.PORT_FORWARDER, portForwarder);
+            entity.config().set(SubnetTier.PORT_FORWARDING_MANAGER, dockerHost.getSubnetTier().getPortForwardManager());
+            entity.config().set(SubnetTier.PORT_FORWARDER, portForwarder);
             if (getOwner().getConfig(SdnAttributes.SDN_ENABLE)) {
                 SdnAgent agent = getOwner().getAttribute(SdnAgent.SDN_AGENT);
                 if (agent == null) {
                     throw new IllegalStateException("SDN agent entity on " + getOwner() + " is null");
                 }
                 Map<String, Cidr> networks = agent.getAttribute(SdnAgent.SDN_PROVIDER).getAttribute(SdnProvider.SUBNETS);
-                Entities.deproxy(entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, networks.get(entity.getApplicationId()));
+                entity.config().set(SubnetTier.SUBNET_CIDR, networks.get(entity.getApplicationId()));
             } else {
-                Entities.deproxy(entity).setConfigEvenIfOwned(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL);
+                entity.config().set(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL);
             }
             configureEnrichers(entity);
 
@@ -179,12 +180,12 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                 LOG.info("Found image {} for entity: {}", imageName, imageId);
 
                 // Skip install phase
-                Entities.deproxy(entity).setConfigEvenIfOwned(SoftwareProcess.SKIP_INSTALLATION, true);
+                entity.config().set(SoftwareProcess.SKIP_INSTALLATION, true);
             } else if (baseImage.isPresent()) {
                 // Create an SSHable image from the one configured
                 imageId = dockerHost.layerSshableImageOn(baseImage.get(), imageTag);
                 LOG.info("Created SSHable image from {}: {}", baseImage.get(), imageId);
-                Entities.deproxy(entity).setConfigEvenIfOwned(SoftwareProcess.SKIP_INSTALLATION, true);
+                entity.config().set(SoftwareProcess.SKIP_INSTALLATION, true);
             } else {
                 // Otherwise Clocker is going to make an image for the entity once it is installed.
                 insertCallback(entity, SoftwareProcess.POST_INSTALL_COMMAND, DockerCallbacks.commit());
@@ -231,16 +232,16 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             DockerContainer dockerContainer = (DockerContainer) added;
 
             // Save the container attributes
-            Entities.deproxy(dockerContainer).setAttribute(DockerContainer.IMAGE_ID, imageId);
-            Entities.deproxy(dockerContainer).setAttribute(DockerContainer.IMAGE_NAME, imageName);
-            Entities.deproxy(dockerContainer).setAttribute(DockerContainer.HARDWARE_ID, hardwareId);
+            ((EntityLocal) dockerContainer).setAttribute(DockerContainer.IMAGE_ID, imageId);
+            ((EntityLocal) dockerContainer).setAttribute(DockerContainer.IMAGE_NAME, imageName);
+            ((EntityLocal) dockerContainer).setAttribute(DockerContainer.HARDWARE_ID, hardwareId);
 
             // record SDN application network details
             if (getOwner().getConfig(SdnAttributes.SDN_ENABLE)) {
                 SdnAgent agent = getOwner().getAttribute(SdnAgent.SDN_AGENT);
                 Cidr applicationCidr =  agent.getAttribute(SdnAgent.SDN_PROVIDER).getSubnetCidr(entity.getApplicationId());
-                Entities.deproxy(entity).setAttribute(SdnProvider.APPLICATION_CIDR, applicationCidr);
-                Entities.deproxy(dockerContainer).setAttribute(SdnProvider.APPLICATION_CIDR, applicationCidr);
+                ((EntityLocal) entity).setAttribute(SdnProvider.APPLICATION_CIDR, applicationCidr);
+                ((EntityLocal) dockerContainer).setAttribute(SdnProvider.APPLICATION_CIDR, applicationCidr);
             }
 
             return dockerContainer.getDynamicLocation();
@@ -256,7 +257,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
         } else {
             command = callback;
         }
-        Entities.deproxy(entity).setConfigEvenIfOwned(commandKey, command);
+        entity.config().set(commandKey, command);
     }
 
     public void waitForImage(String imageName) {

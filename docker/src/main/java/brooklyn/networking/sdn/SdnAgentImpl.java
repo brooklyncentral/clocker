@@ -27,6 +27,7 @@ import brooklyn.entity.Entity;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.DynamicGroup;
 import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.basic.EntityPredicates;
 import brooklyn.entity.basic.SoftwareProcessImpl;
 import brooklyn.entity.container.docker.DockerHost;
@@ -90,7 +91,7 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
 
     @Override
     public void postStart() {
-        Entities.deproxy(getDockerHost()).setAttribute(SDN_AGENT, this);
+        ((EntityLocal) getDockerHost()).setAttribute(SDN_AGENT, this);
     }
 
     @Override
@@ -155,7 +156,7 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
 
         Multimap<String, InetAddress> addresses = provider.getAttribute(SdnProvider.CONTAINER_ADDRESSES);
         addresses.put(containerId, address);
-        Entities.deproxy(provider).setAttribute(SdnProvider.CONTAINER_ADDRESSES, addresses);
+        ((EntityLocal) provider).setAttribute(SdnProvider.CONTAINER_ADDRESSES, addresses);
 
         // Rescan SDN network groups for containers
         DynamicGroup network = (DynamicGroup) Iterables.find(provider.getAttribute(SdnProvider.SDN_APPLICATIONS).getMembers(),
@@ -176,7 +177,7 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
         } else {
             getAttribute(SDN_PROVIDER).recordSubnetCidr(networkId, subnetCidr);
         }
-        Entities.deproxy(network).setAttribute(VirtualNetwork.NETWORK_CIDR, subnetCidr);
+        ((EntityLocal) network).setAttribute(VirtualNetwork.NETWORK_CIDR, subnetCidr);
 
         // Create the netwoek using the SDN driver
         getDriver().createSubnet(network.getId(), networkId, subnetCidr);

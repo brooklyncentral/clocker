@@ -41,6 +41,7 @@ import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.basic.ServiceStateLogic;
 import brooklyn.entity.basic.SoftwareProcess;
@@ -380,10 +381,10 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             Entity entity = getRunningEntity();
 
             // Link the entity to the container
-            Entities.deproxy(entity).setAttribute(DockerContainer.DOCKER_INFRASTRUCTURE, dockerHost.getInfrastructure());
-            Entities.deproxy(entity).setAttribute(DockerContainer.DOCKER_HOST, dockerHost);
-            Entities.deproxy(entity).setAttribute(DockerContainer.CONTAINER, this);
-            Entities.deproxy(entity).setAttribute(DockerContainer.CONTAINER_ID, containerId);
+            ((EntityLocal) entity).setAttribute(DockerContainer.DOCKER_INFRASTRUCTURE, dockerHost.getInfrastructure());
+            ((EntityLocal) entity).setAttribute(DockerContainer.DOCKER_HOST, dockerHost);
+            ((EntityLocal) entity).setAttribute(DockerContainer.CONTAINER, this);
+            ((EntityLocal) entity).setAttribute(DockerContainer.CONTAINER_ID, containerId);
 
             // If SDN is enabled, attach networks
             if (getConfig(SdnAttributes.SDN_ENABLE)) {
@@ -394,7 +395,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 Collection<String> extra = entity.getConfig(SdnAttributes.NETWORK_LIST);
                 if (extra != null) networks.addAll(extra);
                 setAttribute(SdnAttributes.ATTACHED_NETWORKS, networks);
-                Entities.deproxy(entity).setAttribute(SdnAttributes.ATTACHED_NETWORKS, networks);
+                ((EntityLocal) entity).setAttribute(SdnAttributes.ATTACHED_NETWORKS, networks);
 
                 // Save container addresses
                 Set<String> addresses = Sets.newHashSet();
@@ -406,7 +407,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                     }
                 }
                 setAttribute(CONTAINER_ADDRESSES, addresses);
-                Entities.deproxy(entity).setAttribute(CONTAINER_ADDRESSES, addresses);
+                ((EntityLocal) entity).setAttribute(CONTAINER_ADDRESSES, addresses);
             }
 
             // Create our wrapper location around the container
