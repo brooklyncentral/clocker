@@ -116,7 +116,9 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                         .callable(new Callable<Boolean>() {
                                 @Override
                                 public Boolean call() throws Exception {
-                                    return Strings.isNonBlank(getDockerHost().runDockerCommand("inspect -f {{.Id}} " + getContainerId()));
+                                    String containerId = getContainerId();
+                                    if (containerId == null) return false;
+                                    return Strings.isNonBlank(getDockerHost().runDockerCommand("inspect -f {{.Id}} " + containerId));
                                 }
                         })
                         .onFailureOrException(Functions.constant(Boolean.FALSE)))
@@ -124,7 +126,9 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                         .callable(new Callable<Boolean>() {
                                 @Override
                                 public Boolean call() throws Exception {
-                                    String running = getDockerHost().runDockerCommand("inspect -f {{.State.Running}} " + getContainerId());
+                                    String containerId = getContainerId();
+                                    if (containerId == null) return false;
+                                    String running = getDockerHost().runDockerCommand("inspect -f {{.State.Running}} " + containerId);
                                     return Strings.isNonBlank(running) && Boolean.parseBoolean(Strings.trim(running));
                                 }
                         })
@@ -133,7 +137,9 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                         .callable(new Callable<Boolean>() {
                                 @Override
                                 public Boolean call() throws Exception {
-                                    String running = getDockerHost().runDockerCommand("inspect -f {{.State.Paused}} " + getContainerId());
+                                    String containerId = getContainerId();
+                                    if (containerId == null) return false;
+                                    String running = getDockerHost().runDockerCommand("inspect -f {{.State.Paused}} " + containerId);
                                     return Strings.isNonBlank(running) && Boolean.parseBoolean(Strings.trim(running));
                                 }
                         })
