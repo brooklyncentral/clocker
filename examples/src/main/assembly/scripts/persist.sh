@@ -37,5 +37,5 @@ ${ROOT}/bin/brooklyn.sh clocker ${LAUNCH_FLAGS} \
     --ignoreManagedAppsStartupErrors \
     --ignorePersistenceStartupErrors \
     --persist auto \
-    --persistenceDir ${PERSISTENCE_DIR:-${HOME}/.clocker} \
+    --persistenceDir ${PERSISTENCE_DIR:-${ROOT}/data} \
     --stopOnShutdown none 2>&1 | tee -a ${ROOT}/console.log
