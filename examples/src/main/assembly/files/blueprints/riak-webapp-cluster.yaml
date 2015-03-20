@@ -23,7 +23,9 @@ services:
   initialSize: 2
   id: cluster
   brooklyn.config:
-    install.version: 2.0.0
+    install.version: 2.0.5
+    riak.networking.optimize: false
+
 - type: brooklyn.entity.webapp.ControlledDynamicWebAppCluster
   name: Web Cluster
   brooklyn.config:

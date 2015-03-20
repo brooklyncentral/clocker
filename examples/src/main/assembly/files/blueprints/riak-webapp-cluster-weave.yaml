@@ -28,7 +28,8 @@ services:
   initialSize: 3
   id: cluster
   brooklyn.config:
-    install.version: 2.0.0
+    install.version: 2.0.5
+    riak.networking.optimize: false
     network.list:
     - riak
 
