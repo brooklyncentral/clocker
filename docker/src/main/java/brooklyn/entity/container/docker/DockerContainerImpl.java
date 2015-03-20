@@ -213,7 +213,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     public void resume() {
         String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
         LOG.info("Resuming {}", dockerContainerName);
-        getDockerHost().runDockerCommand("start" + getContainerId());
+        getDockerHost().runDockerCommand("start " + getContainerId());
     }
 
     /**
