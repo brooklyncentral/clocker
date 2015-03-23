@@ -53,7 +53,7 @@ services:
         type: brooklyn.entity.proxy.haproxy.HAProxyController
         brooklyn.config:
           docker.image.name: haproxy
-          docker.image.tag: latest
+          docker.image.tag: 1.5.9
           install.dir: /usr/local/sbin/
           run.dir: /usr/local/etc/haproxy/
           network.list:
