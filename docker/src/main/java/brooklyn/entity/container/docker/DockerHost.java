@@ -101,7 +101,7 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
             "EPEL release for yum based OS", "6-8");
 
     ConfigKey<String> DOCKER_STORAGE_DRIVER = ConfigKeys.newStringConfigKey("docker.host.driver.storage",
-            "The Docker storage driver type (default is 'overlay')", "overlay");
+            "The Docker storage driver type ('devicemapper', 'aufs', default is 'overlay')", "overlay");
 
     AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_ID = DockerAttributes.DOCKER_IMAGE_ID;
 
@@ -112,11 +112,11 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
     @SetFromFlag("volumeMappings")
     AttributeSensorAndConfigKey<Map<String, String>, Map<String, String>> DOCKER_HOST_VOLUME_MAPPING = DockerAttributes.DOCKER_HOST_VOLUME_MAPPING;
 
-    @SetFromFlag("affinityRules")
-    ConfigKey<List<String>> DOCKER_HOST_AFFINITY_RULES = AffinityRules.AFFINITY_RULES;
-
     @SetFromFlag("password")
     ConfigKey<String> DOCKER_PASSWORD = DockerAttributes.DOCKER_PASSWORD;
+
+    @SetFromFlag("affinityRules")
+    ConfigKey<List<String>> DOCKER_HOST_AFFINITY_RULES = AffinityRules.AFFINITY_RULES;
 
     AttributeSensor<String> DOCKER_HOST_NAME = Sensors.newStringSensor("docker.host.name", "The name of the Docker host");
 
