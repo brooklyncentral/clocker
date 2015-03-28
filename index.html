@@ -31,33 +31,33 @@
 
 <img src="images/clocker-io.png" />
 
-<p>Clocker creates and manages a <a href="http://docker.io/">Docker</a> cloud infrastructure. Clocker supports
-single-click deployment and runtime management of multi-node applications that can run on
-containers distributed across docker hosts. Application blueprints written for 
-<a href="https://brooklyn.incubator.apache.org/">Brooklyn</a> can thus be deployed to a Docker cloud 
-infrastructure.</p>
+<p>Clocker creates and manages a <a href="http://docker.io/">Docker</a> Cloud infrastructure. Clocker supports
+single-click deployment and runtime management of composite applications distributed across multiple hosts.
+Application blueprints written to run in virtual machines provisioned using <a href="https://brooklyn.incubator.apache.org/">Apache Brooklyn</a>
+can thus be deployed to containers on your Docker Cloud infrastructure.</p>
 
 <p>This repository contains the required Brooklyn entities and locations, and some example application blueprints.</p>
 
 <h2><a name="getting-started" class="anchor" href="#getting-started"><span class="octicon octicon-link"></span></a>Getting started</h2>
 
-<p>To get started, you just have to download Clocker, deploy the DockerCloud blueprint to the 
+<p>To get started, you just have to download and run Clocker, using the 
 cloud or machines of your choice, and then use Clocker to deploy your applications. This will 
 automatically create the required Docker containers.</p>
 
 <iframe width="640" height="480" src="//www.youtube.com/embed/i2Nhg2J8puM" frameborder="0" allowfullscreen></iframe>
 
-<p>You can create a Docker based cloud infrastructure on your favourite cloud provider or on a 
-private cloud using any of the jclouds supported APIs. Alternatively you can target one or 
-more existing machines for running Docker.</p>
+<p>You can create a Docker Cloud on your favourite cloud provider or on a 
+private or hybrid cloud, using any of the APIs supported by <a href="http://jclouds.apache.org">Apache jclouds</a>.
+Alternatively you can target one or more existing machines for running Docker, for example using Vagrant and VirtualBox.</p>
 
-<p>If you are keen to peek under the covers, you can find the Clocker Infrastructure blueprint at 
-<a href="https://raw.githubusercontent.com/brooklyncentral/clocker/master/examples/src/main/assembly/files/blueprints/docker-cloud.yaml">docker-cloud.yaml</a>.
+<p>If you are keen to peek under the covers, you can find the Clocker blueprint for a Docker Cloud
+with a <a href="http://weave.works/">Weave</a> SDN at
+<a href="https://raw.githubusercontent.com/brooklyncentral/clocker/master/examples/src/main/assembly/files/blueprints/docker-cloud-weave.yaml">docker-cloud-weave.yaml</a>.
 This shows the components being created, including examples of placement strategies and container naming schemes.</p> 
 
 <h3><a name="using-the-latest-clocker-release" class="anchor" href="#using-the-latest-clocker-release"><span class="octicon octicon-link"></span></a>Using the latest Clocker release</h3>
 
-<p>You can build a <em>Docker Cloud Infrastructure</em> running these commands:</p>
+<p>You can build a <em>Docker Cloud</em> by running these commands:</p>
 
 <div class="highlight highlight-Bash"><pre>% wget --no-check-certificate --quiet <span class="se">\</span>
     -O brooklyn-clocker-dist.tar.gz http://git.io/ppnt
@@ -66,9 +66,12 @@ This shows the components being created, including examples of placement strateg
 % ./bin/clocker.sh &lt;location&gt;
 </pre></div>
 
-<p>Where <code>&lt;location&gt;</code> can be e.g. <code>jclouds:softlayer:lon02</code> for Softlayer London,
-or a named location or a fixed IP e.g. <code>byon:(hosts="1.2.3.4")</code>.
+<p>Where <code>&lt;location&gt;</code> can be a jclouds
+supported provider such as <code>jclouds:softlayer:lon02</code> for SoftLayer London,
+a named location or a fixed IP like <code>byon:(hosts="10.1.2.3")</code>.
 Those simple steps will give you a running docker instance on your favourite cloud.</p>
+
+<!-- TODO add Vagrantfile instructions -->
 
 <p>For anything other than a localhost or bring-your-own-nodes location, it is vital that you 
 first configure a <code>~/.brooklyn/brooklyn.properties</code> file with cloud credentials and security 
@@ -95,14 +98,15 @@ brooklyn.location.jclouds.aws-ec2.credential = awssecretkey
 brooklyn.location.named.Amazon\ Ireland = jclouds:aws-ec2:eu-west-1
 </code></pre>
 
-<p>For more information on setting up locations, including supplying cloud provider credentials, see the <a href="https://brooklyn.incubator.apache.org/quickstart/#configuring-a-location"><em>Setting up Locations</em> section of
-Brooklyn Getting Started</a>, and the more detailed <a href="https://brooklyn.incubator.apache.org/v/0.7.0-M1/use/guide/locations/index.html">locations guide</a>.</p>
+<p>For more information on setting up locations, including supplying cloud provider credentials, see the
+<a href="https://brooklyn.incubator.apache.org/quickstart/#configuring-a-location"><em>Setting up Locations</em> section of Brooklyn Getting Started</a>,
+and the more detailed <a href="https://brooklyn.incubator.apache.org/v/0.7.0-M2/use/guide/locations/index.html">locations guide</a>.</p>
 
 <p>The Brooklyn web-console, which will be deploying and managing your Docker Cloud, can be accessed at 
 <a href="http://localhost:8081">http://localhost:8081</a> - this URL will have been written to standard out during startup.</p>
 
-<p>Once the <code>DockerCloud</code>  application has started, a new location named <code>my-docker-cloud</code> will be
-available in the Locations drop-down list when adding new applications. Simply start a new application in this location
+<p>Once your Docker Cloud application has started, a new location named <code>my-docker-cloud</code> will be
+available in the <em>Locations</em> drop-down list when adding new applications. Simply start a new application in this location
 and it will use Docker containers instead of virtual machines.</p>
 
 <p>For more information on deploying applications from the Brooklyn catalog, see
@@ -126,9 +130,7 @@ You can also paste a YAML blueprint into the <em>YAML</em> tab of the <em>Add Ap
     % <span class="nb">cd </span>clocker
     % mvn clean install
     ...
-    % <span class="nb">cd </span>target
-    % tar zxf brooklyn-clocker-dist.tar.gz
-    % <span class="nb">cd </span>brooklyn-clocker
+    % <span class="nb">cd </span>examples/target/brooklyn-clocker-dist/brooklyn-clocker
     % ./bin/clocker.sh &lt;location&gt;
     ...
 </pre></div>
@@ -150,7 +152,7 @@ community <a href="https://brooklyn.incubator.apache.org/community/">mailing lis
 
 <hr/>
 
-<p>Copyright 2014 by Cloudsoft Corporation Limited</p>
+<p>Copyright 2014-2015 by Cloudsoft Corporation Limited</p>
 
 <p>Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -169,16 +171,15 @@ limitations under the License.</p>
       </footer>
     </div>
     <!--[if !IE]><script>fixScale(document);</script><![endif]-->
-		          <script type="text/javascript">
-            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
-            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
-          </script>
-          <script type="text/javascript">
-            try {
-              var pageTracker = _gat._getTracker("UA-15947686-1");
-            pageTracker._trackPageview();
-            } catch(err) {}
-          </script>
-
+      <script type="text/javascript">
+        var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+        document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+      </script>
+      <script type="text/javascript">
+        try {
+          var pageTracker = _gat._getTracker("UA-15947686-1");
+          pageTracker._trackPageview();
+        } catch(err) {}
+    </script>
   </body>
 </html>
