@@ -434,7 +434,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         String locationSpec = String.format(DockerResolver.DOCKER_HOST_MACHINE_SPEC, infrastructure.getId(), getId()) + String.format(":(name=\"%s\")", locationName);
         setAttribute(LOCATION_SPEC, locationSpec);
 
-        final LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
+        LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
         Location location = getManagementContext().getLocationRegistry().resolve(definition);
         setAttribute(DYNAMIC_LOCATION, location);
         setAttribute(LOCATION_NAME, location.getId());

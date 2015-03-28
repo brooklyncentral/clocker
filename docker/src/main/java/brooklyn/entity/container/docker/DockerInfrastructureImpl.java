@@ -260,10 +260,14 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
             String suffix = getConfig(LOCATION_NAME_SUFFIX);
             locationName = Joiner.on("-").skipNulls().join(prefix, getId(), suffix);
         }
+        LocationDefinition check = getManagementContext().getLocationRegistry().getDefinedLocationByName(locationName);
+        if (check != null) {
+            throw new IllegalStateException("Location " + locationName + " is already defined: " + check);
+        }
+
         String locationSpec = String.format(DockerResolver.DOCKER_INFRASTRUCTURE_SPEC, getId()) + String.format(":(name=\"%s\")", locationName);
         setAttribute(LOCATION_SPEC, locationSpec);
-
-        final LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
+        LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
         Location location = getManagementContext().getLocationRegistry().resolve(definition);
         getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
         getManagementContext().getLocationManager().manage(location);
