@@ -24,5 +24,6 @@ services:
   id: cluster
   brooklyn.config:
     install.version: 2.0.5
+    etcd.port.client: 4001
     etcd.cluster.name: "test"
 

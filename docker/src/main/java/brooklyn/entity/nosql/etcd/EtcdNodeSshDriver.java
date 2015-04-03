@@ -21,6 +21,8 @@ package brooklyn.entity.nosql.etcd;
 import static java.lang.String.format;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
@@ -31,6 +33,8 @@ import brooklyn.entity.group.DynamicCluster;
 import brooklyn.event.basic.DependentConfiguration;
 import brooklyn.location.OsDetails;
 import brooklyn.location.basic.SshMachineLocation;
+import brooklyn.networking.sdn.weave.WeaveContainer;
+import brooklyn.util.collections.MutableMap;
 import brooklyn.util.os.Os;
 import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.task.DynamicTasks;
@@ -41,6 +45,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Predicates;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
@@ -55,6 +60,18 @@ public class EtcdNodeSshDriver extends AbstractSoftwareProcessSshDriver implemen
     @Override
     public EtcdNodeImpl getEntity() {
         return EtcdNodeImpl.class.cast(super.getEntity());
+    }
+
+    @Override
+    public Set<Integer> getPortsUsed() {
+        return ImmutableSet.<Integer>builder()
+                .addAll(super.getPortsUsed())
+                .addAll(getPortMap().values())
+                .build();
+    }
+
+    protected Map<String, Integer> getPortMap() {
+        return MutableMap.of("clientPort", getEntity().getAttribute(EtcdNode.ETCD_CLIENT_PORT), "peerPort", getEntity().getAttribute(EtcdNode.ETCD_PEER_PORT));
     }
 
     @Override
@@ -161,7 +178,7 @@ public class EtcdNodeSshDriver extends AbstractSoftwareProcessSshDriver implemen
     }
 
     protected String getClusterToken() {
-        return getEntity().getConfig(EtcdCluster.CLUSTER_TOKEN);
+        return entity.config().get(EtcdCluster.CLUSTER_TOKEN);
     }
 
     @Override

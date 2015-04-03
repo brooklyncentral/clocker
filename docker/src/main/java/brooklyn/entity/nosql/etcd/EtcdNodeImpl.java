@@ -34,12 +34,12 @@ public class EtcdNodeImpl extends SoftwareProcessImpl implements EtcdNode {
     public void init() {
        super.init();
 
-       String nodeName = getConfig(ETCD_NODE_NAME);
+       String nodeName = config().get(ETCD_NODE_NAME);
        Entity cluster = getParent();
 
        if (cluster instanceof EtcdCluster) {
            setAttribute(ETCD_CLUSTER, cluster);
-           String clusterName = cluster.getConfig(EtcdCluster.CLUSTER_NAME);
+           String clusterName = cluster.config().get(EtcdCluster.CLUSTER_NAME);
            if (Strings.isBlank(nodeName)) nodeName = clusterName;
            AtomicInteger nodeId = cluster.getAttribute(EtcdCluster.NODE_ID);
            nodeName += nodeId.incrementAndGet();

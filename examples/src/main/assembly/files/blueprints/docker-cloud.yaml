@@ -25,7 +25,6 @@ services:
     docker.tls.key: conf/server-key.pem
     docker.host.cluster.initial.size: 2
     docker.container.cluster.headroom.count: 4
-    sdn.enable: false
     docker.policy.ha.enable: false
     docker.container.strategies:
     - $brooklyn:object:
@@ -38,6 +37,7 @@ services:
         type: brooklyn.location.docker.strategy.MaxCpuUsagePlacementStrategy
         brooklyn.config:
           maxCpuUsage: 0.75
+    sdn.enable: false
     docker.host.spec:
       $brooklyn:entitySpec:
         type: brooklyn.entity.container.docker.DockerHost

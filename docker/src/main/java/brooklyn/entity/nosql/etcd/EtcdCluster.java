@@ -32,7 +32,6 @@ import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.util.flags.SetFromFlag;
-import brooklyn.util.time.Duration;
 
 import com.google.common.reflect.TypeToken;
 
@@ -45,10 +44,6 @@ public interface EtcdCluster extends DynamicCluster {
     AttributeSensor<Map<Entity, String>> ETCD_CLUSTER_NODES = Sensors.newSensor(
             new TypeToken<Map<Entity, String>>() {}, 
             "etcd.cluster.nodes", "Names of all active etcd nodes in the cluster (entity reference to name mapping)");
-
-    @SetFromFlag("delayBeforeAdvertisingCluster")
-    ConfigKey<Duration> DELAY_BEFORE_ADVERTISING_CLUSTER = ConfigKeys.newConfigKey(Duration.class,
-            "etcd.cluster.delayBeforeAdvertisingCluster", "Delay after cluster is started before checking and advertising its availability", Duration.seconds(60));
 
     @SetFromFlag("clusterName")
     ConfigKey<String> CLUSTER_NAME = ConfigKeys.newStringConfigKey("etcd.cluster.name", "The Etcd cluster name", "brooklyn");

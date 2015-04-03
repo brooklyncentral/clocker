@@ -30,7 +30,7 @@ import brooklyn.util.flags.SetFromFlag;
 public interface WeaveNetwork extends SdnProvider {
 
     @SetFromFlag("version")
-    ConfigKey<String> WEAVE_VERSION = ConfigKeys.newStringConfigKey("weave.version", "The Weave SDN version number");
+    ConfigKey<String> WEAVE_VERSION = ConfigKeys.newStringConfigKey("weave.version", "The Weave SDN version number", "0.9.0");
 
     @SetFromFlag("weavePort")
     ConfigKey<Integer> WEAVE_PORT = WeaveContainer.WEAVE_PORT;

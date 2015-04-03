@@ -22,20 +22,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.basic.SoftwareProcess;
+import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.DockerHost;
+import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.nosql.etcd.EtcdCluster;
 import brooklyn.entity.nosql.etcd.EtcdNode;
 import brooklyn.entity.proxying.EntitySpec;
-import brooklyn.location.Location;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.networking.sdn.SdnAgent;
+import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.networking.sdn.SdnProviderImpl;
 import brooklyn.util.collections.MutableList;
 import brooklyn.util.collections.QuorumCheck.QuorumChecks;
+import brooklyn.util.net.Cidr;
 import brooklyn.util.text.Strings;
 
 import com.google.common.collect.ImmutableList;
@@ -60,6 +64,8 @@ public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork 
         EtcdCluster etcd = addChild(EntitySpec.create(EtcdCluster.class)
                 .configure(Cluster.INITIAL_SIZE, 0)
                 .configure(EtcdCluster.ETCD_NODE_SPEC, etcdNodeSpec)
+                .configure(EtcdCluster.CLUSTER_NAME, "calico")
+                .configure(EtcdCluster.CLUSTER_TOKEN, "etcd-calico")
                 .configure(DynamicCluster.QUARANTINE_FAILED_ENTITIES, true)
                 .configure(DynamicCluster.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .configure(DynamicCluster.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
@@ -73,11 +79,14 @@ public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork 
 
         EntitySpec<?> agentSpec = EntitySpec.create(getConfig(SdnProvider.SDN_AGENT_SPEC, EntitySpec.create(CalicoPlugin.class)))
                 .configure(CalicoPlugin.SDN_PROVIDER, this);
-        String calicoVersion = getConfig(CALICO_VERSION);
+        String calicoVersion = config().get(CALICO_VERSION);
         if (Strings.isNonBlank(calicoVersion)) {
             agentSpec.configure(SoftwareProcess.SUGGESTED_VERSION, calicoVersion);
         }
         setAttribute(SdnProvider.SDN_AGENT_SPEC, agentSpec);
+
+        Cidr calicoCidr = getNextSubnetCidr();
+        config().set(AGENT_CIDR, calicoCidr);
     }
 
     @Override

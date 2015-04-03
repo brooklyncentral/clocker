@@ -70,6 +70,8 @@ public class EtcdClusterImpl extends DynamicClusterImpl implements EtcdCluster {
 
     @Override
     public void start(Collection<? extends Location> locations) {
+        ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
+
         connectSensors();
 
         super.start(locations);

@@ -23,7 +23,7 @@ services:
     docker.version: 1.5.0
     docker.tls.certificate: conf/server-cert.pem
     docker.tls.key: conf/server-key.pem
-    docker.host.cluster.initial.size: 2
+    docker.host.cluster.initial.size: 3
     docker.container.cluster.headroom.count: 4
     docker.policy.ha.enable: false
     docker.container.strategies:
@@ -39,7 +39,8 @@ services:
       $brooklyn:entitySpec:
         type: brooklyn.networking.sdn.calico.CalicoNetwork
         brooklyn.config:
-          install.version: 0.1.0
+          calico.version: 0.2.0
+          etcd.version: 2.0.5
           sdn.network.cidr: 169.254.0.0/16
           sdn.network.size: 24
     docker.host.spec:

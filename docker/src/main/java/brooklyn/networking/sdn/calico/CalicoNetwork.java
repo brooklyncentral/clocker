@@ -21,6 +21,7 @@ import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.nosql.etcd.EtcdCluster;
 import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.event.AttributeSensor;
+import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.util.flags.SetFromFlag;
@@ -33,10 +34,14 @@ import brooklyn.util.flags.SetFromFlag;
 public interface CalicoNetwork extends SdnProvider {
 
     @SetFromFlag("calicoVersion")
-    ConfigKey<String> CALICO_VERSION = ConfigKeys.newStringConfigKey("calico.version", "The Calico SDN version number", "0.1.0");
+    ConfigKey<String> CALICO_VERSION = ConfigKeys.newStringConfigKey("calico.version", "The Calico SDN version number", "0.2.0");
 
     @SetFromFlag("etcdVersion")
     ConfigKey<String> ETCD_VERSION = ConfigKeys.newStringConfigKey("etcd.version", "The Etcd version number", "2.0.5");
+
+    ConfigKey<Boolean> EXTERNAL_ETCD_CLUSTER = ConfigKeys.newBooleanConfigKey("calico.etcd.external", "Whether to use an external Etcd cluster", Boolean.FALSE);
+    ConfigKey<Integer> EXTERNAL_ETCD_INITIAL_SIZE = ConfigKeys.newIntegerConfigKey("calico.etcd.external.initialSize", "The initial size of the external Etcd cluster");
+    AttributeSensorAndConfigKey<String, String> EXTERNAL_ETCD_URL = ConfigKeys.newStringSensorAndConfigKey("calico.etcd.external.url", "The URL for the external Etcd cluster (if configured, no cluster will be provisioned)");
 
     AttributeSensor<EtcdCluster> ETCD_CLUSTER = Sensors.newSensor(EtcdCluster.class, "etcd.cluster", "The EtcdCluster entity for storing state");
 
