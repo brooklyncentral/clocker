@@ -46,7 +46,7 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
         super.init();
 
         EntitySpec<?> agentSpec = EntitySpec.create(getConfig(SdnProvider.SDN_AGENT_SPEC, EntitySpec.create(WeaveContainer.class)))
-                .configure(WeaveContainer.WEAVE_PORT, getConfig(WeaveNetwork.WEAVE_PORT))
+                .configure(WeaveContainer.WEAVE_PORT, config().get(WeaveNetwork.WEAVE_PORT))
                 .configure(WeaveContainer.SDN_PROVIDER, this);
         String weaveVersion = getConfig(WEAVE_VERSION);
         if (Strings.isNonBlank(weaveVersion)) {

@@ -38,10 +38,6 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
     }
 
     @Override
-    public void postLaunch() {
-    }
-
-    @Override
     public Set<Integer> getPortsUsed() {
         return ImmutableSet.<Integer>builder()
                 .addAll(super.getPortsUsed())
@@ -50,7 +46,7 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
     }
 
     protected Map<String, Integer> getPortMap() {
-        return MutableMap.of("weave", getEntity().getConfig(WeaveContainer.WEAVE_PORT));
+        return MutableMap.of("weave", getEntity().config().get(WeaveContainer.WEAVE_PORT));
     }
 
     public String getWeaveCommand() {

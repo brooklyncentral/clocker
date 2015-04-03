@@ -171,7 +171,7 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
         String networkId = network.getAttribute(VirtualNetwork.NETWORK_ID);
 
         // Record the network CIDR being provisioned, allocating if required
-        Cidr subnetCidr = network.getConfig(VirtualNetwork.NETWORK_CIDR);
+        Cidr subnetCidr = network.config().get(VirtualNetwork.NETWORK_CIDR);
         if (subnetCidr == null) {
             subnetCidr = getAttribute(SDN_PROVIDER).getNextSubnetCidr(networkId);
         } else {

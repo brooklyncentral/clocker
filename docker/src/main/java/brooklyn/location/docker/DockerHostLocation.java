@@ -146,7 +146,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             LOG.info("Configuring entity {} via subnet {}", entity, dockerHost.getSubnetTier());
             entity.config().set(SubnetTier.PORT_FORWARDING_MANAGER, dockerHost.getSubnetTier().getPortForwardManager());
             entity.config().set(SubnetTier.PORT_FORWARDER, portForwarder);
-            if (getOwner().getConfig(SdnAttributes.SDN_ENABLE)) {
+            if (getOwner().config().get(SdnAttributes.SDN_ENABLE)) {
                 SdnAgent agent = getOwner().getAttribute(SdnAgent.SDN_AGENT);
                 if (agent == null) {
                     throw new IllegalStateException("SDN agent entity on " + getOwner() + " is null");
@@ -159,11 +159,11 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             configureEnrichers(entity);
 
             // Add the entity Dockerfile if configured
-            String dockerfile = entity.getConfig(DockerAttributes.DOCKERFILE_URL);
-            String imageId = entity.getConfig(DockerAttributes.DOCKER_IMAGE_ID);
+            String dockerfile = entity.config().get(DockerAttributes.DOCKERFILE_URL);
+            String imageId = entity.config().get(DockerAttributes.DOCKER_IMAGE_ID);
 
-            Optional<String> baseImage = Optional.fromNullable(entity.getConfig(DockerAttributes.DOCKER_IMAGE_NAME));
-            String imageTag = Optional.fromNullable(entity.getConfig(DockerAttributes.DOCKER_IMAGE_TAG)).or("latest");
+            Optional<String> baseImage = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_NAME));
+            String imageTag = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_TAG)).or("latest");
             // TODO incorporate more info
             final String imageName = DockerUtils.imageName(entity, dockerfile, repository);
             final String fullyQualifiedImageName = Os.mergePaths(repository, imageName);
@@ -209,9 +209,9 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             insertCallback(entity, SoftwareProcess.PRE_INSTALL_COMMAND, DockerCallbacks.subnetAddress());
 
             // Look up hardware ID
-            String hardwareId = entity.getConfig(DockerAttributes.DOCKER_HARDWARE_ID);
+            String hardwareId = entity.config().get(DockerAttributes.DOCKER_HARDWARE_ID);
             if (Strings.isEmpty(hardwareId)) {
-                hardwareId = getOwner().getConfig(DockerAttributes.DOCKER_HARDWARE_ID);
+                hardwareId = getOwner().config().get(DockerAttributes.DOCKER_HARDWARE_ID);
             }
 
             // Create new Docker container in the host cluster
@@ -237,7 +237,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             ((EntityLocal) dockerContainer).setAttribute(DockerContainer.HARDWARE_ID, hardwareId);
 
             // record SDN application network details
-            if (getOwner().getConfig(SdnAttributes.SDN_ENABLE)) {
+            if (getOwner().config().get(SdnAttributes.SDN_ENABLE)) {
                 SdnAgent agent = getOwner().getAttribute(SdnAgent.SDN_AGENT);
                 Cidr applicationCidr =  agent.getAttribute(SdnAgent.SDN_PROVIDER).getSubnetCidr(entity.getApplicationId());
                 ((EntityLocal) entity).setAttribute(SdnProvider.APPLICATION_CIDR, applicationCidr);
@@ -251,7 +251,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
     }
 
     private void insertCallback(Entity entity, ConfigKey<String> commandKey, String callback) {
-        String command = entity.getConfig(commandKey);
+        String command = entity.config().get(commandKey);
         if (Strings.isNonBlank(command)) {
             command = BashCommands.chain(command, callback);
         } else {

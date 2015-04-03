@@ -99,8 +99,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         LOG.info("Starting Docker container id {}", getId());
         super.init();
 
-        AtomicInteger counter = getConfig(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.DOCKER_CONTAINER_COUNTER);
-        String dockerContainerName = format(getConfig(DockerContainer.DOCKER_CONTAINER_NAME_FORMAT), getId(), counter.incrementAndGet());
+        AtomicInteger counter = config().get(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.DOCKER_CONTAINER_COUNTER);
+        String dockerContainerName = format(config().get(DockerContainer.DOCKER_CONTAINER_NAME_FORMAT), getId(), counter.incrementAndGet());
         setDisplayName(dockerContainerName);
         setAttribute(DOCKER_CONTAINER_NAME, dockerContainerName);
 
@@ -179,7 +179,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
     @Override
     public DockerHost getDockerHost() {
-        return (DockerHost) getConfig(DOCKER_HOST);
+        return (DockerHost) config().get(DOCKER_HOST);
     }
 
     @Override
@@ -234,8 +234,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         DockerTemplateOptions options = DockerTemplateOptions.NONE;
 
         // Use DockerHost hostname for the container
-        Boolean useHostDns = entity.getConfig(DOCKER_USE_HOST_DNS_NAME);
-        if (useHostDns == null) useHostDns = getConfig(DOCKER_USE_HOST_DNS_NAME);
+        Boolean useHostDns = entity.config().get(DOCKER_USE_HOST_DNS_NAME);
+        if (useHostDns == null) useHostDns = config().get(DOCKER_USE_HOST_DNS_NAME);
         if (useHostDns != null && useHostDns) {
             // FIXME does not seem to work on Softlayer, should set HOSTNAME or SUBNET_HOSTNAME
             String hostname = getDockerHost().getAttribute(Attributes.HOSTNAME);
@@ -248,13 +248,13 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         }
 
         // CPU shares
-        Integer cpuShares = entity.getConfig(DOCKER_CPU_SHARES);
-        if (cpuShares == null) cpuShares = getConfig(DOCKER_CPU_SHARES);
+        Integer cpuShares = entity.config().get(DOCKER_CPU_SHARES);
+        if (cpuShares == null) cpuShares = config().get(DOCKER_CPU_SHARES);
         if (cpuShares != null) {
             // TODO set based on number of cores available in host divided by cores requested in flags
             Integer hostCores = getDockerHost().getDynamicLocation().getMachine().getMachineDetails().getHardwareDetails().getCpuCount();
-            Integer minCores = entity.getConfig(JcloudsLocationConfig.MIN_CORES);
-            Map flags = entity.getConfig(SoftwareProcess.PROVISIONING_PROPERTIES);
+            Integer minCores = entity.config().get(JcloudsLocationConfig.MIN_CORES);
+            Map flags = entity.config().get(SoftwareProcess.PROVISIONING_PROPERTIES);
             if (minCores == null && flags != null) {
                 minCores = (Integer) flags.get(JcloudsLocationConfig.MIN_CORES.getName());
             }
@@ -275,13 +275,13 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         if (cpuShares != null) options.cpuShares(cpuShares);
 
         // Memory
-        Integer memory = entity.getConfig(DOCKER_MEMORY);
-        if (memory == null) memory = getConfig(DOCKER_MEMORY);
+        Integer memory = entity.config().get(DOCKER_MEMORY);
+        if (memory == null) memory = config().get(DOCKER_MEMORY);
         if (memory != null) {
             // TODO set based on memory available in host divided by memory requested in flags
             Integer hostRam = getDockerHost().getDynamicLocation().getMachine().getMachineDetails().getHardwareDetails().getRam();
-            Integer minRam = (Integer) entity.getConfig(JcloudsLocationConfig.MIN_RAM);
-            Map flags = entity.getConfig(SoftwareProcess.PROVISIONING_PROPERTIES);
+            Integer minRam = (Integer) entity.config().get(JcloudsLocationConfig.MIN_RAM);
+            Map flags = entity.config().get(SoftwareProcess.PROVISIONING_PROPERTIES);
             if (minRam == null && flags != null) {
                 minRam = (Integer) flags.get(JcloudsLocationConfig.MIN_RAM.getName());
             }
@@ -300,7 +300,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
         // Volumes
         Map<String, String> volumes = MutableMap.copyOf(getDockerHost().getAttribute(DockerHost.DOCKER_HOST_VOLUME_MAPPING));
-        Map<String, String> mapping = entity.getConfig(DockerHost.DOCKER_HOST_VOLUME_MAPPING);
+        Map<String, String> mapping = entity.config().get(DockerHost.DOCKER_HOST_VOLUME_MAPPING);
         if (mapping != null) {
             for (String source : mapping.keySet()) {
                 if (Urls.isUrlWithProtocol(source)) {
@@ -311,7 +311,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 }
             }
         }
-        List<String> exports = entity.getConfig(DockerContainer.DOCKER_CONTAINER_VOLUME_EXPORT);
+        List<String> exports = entity.config().get(DockerContainer.DOCKER_CONTAINER_VOLUME_EXPORT);
         if (exports != null) {
             for (String dir : exports) {
                 volumes.put(dir, dir);
@@ -321,11 +321,11 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
         // Environment
         List<String> environment = MutableList.of();
-        Map<String,Object> dockerEnvironment = getConfig(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT);
+        Map<String,Object> dockerEnvironment = config().get(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT);
         if (dockerEnvironment != null) {
             environment.add(Joiner.on(":").withKeyValueSeparator("=").join(dockerEnvironment));
         }
-        Map<String,Object> entityEnvironment = entity.getConfig(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT);
+        Map<String,Object> entityEnvironment = entity.config().get(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT);
         if (entityEnvironment != null) {
             environment.add(Joiner.on(":").withKeyValueSeparator("=").join(entityEnvironment));
         }
@@ -392,11 +392,11 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         // put these fields on the location so it has the info it needs to create the subnet
         Map<?, ?> dockerFlags = MutableMap.<Object, Object>builder()
                 .put(JcloudsLocationConfig.TEMPLATE_BUILDER, new PortableTemplateBuilder().options(options))
-                .put(JcloudsLocationConfig.IMAGE_ID, getConfig(DOCKER_IMAGE_ID))
-                .put(JcloudsLocationConfig.HARDWARE_ID, getConfig(DOCKER_HARDWARE_ID))
+                .put(JcloudsLocationConfig.IMAGE_ID, config().get(DOCKER_IMAGE_ID))
+                .put(JcloudsLocationConfig.HARDWARE_ID, config().get(DOCKER_HARDWARE_ID))
                 .put(LocationConfigKeys.USER, "root")
-                .put(LocationConfigKeys.PASSWORD, getConfig(DOCKER_PASSWORD))
-                .put(SshTool.PROP_PASSWORD, getConfig(DOCKER_PASSWORD))
+                .put(LocationConfigKeys.PASSWORD, config().get(DOCKER_PASSWORD))
+                .put(SshTool.PROP_PASSWORD, config().get(DOCKER_PASSWORD))
                 .put(LocationConfigKeys.PRIVATE_KEY_DATA, null)
                 .put(LocationConfigKeys.PRIVATE_KEY_FILE, null)
                 .put(CloudLocationConfig.WAIT_FOR_SSHABLE, false)
@@ -422,12 +422,12 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             ((EntityLocal) entity).setAttribute(DockerContainer.CONTAINER_ID, containerId);
 
             // If SDN is enabled, attach networks
-            if (getConfig(SdnAttributes.SDN_ENABLE)) {
+            if (config().get(SdnAttributes.SDN_ENABLE)) {
                 SdnAgent agent = Entities.attributeSupplierWhenReady(dockerHost, SdnAgent.SDN_AGENT).get();
 
                 // Save attached network list
                 Set<String> networks = Sets.newHashSet(entity.getApplicationId());
-                Collection<String> extra = entity.getConfig(SdnAttributes.NETWORK_LIST);
+                Collection<String> extra = entity.config().get(SdnAttributes.NETWORK_LIST);
                 if (extra != null) networks.addAll(extra);
                 setAttribute(SdnAttributes.ATTACHED_NETWORKS, networks);
                 ((EntityLocal) entity).setAttribute(SdnAttributes.ATTACHED_NETWORKS, networks);
@@ -510,15 +510,15 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     public void start(Collection<? extends Location> locations) {
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
 
-        Boolean started = getConfig(SoftwareProcess.ENTITY_STARTED);
+        Boolean started = config().get(SoftwareProcess.ENTITY_STARTED);
         if (Boolean.TRUE.equals(started)) {
             DockerHost dockerHost = getDockerHost();
             DockerHostLocation host = dockerHost.getDynamicLocation();
-            setAttribute(DockerContainer.IMAGE_ID, getConfig(DOCKER_IMAGE_ID));
-            setAttribute(DockerContainer.IMAGE_NAME, getConfig(DockerAttributes.DOCKER_IMAGE_NAME));
+            setAttribute(DockerContainer.IMAGE_ID, config().get(DOCKER_IMAGE_ID));
+            setAttribute(DockerContainer.IMAGE_NAME, config().get(DockerAttributes.DOCKER_IMAGE_NAME));
             setAttribute(SSH_MACHINE_LOCATION, host.getMachine());
         } else {
-            Map<String, ?> flags = MutableMap.copyOf(getConfig(LOCATION_FLAGS));
+            Map<String, ?> flags = MutableMap.copyOf(config().get(LOCATION_FLAGS));
             DockerContainerLocation location = createLocation(flags);
             setAttribute(SSH_MACHINE_LOCATION, location.getMachine());
         }
@@ -557,7 +557,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         removeContainer();
 
         setAttribute(SSH_MACHINE_LOCATION, null);
-        Boolean started = getConfig(SoftwareProcess.ENTITY_STARTED);
+        Boolean started = config().get(SoftwareProcess.ENTITY_STARTED);
         if (!Boolean.TRUE.equals(started)) {
             deleteLocation();
         }

@@ -131,7 +131,7 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
                 LOG.debug("Placement after {}: {}", strategy, Iterables.toString(Iterables.transform(available, EntityFunctions.id())));
             }
         }
-        List<DockerAwarePlacementStrategy> entityStrategies = entity.getConfig(DockerAttributes.PLACEMENT_STRATEGIES);
+        List<DockerAwarePlacementStrategy> entityStrategies = entity.config().get(DockerAttributes.PLACEMENT_STRATEGIES);
         if (entityStrategies != null && entityStrategies.size() > 0) {
             for (DockerAwarePlacementStrategy strategy : entityStrategies) {
                 available = strategy.filterLocations(available, entity);
@@ -215,7 +215,7 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Empty Docker host: {}", host);
                 }
-                if (getOwner().getConfig(DockerInfrastructure.REMOVE_EMPTY_DOCKER_HOSTS)) {
+                if (getOwner().config().get(DockerInfrastructure.REMOVE_EMPTY_DOCKER_HOSTS)) {
                     LOG.info("Removing empty Docker host: {}", host);
                     remove(host);
                 }

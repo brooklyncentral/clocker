@@ -153,7 +153,7 @@ public class DockerUtils {
 
     public static String imageName(Entity entity, String dockerfile, String repository) {
         String simpleName = entity.getEntityType().getSimpleName();
-        String version = entity.getConfig(SoftwareProcess.SUGGESTED_VERSION);
+        String version = entity.config().get(SoftwareProcess.SUGGESTED_VERSION);
 
         String label = Joiner.on(":").skipNulls().join(simpleName, version, dockerfile, repository);
         return Identifiers.makeIdFromHash(Hashing.md5().hashString(label, Charsets.UTF_8).asLong()).toLowerCase(Locale.ENGLISH);

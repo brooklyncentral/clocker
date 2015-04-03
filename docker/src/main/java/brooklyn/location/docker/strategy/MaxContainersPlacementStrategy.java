@@ -45,19 +45,17 @@ public class MaxContainersPlacementStrategy extends BasicDockerPlacementStrategy
 
     @Override
     public boolean apply(DockerHostLocation input) {
-        Integer maxSize = getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
-        DockerInfrastructure infrastructure = getConfig(DOCKER_INFRASTRUCTURE);
+        Integer maxSize = config().get(DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
+        DockerInfrastructure infrastructure = config().get(DOCKER_INFRASTRUCTURE);
         if (infrastructure != null) {
-            Integer infrastructureMax = infrastructure.getConfig(DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
+            Integer infrastructureMax = infrastructure.config().get(DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
             if (infrastructureMax != null) maxSize = infrastructureMax;
         }
         if (maxSize == null) maxSize = DEFAULT_MAX_CONTAINERS;
 
         Integer currentSize = input.getOwner().getAttribute(DockerHost.DOCKER_CONTAINER_CLUSTER).getAttribute(BasicGroup.GROUP_SIZE);
         boolean accept = currentSize < maxSize;
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Location {} size is {}/{}: {}", new Object[] { input, currentSize, maxSize, accept ? "accepted" : "rejected" });
-        }
+        LOG.debug("Location {} size is {}/{}: {}", new Object[] { input, currentSize, maxSize, accept ? "accepted" : "rejected" });
         return accept;
     }
 

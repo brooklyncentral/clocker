@@ -45,10 +45,10 @@ public class MaxCpuUsagePlacementStrategy extends BasicDockerPlacementStrategy {
 
     @Override
     public boolean apply(DockerHostLocation input) {
-        Double maxCpu = getConfig(DOCKER_CONTAINER_CLUSTER_MAX_CPU);
-        DockerInfrastructure infrastructure = getConfig(DOCKER_INFRASTRUCTURE);
+        Double maxCpu = config().get(DOCKER_CONTAINER_CLUSTER_MAX_CPU);
+        DockerInfrastructure infrastructure = config().get(DOCKER_INFRASTRUCTURE);
         if (infrastructure != null) {
-            Double infrastructureMax = infrastructure.getConfig(DOCKER_CONTAINER_CLUSTER_MAX_CPU);
+            Double infrastructureMax = infrastructure.config().get(DOCKER_CONTAINER_CLUSTER_MAX_CPU);
             if (infrastructureMax != null) maxCpu = infrastructureMax;
         }
         if (maxCpu == null) maxCpu = DEFAULT_MAX_CPU_USAGE;
@@ -58,9 +58,7 @@ public class MaxCpuUsagePlacementStrategy extends BasicDockerPlacementStrategy {
         if (!Boolean.TRUE.equals(serviceUp) || currentCpu == null) return false; // reject
 
         boolean accept = currentCpu < maxCpu;
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Location {} CPU usage is {}: {}", new Object[] { input, currentCpu, accept ? "accepted" : "rejected" });
-        }
+        LOG.debug("Location {} CPU usage is {}: {}", new Object[] { input, currentCpu, accept ? "accepted" : "rejected" });
         return accept;
     }
 

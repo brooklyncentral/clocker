@@ -41,7 +41,7 @@ public class VirtualNetworkImpl extends BasicStartableImpl implements VirtualNet
         LOG.info("Starting virtual network segment id {}", getId());
         super.init();
 
-        String networkId = getConfig(NETWORK_ID);
+        String networkId = config().get(NETWORK_ID);
         if (Strings.isEmpty(networkId)) networkId = getId();
 
         setAttribute(NETWORK_ID, networkId);

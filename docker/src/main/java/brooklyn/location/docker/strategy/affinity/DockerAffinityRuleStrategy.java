@@ -44,9 +44,9 @@ public class DockerAffinityRuleStrategy extends AbstractDockerPlacementStrategy 
 
         // Select hosts that satisfy the affinity rules
         for (DockerHostLocation machine : locations) {
-            Optional<List<String>> entityRules = Optional.fromNullable(entity.getConfig(DockerHost.DOCKER_HOST_AFFINITY_RULES));
-            Optional<List<String>> hostRules = Optional.fromNullable(machine.getOwner().getConfig(DockerHost.DOCKER_HOST_AFFINITY_RULES));
-            Optional<List<String>> infrastructureRules = Optional.fromNullable(machine.getOwner().getInfrastructure().getConfig(DockerHost.DOCKER_HOST_AFFINITY_RULES));
+            Optional<List<String>> entityRules = Optional.fromNullable(entity.config().get(DockerHost.DOCKER_HOST_AFFINITY_RULES));
+            Optional<List<String>> hostRules = Optional.fromNullable(machine.getOwner().config().get(DockerHost.DOCKER_HOST_AFFINITY_RULES));
+            Optional<List<String>> infrastructureRules = Optional.fromNullable(machine.getOwner().getInfrastructure().config().get(DockerHost.DOCKER_HOST_AFFINITY_RULES));
             Iterable<String> combined = Iterables.concat(Optional.presentInstances(ImmutableList.of(entityRules, hostRules, infrastructureRules)));
             AffinityRules rules = AffinityRules.rulesFor(entity).parse(combined);
 

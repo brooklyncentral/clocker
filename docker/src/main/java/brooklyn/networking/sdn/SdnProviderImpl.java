@@ -117,7 +117,7 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
     @Override
     public InetAddress getNextAgentAddress(String agentId) {
         synchronized (addressMutex) {
-            Cidr cidr = getConfig(AGENT_CIDR);
+            Cidr cidr = config().get(AGENT_CIDR);
             Integer allocated = getAttribute(ALLOCATED_IPS);
             InetAddress next = cidr.addressAtOffset(allocated + 1);
             setAttribute(ALLOCATED_IPS, allocated + 1);
@@ -155,8 +155,8 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
     @Override
     public Cidr getNextSubnetCidr() {
         synchronized (networkMutex) {
-            Cidr networkCidr = getConfig(CONTAINER_NETWORK_CIDR);
-            Integer networkSize = getConfig(CONTAINER_NETWORK_SIZE);
+            Cidr networkCidr = config().get(CONTAINER_NETWORK_CIDR);
+            Integer networkSize = config().get(CONTAINER_NETWORK_SIZE);
             Integer allocated = getAttribute(ALLOCATED_NETWORKS);
             InetAddress baseAddress = networkCidr.addressAtOffset(allocated * (1 << (32 - networkSize)));
             Cidr subnetCidr = new Cidr(baseAddress.getHostAddress() + "/" + networkSize);
@@ -198,7 +198,7 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
 
     @Override
     public DynamicCluster getDockerHostCluster() {
-        return getConfig(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.DOCKER_HOST_CLUSTER);
+        return config().get(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.DOCKER_HOST_CLUSTER);
     }
 
     @Override
@@ -217,7 +217,7 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
         addHostTrackerPolicy();
 
         // Add ouserlves as an extension to the Docker location
-        DockerInfrastructure infrastructure = (DockerInfrastructure) getConfig(DOCKER_INFRASTRUCTURE);
+        DockerInfrastructure infrastructure = (DockerInfrastructure) config().get(DOCKER_INFRASTRUCTURE);
         infrastructure.getDynamicLocation().addExtension(NetworkProvisioningExtension.class, this);
 
         super.start(locations);

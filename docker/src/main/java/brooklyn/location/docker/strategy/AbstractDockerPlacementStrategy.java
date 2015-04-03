@@ -24,7 +24,7 @@ import brooklyn.entity.container.docker.DockerInfrastructure;
 public abstract class AbstractDockerPlacementStrategy extends BasicConfigurableObject implements DockerAwarePlacementStrategy {
 
     @Override
-    public DockerInfrastructure getDockerInfrastructure() { return getConfig(DOCKER_INFRASTRUCTURE); }
+    public DockerInfrastructure getDockerInfrastructure() { return config().get(DOCKER_INFRASTRUCTURE); }
 
     @Override
     public String toString() {

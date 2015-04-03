@@ -89,9 +89,9 @@ public class HAProxySshDriver extends AbstractSoftwareProcessSshDriver implement
             }
         }
         Map<String, Object> substitutions = ImmutableMap.<String, Object>builder()
-                .put("port", getEntity().getConfig(LoadBalancer.PROXY_HTTP_PORT))
+                .put("port", getEntity().config().get(LoadBalancer.PROXY_HTTP_PORT))
                 .build();
-        String template = getEntity().getConfig(HAProxyController.HAPROXY_CONFIG_TEMPLATE_URL);
+        String template = getEntity().config().get(HAProxyController.HAPROXY_CONFIG_TEMPLATE_URL);
         copyTemplate(template, getConfigFileLocation(), true, substitutions);
         launch();
         LOG.debug("HAProxy re-configured on: {}", getEntity());
@@ -103,15 +103,15 @@ public class HAProxySshDriver extends AbstractSoftwareProcessSshDriver implement
 
     // For use in templates
     public String getFrontendMode() {
-        return getEntity().getConfig(HAProxyController.FRONTEND_MODE);
+        return getEntity().config().get(HAProxyController.FRONTEND_MODE);
     }
 
     public String getBackendMode() {
-        return getEntity().getConfig(HAProxyController.BACKEND_MODE);
+        return getEntity().config().get(HAProxyController.BACKEND_MODE);
     }
 
     public String getBindAddress() {
-        String host = Optional.fromNullable(getEntity().getConfig(HAProxyController.BIND_ADDRESS)).or("");
+        String host = Optional.fromNullable(getEntity().config().get(HAProxyController.BIND_ADDRESS)).or("*");
         Integer port = getEntity().getAttribute(HAProxyController.PROXY_HTTP_PORT);
         return host + ":" + port;
     }

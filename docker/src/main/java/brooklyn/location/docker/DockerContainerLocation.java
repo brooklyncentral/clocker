@@ -104,7 +104,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
      * fixed after initial provisioning, so updates use iptables to open ports.
      */
     private void addIptablesRule(Integer port) {
-        if (getOwner().getConfig(DockerHost.OPEN_IPTABLES)) {
+        if (getOwner().config().get(DockerHost.OPEN_IPTABLES)) {
             SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
             LOG.debug("Using iptables to add access for TCP/{} to {}", port, host);
             List<String> commands = ImmutableList.of(

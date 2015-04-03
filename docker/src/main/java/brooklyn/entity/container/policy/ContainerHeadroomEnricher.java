@@ -79,8 +79,8 @@ public class ContainerHeadroomEnricher extends AbstractEnricher {
         Preconditions.checkArgument(entity instanceof DockerInfrastructure, "Entity must be a DockerInfrastructure: %s", entity);
         super.setEntity(entity);
 
-        Integer headroom = getConfig(CONTAINER_HEADROOM);
-        Double percent = getConfig(CONTAINER_HEADROOM_PERCENTAGE);
+        Integer headroom = config().get(CONTAINER_HEADROOM);
+        Double percent = config().get(CONTAINER_HEADROOM_PERCENTAGE);
         Preconditions.checkArgument((headroom != null) ^ (percent != null), "Headroom must be configured as either number or percentage for this enricher");
         if (headroom != null) {
             Preconditions.checkArgument(headroom > 0, "Headroom must be a positive integer: %d", headroom);
@@ -102,13 +102,13 @@ public class ContainerHeadroomEnricher extends AbstractEnricher {
 
     private void recalculate() {
         Integer maxContainers = null;
-        List<DockerAwarePlacementStrategy> strategies = entity.getConfig(DockerInfrastructure.PLACEMENT_STRATEGIES);
+        List<DockerAwarePlacementStrategy> strategies = entity.config().get(DockerInfrastructure.PLACEMENT_STRATEGIES);
         Optional<DockerAwarePlacementStrategy> lookup = Iterables.tryFind(strategies, Predicates.instanceOf(MaxContainersPlacementStrategy.class));
         if (lookup.isPresent()) {
-            maxContainers = ((MaxContainersPlacementStrategy) lookup.get()).getConfig(MaxContainersPlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
+            maxContainers = ((MaxContainersPlacementStrategy) lookup.get()).config().get(MaxContainersPlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
         }
         if (maxContainers == null) {
-            maxContainers = entity.getConfig(MaxContainersPlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
+            maxContainers = entity.config().get(MaxContainersPlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_SIZE);
         }
         if (maxContainers == null) {
             maxContainers = MaxContainersPlacementStrategy.DEFAULT_MAX_CONTAINERS;
@@ -122,8 +122,8 @@ public class ContainerHeadroomEnricher extends AbstractEnricher {
         int available = possible - containers;
 
         // Calculate headroom
-        Integer headroom = getConfig(CONTAINER_HEADROOM);
-        Double percent = getConfig(CONTAINER_HEADROOM_PERCENTAGE);
+        Integer headroom = config().get(CONTAINER_HEADROOM);
+        Double percent = config().get(CONTAINER_HEADROOM_PERCENTAGE);
         if (headroom == null) {
             headroom = (int) Math.ceil(percent * possible);
         }

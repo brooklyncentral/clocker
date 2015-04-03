@@ -160,7 +160,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         Map<String, Object> templateSubstitutions = MutableMap.<String, Object>of(
                 "fullyQualifiedImageName", Os.mergePaths(getRepository(), imageName));
         DockerHost host = (DockerHost) getEntity();
-        templateSubstitutions.putAll(host.getInfrastructure().getConfig(DockerInfrastructure.DOCKERFILE_SUBSTITUTIONS));
+        templateSubstitutions.putAll(host.getInfrastructure().config().get(DockerInfrastructure.DOCKERFILE_SUBSTITUTIONS));
         return templateSubstitutions;
     }
 
@@ -192,11 +192,11 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     public String getEpelRelease() {
-        return getEntity().getConfig(DockerHost.EPEL_RELEASE);
+        return getEntity().config().get(DockerHost.EPEL_RELEASE);
     }
 
     public String getStorageDriver() {
-        return getEntity().getConfig(DockerHost.DOCKER_STORAGE_DRIVER);
+        return getEntity().config().get(DockerHost.DOCKER_STORAGE_DRIVER);
     }
 
     @Override
@@ -209,7 +209,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     @Override
     public void configureSecurityGroups() {
-        String securityGroup = getEntity().getConfig(DockerInfrastructure.SECURITY_GROUP);
+        String securityGroup = getEntity().config().get(DockerInfrastructure.SECURITY_GROUP);
         if (Strings.isBlank(securityGroup)) {
             if (!(getLocation() instanceof JcloudsSshMachineLocation)) {
                 log.info("{} not running in a JcloudsSshMachineLocation, not configuring extra security groups", entity);
@@ -248,7 +248,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .build();
         List<IpPermission> permissions = MutableList.of(dockerPort, dockerSslPort, dockerPortForwarding);
 
-        if (getEntity().getConfig(SdnAttributes.SDN_ENABLE)) {
+        if (getEntity().config().get(SdnAttributes.SDN_ENABLE)) {
             SdnProvider provider = (SdnProvider) (getEntity().getAttribute(DockerHost.DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER));
             Collection<IpPermission> sdnPermissions = provider.getIpPermissions();
             permissions.addAll(sdnPermissions);
@@ -424,7 +424,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
         // Configure volume mappings for the host
         Map<String, String> mapping = MutableMap.of();
-        Map<String, String> volumes = getEntity().getConfig(DockerHost.DOCKER_HOST_VOLUME_MAPPING);
+        Map<String, String> volumes = getEntity().config().get(DockerHost.DOCKER_HOST_VOLUME_MAPPING);
         if (volumes != null) {
             for (String source : volumes.keySet()) {
                 if (Urls.isUrlWithProtocol(source)) {

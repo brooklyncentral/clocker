@@ -89,16 +89,16 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         setAttribute(DOCKER_HOST_COUNTER, new AtomicInteger(0));
         setAttribute(DOCKER_CONTAINER_COUNTER, new AtomicInteger(0));
 
-        int initialSize = getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE);
-        EntitySpec<?> dockerHostSpec = EntitySpec.create(getConfig(DOCKER_HOST_SPEC))
+        int initialSize = config().get(DOCKER_HOST_CLUSTER_MIN_SIZE);
+        EntitySpec<?> dockerHostSpec = EntitySpec.create(config().get(DOCKER_HOST_SPEC))
                 .configure(DockerHost.DOCKER_INFRASTRUCTURE, this)
-                .configure(DockerHost.RUNTIME_FILES, ImmutableMap.of(getConfig(DOCKER_CERTIFICATE_PATH), "cert.pem", getConfig(DOCKER_KEY_PATH), "key.pem"))
+                .configure(DockerHost.RUNTIME_FILES, ImmutableMap.of(config().get(DOCKER_CERTIFICATE_PATH), "cert.pem", config().get(DOCKER_KEY_PATH), "key.pem"))
                 .configure(SoftwareProcess.CHILDREN_STARTABLE_MODE, ChildStartableMode.BACKGROUND_LATE);
-        String dockerVersion = getConfig(DOCKER_VERSION);
+        String dockerVersion = config().get(DOCKER_VERSION);
         if (Strings.isNonBlank(dockerVersion)) {
             dockerHostSpec.configure(SoftwareProcess.SUGGESTED_VERSION, dockerVersion);
         }
-        if (Boolean.TRUE.equals(getConfig(SdnAttributes.SDN_DEBUG))) {
+        if (Boolean.TRUE.equals(config().get(SdnAttributes.SDN_DEBUG))) {
             dockerHostSpec.configure(DockerAttributes.DOCKERFILE_URL, DockerUtils.UBUNTU_NETWORKING_DOCKERFILE);
         }
 
@@ -128,8 +128,8 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                         .configure(BasicGroup.MEMBER_DELEGATE_CHILDREN, true))
                 .displayName("Docker Applications"));
 
-        if (getConfig(SDN_ENABLE) && getConfig(SDN_PROVIDER_SPEC) != null) {
-            Entity sdn = addChild(EntitySpec.create(getConfig(SDN_PROVIDER_SPEC))
+        if (config().get(SDN_ENABLE) && config().get(SDN_PROVIDER_SPEC) != null) {
+            Entity sdn = addChild(EntitySpec.create(config().get(SDN_PROVIDER_SPEC))
                     .configure(DockerAttributes.DOCKER_INFRASTRUCTURE, this));
             setAttribute(SDN_PROVIDER, sdn);
 
@@ -171,8 +171,8 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 .from(hosts)
                 .build());
 
-        Integer headroom = getConfig(ContainerHeadroomEnricher.CONTAINER_HEADROOM);
-        Double headroomPercent = getConfig(ContainerHeadroomEnricher.CONTAINER_HEADROOM_PERCENTAGE);
+        Integer headroom = config().get(ContainerHeadroomEnricher.CONTAINER_HEADROOM);
+        Double headroomPercent = config().get(ContainerHeadroomEnricher.CONTAINER_HEADROOM_PERCENTAGE);
         if ((headroom != null && headroom > 0) || (headroomPercent != null && headroomPercent > 0d)) {
             addEnricher(EnricherSpec.create(ContainerHeadroomEnricher.class)
                     .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM, headroom)
@@ -255,10 +255,10 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
     @Override
     public DockerLocation createLocation(Map<String, ?> flags) {
-        String locationName = getConfig(LOCATION_NAME);
-        if (locationName == null) {
-            String prefix = getConfig(LOCATION_NAME_PREFIX);
-            String suffix = getConfig(LOCATION_NAME_SUFFIX);
+        String locationName = config().get(LOCATION_NAME);
+        if (Strings.isBlank(locationName)) {
+            String prefix = config().get(LOCATION_NAME_PREFIX);
+            String suffix = config().get(LOCATION_NAME_SUFFIX);
             locationName = Joiner.on("-").skipNulls().join(prefix, getId(), suffix);
         }
         LocationDefinition check = getManagementContext().getLocationRegistry().getDefinedLocationByName(locationName);
@@ -329,9 +329,9 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         LOG.info("Creating new DockerLocation wrapping {}", provisioner);
 
         Map<String, ?> flags = MutableMap.<String, Object>builder()
-                .putAll(getConfig(LOCATION_FLAGS))
+                .putAll(config().get(LOCATION_FLAGS))
                 .put("provisioner", provisioner)
-                .putIfNotNull("strategies", getConfig(PLACEMENT_STRATEGIES))
+                .putIfNotNull("strategies", config().get(PLACEMENT_STRATEGIES))
                 .build();
         createLocation(flags);
 

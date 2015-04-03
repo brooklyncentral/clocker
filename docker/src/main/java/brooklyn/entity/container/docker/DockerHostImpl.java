@@ -127,7 +127,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         setAttribute(DOCKER_REPOSITORY, repository);
 
         // Set a password for this host's containers
-        String password = getConfig(DOCKER_PASSWORD);
+        String password = config().get(DOCKER_PASSWORD);
         if (Strings.isBlank(password)) {
             password = Identifiers.makeRandomId(8);
             config().set(DOCKER_PASSWORD, password);
@@ -231,7 +231,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             }
 
             // Configure security groups for host virtual machine
-            String securityGroup = getConfig(DockerInfrastructure.SECURITY_GROUP);
+            String securityGroup = config().get(DockerInfrastructure.SECURITY_GROUP);
             if (Strings.isNonBlank(securityGroup)) {
                 if (isJcloudsLocation(location, "google-compute-engine")) {
                     flags.put("networkName", securityGroup);
@@ -250,7 +250,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 template.osFamily(OsFamily.CENTOS).osVersionMatches("6").os64Bit(true);
                 Integer vlanId = getAttribute(DOCKER_INFRASTRUCTURE)
                         .getAttribute(DockerInfrastructure.SDN_PROVIDER)
-                        .getConfig(SdnVeNetwork.VLAN_ID);
+                        .config().get(SdnVeNetwork.VLAN_ID);
                 template.options(SoftLayerTemplateOptions.Builder
                         .diskType(Volume.Type.LOCAL.name()) // FIXME Temporary setting overriding capacity limitation on account
                         .primaryBackendNetworkComponentNetworkVlanId(vlanId)
@@ -314,12 +314,12 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     public DockerInfrastructure getInfrastructure() {
-        return (DockerInfrastructure) getConfig(DOCKER_INFRASTRUCTURE);
+        return (DockerInfrastructure) config().get(DOCKER_INFRASTRUCTURE);
     }
 
     @Override
     public String getPassword() {
-        return getConfig(DOCKER_PASSWORD);
+        return config().get(DOCKER_PASSWORD);
     }
 
     @Override
@@ -401,6 +401,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                     .asTask()
                     .get(timeout);
             if (result != 0) {
+                // TODO add configurable option to throw exception here
                 LOG.warn("Command failed (result {}): {}", result, task.getStderr());
             }
             return task.getStdout();
@@ -466,8 +467,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         Maybe<SshMachineLocation> found = Machines.findUniqueSshMachineLocation(getLocations());
         String dockerLocationSpec = String.format("jclouds:docker:https://%s:%s",
                 found.get().getSshHostAndPort().getHostText(), getDockerPort());
-        String certificatePath = getConfig(DockerInfrastructure.DOCKER_CERTIFICATE_PATH);
-        String keyPath = getConfig(DockerInfrastructure.DOCKER_KEY_PATH);
+        String certificatePath = config().get(DockerInfrastructure.DOCKER_CERTIFICATE_PATH);
+        String keyPath = config().get(DockerInfrastructure.DOCKER_KEY_PATH);
         JcloudsLocation jcloudsLocation = (JcloudsLocation) getManagementContext().getLocationRegistry()
                 .resolve(dockerLocationSpec, MutableMap.of("identity", certificatePath, "credential", keyPath, ComputeServiceProperties.IMAGE_LOGIN_USER, "root:" + getPassword()));
         setAttribute(JCLOUDS_DOCKER_LOCATION, jcloudsLocation);
@@ -483,7 +484,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         setAttribute(DOCKER_HOST_SUBNET_TIER, subnetTier);
 
         Map<String, ?> flags = MutableMap.<String, Object>builder()
-                .putAll(getConfig(LOCATION_FLAGS))
+                .putAll(config().get(LOCATION_FLAGS))
                 .put("machine", found.get())
                 .put("jcloudsLocation", jcloudsLocation)
                 .put("portForwarder", portForwarder)
@@ -496,17 +497,17 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     public void postStart() {
         ((EntityLocal) getAttribute(DOCKER_CONTAINER_CLUSTER)).setAttribute(SERVICE_UP, Boolean.TRUE);
 
-        if (Boolean.TRUE.equals(getAttribute(DOCKER_INFRASTRUCTURE).getConfig(SdnAttributes.SDN_ENABLE))) {
+        if (Boolean.TRUE.equals(getAttribute(DOCKER_INFRASTRUCTURE).config().get(SdnAttributes.SDN_ENABLE))) {
             LOG.info("Waiting on SDN agent");
             SdnAgent agent = Entities.attributeSupplierWhenReady(this, SdnAgent.SDN_AGENT).get();
             Entities.waitForServiceUp(agent);
             LOG.info("SDN agent running: " + agent.getAttribute(SERVICE_UP));
         }
 
-        String imageId = getConfig(DOCKER_IMAGE_ID);
+        String imageId = config().get(DOCKER_IMAGE_ID);
 
         if (Strings.isBlank(imageId)) {
-            String dockerfileUrl = getConfig(DockerInfrastructure.DOCKERFILE_URL);
+            String dockerfileUrl = config().get(DockerInfrastructure.DOCKERFILE_URL);
             String imageName = DockerUtils.imageName(this, dockerfileUrl, getRepository());
             imageId = createSshableImage(dockerfileUrl, imageName);
             setAttribute(DOCKER_IMAGE_NAME, imageName);
@@ -518,7 +519,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     }
 
     private FunctionFeed scanner() {
-        Duration interval = getConfig(SCAN_INTERVAL);
+        Duration interval = config().get(SCAN_INTERVAL);
         return FunctionFeed.builder()
                 .entity(this)
                 .poll(new FunctionPollConfig<Object, Void>(SCAN)
@@ -589,7 +590,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                     String containerId = Strings.getFirstWord(runDockerCommand("inspect --format {{.Id}} " + id));
                     String imageId = Strings.getFirstWord(runDockerCommand("inspect --format {{.Image}} " + id));
                     String imageName = Strings.getFirstWord(runDockerCommand("inspect --format {{.Config.Image}} " + id));
-                    EntitySpec<DockerContainer> containerSpec = EntitySpec.create(getConfig(DOCKER_CONTAINER_SPEC))
+                    EntitySpec<DockerContainer> containerSpec = EntitySpec.create(config().get(DOCKER_CONTAINER_SPEC))
                             .configure(SoftwareProcess.ENTITY_STARTED, Boolean.TRUE)
                             .configure(DockerContainer.DOCKER_HOST, this)
                             .configure(DockerContainer.DOCKER_INFRASTRUCTURE, getInfrastructure())

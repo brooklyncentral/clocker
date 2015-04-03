@@ -50,10 +50,10 @@ public class ProvisioningFlagsPlacementStrategy extends AbstractDockerPlacementS
             return ImmutableList.of();
         }
 
-        Integer strategyMinRam = (Integer) getConfig(MIN_RAM);
-        Integer strategyMinCores = getConfig(MIN_CORES);
+        Integer strategyMinRam = (Integer) config().get(MIN_RAM);
+        Integer strategyMinCores = config().get(MIN_CORES);
 
-        Map<String,Object> contextFlags = context.getConfig(SoftwareProcess.PROVISIONING_PROPERTIES);
+        Map<String,Object> contextFlags = context.config().get(SoftwareProcess.PROVISIONING_PROPERTIES);
         if (contextFlags == null || contextFlags.isEmpty()) return locations;
         Integer contextMinRam = (Integer) contextFlags.get("minRam");
         Integer contextMinCores = (Integer) contextFlags.get("minCores");
@@ -70,7 +70,7 @@ public class ProvisioningFlagsPlacementStrategy extends AbstractDockerPlacementS
                 Iterable<Entity> entities = getBrooklynManagementContext().getEntityManager().findEntities(EntityPredicates.locationsIncludes(location));
                 int ramUsed = 0, coresUsed = 0;
                 for (Entity entity : entities) {
-                    Map<String,Object> entityFlags = entity.getConfig(SoftwareProcess.PROVISIONING_PROPERTIES);
+                    Map<String,Object> entityFlags = entity.config().get(SoftwareProcess.PROVISIONING_PROPERTIES);
                     LOG.info("Checking provisioning flags on {}: {}", entity, entityFlags);
                     if (entityFlags == null || entityFlags.isEmpty()) continue;
                     Integer entityMinRam = (Integer) entityFlags.get("minRam");
@@ -88,8 +88,8 @@ public class ProvisioningFlagsPlacementStrategy extends AbstractDockerPlacementS
 
     @Override
     public Map<String,Object> apply(Map<String,Object> contextFlags) {
-        Integer strategyMinRam = (Integer) getConfig(MIN_RAM);
-        Integer strategyMinCores = getConfig(MIN_CORES);
+        Integer strategyMinRam = (Integer) config().get(MIN_RAM);
+        Integer strategyMinCores = config().get(MIN_CORES);
 
         Map<String,Object> provisioningFlags;
         if (contextFlags != null) {
