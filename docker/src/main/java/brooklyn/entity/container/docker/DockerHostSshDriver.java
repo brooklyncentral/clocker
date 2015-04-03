@@ -66,6 +66,7 @@ import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 import brooklyn.util.time.Time;
 
+import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -270,22 +271,30 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         if (!osDetails.is64bit()) { throw new IllegalStateException("Docker supports only 64bit OS"); }
         log.debug("Installing Docker on {} version {}", osDetails.getName(), osVersion);
         if (osDetails.isLinux()) {
-            if ("ubuntu".equalsIgnoreCase(osDetails.getName())) {
-                List<String> commands = ImmutableList.<String> builder()
-                        .add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19-vivid/linux-headers-3.19.0-031900-generic_3.19.0-031900.201502091451_amd64.deb")
-                        .add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19-vivid/linux-headers-3.19.0-031900_3.19.0-031900.201502091451_all.deb")
-                        .add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19-vivid/linux-image-3.19.0-031900-generic_3.19.0-031900.201502091451_amd64.deb")
-                        .add("sudo dpkg -i linux-headers-3.19.0-*.deb linux-image-3.19.0-*.deb")
-                        .add(sudo("reboot"))
-                        .build();
-                executeKernelInstallation(commands);
-            }
-            if ("centos".equalsIgnoreCase(osDetails.getName())) {
-                List<String> commands = ImmutableList.<String>builder()
-                        .add(sudo("yum -y --nogpgcheck upgrade kernel"))
-                        .add(sudo("reboot"))
-                        .build();
-                executeKernelInstallation(commands);
+            String kernelVersion = ((DockerHost) getEntity()).execCommand("uname -r");
+            List<String> versionParts = Splitter.on(".").splitToList(kernelVersion);
+            int kernelMajor = Integer.valueOf(versionParts.get(0));
+            int kernelMinor = Integer.valueOf(versionParts.get(1));
+            if ((kernelMajor == 3 && kernelMinor >= 18) || kernelMajor > 3) {
+                log.info("Kernel {} found, reboot not required", kernelVersion);
+            } else {
+                if ("ubuntu".equalsIgnoreCase(osDetails.getName())) {
+                    List<String> commands = ImmutableList.<String> builder()
+                            .add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19-vivid/linux-headers-3.19.0-031900-generic_3.19.0-031900.201502091451_amd64.deb")
+                            .add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19-vivid/linux-headers-3.19.0-031900_3.19.0-031900.201502091451_all.deb")
+                            .add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19-vivid/linux-image-3.19.0-031900-generic_3.19.0-031900.201502091451_amd64.deb")
+                            .add("sudo dpkg -i linux-headers-3.19.0-*.deb linux-image-3.19.0-*.deb")
+                            .add(sudo("reboot"))
+                            .build();
+                    executeKernelInstallation(commands);
+                }
+                if ("centos".equalsIgnoreCase(osDetails.getName())) {
+                    List<String> commands = ImmutableList.<String>builder()
+                            .add(sudo("yum -y --nogpgcheck upgrade kernel"))
+                            .add(sudo("reboot"))
+                            .build();
+                    executeKernelInstallation(commands);
+                }
             }
         } else if (osDetails.isMac()) {
             newScript(INSTALLING)
