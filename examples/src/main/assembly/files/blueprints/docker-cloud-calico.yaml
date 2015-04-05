@@ -41,7 +41,7 @@ services:
         brooklyn.config:
           calico.version: 0.2.0
           etcd.version: 2.0.5
-          sdn.network.cidr: 169.254.0.0/16
+          sdn.network.cidr: 50.0.0.0/16
           sdn.network.size: 24
     docker.host.spec:
       $brooklyn:entitySpec:
@@ -60,4 +60,4 @@ services:
             $brooklyn:entitySpec:
               type: brooklyn.entity.container.docker.DockerContainer
               brooklyn.config:
-                docker.container.nameFormat: "container-%2$02x"
+                docker.container.nameFormat: "calico-%2$02x"

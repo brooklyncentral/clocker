@@ -27,8 +27,8 @@ import brooklyn.util.flags.SetFromFlag;
 /**
  * The Calico plugin
  */
-@ImplementedBy(CalicoPluginImpl.class)
-public interface CalicoPlugin extends SdnAgent {
+@ImplementedBy(CalicoNodeImpl.class)
+public interface CalicoNode extends SdnAgent {
 
     @SetFromFlag("version")
     ConfigKey<String> SUGGESTED_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "0.1.0");

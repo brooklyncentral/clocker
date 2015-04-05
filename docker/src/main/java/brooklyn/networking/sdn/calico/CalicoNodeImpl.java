@@ -25,9 +25,9 @@ import brooklyn.networking.sdn.SdnAgentImpl;
 /**
  * A single Weave router running in a {@link DockerContainer}.
  */
-public class CalicoPluginImpl extends SdnAgentImpl implements CalicoPlugin {
+public class CalicoNodeImpl extends SdnAgentImpl implements CalicoNode {
 
-    private static final Logger LOG = LoggerFactory.getLogger(CalicoPlugin.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CalicoNode.class);
 
     public void init() {
         super.init();
@@ -37,7 +37,7 @@ public class CalicoPluginImpl extends SdnAgentImpl implements CalicoPlugin {
 
     @Override
     public Class getDriverInterface() {
-        return CalicoPluginDriver.class;
+        return CalicoNodeDriver.class;
     }
 
 }

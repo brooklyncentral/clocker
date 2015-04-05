@@ -5,6 +5,6 @@ package brooklyn.networking.sdn.calico;
 
 import brooklyn.networking.sdn.SdnAgentDriver;
 
-public interface CalicoPluginDriver extends SdnAgentDriver {
+public interface CalicoNodeDriver extends SdnAgentDriver {
 
 }
