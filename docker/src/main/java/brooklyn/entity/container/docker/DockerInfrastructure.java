@@ -44,6 +44,7 @@ import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.util.collections.MutableList;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.flags.SetFromFlag;
+import brooklyn.util.time.Duration;
 
 import com.google.common.reflect.TypeToken;
 
@@ -56,7 +57,8 @@ import com.google.common.reflect.TypeToken;
 @ImplementedBy(DockerInfrastructureImpl.class)
 public interface DockerInfrastructure extends BasicStartable, Resizable, LocationOwner<DockerLocation, DockerInfrastructure> {
 
-    ConfigKey<String> DOCKER_VERSION = ConfigKeys.newStringConfigKey("docker.version", "The Docker Engine version number");
+    @SetFromFlag("dockerVersion")
+    ConfigKey<String> DOCKER_VERSION = ConfigKeys.newStringConfigKey("docker.version", "The Docker Engine version number", "1.4.1");
 
     @SetFromFlag("securityGroup")
     ConfigKey<String> SECURITY_GROUP = ConfigKeys.newStringConfigKey(
@@ -88,7 +90,10 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
             EntitySpec.class, "docker.host.spec", "Specification to use when creating child Docker Hosts",
             EntitySpec.create(DockerHost.class));
 
+    @SetFromFlag("tlsCertificate")
     ConfigKey<String> DOCKER_CERTIFICATE_PATH = ConfigKeys.newStringConfigKey("docker.tls.certificate", "The Docker Engine TLS certificate PEM file path", "conf/server-cert.pem");
+
+    @SetFromFlag("tlsKey")
     ConfigKey<String> DOCKER_KEY_PATH = ConfigKeys.newStringConfigKey("docker.tls.key", "The Docker Engine TLS key PEM file path", "conf/server-key.pem");
 
     @SetFromFlag("dockerfileUrl")
@@ -106,6 +111,14 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
     @SetFromFlag("affinityRules")
     ConfigKey<List<String>> DOCKER_HOST_AFFINITY_RULES = AffinityRules.AFFINITY_RULES;
 
+    @SetFromFlag("shutdownTimeout")
+    ConfigKey<Duration> SHUTDOWN_TIMEOUT = ConfigKeys.newDurationConfigKey("docker.timeout.shutdown", "Timeout to wait for children when shutting down", Duration.FIVE_MINUTES);
+
+    @SetFromFlag("substitutions")
+    ConfigKey<Map<String, Object>> DOCKERFILE_SUBSTITUTIONS = ConfigKeys.newConfigKey(
+            new TypeToken<Map<String, Object>>() { },
+            "docker.dockerfile.substitutions", "Dockerfile template substitutions", MutableMap.<String, Object>of());
+
     AttributeSensor<DynamicCluster> DOCKER_HOST_CLUSTER = Sensors.newSensor(DynamicCluster.class, "docker.hosts", "Docker host cluster");
     AttributeSensor<DynamicGroup> DOCKER_CONTAINER_FABRIC = Sensors.newSensor(DynamicGroup.class, "docker.fabric", "Docker container fabric");
     AttributeSensor<DynamicMultiGroup> DOCKER_APPLICATIONS = Sensors.newSensor(DynamicMultiGroup.class, "docker.buckets", "Docker applications");
@@ -116,10 +129,6 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
 
     AttributeSensor<Integer> DOCKER_HOST_COUNT = DockerAttributes.DOCKER_HOST_COUNT;
     AttributeSensor<Integer> DOCKER_CONTAINER_COUNT = DockerAttributes.DOCKER_CONTAINER_COUNT;
-
-    ConfigKey<Map<String, Object>> DOCKERFILE_SUBSTITUTIONS = ConfigKeys.newConfigKey(
-            new TypeToken<Map<String, Object>>() { },
-            "docker.dockerfile.substitutions", "Dockerfile template substitutions", MutableMap.<String, Object>of());
 
     List<Entity> getDockerHostList();
 

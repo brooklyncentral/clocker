@@ -62,7 +62,7 @@ import com.google.common.reflect.TypeToken;
 @ImplementedBy(DockerHostImpl.class)
 public interface DockerHost extends MachineEntity, Resizable, HasShortName, LocationOwner<DockerHostLocation, DockerHost> {
 
-    @SetFromFlag("version")
+    @SetFromFlag("dockerVersion")
     ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "1.4.1");
 
     @SetFromFlag("startTimeout")
@@ -101,7 +101,7 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
             "EPEL release for yum based OS", "6-8");
 
     ConfigKey<String> DOCKER_STORAGE_DRIVER = ConfigKeys.newStringConfigKey("docker.host.driver.storage",
-            "The Docker storage driver type ('devicemapper', 'aufs', default is 'overlay')", "overlay");
+            "The Docker storage driver type ('aufs' or 'overlay', default is 'devicemapper')", "devicemapper");
 
     AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_ID = DockerAttributes.DOCKER_IMAGE_ID;
 

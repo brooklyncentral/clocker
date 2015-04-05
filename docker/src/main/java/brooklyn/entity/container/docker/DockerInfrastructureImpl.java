@@ -48,6 +48,7 @@ import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.group.DynamicMultiGroup;
 import brooklyn.entity.machine.MachineAttributes;
 import brooklyn.entity.proxying.EntitySpec;
+import brooklyn.entity.trait.Resizable;
 import brooklyn.entity.trait.Startable;
 import brooklyn.location.Location;
 import brooklyn.location.LocationDefinition;
@@ -345,6 +346,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
     @Override
     public void stop() {
         setAttribute(SERVICE_UP, Boolean.FALSE);
+        Duration timeout = config().get(SHUTDOWN_TIMEOUT);
 
         // Find all applications and stop, blocking for up to five minutes until ended
         try {
@@ -353,15 +355,36 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 @Override
                 public Application apply(Entity input) { return input.getApplication(); }
             }));
-            Entities.invokeEffectorList(this, applications, Startable.STOP)
-                    .get(Duration.FIVE_MINUTES);
+            LOG.debug("Stopping applications: {}", Iterables.toString(applications));
+            Entities.invokeEffectorList(this, applications, Startable.STOP).get(timeout);
         } catch (Exception e) {
-            LOG.warn("Error stopping applications: {}", e);
+            LOG.warn("Error stopping applications", e);
         }
 
+        // Shutdown SDN if configured
+        if (config().get(SDN_ENABLE)) {
+            try {
+                Entity sdn = getAttribute(SDN_PROVIDER);
+                LOG.debug("Stopping SDN: {}", sdn);
+                Entities.invokeEffector(this, sdn, Startable.STOP).get(timeout);
+            } catch (Exception e) {
+                LOG.warn("Error stopping SDN", e);
+            }
+        }
+
+        // Stop all Docker hosts in parallel
+        try {
+            DynamicCluster hosts = getAttribute(DOCKER_HOST_CLUSTER);
+            LOG.debug("Stopping hosts: {}", Iterables.toString(hosts.getMembers()));
+            Entities.invokeEffectorList(this, hosts.getMembers(), Startable.STOP).get(timeout);
+        } catch (Exception e) {
+            LOG.warn("Error stopping hosts", e);
+        }
+
+        // Stop anything else left over
         super.stop();
 
-        deleteLocation(); // be more resilient to errors earlier
+        deleteLocation();
     }
 
     static {
