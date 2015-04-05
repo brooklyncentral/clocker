@@ -23,6 +23,7 @@ services:
   id: redis
   name: "Redis"
   brooklyn.config:
+    install.version: 3.0.0
     docker.container.strategies:
     - $brooklyn:object:
         type: "brooklyn.location.docker.strategy.ProvisioningFlagsPlacementStrategy"
