@@ -34,7 +34,6 @@ import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.SoftwareProcess;
-import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.database.DatastoreMixins;
 import brooklyn.entity.database.mysql.MySqlNode;
@@ -99,7 +98,6 @@ public class TomcatClusterWithMySql extends AbstractApplication {
         ControlledDynamicWebAppCluster web = addChild(EntitySpec.create(ControlledDynamicWebAppCluster.class)
                 .configure(Cluster.INITIAL_SIZE, getConfig(INITIAL_SIZE))
                 .configure(ControlledDynamicWebAppCluster.MEMBER_SPEC, EntitySpec.create(TomcatServer.class)
-                        .configure(DockerAttributes.DOCKERFILE_URL, "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/UsesJavaDockerfile")
                         .configure(WebAppService.HTTP_PORT, PortRanges.fromString("8080+"))
                         .configure(SoftwareProcess.SUGGESTED_VERSION, "7.0.53")
                         .configure(UsesJmx.USE_JMX, Boolean.TRUE)

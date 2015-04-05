@@ -44,7 +44,7 @@ import com.google.common.collect.ImmutableList;
 /**
  * Brooklyn managed Docker cloud infrastructure.
  */
-@Catalog(name="Clocker",
+@Catalog(name="Clocker with Weave",
         description="Docker Cloud infrastructure with Weave networking",
         iconUrl="classpath://docker-top-logo.png")
 public class WeaveDockerCloud extends AbstractApplication {

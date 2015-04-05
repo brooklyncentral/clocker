@@ -17,7 +17,6 @@ package brooklyn.clocker.example;
 
 import brooklyn.catalog.Catalog;
 import brooklyn.entity.basic.AbstractApplication;
-import brooklyn.entity.basic.StartableApplication;
 import brooklyn.entity.nosql.couchbase.CouchbaseCluster;
 import brooklyn.entity.proxying.EntitySpec;
 
@@ -27,7 +26,7 @@ import brooklyn.entity.proxying.EntitySpec;
 @Catalog(name="Couchbase Cluster",
         description="Couchbase Cluster with 3 nodes",
         iconUrl="classpath://couchbase-logo.png")
-public class CouchbaseApplication extends AbstractApplication implements StartableApplication {
+public class CouchbaseApplication extends AbstractApplication {
 
     @Override
     public void initApp() {

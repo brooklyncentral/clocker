@@ -40,7 +40,8 @@ public class NodeJsTodoApplication extends AbstractApplication implements Starta
 
     @Override
     public void initApp() {
-        RedisStore redis = addChild(EntitySpec.create(RedisStore.class));
+        RedisStore redis = addChild(EntitySpec.create(RedisStore.class)
+                .configure(SoftwareProcess.SUGGESTED_VERSION, "3.0.0"));
 
         addChild(EntitySpec.create(NodeJsWebAppService.class)
                 .configure(NodeJsWebAppService.APP_GIT_REPOSITORY_URL, "https://github.com/grkvlt/nodejs-todo/")

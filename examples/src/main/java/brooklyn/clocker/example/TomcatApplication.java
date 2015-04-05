@@ -22,8 +22,6 @@ import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.SoftwareProcess;
-import brooklyn.entity.basic.StartableApplication;
-import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.java.UsesJmx;
 import brooklyn.entity.java.UsesJmx.JmxAgentModes;
 import brooklyn.entity.proxying.EntitySpec;
@@ -38,7 +36,7 @@ import brooklyn.location.basic.PortRanges;
 @Catalog(name="Tomcat Server",
         description="Single Tomcat web application server",
         iconUrl="classpath://tomcat-logo.png")
-public class TomcatApplication extends AbstractApplication implements StartableApplication {
+public class TomcatApplication extends AbstractApplication {
 
     public static final String DEFAULT_WAR_PATH = "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/hello-world.war";
 
@@ -50,7 +48,6 @@ public class TomcatApplication extends AbstractApplication implements StartableA
     public void initApp() {
         addChild(EntitySpec.create(TomcatServer.class)
                 .displayName("Tomcat Server")
-                .configure(DockerAttributes.DOCKERFILE_URL, "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/UsesJavaDockerfile")
                 .configure(WebAppService.HTTP_PORT, PortRanges.fromString("8080+"))
                 .configure(JavaWebAppService.ROOT_WAR, Entities.getRequiredUrlConfig(this, WAR_PATH))
                 .configure(SoftwareProcess.SUGGESTED_VERSION, "7.0.53")
