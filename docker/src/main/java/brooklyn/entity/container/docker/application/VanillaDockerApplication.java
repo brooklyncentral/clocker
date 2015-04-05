@@ -17,6 +17,7 @@ package brooklyn.entity.container.docker.application;
 
 import java.util.List;
 
+import brooklyn.catalog.Catalog;
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.BrooklynConfigKeys;
 import brooklyn.entity.basic.ConfigKeys;
@@ -28,6 +29,9 @@ import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.time.Duration;
 
+@Catalog(name = "Docker Container",
+        description = "A micro-service running in a Docker container.",
+        iconUrl = "classpath:///container.png")
 @ImplementedBy(VanillaDockerApplicationImpl.class)
 public interface VanillaDockerApplication extends VanillaSoftwareProcess {
 
@@ -50,7 +54,11 @@ public interface VanillaDockerApplication extends VanillaSoftwareProcess {
     ConfigKey<List<Integer>> DOCKER_DIRECT_PORTS = DockerAttributes.DOCKER_DIRECT_PORTS;
 
     DockerContainer getDockerContainer();
+
     DockerHost getDockerHost();
+
     String getDockerfile();
+
     List<Integer> getContainerPorts();
+
 }

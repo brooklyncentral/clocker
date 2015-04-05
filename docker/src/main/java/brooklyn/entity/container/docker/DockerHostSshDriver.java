@@ -271,7 +271,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         if (!osDetails.is64bit()) { throw new IllegalStateException("Docker supports only 64bit OS"); }
         log.debug("Installing Docker on {} version {}", osDetails.getName(), osVersion);
         if (osDetails.isLinux()) {
-            String kernelVersion = ((DockerHost) getEntity()).execCommand("uname -r");
+            String kernelVersion = Strings.getFirstWord(((DockerHost) getEntity()).execCommand("uname -r"));
             List<String> versionParts = Splitter.on(".").splitToList(kernelVersion);
             int kernelMajor = Integer.valueOf(versionParts.get(0));
             int kernelMinor = Integer.valueOf(versionParts.get(1));

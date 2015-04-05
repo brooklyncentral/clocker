@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import brooklyn.entity.basic.SoftwareProcessImpl;
+import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.location.docker.DockerContainerLocation;
@@ -64,11 +65,6 @@ public class VanillaDockerApplicationImpl extends SoftwareProcessImpl implements
     }
 
     @Override
-    protected void preStart() {
-        super.preStart();
-    }
-
-    @Override
     public DockerContainer getDockerContainer() {
         DockerContainerLocation location = (DockerContainerLocation) Iterables.find(getLocations(), Predicates.instanceOf(DockerContainerLocation.class));
         return location.getOwner();
@@ -81,12 +77,12 @@ public class VanillaDockerApplicationImpl extends SoftwareProcessImpl implements
 
     @Override
     public String getDockerfile() {
-        return getConfig(DOCKERFILE_URL);
+        return config().get(DOCKERFILE_URL);
     }
 
     @Override
     public List<Integer> getContainerPorts() {
-        return getConfig(CONTAINER_PORT_LIST);
+        return config().get(DockerAttributes.DOCKER_OPEN_PORTS);
     }
 
 }

@@ -47,13 +47,13 @@ import com.google.common.collect.ImmutableList;
 @Catalog(name="Clocker",
         description="Docker Cloud infrastructure with Weave networking",
         iconUrl="classpath://docker-top-logo.png")
-public class DockerCloud extends AbstractApplication {
+public class WeaveDockerCloud extends AbstractApplication {
 
     @CatalogConfig(label="Docker Version", priority=100)
     public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_VERSION, "1.5.0");
 
     @CatalogConfig(label="Weave Version", priority=90)
-    public static final ConfigKey<String> WEAVE_VERSION = ConfigKeys.newStringConfigKey("Weave SDN version", "0.9.0");
+    public static final ConfigKey<String> WEAVE_VERSION = ConfigKeys.newStringConfigKey("weave.version", "Weave SDN version", "0.9.0");
 
     @CatalogConfig(label="Location Name", priority=80)
     public static final ConfigKey<String> LOCATION_NAME = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.LOCATION_NAME.getConfigKey(), "my-docker-cloud");

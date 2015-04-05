@@ -44,7 +44,7 @@ public class VanillaDockerApplicationSshDriver extends AbstractSoftwareProcessSs
     }
 
     public String getDockerfile() {
-        return getEntity().getConfig(VanillaDockerApplication.DOCKERFILE_URL);
+        return getEntity().config().get(VanillaDockerApplication.DOCKERFILE_URL);
     }
 
     @Override
@@ -59,7 +59,7 @@ public class VanillaDockerApplicationSshDriver extends AbstractSoftwareProcessSs
 
     @Override
     public void install() {
-        LOG.info("Dockerfile {} installed on {}", getDockerfile(), getDockerContainer().getDockerContainerName());
+        LOG.info("Container installed on {}", getDockerContainer().getDockerContainerName());
     }
 
     @Override
