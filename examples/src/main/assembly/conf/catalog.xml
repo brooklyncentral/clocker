@@ -20,7 +20,7 @@
 <catalog>
     <name>Clocker Application Catalog</name>
 
-    <template type="brooklyn.clocker.DockerCloud" name="Clocker">
+    <template type="brooklyn.clocker.WeaveDockerCloud" name="Clocker with Weave">
         <description>Docker Cloud infrastructure with Weave networking</description>
         <iconUrl>classpath://docker-top-logo.png</iconUrl>
     </template>
@@ -39,6 +39,10 @@
     <template type="brooklyn.clocker.example.NodeJsTodoApplication" name="NodeJS Todo">
         <description>Node.JS Todo Application, with a Redis store</description>
         <iconUrl>classpath://nodejs-logo.png</iconUrl>
+    </template>
+    <template type="brooklyn.clocker.example.MicroService" name="Container Service">
+        <description>A container micro-service defined by a Docker image</description>
+        <iconUrl>classpath://container.png</iconUrl>
     </template>
     <template type="brooklyn.clocker.example.TomcatApplication" name="Tomcat Server">
         <description>Single Tomcat web application server</description>

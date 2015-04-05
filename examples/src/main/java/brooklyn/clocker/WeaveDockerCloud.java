@@ -95,7 +95,7 @@ public class WeaveDockerCloud extends AbstractApplication {
                 .configure(DockerInfrastructure.PLACEMENT_STRATEGIES, ImmutableList.<DockerAwarePlacementStrategy>of(maxContainers, breadthFirst))
                 .configure(SdnAttributes.SDN_ENABLE, true)
                 .configure(DockerInfrastructure.SDN_PROVIDER_SPEC, EntitySpec.create(WeaveNetwork.class)
-                        .configure(SoftwareProcess.SUGGESTED_VERSION, getConfig(WEAVE_VERSION))
+                        .configure(WeaveNetwork.WEAVE_VERSION, getConfig(WEAVE_VERSION))
                         .configure(SdnProvider.CONTAINER_NETWORK_CIDR, Cidr.LINK_LOCAL)
                         .configure(SdnProvider.CONTAINER_NETWORK_SIZE, 24))
                 .configure(DockerInfrastructure.DOCKER_HOST_SPEC, EntitySpec.create(DockerHost.class)
@@ -104,7 +104,7 @@ public class WeaveDockerCloud extends AbstractApplication {
                                 JcloudsLocationConfig.MIN_CORES.getName(), 2,
                                 JcloudsLocationConfig.MIN_RAM.getName(), 7000,
                                 JcloudsLocationConfig.STOP_IPTABLES.getName(), true,
-                                JcloudsLocationConfig.OS_FAMILY.getName(), OsFamily.CENTOS,
+                                JcloudsLocationConfig.OS_FAMILY.getName(), OsFamily.UBUNTU,
                                 JcloudsLocationConfig.OS_VERSION_REGEX.getName(), "14.04"))
                         .configure(SoftwareProcess.START_TIMEOUT, Duration.minutes(15))
                         .configure(DockerHost.DOCKER_HOST_NAME_FORMAT, "docker-host-%2$d")

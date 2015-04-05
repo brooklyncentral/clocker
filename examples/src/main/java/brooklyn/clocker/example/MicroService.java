@@ -27,7 +27,7 @@ import brooklyn.entity.proxying.EntitySpec;
  * Brooklyn managed {@link VanillaDockerApplication}.
  */
 @Catalog(name = "Container Service",
-        description = "A container micro-service defined by a Docker image.",
+        description = "A container micro-service defined by a Docker image",
         iconUrl = "classpath://container.png")
 public class MicroService extends AbstractApplication {
 
