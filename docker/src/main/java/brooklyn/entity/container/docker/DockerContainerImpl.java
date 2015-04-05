@@ -46,6 +46,7 @@ import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.basic.ServiceStateLogic;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
+import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
 import brooklyn.event.feed.ConfigToAttributes;
 import brooklyn.event.feed.function.FunctionFeed;
 import brooklyn.event.feed.function.FunctionPollConfig;
@@ -82,6 +83,7 @@ import brooklyn.util.time.Duration;
 import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
+import com.google.common.primitives.Ints;
 
 /**
  * A single Docker container.
@@ -329,6 +331,33 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         }
         options.env(environment);
 
+        // Direct port mappings
+        List<Integer> directPorts = MutableList.of();
+        List<PortAttributeSensorAndConfigKey> entityPortConfig = entity.config().get(DockerAttributes.DOCKER_DIRECT_PORT_CONFIG);
+        if (entityPortConfig != null) {
+            for (PortAttributeSensorAndConfigKey key : entityPortConfig) {
+                PortRange range = entity.config().get(key);
+                if (range != null && !range.isEmpty()) {
+                    Integer port = range.iterator().next();
+                    if (port != null) directPorts.add(port);
+                }
+            }
+        }
+        List<Integer> entityPorts = entity.config().get(DockerAttributes.DOCKER_DIRECT_PORTS);
+        if (entityPorts != null) {
+            directPorts.addAll(entityPorts);
+        }
+        if (directPorts.size() > 0) {
+            options.directPorts(directPorts);
+        }
+
+        // Inbound ports
+        Collection<Integer> entityOpenPorts = getRequiredOpenPorts(entity);
+        options.inboundPorts(Ints.toArray(entityOpenPorts));
+
+        // Log for debugging without password
+        LOG.debug("Docker options for {}: {}", getDockerHost(), options);
+
         // Set login password from the Docker host
         options.overrideLoginPassword(getDockerHost().getPassword());
 
@@ -462,9 +491,13 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         Set<Integer> ports = MutableSet.of(22);
         for (ConfigKey<?> k: entity.getEntityType().getConfigKeys()) {
             if (PortRange.class.isAssignableFrom(k.getType())) {
-                PortRange p = (PortRange) entity.getConfig(k);
+                PortRange p = (PortRange) entity.config().get(k);
                 if (p != null && !p.isEmpty()) ports.add(p.iterator().next());
             }
+        }
+        List<Integer> entityOpenPorts = entity.config().get(DockerAttributes.DOCKER_OPEN_PORTS);
+        if (entityOpenPorts != null) {
+            ports.addAll(entityOpenPorts);
         }
         for (Entity child : entity.getChildren()) {
             ports.addAll(getRequiredOpenPorts(child));

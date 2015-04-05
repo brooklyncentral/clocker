@@ -28,9 +28,6 @@ import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.time.Duration;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.reflect.TypeToken;
-
 @ImplementedBy(VanillaDockerApplicationImpl.class)
 public interface VanillaDockerApplication extends VanillaSoftwareProcess {
 
@@ -47,8 +44,10 @@ public interface VanillaDockerApplication extends VanillaSoftwareProcess {
     ConfigKey<String> IMAGE_TAG = DockerAttributes.DOCKER_IMAGE_TAG.getConfigKey();
 
     @SetFromFlag("openPorts")
-    ConfigKey<List<Integer>> CONTAINER_PORT_LIST = ConfigKeys.newConfigKey(new TypeToken<List<Integer>>() {},
-            "docker.container.openPorts", "List of ports to open on the container for forwarding", ImmutableList.<Integer>of());
+    ConfigKey<List<Integer>> DOCKER_OPEN_PORTS = DockerAttributes.DOCKER_OPEN_PORTS;
+
+    @SetFromFlag("directPorts")
+    ConfigKey<List<Integer>> DOCKER_DIRECT_PORTS = DockerAttributes.DOCKER_DIRECT_PORTS;
 
     DockerContainer getDockerContainer();
     DockerHost getDockerHost();

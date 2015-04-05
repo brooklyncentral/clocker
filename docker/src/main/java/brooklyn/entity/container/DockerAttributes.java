@@ -24,14 +24,18 @@ import brooklyn.entity.Entity;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
+import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
+import brooklyn.location.PortRange;
 import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
+import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.flags.TypeCoercions;
 import brooklyn.util.internal.ssh.SshTool;
 import brooklyn.util.javalang.Reflections;
 
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
 
 public class DockerAttributes {
@@ -93,6 +97,18 @@ public class DockerAttributes {
 
     public static final AttributeSensorAndConfigKey<Entity, Entity> DOCKER_INFRASTRUCTURE = ConfigKeys.newSensorAndConfigKey(Entity.class,
             "docker.infrastructure", "The Docker infrastructure");
+
+    public static final ConfigKey<List<PortAttributeSensorAndConfigKey>> DOCKER_DIRECT_PORT_CONFIG = ConfigKeys.newConfigKey(
+            new TypeToken<List<PortAttributeSensorAndConfigKey>>() { },
+            "docker.container.directPorts.configKeys", "List of configration keys for ports that are to be mapped directly on the Docker host");
+
+    public static final ConfigKey<List<Integer>> DOCKER_DIRECT_PORTS = ConfigKeys.newConfigKey(
+            new TypeToken<List<Integer>>() { },
+            "docker.container.directPorts", "List of ports that are to be mapped directly on the Docker host", ImmutableList.<Integer>of());
+
+    public static final ConfigKey<List<Integer>> DOCKER_OPEN_PORTS = ConfigKeys.newConfigKey(
+            new TypeToken<List<Integer>>() { },
+            "docker.container.openPorts", "List of extra ports to open on the container for forwarding", ImmutableList.<Integer>of());
 
     /*
      * Counter attributes.

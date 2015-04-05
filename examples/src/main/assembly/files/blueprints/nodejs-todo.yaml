@@ -28,12 +28,14 @@ services:
     - $brooklyn:object:
         type: "brooklyn.location.docker.strategy.ProvisioningFlagsPlacementStrategy"
         brooklyn.config:
-          minRam: 1000
+          minRam: 4000
 
 - type: brooklyn.entity.webapp.nodejs.NodeJsWebAppService
   id: nodejs
   name: "Node.JS"
   brooklyn.config:
+    docker.direct.ports:
+    - "http.port"
     docker.container.strategies:
     - $brooklyn:object:
         type: "brooklyn.location.docker.strategy.ProvisioningFlagsPlacementStrategy"
