@@ -25,7 +25,9 @@ services:
   brooklyn.config:
     docker.image.name: mysql
     docker.image.tag: 5.7
-    docker.container.openPorts: 3306
-    docker.container.directPorts: 3306
+    docker.container.openPorts:
+    - 3306
+    docker.container.directPorts:
+    - 3306
     docker.container.environment:
       MYSQL_ROOT_PASSWORD: "s3cr3t"

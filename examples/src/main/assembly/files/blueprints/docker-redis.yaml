@@ -25,5 +25,7 @@ services:
   brooklyn.config:
     docker.image.name: redis
     docker.image.tag: 2.8.19
-    docker.container.openPorts: 6379
-    docker.container.directPorts: 6379
+    docker.container.openPorts:
+    - 6379
+    docker.container.directPorts:
+    - 6379
