@@ -12,20 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-id: docker-mysql
-name: "Docker Hub MySQL Service"
-origin: "https://registry.hub.docker.com/_/mysql/"
+id: docker-redis
+name: "Docker Hub Redis Service"
+origin: "https://registry.hub.docker.com/_/redis/"
 locations:
 - my-docker-cloud
 
 services:
 - type: brooklyn.entity.container.docker.application.VanillaDockerApplication
-  id: mysql
-  name: "MySQL"
+  id: redis
+  name: "Redis"
   brooklyn.config:
-    docker.image.name: mysql
-    docker.image.tag: 5.7
-    docker.container.openPorts: 3306
-    docker.container.directPorts: 3306
-    docker.container.environment:
-      MYSQL_ROOT_PASSWORD: "s3cr3t"
+    docker.image.name: redis
+    docker.image.tag: 2.8.19
+    docker.container.openPorts: 6379
+    docker.container.directPorts: 6379
