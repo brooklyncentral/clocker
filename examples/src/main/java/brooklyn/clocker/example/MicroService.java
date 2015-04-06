@@ -41,10 +41,10 @@ public class MicroService extends AbstractApplication {
     public static final ConfigKey<String> IMAGE_TAG = VanillaDockerApplication.IMAGE_TAG;
 
     @CatalogConfig(label = "Open Ports", priority = 70)
-    ConfigKey<String> OPEN_PORTS = ConfigKeys.newStringConfigKey("docker.openPorts", "Comma separated list of ports the application uses");
+    public static final ConfigKey<String> OPEN_PORTS = ConfigKeys.newStringConfigKey("docker.openPorts", "Comma separated list of ports the application uses");
 
     @CatalogConfig(label = "Direct Ports", priority = 70)
-    ConfigKey<String> DIRECT_PORTS = ConfigKeys.newStringConfigKey("docker.directPorts", "Comma separated list of ports to open directly on the host");
+    public static final ConfigKey<String> DIRECT_PORTS = ConfigKeys.newStringConfigKey("docker.directPorts", "Comma separated list of ports to open directly on the host");
 
     @Override
     public void initApp() {
