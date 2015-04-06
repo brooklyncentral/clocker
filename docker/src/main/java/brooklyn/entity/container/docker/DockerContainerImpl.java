@@ -39,6 +39,7 @@ import brooklyn.config.render.RendererHints;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.BasicStartableImpl;
+import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityLocal;
@@ -47,6 +48,7 @@ import brooklyn.entity.basic.ServiceStateLogic;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
+import brooklyn.event.basic.Sensors;
 import brooklyn.event.feed.ConfigToAttributes;
 import brooklyn.event.feed.function.FunctionFeed;
 import brooklyn.event.feed.function.FunctionPollConfig;
@@ -56,6 +58,7 @@ import brooklyn.location.NoMachinesAvailableException;
 import brooklyn.location.OsDetails;
 import brooklyn.location.PortRange;
 import brooklyn.location.basic.LocationConfigKeys;
+import brooklyn.location.basic.PortRanges;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.cloud.CloudLocationConfig;
 import brooklyn.location.docker.DockerContainerLocation;
@@ -332,23 +335,27 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         options.env(environment);
 
         // Direct port mappings
-        List<Integer> directPorts = MutableList.of();
+        Map<Integer, Integer> bindings = MutableMap.of();
         List<PortAttributeSensorAndConfigKey> entityPortConfig = entity.config().get(DockerAttributes.DOCKER_DIRECT_PORT_CONFIG);
         if (entityPortConfig != null) {
             for (PortAttributeSensorAndConfigKey key : entityPortConfig) {
                 PortRange range = entity.config().get(key);
                 if (range != null && !range.isEmpty()) {
                     Integer port = range.iterator().next();
-                    if (port != null) directPorts.add(port);
+                    if (port != null) {
+                        bindings.put(port,  port);
+                    }
                 }
             }
         }
         List<Integer> entityPorts = entity.config().get(DockerAttributes.DOCKER_DIRECT_PORTS);
         if (entityPorts != null) {
-            directPorts.addAll(entityPorts);
+            for (Integer port : entityPorts) {
+                bindings.put(port, port);
+            }
         }
-        if (directPorts.size() > 0) {
-            options.directPorts(directPorts);
+        if (bindings.size() > 0) {
+            options.portBindings(bindings);
         }
 
         // Inbound ports
@@ -497,6 +504,14 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         }
         List<Integer> entityOpenPorts = entity.config().get(DockerAttributes.DOCKER_OPEN_PORTS);
         if (entityOpenPorts != null) {
+            // Create config and sensor for these ports
+            for (int i = 0; i < entityOpenPorts.size(); i++) {
+                Integer port = entityOpenPorts.get(i);
+                String name = String.format("docker.port.%02d", port);
+                setAttribute(Sensors.newIntegerSensor(name), port);
+                config().set(ConfigKeys.newConfigKey(PortRange.class, name), PortRanges.fromInteger(port));
+            }
+
             ports.addAll(entityOpenPorts);
         }
         for (Entity child : entity.getChildren()) {

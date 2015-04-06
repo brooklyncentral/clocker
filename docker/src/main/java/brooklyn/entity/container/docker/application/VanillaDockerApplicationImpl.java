@@ -20,10 +20,14 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.SoftwareProcessImpl;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
+import brooklyn.event.basic.Sensors;
+import brooklyn.location.PortRange;
+import brooklyn.location.basic.PortRanges;
 import brooklyn.location.docker.DockerContainerLocation;
 
 import com.google.common.base.Predicates;
@@ -32,12 +36,6 @@ import com.google.common.collect.Iterables;
 public class VanillaDockerApplicationImpl extends SoftwareProcessImpl implements VanillaDockerApplication {
 
     private static final Logger LOG = LoggerFactory.getLogger(VanillaDockerApplicationImpl.class);
-
-    @Override
-    public void init() {
-        LOG.info("Starting Dockerfile {}", getDockerfile());
-        super.init();
-    }
 
     @Override
     protected void connectSensors() {
