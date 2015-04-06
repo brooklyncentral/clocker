@@ -19,7 +19,6 @@ package org.jclouds.docker.compute.strategy;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Iterables.find;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -140,10 +139,11 @@ public class DockerComputeServiceAdapter implements
               .publishAllPorts(true)
               .privileged(true);
 
-      if (templateOptions.getDirectPorts().isPresent()) {
+      if (templateOptions.getPortBindings().isPresent()) {
          Map<String, List<Map<String, String>>> portBindings = Maps.newHashMap();
-         for (Integer port : templateOptions.getDirectPorts().get()) {
-            portBindings.put(port + "/tcp", Lists.<Map<String, String>>newArrayList(ImmutableMap.of("HostPort", Integer.toString(port))));
+         for (Map.Entry<Integer, Integer> entry : templateOptions.getPortBindings().get().entrySet()) {
+            portBindings.put(entry.getValue() + "/tcp",
+                  Lists.<Map<String, String>>newArrayList(ImmutableMap.of("HostPort", Integer.toString(entry.getKey()))));
          }
          hostConfigBuilder.portBindings(portBindings);
       }
@@ -151,12 +151,13 @@ public class DockerComputeServiceAdapter implements
       if (templateOptions.getDns().isPresent()) {
          hostConfigBuilder.dns(templateOptions.getDns().get());
       }
-      // set up for volume bindings
+
       if (templateOptions.getVolumes().isPresent()) {
          for (Map.Entry<String, String> entry : templateOptions.getVolumes().get().entrySet()) {
             hostConfigBuilder.binds(ImmutableList.of(entry.getKey() + ":" + entry.getValue()));
          }
       }
+
       HostConfig hostConfig = hostConfigBuilder.build();
 
       api.getContainerApi().startContainer(container.id(), hostConfig);

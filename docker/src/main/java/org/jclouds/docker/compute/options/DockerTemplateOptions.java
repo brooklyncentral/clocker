@@ -54,7 +54,7 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
    protected Optional<List<String>> commands = Optional.absent();
    protected Optional<Map<String, String>> volumes = Optional.absent();
    protected Optional<List<String>> env = Optional.absent();
-   protected Optional<List<Integer>> directPorts = Optional.absent();
+   protected Optional<Map<Integer, Integer>> portBindings = Optional.absent();
 
    @Override
    public DockerTemplateOptions clone() {
@@ -89,8 +89,8 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
          if (env.isPresent()) {
              eTo.env(env.get());
          }
-         if (directPorts.isPresent()) {
-             eTo.directPorts(directPorts.get());
+         if (portBindings.isPresent()) {
+             eTo.portBindings(portBindings.get());
          }
       }
    }
@@ -109,12 +109,12 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
               equal(this.commands, that.commands) &&
               equal(this.cpuShares, that.cpuShares) &&
               equal(this.env, that.env) &&
-              equal(this.directPorts, that.directPorts);
+              equal(this.portBindings, that.portBindings);
    }
 
    @Override
    public int hashCode() {
-      return Objects.hashCode(super.hashCode(), volumes, hostname, dns, memory, commands, cpuShares, env, directPorts);
+      return Objects.hashCode(super.hashCode(), volumes, hostname, dns, memory, commands, cpuShares, env, portBindings);
    }
 
    @Override
@@ -127,14 +127,14 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
               .add("commands", commands)
               .add("volumes", volumes)
               .add("env", env)
-              .add("directPorts", directPorts)
+              .add("portBindings", portBindings)
               .toString();
    }
 
    public static final DockerTemplateOptions NONE = new DockerTemplateOptions();
 
    public DockerTemplateOptions volumes(Map<String, String> volumes) {
-      this.volumes = Optional.<Map<String, String>> of(ImmutableMap.copyOf(volumes));
+      this.volumes = Optional.<Map<String, String>>of(ImmutableMap.copyOf(checkNotNull(volumes, "volumes")));
       return this;
    }
 
@@ -154,13 +154,11 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
    }
 
    public TemplateOptions commands(Iterable<String> commands) {
-      for (String command : checkNotNull(commands, "commands"))
-         checkNotNull(command, "all commands must be non-empty");
-      this.commands = Optional.<List<String>> of(ImmutableList.copyOf(commands));
+      this.commands = Optional.<List<String>>of(ImmutableList.copyOf(checkNotNull(commands, "commands")));
       return this;
    }
 
-   public TemplateOptions commands(String... commands) {
+   public TemplateOptions commands(String...commands) {
       return commands(ImmutableList.copyOf(checkNotNull(commands, "commands")));
    }
 
@@ -169,13 +167,27 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
       return this;
    }
 
-   public DockerTemplateOptions env(List<String> env) {
-      this.env = Optional.<List<String>> of(ImmutableList.copyOf(env));
+   public DockerTemplateOptions env(Iterable<String> env) {
+      this.env = Optional.<List<String>>of(ImmutableList.copyOf(checkNotNull(env, "env")));
       return this;
    }
 
-   public DockerTemplateOptions directPorts(List<Integer> ports) {
-      this.directPorts = Optional.<List<Integer>> of(ImmutableList.copyOf(ports));
+   public DockerTemplateOptions env(String...env) {
+      return env(ImmutableList.copyOf(checkNotNull(env, "env")));
+   }
+
+   /**
+    * Set port bindings between the Docker host and a container.
+    * <p>
+    * The {@link Map} keys are host ports number, and the value for an entry is the
+    * container port number. This is the same order as the arguments for the
+    * {@code --publish} command-line option to {@code docker run} which is
+    * {@code hostPort:containerPort}.
+    *
+    * @param portBindings the map of host to container port bindings
+    */
+   public DockerTemplateOptions portBindings(Map<Integer, Integer> portBindings) {
+      this.portBindings = Optional.<Map<Integer, Integer>>of(ImmutableMap.copyOf(checkNotNull(portBindings, "portBindings")));
       return this;
    }
 
@@ -193,16 +205,16 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
 
    public Optional<List<String>> getEnv() { return env; }
 
-   public Optional<List<Integer>> getDirectPorts() { return directPorts; }
+   public Optional<Map<Integer, Integer>> getPortBindings() { return portBindings; }
 
    public static class Builder {
 
       /**
-       * @see DockerTemplateOptions#volumes(java.util.Map)
+       * @see DockerTemplateOptions#volumes(Map)
        */
       public static DockerTemplateOptions volumes(Map<String, String> volumes) {
          DockerTemplateOptions options = new DockerTemplateOptions();
-         return DockerTemplateOptions.class.cast(options.volumes(volumes));
+         return options.volumes(volumes);
       }
 
       /**
@@ -210,7 +222,7 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
        */
       public static DockerTemplateOptions dns(String dns) {
          DockerTemplateOptions options = new DockerTemplateOptions();
-         return DockerTemplateOptions.class.cast(options.dns(dns));
+         return options.dns(dns);
       }
 
       /**
@@ -218,28 +230,31 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
        */
       public static DockerTemplateOptions hostname(String hostname) {
          DockerTemplateOptions options = new DockerTemplateOptions();
-         return DockerTemplateOptions.class.cast(options.hostname(hostname));
+         return options.hostname(hostname);
       }
 
       /**
-       * @see DockerTemplateOptions#memory
+       * @see DockerTemplateOptions#memory(int)
        */
       public static DockerTemplateOptions memory(int memory) {
          DockerTemplateOptions options = new DockerTemplateOptions();
-         return DockerTemplateOptions.class.cast(options.memory(memory));
+         return options.memory(memory);
+      }
+
+      /**
+       * @see DockerTemplateOptions#commands(String[])
+       */
+      public static DockerTemplateOptions commands(String...commands) {
+         DockerTemplateOptions options = new DockerTemplateOptions();
+         return options.commands(commands);
       }
 
       /**
        * @see DockerTemplateOptions#commands(Iterable)
        */
-      public static DockerTemplateOptions commands(String... commands) {
-         DockerTemplateOptions options = new DockerTemplateOptions();
-         return DockerTemplateOptions.class.cast(options.commands(commands));
-      }
-
       public static DockerTemplateOptions commands(Iterable<String> commands) {
          DockerTemplateOptions options = new DockerTemplateOptions();
-         return DockerTemplateOptions.class.cast(options.commands(commands));
+         return options.commands(commands);
       }
 
       /**
@@ -247,23 +262,31 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
        */
       public static DockerTemplateOptions cpuShares(int cpuShares) {
          DockerTemplateOptions options = new DockerTemplateOptions();
-         return DockerTemplateOptions.class.cast(options.cpuShares(cpuShares));
+         return options.cpuShares(cpuShares);
       }
 
       /**
-       * @see DockerTemplateOptions#env(java.util.List)
+       * @see DockerTemplateOptions#env(String[])
        */
-      public static DockerTemplateOptions env(List<String> env) {
+      public static DockerTemplateOptions env(String...env) {
          DockerTemplateOptions options = new DockerTemplateOptions();
-         return DockerTemplateOptions.class.cast(options.env(env));
+         return options.env(env);
       }
 
       /**
-       * @see DockerTemplateOptions#directPorts(java.util.List)
+       * @see DockerTemplateOptions#env(Iterable)
        */
-      public static DockerTemplateOptions directPorts(List<Integer> directPorts) {
+      public static DockerTemplateOptions env(Iterable<String> env) {
          DockerTemplateOptions options = new DockerTemplateOptions();
-         return DockerTemplateOptions.class.cast(options.directPorts(directPorts));
+         return options.env(env);
+      }
+
+      /**
+       * @see DockerTemplateOptions#portBindings(Map)
+       */
+      public static DockerTemplateOptions portBindings(Map<Integer, Integer> portBindings) {
+         DockerTemplateOptions options = new DockerTemplateOptions();
+         return options.portBindings(portBindings);
       }
 
       // methods that only facilitate returning the correct object type
@@ -273,7 +296,7 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
        */
       public static DockerTemplateOptions inboundPorts(int... ports) {
          DockerTemplateOptions options = new DockerTemplateOptions();
-         return DockerTemplateOptions.class.cast(options.inboundPorts(ports));
+         return options.inboundPorts(ports);
       }
 
       /**
@@ -281,7 +304,7 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
        */
       public static DockerTemplateOptions blockOnPort(int port, int seconds) {
          DockerTemplateOptions options = new DockerTemplateOptions();
-         return DockerTemplateOptions.class.cast(options.blockOnPort(port, seconds));
+         return options.blockOnPort(port, seconds);
       }
 
       /**
@@ -289,7 +312,7 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
        */
       public static DockerTemplateOptions installPrivateKey(String rsaKey) {
          DockerTemplateOptions options = new DockerTemplateOptions();
-         return DockerTemplateOptions.class.cast(options.installPrivateKey(rsaKey));
+         return options.installPrivateKey(rsaKey);
       }
 
       /**
@@ -297,7 +320,7 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
        */
       public static DockerTemplateOptions authorizePublicKey(String rsaKey) {
          DockerTemplateOptions options = new DockerTemplateOptions();
-         return DockerTemplateOptions.class.cast(options.authorizePublicKey(rsaKey));
+         return options.authorizePublicKey(rsaKey);
       }
 
       /**
@@ -305,7 +328,7 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
        */
       public static DockerTemplateOptions userMetadata(Map<String, String> userMetadata) {
          DockerTemplateOptions options = new DockerTemplateOptions();
-         return DockerTemplateOptions.class.cast(options.userMetadata(userMetadata));
+         return options.userMetadata(userMetadata);
       }
 
       /**
@@ -313,7 +336,7 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
        */
       public static DockerTemplateOptions nodeNames(Iterable<String> nodeNames) {
          DockerTemplateOptions options = new DockerTemplateOptions();
-         return DockerTemplateOptions.class.cast(options.nodeNames(nodeNames));
+         return options.nodeNames(nodeNames);
       }
 
       /**
@@ -321,7 +344,7 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
        */
       public static DockerTemplateOptions networks(Iterable<String> networks) {
          DockerTemplateOptions options = new DockerTemplateOptions();
-         return DockerTemplateOptions.class.cast(options.networks(networks));
+         return options.networks(networks);
       }
 
       /**
