@@ -66,7 +66,6 @@ import brooklyn.util.collections.MutableMap;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
-import brooklyn.util.os.Os;
 import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.text.Strings;
 
@@ -100,9 +99,6 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
     @SetFromFlag("owner")
     private DockerHost dockerHost;
 
-    @SetFromFlag("repository")
-    private String repository;
-
     @SetFromFlag("images")
     private ConcurrentMap<String, CountDownLatch> images = Maps.newConcurrentMap();
 
@@ -115,15 +111,6 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
         if (isLegacyConstruction()) {
             init();
-        }
-    }
-
-    @Override
-    public void init() {
-        super.init();
-
-        if (repository == null) {
-            repository = machine.getId();
         }
     }
 
@@ -165,18 +152,17 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             Optional<String> baseImage = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_NAME));
             String imageTag = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_TAG)).or("latest");
             // TODO incorporate more info
-            final String imageName = DockerUtils.imageName(entity, dockerfile, repository);
-            final String fullyQualifiedImageName = Os.mergePaths(repository, imageName);
+            final String imageName = DockerUtils.imageName(entity, dockerfile);
 
             // Lookup image ID or build new image from Dockerfile
             LOG.info("ImageName for entity {}: {}", entity, imageName);
 
-            if (dockerHost.getImageNamed(fullyQualifiedImageName, imageTag).isPresent()) {
+            if (dockerHost.getImageNamed(imageName, imageTag).isPresent()) {
                 // Wait until committed before continuing - Brooklyn may be midway through its creation.
                 waitForImage(imageName);
 
                 // Look up imageId again
-                imageId = dockerHost.getImageNamed(fullyQualifiedImageName, imageTag).get();
+                imageId = dockerHost.getImageNamed(imageName, imageTag).get();
                 LOG.info("Found image {} for entity: {}", imageName, imageId);
 
                 // Skip install phase
@@ -202,7 +188,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
                 // Tag the image name and create its latch
                 images.putIfAbsent(imageName, new CountDownLatch(1));
-                dockerHost.runDockerCommand(String.format("tag -f %s %s:latest", imageId, Os.mergePaths(repository, imageName)));
+                dockerHost.runDockerCommand(String.format("tag -f %s %s:latest", imageId, imageName));
             }
 
             // Set subnet address pre install
@@ -338,10 +324,6 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
     @Override
     public DockerHost getOwner() {
         return dockerHost;
-    }
-
-    public String getRepository() {
-        return repository;
     }
 
     public SshMachineLocation getMachine() {

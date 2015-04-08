@@ -119,12 +119,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         String dockerHostName = String.format(getConfig(DockerHost.DOCKER_HOST_NAME_FORMAT), getId(), counter.incrementAndGet());
         setDisplayName(dockerHostName);
         setAttribute(DOCKER_HOST_NAME, dockerHostName);
-        String repository = getConfig(DOCKER_REPOSITORY);
-        if (Strings.isBlank(repository)) {
-            repository = getId();
-        }
-        repository = DockerUtils.allowed(repository);
-        setAttribute(DOCKER_REPOSITORY, repository);
 
         // Set a password for this host's containers
         String password = config().get(DOCKER_PASSWORD);
@@ -322,16 +316,11 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         return config().get(DOCKER_PASSWORD);
     }
 
-    @Override
-    public String getRepository() {
-        return getAttribute(DOCKER_REPOSITORY);
-    }
-
     /** {@inheritDoc} */
     @Override
     public String createSshableImage(String dockerFile, String name) {
         String imageId = getDriver().buildImage(dockerFile, name);
-        LOG.debug("Successfully created image {} ({}/{})", new Object[] { imageId, getRepository(), name });
+        LOG.debug("Successfully created image {} ({})", new Object[] { imageId, name });
         return imageId;
     }
 
@@ -488,7 +477,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 .put("machine", found.get())
                 .put("jcloudsLocation", jcloudsLocation)
                 .put("portForwarder", portForwarder)
-                .put("repository", getRepository())
                 .build();
         createLocation(flags);
     }
@@ -508,7 +496,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
         if (Strings.isBlank(imageId)) {
             String dockerfileUrl = config().get(DockerInfrastructure.DOCKERFILE_URL);
-            String imageName = DockerUtils.imageName(this, dockerfileUrl, getRepository());
+            String imageName = DockerUtils.imageName(this, dockerfileUrl);
             imageId = createSshableImage(dockerfileUrl, imageName);
             setAttribute(DOCKER_IMAGE_NAME, imageName);
         }

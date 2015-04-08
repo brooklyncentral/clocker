@@ -24,8 +24,6 @@ public interface DockerHostDriver extends SoftwareProcessDriver {
 
     Integer getDockerPort();
 
-    String getRepository();
-
     /**
      * Build a Docker image from the given Dockerfile.
      * <p>
