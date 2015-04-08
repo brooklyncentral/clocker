@@ -19,15 +19,10 @@ locations:
 - my-docker-cloud
 
 services:
-- type: brooklyn.entity.container.docker.application.VanillaDockerApplication
-  id: mysql
-  name: "MySQL"
-  brooklyn.config:
-    docker.image.name: mysql
-    docker.image.tag: 5.7
-    docker.container.openPorts:
-    - 3306
-    docker.container.directPorts:
-    - 3306
-    docker.container.environment:
-      MYSQL_ROOT_PASSWORD: "s3cr3t"
+- type: docker:mysql:5.7
+  openPorts:
+  - 3306
+  directPorts:
+  - 3306
+  env:
+    MYSQL_ROOT_PASSWORD: "s3cr3t"
