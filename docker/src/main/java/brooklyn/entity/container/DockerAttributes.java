@@ -66,8 +66,7 @@ public class DockerAttributes {
     public static final AttributeSensorAndConfigKey<String, String> DOCKER_HARDWARE_ID = ConfigKeys.newStringSensorAndConfigKey(
             "docker.hardwareId", "The ID of a Docker hardware type to use for a container", "small");
 
-    public static final ConfigKey<String> DOCKER_PASSWORD = ConfigKeys.newConfigKeyWithPrefix(
-            "docker.password", SshTool.PROP_PASSWORD);
+    public static final ConfigKey<String> DOCKER_PASSWORD = ConfigKeys.newConfigKeyWithPrefix("docker.", SshTool.PROP_PASSWORD);
 
     public static final ConfigKey<Boolean> DOCKER_USE_HOST_DNS_NAME = ConfigKeys.newBooleanConfigKey(
             "docker.useHostDnsName", "Container uses same DNS hostname as Docker host", Boolean.TRUE);
