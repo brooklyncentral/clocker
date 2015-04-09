@@ -12,15 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-id: docker-freehub
-name: "Docker Hub Freehub Application"
-origin: "https://registry.hub.docker.com/u/bikebike/freehub/"
+id: docker-jboss-wildfly
+name: "Docker Hub JBoss WildFly Service"
+origin: "https://registry.hub.docker.com/u/jboss/wildfly/"
 locations:
 - my-docker-cloud
 
 services:
-- type: docker:bikebike/freehub
+- type: docker:jboss/wildfly:8.2.0.Final
+  id: jboss-wildfly
   openPorts:
-  - 3000
+  - 9990
+  - 8080
   directPorts:
-  - 3000
+  - 9990
+  - 8080

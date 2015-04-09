@@ -26,13 +26,13 @@ import brooklyn.entity.proxying.EntitySpec;
 /**
  * Brooklyn managed {@link VanillaDockerApplication}.
  */
-@Catalog(name = "Container Service",
+@Catalog(name = "Image Micro-Service",
         description = "A container micro-service defined by a Docker image",
         iconUrl = "classpath://container.png")
-public class MicroService extends AbstractApplication {
+public class MicroServiceImage extends AbstractApplication {
 
-    @CatalogConfig(label = "Service Name", priority = 90)
-    public static final ConfigKey<String> SERVICE_NAME = ConfigKeys.newStringConfigKey("docker.serviceName", "Container service name", "Container Service");
+    @CatalogConfig(label = "Container Name", priority = 90)
+    public static final ConfigKey<String> CONTAINER_NAME = ConfigKeys.newStringConfigKey("docker.containerName", "Container name", "service");
 
     @CatalogConfig(label = "Image Name", priority = 80)
     public static final ConfigKey<String> IMAGE_NAME = VanillaDockerApplication.IMAGE_NAME;
@@ -49,11 +49,11 @@ public class MicroService extends AbstractApplication {
     @Override
     public void initApp() {
         addChild(EntitySpec.create(VanillaDockerApplication.class)
+                .configure("containerName", config().get(CONTAINER_NAME))
                 .configure("imageName", config().get(IMAGE_NAME))
                 .configure("imageTag", config().get(IMAGE_TAG))
                 .configure("openPorts", config().get(OPEN_PORTS))
-                .configure("directPorts", config().get(DIRECT_PORTS))
-                .displayName(config().get(SERVICE_NAME)));
+                .configure("directPorts", config().get(DIRECT_PORTS)));
     }
 
 }

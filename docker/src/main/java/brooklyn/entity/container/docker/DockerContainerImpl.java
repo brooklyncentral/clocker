@@ -417,8 +417,13 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
         // Configure the container options based on the host and the running entity
         DockerTemplateOptions options = getDockerTemplateOptions();
-        String containerName = getAttribute(DOCKER_CONTAINER_NAME);
-        if (!Strings.isBlank(containerName)) {
+
+        // Check the running entity for alternative container name
+        String containerName = getRunningEntity().config().get(DOCKER_CONTAINER_NAME);
+        if (Strings.isBlank(containerName)) {
+            containerName = getAttribute(DOCKER_CONTAINER_NAME);
+        }
+        if (Strings.isNonBlank(containerName)) {
             options.nodeNames(ImmutableList.of(containerName));
         }
 
