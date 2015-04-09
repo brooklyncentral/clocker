@@ -84,8 +84,11 @@ import brooklyn.util.net.Urls;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 
+import com.google.common.base.CaseFormat;
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
 
@@ -104,9 +107,16 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         super.init();
 
         AtomicInteger counter = config().get(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.DOCKER_CONTAINER_COUNTER);
-        String dockerContainerName = format(config().get(DockerContainer.DOCKER_CONTAINER_NAME_FORMAT), getId(), counter.incrementAndGet());
-        setDisplayName(dockerContainerName);
-        setAttribute(DOCKER_CONTAINER_NAME, dockerContainerName);
+        String dockerContainerName = config().get(DOCKER_CONTAINER_NAME);
+        String dockerContainerNameFormat = config().get(DOCKER_CONTAINER_NAME_FORMAT);
+        if (Strings.isBlank(dockerContainerName) && Strings.isNonBlank(dockerContainerNameFormat)) {
+            dockerContainerName = format(dockerContainerNameFormat, getId(), counter.incrementAndGet());
+        }
+        if (Strings.isNonBlank(dockerContainerName)) {
+            dockerContainerName = CharMatcher.BREAKING_WHITESPACE.trimAndCollapseFrom(dockerContainerName, '-');
+            setDisplayName(CaseFormat.LOWER_HYPHEN.to(CaseFormat.UPPER_CAMEL, dockerContainerName));
+            setAttribute(DOCKER_CONTAINER_NAME, dockerContainerName);
+        }
 
         ConfigToAttributes.apply(this, DOCKER_INFRASTRUCTURE);
         ConfigToAttributes.apply(this, DOCKER_HOST);
@@ -114,10 +124,21 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     }
 
     protected void connectSensors() {
-        // is this swappable for a feed that runs one command rather than three?
         status = FunctionFeed.builder()
                 .entity(this)
                 .period(Duration.seconds(15))
+                .poll(new FunctionPollConfig<String, String>(DOCKER_CONTAINER_NAME)
+                        .period(Duration.minutes(1))
+                        .callable(new Callable<String>() {
+                                @Override
+                                public String call() throws Exception {
+                                    String containerId = getContainerId();
+                                    if (containerId == null) return "";
+                                    String name = getDockerHost().runDockerCommand("inspect -f {{.Name}} " + containerId);
+                                    return Strings.removeFromStart(name, "/");
+                                }
+                        })
+                        .onFailureOrException(Functions.constant("")))
                 .poll(new FunctionPollConfig<Boolean, Boolean>(SERVICE_UP)
                         .callable(new Callable<Boolean>() {
                                 @Override
@@ -396,6 +417,10 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
         // Configure the container options based on the host and the running entity
         DockerTemplateOptions options = getDockerTemplateOptions();
+        String containerName = getAttribute(DOCKER_CONTAINER_NAME);
+        if (!Strings.isBlank(containerName)) {
+            options.nodeNames(ImmutableList.of(containerName));
+        }
 
         // put these fields on the location so it has the info it needs to create the subnet
         Map<?, ?> dockerFlags = MutableMap.<Object, Object>builder()

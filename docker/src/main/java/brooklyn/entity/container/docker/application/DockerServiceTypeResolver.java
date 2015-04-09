@@ -55,7 +55,7 @@ public class DockerServiceTypeResolver extends BrooklynServiceTypeResolver {
         return VanillaDockerApplication.class.getName();
     }
 
-    // docker: items are not in catalog
+    /** Docker items are not in catalog. */
     @Override
     public CatalogItem<Entity, EntitySpec<?>> getCatalogItem(BrooklynComponentTemplateResolver resolver, String serviceType) {
         return null;
@@ -75,7 +75,11 @@ public class DockerServiceTypeResolver extends BrooklynServiceTypeResolver {
         if (parts.size() == 2) {
             spec.configure(DockerAttributes.DOCKER_IMAGE_TAG, imageTag);
         }
+        if (resolver.getAttrs().containsKey("id")) {
+            String containerName = (String) resolver.getAttrs().getStringKey("id");
+            spec.configure(DockerAttributes.DOCKER_CONTAINER_NAME, containerName);
+        }
         super.decorateSpec(resolver, spec);
     }
-    
+
 }

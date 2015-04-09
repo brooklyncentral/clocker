@@ -41,6 +41,9 @@ public interface VanillaDockerApplication extends VanillaSoftwareProcess {
     @SetFromFlag("dockerfileUrl")
     ConfigKey<String> DOCKERFILE_URL = DockerAttributes.DOCKERFILE_URL;
 
+    @SetFromFlag("containerName")
+    ConfigKey<String> CONTAINER_NAME = DockerContainer.DOCKER_CONTAINER_NAME.getConfigKey();
+
     @SetFromFlag("imageName")
     ConfigKey<String> IMAGE_NAME = DockerAttributes.DOCKER_IMAGE_NAME.getConfigKey();
 
