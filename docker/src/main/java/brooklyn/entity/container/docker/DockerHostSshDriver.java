@@ -280,10 +280,10 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
             } else {
                 if ("ubuntu".equalsIgnoreCase(osDetails.getName())) {
                     List<String> commands = ImmutableList.<String> builder()
-                            .add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19-vivid/linux-headers-3.19.0-031900-generic_3.19.0-031900.201502091451_amd64.deb")
-                            .add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19-vivid/linux-headers-3.19.0-031900_3.19.0-031900.201502091451_all.deb")
-                            .add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19-vivid/linux-image-3.19.0-031900-generic_3.19.0-031900.201502091451_amd64.deb")
-                            .add("sudo dpkg -i linux-headers-3.19.0-*.deb linux-image-3.19.0-*.deb")
+                            .add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19.3-vivid/linux-headers-3.19.3-031903-generic_3.19.3-031903.201503261036_amd64.deb")
+                            .add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19.3-vivid/linux-headers-3.19.3-031903_3.19.3-031903.201503261036_all.deb")
+                            .add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19.3-vivid/linux-image-3.19.3-031903-generic_3.19.3-031903.201503261036_amd64.deb")
+                            .add("sudo dpkg -i linux-headers-3.19.3-*.deb linux-image-3.19.3-*.deb")
                             .add(sudo("reboot"))
                             .build();
                     executeKernelInstallation(commands);
