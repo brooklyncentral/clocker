@@ -138,31 +138,31 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
       return this;
    }
 
-   public TemplateOptions dns(@Nullable String dns) {
+   public DockerTemplateOptions dns(@Nullable String dns) {
       this.dns = Optional.fromNullable(dns);
       return this;
    }
 
-   public TemplateOptions hostname(@Nullable String hostname) {
+   public DockerTemplateOptions hostname(@Nullable String hostname) {
       this.hostname = Optional.fromNullable(hostname);
       return this;
    }
 
-   public TemplateOptions memory(@Nullable Integer memory) {
+   public DockerTemplateOptions memory(@Nullable Integer memory) {
       this.memory = Optional.fromNullable(memory);
       return this;
    }
 
-   public TemplateOptions commands(Iterable<String> commands) {
+   public DockerTemplateOptions commands(Iterable<String> commands) {
       this.commands = Optional.<List<String>>of(ImmutableList.copyOf(checkNotNull(commands, "commands")));
       return this;
    }
 
-   public TemplateOptions commands(String...commands) {
+   public DockerTemplateOptions commands(String...commands) {
       return commands(ImmutableList.copyOf(checkNotNull(commands, "commands")));
    }
 
-   public TemplateOptions cpuShares(@Nullable Integer cpuShares) {
+   public DockerTemplateOptions cpuShares(@Nullable Integer cpuShares) {
       this.cpuShares = Optional.fromNullable(cpuShares);
       return this;
    }
