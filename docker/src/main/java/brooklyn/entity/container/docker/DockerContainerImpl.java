@@ -48,6 +48,7 @@ import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.basic.ServiceStateLogic;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
+import brooklyn.entity.container.DockerUtils;
 import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.event.feed.ConfigToAttributes;
@@ -424,7 +425,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             containerName = getAttribute(DOCKER_CONTAINER_NAME);
         }
         if (Strings.isNonBlank(containerName)) {
-            options.nodeNames(ImmutableList.of(containerName));
+            options.nodeNames(ImmutableList.of(DockerUtils.allowed(containerName)));
         }
 
         // put these fields on the location so it has the info it needs to create the subnet
