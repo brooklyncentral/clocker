@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import brooklyn.config.ConfigInheritance;
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.ConfigKeys;
@@ -95,17 +96,27 @@ public class DockerAttributes {
     public static final AttributeSensorAndConfigKey<Entity, Entity> DOCKER_INFRASTRUCTURE = ConfigKeys.newSensorAndConfigKey(Entity.class,
             "docker.infrastructure", "The Docker infrastructure");
 
-    public static final ConfigKey<List<PortAttributeSensorAndConfigKey>> DOCKER_DIRECT_PORT_CONFIG = ConfigKeys.newConfigKey(
-            new TypeToken<List<PortAttributeSensorAndConfigKey>>() { },
-            "docker.container.directPorts.configKeys", "List of configration keys for ports that are to be mapped directly on the Docker host");
+    // Thes configurations must be set on the specific entity and will not be inherited
 
-    public static final ConfigKey<List<Integer>> DOCKER_DIRECT_PORTS = ConfigKeys.newConfigKey(
-            new TypeToken<List<Integer>>() { },
-            "docker.container.directPorts", "List of ports that are to be mapped directly on the Docker host", ImmutableList.<Integer>of());
+    public static final ConfigKey<List<PortAttributeSensorAndConfigKey>> DOCKER_DIRECT_PORT_CONFIG = ConfigKeys.builder(new TypeToken<List<PortAttributeSensorAndConfigKey>>() { })
+            .name("docker.container.directPorts.configKeys")
+            .description("List of configration keys for ports that are to be mapped directly on the Docker host")
+            .inheritance(ConfigInheritance.NONE)
+            .build();
 
-    public static final ConfigKey<List<Integer>> DOCKER_OPEN_PORTS = ConfigKeys.newConfigKey(
-            new TypeToken<List<Integer>>() { },
-            "docker.container.openPorts", "List of extra ports to open on the container for forwarding", ImmutableList.<Integer>of());
+    public static final ConfigKey<List<Integer>> DOCKER_DIRECT_PORTS = ConfigKeys.builder(new TypeToken<List<Integer>>() { })
+            .name("docker.container.directPorts")
+            .description( "List of ports that are to be mapped directly on the Docker host")
+            .defaultValue(ImmutableList.<Integer>of())
+            .inheritance(ConfigInheritance.NONE)
+            .build();
+
+    public static final ConfigKey<List<Integer>> DOCKER_OPEN_PORTS = ConfigKeys.builder(new TypeToken<List<Integer>>() { })
+            .name("docker.container.openPorts")
+            .description("List of extra ports to open on the container for forwarding")
+            .defaultValue(ImmutableList.<Integer>of())
+            .inheritance(ConfigInheritance.NONE)
+            .build();
 
     /*
      * Counter attributes.
