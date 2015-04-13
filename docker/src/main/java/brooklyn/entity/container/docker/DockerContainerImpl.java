@@ -42,6 +42,7 @@ import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.EntityInternal;
 import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.basic.ServiceStateLogic;
@@ -234,7 +235,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
     private DockerTemplateOptions getDockerTemplateOptions() {
         Entity entity = getRunningEntity();
-        DockerTemplateOptions options = DockerTemplateOptions.NONE;
+        DockerTemplateOptions options = new DockerTemplateOptions();
 
         // Use DockerHost hostname for the container
         Boolean useHostDns = entity.config().get(DOCKER_USE_HOST_DNS_NAME);
@@ -508,8 +509,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             for (int i = 0; i < entityOpenPorts.size(); i++) {
                 Integer port = entityOpenPorts.get(i);
                 String name = String.format("docker.port.%02d", port);
-                setAttribute(Sensors.newIntegerSensor(name), port);
-                config().set(ConfigKeys.newConfigKey(PortRange.class, name), PortRanges.fromInteger(port));
+                ((EntityInternal) entity).setAttribute(Sensors.newIntegerSensor(name), port);
+                entity.config().set(ConfigKeys.newConfigKey(PortRange.class, name), PortRanges.fromInteger(port));
             }
 
             ports.addAll(entityOpenPorts);
