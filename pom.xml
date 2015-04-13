@@ -52,7 +52,7 @@
 
         <!-- Testing -->
         <testng.version>6.8</testng.version>
-        <brooklyn.version>0.7.0-ea-cloudsoft.6</brooklyn.version> <!-- BROOKLYN_VERSION -->
+        <brooklyn.version>0.7.0-ea-cloudsoft.7</brooklyn.version> <!-- BROOKLYN_VERSION -->
         <includedTestGroups/>
         <excludedTestGroups>Integration,Live,WIP</excludedTestGroups>
     </properties>
