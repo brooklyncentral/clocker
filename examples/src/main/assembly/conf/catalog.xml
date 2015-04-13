@@ -40,8 +40,12 @@
         <description>Node.JS Todo Application, with a Redis store</description>
         <iconUrl>classpath://nodejs-logo.png</iconUrl>
     </template>
-    <template type="brooklyn.clocker.example.MicroService" name="Container Service">
+    <template type="brooklyn.clocker.example.MicroServiceImage" name="Image Micro-Service">
         <description>A container micro-service defined by a Docker image</description>
+        <iconUrl>classpath://container.png</iconUrl>
+    </template>
+    <template type="brooklyn.clocker.example.MicroServiceDockerfile" name="Dockerfile Micro-Service">
+        <description>A container micro-service defined by a Dockerfile</description>
         <iconUrl>classpath://container.png</iconUrl>
     </template>
     <template type="brooklyn.clocker.example.TomcatApplication" name="Tomcat Server">

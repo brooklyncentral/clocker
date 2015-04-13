@@ -12,17 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-id: docker-mysql
-name: "Docker Hub MySQL Service"
-origin: "https://registry.hub.docker.com/_/mysql/"
+id: docker-jboss-wildfly
+name: "Docker Hub JBoss WildFly Service"
+origin: "https://registry.hub.docker.com/u/jboss/wildfly/"
 locations:
 - my-docker-cloud
 
 services:
-- type: docker:mysql:5.7
+- type: docker:jboss/wildfly:8.2.0.Final
+  id: jboss-wildfly
   openPorts:
-  - 3306
+  - 9990
+  - 8080
   directPorts:
-  - 3306
-  env:
-    MYSQL_ROOT_PASSWORD: "s3cr3t"
+  - 9990
+  - 8080

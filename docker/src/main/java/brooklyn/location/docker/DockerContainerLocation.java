@@ -47,7 +47,6 @@ import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.Protocol;
-import brooklyn.util.os.Os;
 import brooklyn.util.ssh.IptablesCommands;
 import brooklyn.util.ssh.IptablesCommands.Chain;
 import brooklyn.util.ssh.IptablesCommands.Policy;
@@ -93,10 +92,6 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
 
     public JcloudsSshMachineLocation getMachine() {
         return machine;
-    }
-
-    public String getRepository() {
-        return dockerContainer.getDockerHost().getRepository();
     }
 
     /*
@@ -202,7 +197,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
             String containerId = getOwner().getContainerId();
             String imageName = getOwner().getAttribute(DockerContainer.IMAGE_NAME);
             String output = getOwner().getDockerHost().runDockerCommandTimeout(
-                    format("commit %s %s", containerId, Os.mergePaths(getRepository(), imageName)),
+                    format("commit %s %s", containerId, imageName),
                     Duration.minutes(20));
             String imageId = DockerUtils.checkId(output);
             ((EntityLocal) getOwner().getRunningEntity()).setAttribute(DockerContainer.IMAGE_ID, imageId);
@@ -210,7 +205,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
             getOwner().getDockerHost().getDynamicLocation().markImage(imageName);
         } else if (DockerCallbacks.PUSH.equalsIgnoreCase(command)) {
             String imageName = getOwner().getAttribute(DockerContainer.IMAGE_NAME);
-            getOwner().getDockerHost().runDockerCommand(format("push %s", Os.mergePaths(getRepository(), imageName)));
+            getOwner().getDockerHost().runDockerCommand(format("push %s", imageName));
         } else if (DockerCallbacks.SUBNET_ADDRESS.equalsIgnoreCase(command)) {
             String address = getOwner().getAttribute(Attributes.SUBNET_ADDRESS);
             ((EntityLocal) getOwner().getRunningEntity()).setAttribute(Attributes.SUBNET_ADDRESS, address);

@@ -107,11 +107,6 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         return getEntity().getAttribute(DockerHost.DOCKER_SSL_PORT);
     }
 
-    @Override
-    public String getRepository() {
-        return getEntity().getAttribute(DockerHost.DOCKER_REPOSITORY);
-    }
-
     /** {@inheritDoc} */
     @Override
     public String buildImage(String dockerFile, String name) {
@@ -149,7 +144,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         checkNotNull(name, "name");
         checkNotNull(tag, "tag");
         copyTemplate(DockerUtils.SSHD_DOCKERFILE, Os.mergePaths(name, "Sshd" + DockerUtils.DOCKERFILE),
-                true, ImmutableMap.<String, Object>of("fullyQualifiedImageName", Os.mergePaths(name) + ":" + tag));
+                true, ImmutableMap.<String, Object>of("fullyQualifiedImageName", name + ":" + tag));
         String sshdImageId = buildDockerfile("Sshd" + DockerUtils.DOCKERFILE, name);
         log.info("Created SSH-based image from {} with ID {}", name, sshdImageId);
 
@@ -157,8 +152,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     private Map<String, Object> getExtraTemplateSubstitutions(String imageName) {
-        Map<String, Object> templateSubstitutions = MutableMap.<String, Object>of(
-                "fullyQualifiedImageName", Os.mergePaths(getRepository(), imageName));
+        Map<String, Object> templateSubstitutions = MutableMap.<String, Object>of("fullyQualifiedImageName", imageName);
         DockerHost host = (DockerHost) getEntity();
         templateSubstitutions.putAll(host.getInfrastructure().config().get(DockerInfrastructure.DOCKERFILE_SUBSTITUTIONS));
         return templateSubstitutions;
@@ -166,8 +160,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     private String buildDockerfileDirectory(String name) {
         String build = format("build --rm -t %s %s",
-                Os.mergePaths(getRepository(), name),
-                Os.mergePaths(getRunDir(), name));
+                name, Os.mergePaths(getRunDir(), name));
         String stdout = ((DockerHost) getEntity()).runDockerCommandTimeout(build, Duration.minutes(20));
         String prefix = Strings.getFirstWordAfter(stdout, "Successfully built");
 
@@ -176,8 +169,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     private String buildDockerfile(String dockerfile, String name) {
         String build = format("build --rm -t %s - < %s",
-                Os.mergePaths(getRepository(), name),
-                Os.mergePaths(getRunDir(), name, dockerfile));
+                name, Os.mergePaths(getRunDir(), name, dockerfile));
         String stdout = ((DockerHost) getEntity()).runDockerCommandTimeout(build, Duration.minutes(20));
         String prefix = Strings.getFirstWordAfter(stdout, "Successfully built");
 

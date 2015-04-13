@@ -28,7 +28,6 @@ import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.basic.MethodEffector;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
-import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.entity.trait.HasShortName;
 import brooklyn.event.AttributeSensor;
@@ -58,6 +57,9 @@ public interface DockerContainer extends BasicStartable, HasNetworkAddresses, Ha
 
     @SetFromFlag("infrastructure")
     AttributeSensorAndConfigKey<Entity, Entity> DOCKER_INFRASTRUCTURE = DockerHost.DOCKER_INFRASTRUCTURE;
+
+    @SetFromFlag("containerName")
+    AttributeSensorAndConfigKey<String, String> DOCKER_CONTAINER_NAME = DockerAttributes.DOCKER_CONTAINER_NAME;
 
     @SetFromFlag("managed")
     ConfigKey<Boolean> MANAGED = DockerAttributes.MANAGED;
@@ -98,10 +100,8 @@ public interface DockerContainer extends BasicStartable, HasNetworkAddresses, Ha
     AttributeSensorAndConfigKey<Entity, Entity> ENTITY = ConfigKeys.newSensorAndConfigKey(Entity.class,
             "docker.container.entity", "The entity running in this Docker container");
 
-    ConfigKey<String> DOCKER_CONTAINER_NAME_FORMAT = ConfigKeys.newStringConfigKey("docker.container.nameFormat",
-            "Format for generating Docker container names", DockerUtils.DEFAULT_DOCKER_CONTAINER_NAME_FORMAT);
-
-    AttributeSensor<String> DOCKER_CONTAINER_NAME = Sensors.newStringSensor("docker.container.name", "The name of the Docker container");
+    ConfigKey<String> DOCKER_CONTAINER_NAME_FORMAT = ConfigKeys.newStringConfigKey(
+            "docker.container.nameFormat", "Format for generating Docker container names");
 
     AttributeSensor<String> IMAGE_ID = Sensors.newStringSensor("docker.container.image.id", "The Docker container image ID");
     AttributeSensor<String> IMAGE_NAME = Sensors.newStringSensor("docker.container.image.name", "The Docker container image name");

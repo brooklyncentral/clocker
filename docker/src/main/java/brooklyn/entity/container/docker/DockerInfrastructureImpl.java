@@ -48,7 +48,6 @@ import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.group.DynamicMultiGroup;
 import brooklyn.entity.machine.MachineAttributes;
 import brooklyn.entity.proxying.EntitySpec;
-import brooklyn.entity.trait.Resizable;
 import brooklyn.entity.trait.Startable;
 import brooklyn.location.Location;
 import brooklyn.location.LocationDefinition;

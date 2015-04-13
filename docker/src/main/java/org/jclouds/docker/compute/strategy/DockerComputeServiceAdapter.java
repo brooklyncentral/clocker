@@ -125,10 +125,6 @@ public class DockerComputeServiceAdapter implements
          containerConfigBuilder.volumes(volumes);
       }
 
-      if (templateOptions.getEnv().isPresent()) {
-         containerConfigBuilder.env(templateOptions.getEnv().get());
-      }
-
       Config containerConfig = containerConfigBuilder.build();
 
       logger.debug(">> creating new container with containerConfig(%s)", containerConfig);
