@@ -32,11 +32,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
-import org.eclipse.jetty.util.log.Log;
 import org.jclouds.net.domain.IpPermission;
 import org.jclouds.net.domain.IpProtocol;
 
-import brooklyn.entity.Entity;
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.lifecycle.ScriptHelper;
@@ -52,6 +50,7 @@ import brooklyn.location.jclouds.networking.JcloudsLocationSecurityGroupCustomiz
 import brooklyn.management.Task;
 import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.networking.sdn.SdnProvider;
+import brooklyn.networking.sdn.calico.CalicoNode;
 import brooklyn.networking.sdn.weave.WeaveNetwork;
 import brooklyn.util.collections.MutableList;
 import brooklyn.util.collections.MutableMap;
@@ -62,7 +61,6 @@ import brooklyn.util.net.Networking;
 import brooklyn.util.net.Urls;
 import brooklyn.util.os.Os;
 import brooklyn.util.repeat.Repeater;
-import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.task.DynamicTasks;
 import brooklyn.util.task.TaskBuilder;
 import brooklyn.util.task.system.ProcessTaskWrapper;
@@ -87,29 +85,27 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     protected Map<String, Integer> getPortMap() {
         Map<String, Integer> ports = MutableMap.of();
         ports.put("dockerPort", getDockerPort());
-        if (getEntity().config().get(SdnAttributes.SDN_ENABLE)) {
-            // Best guess at available ports, as SDN is started _after_ the DockerHost
-            if (isSdnProvider("WeaveNetwork")) {
-                Integer weavePort = getEntity()
-                        .getAttribute(DockerHost.DOCKER_INFRASTRUCTURE)
-                        .getAttribute(DockerInfrastructure.SDN_PROVIDER)
-                        .config().get(WeaveNetwork.WEAVE_PORT);
-                if (weavePort != null) ports.put("weavePort", weavePort);
-            } else if (isSdnProvider("CalicoNetwork")) {
-                PortRange etcdPort = getEntity()
-                        .getAttribute(DockerHost.DOCKER_INFRASTRUCTURE)
-                        .getAttribute(DockerInfrastructure.SDN_PROVIDER)
-                        .config().get(EtcdNode.ETCD_CLIENT_PORT);
-                if (etcdPort != null) ports.put("etcdPort", etcdPort.iterator().next());
-            }
+        // Best guess at available ports, as SDN is started _after_ the DockerHost
+        if (DockerUtils.isSdnProvider(entity, "WeaveNetwork")) {
+            Integer weavePort = getEntity()
+                    .getAttribute(DockerHost.DOCKER_INFRASTRUCTURE)
+                    .getAttribute(DockerInfrastructure.SDN_PROVIDER)
+                    .config().get(WeaveNetwork.WEAVE_PORT);
+            if (weavePort != null) ports.put("weavePort", weavePort);
+        }
+        if (DockerUtils.isSdnProvider(entity, "CalicoNetwork")) {
+            PortRange etcdPort = getEntity()
+                    .getAttribute(DockerHost.DOCKER_INFRASTRUCTURE)
+                    .getAttribute(DockerInfrastructure.SDN_PROVIDER)
+                    .config().get(EtcdNode.ETCD_CLIENT_PORT);
+            if (etcdPort != null) ports.put("etcdPort", etcdPort.iterator().next());
+            Integer powerstripPort = getEntity()
+                    .getAttribute(DockerHost.DOCKER_INFRASTRUCTURE)
+                    .getAttribute(DockerInfrastructure.SDN_PROVIDER)
+                    .config().get(CalicoNode.POWERSTRIP_PORT);
+            if (powerstripPort != null) ports.put("powerstripPort", powerstripPort);
         }
         return ports;
-    }
-
-    private boolean isSdnProvider(String providerName) {
-        Entity sdn = getEntity().getAttribute(DockerHost.DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER);
-        if (sdn == null) return false;
-        return sdn.getEntityType().getSimpleName().equalsIgnoreCase(providerName);
     }
 
     @Override

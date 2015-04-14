@@ -70,6 +70,7 @@ import brooklyn.management.LocationManager;
 import brooklyn.networking.portforwarding.DockerPortForwarder;
 import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnAttributes;
+import brooklyn.networking.sdn.calico.CalicoNode;
 import brooklyn.networking.sdn.ibm.SdnVeNetwork;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.networking.subnet.SubnetTierImpl;
@@ -239,7 +240,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
             // Setup SoftLayer template options required for IBM SDN VE
             // TODO Move this into a callback on the SdnProvider interface
-            if (isJcloudsLocation(location, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME) && isSdnProvider("SdnVeNetwork")) {
+            if (isJcloudsLocation(location, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME) && DockerUtils.isSdnProvider(this, "SdnVeNetwork")) {
                 if (template == null) template = new PortableTemplateBuilder();
                 template.osFamily(OsFamily.CENTOS).osVersionMatches("6").os64Bit(true);
                 Integer vlanId = getAttribute(DOCKER_INFRASTRUCTURE)
@@ -258,12 +259,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     private boolean isJcloudsLocation(MachineProvisioningLocation location, String providerName) {
         return location instanceof JcloudsLocation
                 && ((JcloudsLocation) location).getProvider().equals(providerName);
-    }
-
-    private boolean isSdnProvider(String providerName) {
-        Entity sdn = getAttribute(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER);
-        if (sdn == null) return false;
-        return sdn.getEntityType().getSimpleName().equalsIgnoreCase(providerName);
     }
 
     @Override
@@ -478,13 +473,26 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     protected void preStart() {
         getDriver().configureSecurityGroups();
 
+        Integer dockerPort = getDockerPort();
+        boolean tlsEnabled = true;
+        if (DockerUtils.isSdnProvider(this, "CalicoNetwork")) {
+            dockerPort = getAttribute(DockerHost.DOCKER_INFRASTRUCTURE)
+                    .getAttribute(DockerInfrastructure.SDN_PROVIDER)
+                    .config().get(CalicoNode.POWERSTRIP_PORT);
+            tlsEnabled = false;
+        }
         Maybe<SshMachineLocation> found = Machines.findUniqueSshMachineLocation(getLocations());
-        String dockerLocationSpec = String.format("jclouds:docker:https://%s:%s",
-                found.get().getSshHostAndPort().getHostText(), getDockerPort());
+        String dockerLocationSpec = String.format("jclouds:docker:%s://%s:%s",
+                tlsEnabled ? "https" : "http", found.get().getSshHostAndPort().getHostText(), dockerPort);
+
         String certificatePath = config().get(DockerInfrastructure.DOCKER_CERTIFICATE_PATH);
         String keyPath = config().get(DockerInfrastructure.DOCKER_KEY_PATH);
         JcloudsLocation jcloudsLocation = (JcloudsLocation) getManagementContext().getLocationRegistry()
-                .resolve(dockerLocationSpec, MutableMap.of("identity", certificatePath, "credential", keyPath, ComputeServiceProperties.IMAGE_LOGIN_USER, "root:" + getPassword()));
+                .resolve(dockerLocationSpec, MutableMap.builder()
+                        .put("identity", certificatePath)
+                        .put("credential", keyPath)
+                        .put(ComputeServiceProperties.IMAGE_LOGIN_USER, "root:" + getPassword())
+                        .build());
         setAttribute(JCLOUDS_DOCKER_LOCATION, jcloudsLocation);
 
         DockerPortForwarder portForwarder = new DockerPortForwarder();

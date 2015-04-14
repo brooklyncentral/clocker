@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.jclouds.net.domain.IpPermission;
+import org.jclouds.net.domain.IpProtocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +43,7 @@ import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.networking.sdn.SdnProviderImpl;
+import brooklyn.networking.sdn.weave.WeaveContainer;
 import brooklyn.util.collections.MutableList;
 import brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import brooklyn.util.exceptions.Exceptions;
@@ -95,6 +97,14 @@ public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork 
     @Override
     public Collection<IpPermission> getIpPermissions() {
         Collection<IpPermission> permissions = MutableList.of();
+        Integer powerstripPort = config().get(CalicoNode.POWERSTRIP_PORT);
+        IpPermission powerstripTcpPort = IpPermission.builder()
+                .ipProtocol(IpProtocol.TCP)
+                .fromPort(powerstripPort)
+                .toPort(powerstripPort)
+                .cidrBlock(Cidr.UNIVERSAL.toString()) // TODO could be tighter restricted?
+                .build();
+        permissions.add(powerstripTcpPort);
         return permissions;
     }
 

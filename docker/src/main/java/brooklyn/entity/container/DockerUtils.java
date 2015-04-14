@@ -23,6 +23,8 @@ import javax.annotation.Nullable;
 
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.SoftwareProcess;
+import brooklyn.entity.container.docker.DockerHost;
+import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.database.DatastoreMixins;
 import brooklyn.entity.messaging.MessageBroker;
 import brooklyn.entity.nosql.couchbase.CouchbaseCluster;
@@ -35,6 +37,7 @@ import brooklyn.location.Location;
 import brooklyn.location.LocationDefinition;
 import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.management.ManagementContext;
+import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.util.text.Identifiers;
 import brooklyn.util.text.Strings;
 
@@ -157,6 +160,14 @@ public class DockerUtils {
 
         String label = Joiner.on(":").skipNulls().join(simpleName, version, dockerfile);
         return Identifiers.makeIdFromHash(Hashing.md5().hashString(label, Charsets.UTF_8).asLong()).toLowerCase(Locale.ENGLISH);
+    }
+
+    public static boolean isSdnProvider(Entity dockerHost, String providerName) {
+        if (dockerHost.config().get(SdnAttributes.SDN_ENABLE)) {
+            Entity sdn = dockerHost.getAttribute(DockerHost.DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER);
+            if (sdn == null) return false;
+            return sdn.getEntityType().getSimpleName().equalsIgnoreCase(providerName);
+        } else return false;
     }
 
     public static final Predicate<Entity> sameInfrastructure(Entity entity) {

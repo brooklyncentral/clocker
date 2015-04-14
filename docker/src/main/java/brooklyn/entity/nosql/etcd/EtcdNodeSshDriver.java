@@ -33,7 +33,6 @@ import brooklyn.entity.group.DynamicCluster;
 import brooklyn.event.basic.DependentConfiguration;
 import brooklyn.location.OsDetails;
 import brooklyn.location.basic.SshMachineLocation;
-import brooklyn.networking.sdn.weave.WeaveContainer;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.os.Os;
 import brooklyn.util.ssh.BashCommands;

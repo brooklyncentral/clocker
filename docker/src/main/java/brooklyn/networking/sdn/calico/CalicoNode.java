@@ -41,5 +41,8 @@ public interface CalicoNode extends SdnAgent {
     AttributeSensorAndConfigKey<EtcdNode, EtcdNode> ETCD_NODE = ConfigKeys.newSensorAndConfigKey(EtcdNode.class,
             "sdn.calico.etcd.node", "The EtcdNode attached to the same DockerHost as the plugin");
 
+    @SetFromFlag("powerstripPort")
+    ConfigKey<Integer> POWERSTRIP_PORT = ConfigKeys.newIntegerConfigKey("powerstrip.port", "Powerstrip port", 2377);
+
 
 }
