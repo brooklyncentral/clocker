@@ -28,11 +28,11 @@ If you are keen to peek under the covers, you can find the Docker cloud infrastr
 
 ### Using the latest Clocker release
 
-The latest version of Clocker is [0.8.0](https://github.com/brooklyncentral/clocker/releases/tag/v0.8.0-20150314).
-You can deploy this *Docker Cloud Infrastructure* by running these commands:
+The latest version of Clocker is [0.8.0](https://github.com/brooklyncentral/clocker/releases/tag/v0.8.0).
+You can deploy your own *Docker Cloud* by running these commands:
 ```Bash
 % wget --no-check-certificate --quiet \
-    -O brooklyn-clocker-dist.tar.gz http://git.io/ppnt
+    -O brooklyn-clocker-dist.tar.gz http://git.io/vvVSn
 % tar zxf brooklyn-clocker-dist.tar.gz
 % cd brooklyn-clocker
 % ./bin/clocker.sh location
