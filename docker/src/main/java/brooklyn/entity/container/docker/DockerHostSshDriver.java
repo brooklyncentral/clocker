@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
+import org.eclipse.jetty.util.log.Log;
 import org.jclouds.net.domain.IpPermission;
 import org.jclouds.net.domain.IpProtocol;
 
@@ -58,6 +59,7 @@ import brooklyn.util.net.Networking;
 import brooklyn.util.net.Urls;
 import brooklyn.util.os.Os;
 import brooklyn.util.repeat.Repeater;
+import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.task.DynamicTasks;
 import brooklyn.util.task.TaskBuilder;
 import brooklyn.util.task.system.ProcessTaskWrapper;
@@ -260,27 +262,34 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         OsDetails osDetails = getMachine().getMachineDetails().getOsDetails();
         String osVersion = osDetails.getVersion();
         String arch = osDetails.getArch();
-        if (!osDetails.is64bit()) { throw new IllegalStateException("Docker supports only 64bit OS"); }
+        if (!osDetails.is64bit()) throw new IllegalStateException("Docker supports only 64bit OS");
+        if (osDetails.isWindows()) throw new IllegalStateException("Windows operating system not yet supported by Docker");
         log.debug("Installing Docker on {} version {}", osDetails.getName(), osVersion);
+
+        // Run Linux specific kernel upgrades
         if (osDetails.isLinux()) {
             String kernelVersion = Strings.getFirstWord(((DockerHost) getEntity()).execCommand("uname -r"));
             List<String> versionParts = Splitter.on(".").splitToList(kernelVersion);
             int kernelMajor = Integer.valueOf(versionParts.get(0));
             int kernelMinor = Integer.valueOf(versionParts.get(1));
             if ((kernelMajor == 3 && kernelMinor >= 18) || kernelMajor > 3) {
-                log.info("Kernel {} found, reboot not required", kernelVersion);
+                log.info("Latest kernel {} found, reboot not required", kernelVersion);
             } else {
                 if ("ubuntu".equalsIgnoreCase(osDetails.getName())) {
-                    List<String> commands = ImmutableList.<String> builder()
-                            .add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19.3-vivid/linux-headers-3.19.3-031903-generic_3.19.3-031903.201503261036_amd64.deb")
-                            .add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19.3-vivid/linux-headers-3.19.3-031903_3.19.3-031903.201503261036_all.deb")
-                            .add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19.3-vivid/linux-image-3.19.3-031903-generic_3.19.3-031903.201503261036_amd64.deb")
-                            .add("sudo dpkg -i linux-headers-3.19.3-*.deb linux-image-3.19.3-*.deb")
-                            .add(sudo("reboot"))
-                            .build();
+                    List<String> commands = MutableList.of();
+                    if ("overlay".equals(entity.config().get(DockerHost.DOCKER_STORAGE_DRIVER))) {
+                        commands.add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19.3-vivid/linux-headers-3.19.3-031903-generic_3.19.3-031903.201503261036_amd64.deb");
+                        commands.add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19.3-vivid/linux-headers-3.19.3-031903_3.19.3-031903.201503261036_all.deb");
+                        commands.add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19.3-vivid/linux-image-3.19.3-031903-generic_3.19.3-031903.201503261036_amd64.deb");
+                        commands.add(sudo("dpkg -i linux-headers-3.19.3-*.deb linux-image-3.19.3-*.deb"));
+                    } else {
+                        commands.add(sudo("apt-get dist-upgrade"));
+                    }
+                    commands.add(sudo("reboot"));
                     executeKernelInstallation(commands);
                 }
                 if ("centos".equalsIgnoreCase(osDetails.getName())) {
+                    // TODO differentiate between CentOS 6 and 7 and RHEL
                     List<String> commands = ImmutableList.<String>builder()
                             .add(sudo("yum -y --nogpgcheck upgrade kernel"))
                             .add(sudo("reboot"))
@@ -288,20 +297,37 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                     executeKernelInstallation(commands);
                 }
             }
-        } else if (osDetails.isMac()) {
-            newScript(INSTALLING)
-                    .body.append(
-                            alternatives(
-                                    ifExecutableElse1("boot2docker", "boot2docker status || boot2docker init"),
-                                    fail("Mac OSX install requires Boot2Docker preinstalled", 1)))
-                    .failOnNonZeroResultCode()
-                    .execute();
-            return;
-        } else if (osDetails.isWindows()) {
-            throw new IllegalStateException("Windows operating system not yet supported by Docker");
-        } else {
-            throw new IllegalStateException("Unknown operating system: " + osDetails);
         }
+
+        // Generate Docker install commands
+        List<String> commands = Lists.newArrayList();
+        if (osDetails.isMac()) {
+            commands.add(alternatives(
+                    ifExecutableElse1("boot2docker", "boot2docker status || boot2docker init"),
+                    fail("Mac OSX install requires Boot2Docker preinstalled", 1)));
+        }
+        if (osDetails.isLinux()) {
+            commands.add(INSTALL_CURL);
+            if ("ubuntu".equalsIgnoreCase(osDetails.getName())) {
+                commands.add(installDockerOnUbuntu());
+            } else if ("centos".equalsIgnoreCase(osDetails.getName())) { // should work for RHEL also?
+                commands.add(ifExecutableElse1("yum", useYum(osVersion, arch, getEpelRelease())));
+                commands.add(installPackage(ImmutableMap.of("yum", "docker-io"), null));
+                commands.add(sudo(format("curl https://get.docker.com/builds/Linux/x86_64/docker-%s -o /usr/bin/docker", getVersion())));
+            } else {
+                commands.add(installDockerFallback());
+            }
+        }
+        newScript(INSTALLING)
+                .body.append(commands)
+                .failOnNonZeroResultCode()
+                .execute();
+    }
+
+    private void executeKernelInstallation(List<String> commands) {
+        newScript(INSTALLING + "kernel")
+                .body.append(commands)
+                .execute();
 
         // Wait until the Docker host is SSHable after the reboot
         // Don't check immediately; it could take a few seconds for rebooting to make the machine not ssh'able;
@@ -333,28 +359,6 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
             throw new IllegalStateException(String.format("The entity %s is not sshable after reboot (waited %s)", 
                     entity, Time.makeTimeStringRounded(stopwatchForReboot)));
         }
-
-        List<String> commands = Lists.newArrayList();
-        commands.add(INSTALL_CURL);
-        if ("ubuntu".equalsIgnoreCase(osDetails.getName())) {
-            commands.add(installDockerOnUbuntu());
-        } else if ("centos".equalsIgnoreCase(osDetails.getName())) { // should work for RHEL also?
-            commands.add(ifExecutableElse1("yum", useYum(osVersion, arch, getEpelRelease())));
-            commands.add(installPackage(ImmutableMap.of("yum", "docker-io"), null));
-            commands.add(sudo(format("curl https://get.docker.com/builds/Linux/x86_64/docker-%s -o /usr/bin/docker", getVersion())));
-        } else {
-            commands.add(installDockerFallback());
-        }
-        newScript(INSTALLING)
-                .body.append(commands)
-                .failOnNonZeroResultCode()
-                .execute();
-    }
-
-    private void executeKernelInstallation(List<String> commands) {
-        newScript(INSTALLING + "kernel")
-                .body.append(commands)
-                .execute();
     }
 
     private String useYum(String osVersion, String arch, String epelRelease) {
