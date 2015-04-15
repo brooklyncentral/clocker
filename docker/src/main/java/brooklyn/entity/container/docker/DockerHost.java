@@ -97,7 +97,7 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
             "EPEL release for yum based OS", "6-8");
 
     ConfigKey<String> DOCKER_STORAGE_DRIVER = ConfigKeys.newStringConfigKey("docker.host.driver.storage",
-            "The Docker storage driver type ('aufs' or 'overlay', default is 'devicemapper')", "devicemapper");
+            "The Docker storage driver type ('devicemapper', 'btrfs', 'aufs' or 'overlay', null uses Docker default)");
 
     AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_ID = DockerAttributes.DOCKER_IMAGE_ID;
 
