@@ -72,7 +72,7 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
     public void launch() {
         InetAddress address = getEntity().getAttribute(SdnAgent.SDN_AGENT_ADDRESS);
         Boolean firstMember = getEntity().getAttribute(AbstractGroup.FIRST_MEMBER);
-        LOG.info("Launching {} calico service at {}", Boolean.TRUE.equals(firstMember) ? "first" : "next", address.getHostAddress());
+        LOG.info("Launching {} calico service at {}", Boolean.TRUE.equals(firstMember) ? "first" : "next", address);
 
         newScript(MutableMap.of(USE_PID_FILE, false), LAUNCHING)
                 .updateTaskAndFailOnNonZeroResultCode()
@@ -98,7 +98,7 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
     public void createSubnet(String subnetId, String subnetName, Cidr subnetCidr) {
         newScript("createSubnet")
                 .body.append(
-                        sudo(String.format("%s group add %s", getCalicoCommand(), subnetId)),
+                        sudo(String.format("%s profile add %s", getCalicoCommand(), subnetId)),
                         sudo(String.format("%s ipv4 pool add %s", getCalicoCommand(), subnetCidr)))
                 .execute();
     }
@@ -109,7 +109,7 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
 
         newScript("attachNetwork")
                 .body.append(
-                        sudo(String.format("%s group addmember %s %s", getCalicoCommand(), subnetId, containerId)),
+                        sudo(String.format("%s profile %s member add %s", getCalicoCommand(), subnetId, containerId)),
                         sudo(String.format("%s container add %s %s", getCalicoCommand(), containerId, address.getHostAddress())))
                 .execute();
 

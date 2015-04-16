@@ -39,7 +39,7 @@ services:
       $brooklyn:entitySpec:
         type: brooklyn.networking.sdn.calico.CalicoNetwork
         brooklyn.config:
-          calico.version: 0.2.0
+          calico.version: 0.3.2
           etcd.version: 2.0.5
           sdn.network.cidr: 50.0.0.0/16
           sdn.network.size: 24
