@@ -191,7 +191,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     public String getStorageOpts() {
         String driver = getEntity().config().get(DockerHost.DOCKER_STORAGE_DRIVER);
-        if ("aufs".equalsIgnoreCase(driver) || Strings.isBlank(driver)) {
+        if (Strings.isBlank(driver)) {
             return "";
         } else {
             return "-s " + Strings.toLowerCase(driver);
@@ -280,13 +280,16 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
             if ((kernelMajor == 3 && kernelMinor >= 18) || kernelMajor > 3) {
                 log.info("Latest kernel {} found, reboot not required", kernelVersion);
             } else {
+                String storage = entity.config().get(DockerHost.DOCKER_STORAGE_DRIVER);
                 if ("ubuntu".equalsIgnoreCase(osDetails.getName())) {
                     List<String> commands = MutableList.of();
-                    if ("overlay".equals(entity.config().get(DockerHost.DOCKER_STORAGE_DRIVER))) {
+                    if ("overlay".equals(storage)) {
                         commands.add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19.3-vivid/linux-headers-3.19.3-031903-generic_3.19.3-031903.201503261036_amd64.deb");
                         commands.add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19.3-vivid/linux-headers-3.19.3-031903_3.19.3-031903.201503261036_all.deb");
                         commands.add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19.3-vivid/linux-image-3.19.3-031903-generic_3.19.3-031903.201503261036_amd64.deb");
                         commands.add(sudo("dpkg -i linux-headers-3.19.3-*.deb linux-image-3.19.3-*.deb"));
+                    } else if ("aufs".equalsIgnoreCase(storage) || Strings.isBlank(storage)) {
+                        commands.add(installPackage("linux-image-extra-" + kernelVersion));
                     } else {
                         commands.add(sudo("apt-get -y dist-upgrade"));
                     }
@@ -414,12 +417,16 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         newScript(CUSTOMIZING)
                 .body.append(
                         ifExecutableElse0("apt-get", chainGroup(
-                                format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock %s --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem\"' | ", getDockerPort(), getStorageOpts(), getRunDir()) + sudo("tee -a /etc/default/docker"),
+                                format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock %s --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem\"' | ",
+                                                getDockerPort(), getStorageOpts(), getRunDir()) +
+                                        sudo("tee -a /etc/default/docker"),
                                 sudo("groupadd -f docker"),
                                 sudo(format("gpasswd -a %s docker", getMachine().getUser())),
                                 sudo("newgrp docker"))),
                         ifExecutableElse0("yum",
-                                format("echo 'other_args=\"--selinux-enabled -H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock -e lxc %s --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem\"' | ", getDockerPort(), getStorageOpts(), getRunDir()) + sudo("tee -a /etc/sysconfig/docker")))
+                                format("echo 'other_args=\"--selinux-enabled -H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock -e lxc %s --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem\"' | ",
+                                                getDockerPort(), getStorageOpts(), getRunDir()) +
+                                        sudo("tee -a /etc/sysconfig/docker")))
                 .failOnNonZeroResultCode()
                 .execute();
 
