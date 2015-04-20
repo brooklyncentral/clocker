@@ -35,6 +35,7 @@ import java.util.concurrent.Callable;
 import org.jclouds.net.domain.IpPermission;
 import org.jclouds.net.domain.IpProtocol;
 
+import brooklyn.entity.Entity;
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.lifecycle.ScriptHelper;
@@ -86,24 +87,19 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         Map<String, Integer> ports = MutableMap.of();
         ports.put("dockerPort", getDockerPort());
         // Best guess at available ports, as SDN is started _after_ the DockerHost
-        if (DockerUtils.isSdnProvider(entity, "WeaveNetwork")) {
-            Integer weavePort = getEntity()
-                    .getAttribute(DockerHost.DOCKER_INFRASTRUCTURE)
-                    .getAttribute(DockerInfrastructure.SDN_PROVIDER)
-                    .config().get(WeaveNetwork.WEAVE_PORT);
-            if (weavePort != null) ports.put("weavePort", weavePort);
-        }
-        if (DockerUtils.isSdnProvider(entity, "CalicoNetwork")) {
-            PortRange etcdPort = getEntity()
-                    .getAttribute(DockerHost.DOCKER_INFRASTRUCTURE)
-                    .getAttribute(DockerInfrastructure.SDN_PROVIDER)
-                    .config().get(EtcdNode.ETCD_CLIENT_PORT);
-            if (etcdPort != null) ports.put("etcdPort", etcdPort.iterator().next());
-            Integer powerstripPort = getEntity()
-                    .getAttribute(DockerHost.DOCKER_INFRASTRUCTURE)
-                    .getAttribute(DockerInfrastructure.SDN_PROVIDER)
-                    .config().get(CalicoNode.POWERSTRIP_PORT);
-            if (powerstripPort != null) ports.put("powerstripPort", powerstripPort);
+        if (entity.config().get(DockerInfrastructure.SDN_ENABLE)) {
+            Entity sdn = entity.getAttribute(DockerHost.DOCKER_INFRASTRUCTURE)
+                    .getAttribute(DockerInfrastructure.SDN_PROVIDER);
+            if (DockerUtils.isSdnProvider(entity, "WeaveNetwork")) {
+                Integer weavePort = sdn.config().get(WeaveNetwork.WEAVE_PORT);
+                if (weavePort != null) ports.put("weavePort", weavePort);
+            }
+            if (DockerUtils.isSdnProvider(entity, "CalicoNetwork")) {
+                PortRange etcdPort = sdn.config().get(EtcdNode.ETCD_CLIENT_PORT);
+                if (etcdPort != null) ports.put("etcdPort", etcdPort.iterator().next());
+                Integer powerstripPort = sdn.config().get(CalicoNode.POWERSTRIP_PORT);
+                if (powerstripPort != null) ports.put("powerstripPort", powerstripPort);
+            }
         }
         return ports;
     }
@@ -229,7 +225,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
             // TODO check GCE compatibility?
             JcloudsSshMachineLocation location = (JcloudsSshMachineLocation) getLocation();
             JcloudsLocationSecurityGroupCustomizer customizer = JcloudsLocationSecurityGroupCustomizer.getInstance(getEntity().getApplicationId());
-            Collection<IpPermission> permissions = getIpPermissions(customizer);
+            Collection<IpPermission> permissions = getIpPermissions();
             log.debug("Applying custom security groups to {}: {}", location, permissions);
             customizer.addPermissionsToLocation(location, permissions);
         }
@@ -238,18 +234,19 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     /**
      * @return Extra IP permissions to be configured on this entity's location.
      */
-    protected Collection<IpPermission> getIpPermissions(JcloudsLocationSecurityGroupCustomizer customizer) {
+    protected Collection<IpPermission> getIpPermissions() {
+        String localhost = LocalhostExternalIpLoader.getLocalhostIpWithin(Duration.minutes(1));
         IpPermission dockerPort = IpPermission.builder()
                 .ipProtocol(IpProtocol.TCP)
                 .fromPort(getEntity().getAttribute(DockerHost.DOCKER_PORT))
                 .toPort(getEntity().getAttribute(DockerHost.DOCKER_PORT))
-                .cidrBlock(LocalhostExternalIpLoader.getLocalhostIpWithin(Duration.THIRTY_SECONDS) + "/32")
+                .cidrBlock(localhost + "/32")
                 .build();
         IpPermission dockerSslPort = IpPermission.builder()
                 .ipProtocol(IpProtocol.TCP)
                 .fromPort(getEntity().getAttribute(DockerHost.DOCKER_SSL_PORT))
                 .toPort(getEntity().getAttribute(DockerHost.DOCKER_SSL_PORT))
-                .cidrBlock(LocalhostExternalIpLoader.getLocalhostIpWithin(Duration.THIRTY_SECONDS) + "/32")
+                .cidrBlock(localhost + "/32")
                 .build();
         IpPermission dockerPortForwarding = IpPermission.builder()
                 .ipProtocol(IpProtocol.TCP)
@@ -260,7 +257,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         List<IpPermission> permissions = MutableList.of(dockerPort, dockerSslPort, dockerPortForwarding);
 
         if (getEntity().config().get(SdnAttributes.SDN_ENABLE)) {
-            SdnProvider provider = (SdnProvider) (getEntity().getAttribute(DockerHost.DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER));
+            SdnProvider provider = (SdnProvider) (entity.getAttribute(DockerHost.DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER));
             Collection<IpPermission> sdnPermissions = provider.getIpPermissions();
             permissions.addAll(sdnPermissions);
         }
