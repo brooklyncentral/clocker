@@ -50,7 +50,7 @@ import com.google.common.collect.ImmutableList;
 public class CalicoDockerCloud extends AbstractApplication {
 
     @CatalogConfig(label="Docker Version", priority=100)
-    public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_VERSION, "1.5.0");
+    public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_VERSION, "1.6.0");
 
     @CatalogConfig(label="Calico Version", priority=90)
     public static final ConfigKey<String> CALICO_VERSION = ConfigKeys.newStringConfigKey("calico.version", "Calico SDN version", "0.3.2");
