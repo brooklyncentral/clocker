@@ -39,6 +39,7 @@ import brooklyn.event.basic.BasicAttributeSensorAndConfigKey;
 import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.location.basic.PortRanges;
+import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.docker.strategy.affinity.AffinityRules;
 import brooklyn.location.dynamic.LocationOwner;
@@ -148,6 +149,19 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
 
     DockerInfrastructure getInfrastructure();
 
+    // TODO move these to MachineEntity
+
+    /**
+     * Runs a Unix command on the {@link SshMachineLocation machine} and returns the exit status.
+     *
+     * @see MachineEntity#execCommandTimeout(String, Duration)
+     */
+    int execCommandStatusTimeout(String command, Duration timeout);
+
+    /**
+     * @see #execCommandStatusTimeout(String, Duration)
+     */
+    int execCommandStatus(String command);
 
     /**
      * As {@link #getImageNamed(String, String)} and looking for the latest image.

@@ -241,8 +241,8 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .build();
         IpPermission dockerPortForwarding = IpPermission.builder()
                 .ipProtocol(IpProtocol.TCP)
-                .fromPort(49000)
-                .toPort(49900)
+                .fromPort(32768)
+                .toPort(65534)
                 .cidrBlock(Cidr.UNIVERSAL.toString())
                 .build();
         List<IpPermission> permissions = MutableList.of(dockerPort, dockerSslPort, dockerPortForwarding);
@@ -271,38 +271,31 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         if (osDetails.isWindows()) throw new IllegalStateException("Windows operating system not yet supported by Docker");
         log.debug("Installing Docker on {} version {}", osDetails.getName(), osVersion);
 
-        // Run Linux specific kernel upgrades
+        // Generate Linux kernel upgrade commands
         if (osDetails.isLinux()) {
             String kernelVersion = Strings.getFirstWord(((DockerHost) getEntity()).execCommand("uname -r"));
-            List<String> versionParts = Splitter.on(".").splitToList(kernelVersion);
-            int kernelMajor = Integer.valueOf(versionParts.get(0));
-            int kernelMinor = Integer.valueOf(versionParts.get(1));
-            if ((kernelMajor == 3 && kernelMinor >= 18) || kernelMajor > 3) {
-                log.info("Latest kernel {} found, reboot not required", kernelVersion);
-            } else {
-                String storage = entity.config().get(DockerHost.DOCKER_STORAGE_DRIVER);
-                if ("ubuntu".equalsIgnoreCase(osDetails.getName())) {
+            String storage = Strings.toLowerCase(entity.config().get(DockerHost.DOCKER_STORAGE_DRIVER));
+            if (!"devicemapper".equals(storage)) { // No kernel changes needed for devicemapper sadness as a servive
+                int present = ((DockerHost) getEntity()).execCommandStatus("modprobe " + storage);
+                if (present != 0) {
                     List<String> commands = MutableList.of();
-                    if ("overlay".equals(storage)) {
-                        commands.add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19.3-vivid/linux-headers-3.19.3-031903-generic_3.19.3-031903.201503261036_amd64.deb");
-                        commands.add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19.3-vivid/linux-headers-3.19.3-031903_3.19.3-031903.201503261036_all.deb");
-                        commands.add("wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.19.3-vivid/linux-image-3.19.3-031903-generic_3.19.3-031903.201503261036_amd64.deb");
-                        commands.add(sudo("dpkg -i linux-headers-3.19.3-*.deb linux-image-3.19.3-*.deb"));
-                    } else if ("aufs".equalsIgnoreCase(storage) || Strings.isBlank(storage)) {
-                        commands.add(installPackage("linux-image-extra-" + kernelVersion));
-                    } else {
-                        commands.add(sudo("apt-get -y dist-upgrade"));
+                    if ("ubuntu".equalsIgnoreCase(osDetails.getName())) {
+                        commands.add(installPackage("software-properties-common"));
+                        commands.add(sudo("add-apt-repository -y ppa:canonical-kernel-team/ppa"));
+                        if ("overlay".equals(storage) || "btrfs".equals(storage)) {
+                            commands.add(installPackage("linux-{image,headers,image-extra}-3.19.\\*-generic"));
+                        } else if ("aufs".equals(storage) || Strings.isBlank(storage)) { // aufs is default
+                            commands.add(installPackage("linux-image-extra-" + kernelVersion));
+                        } else {
+                            commands.add(installPackage("linux-{image,headers,image-extra}-3.16.\\*-generic"));
+                        }
+                        executeKernelInstallation(commands);
                     }
-                    commands.add(sudo("reboot"));
-                    executeKernelInstallation(commands);
-                }
-                if ("centos".equalsIgnoreCase(osDetails.getName())) {
-                    // TODO differentiate between CentOS 6 and 7 and RHEL
-                    List<String> commands = ImmutableList.<String>builder()
-                            .add(sudo("yum -y --nogpgcheck upgrade kernel"))
-                            .add(sudo("reboot"))
-                            .build();
-                    executeKernelInstallation(commands);
+                    if ("centos".equalsIgnoreCase(osDetails.getName())) {
+                        // TODO differentiate between CentOS 6 and 7 and RHEL
+                        commands.add(sudo("yum -y --nogpgcheck upgrade kernel"));
+                        executeKernelInstallation(commands);
+                    }
                 }
             }
         }
@@ -335,6 +328,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     private void executeKernelInstallation(List<String> commands) {
         newScript(INSTALLING + "kernel")
                 .body.append(commands)
+                .body.append(sudo("reboot"))
                 .execute();
 
         // Wait until the Docker host is SSHable after the reboot
