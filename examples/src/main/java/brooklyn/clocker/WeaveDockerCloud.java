@@ -42,11 +42,11 @@ import brooklyn.util.time.Duration;
 import com.google.common.collect.ImmutableList;
 
 /**
- * Brooklyn managed Docker cloud infrastructure.
+ * Brooklyn managed Docker cloud infrastructure with {@link WeaveNetwork}.
  */
 @Catalog(name="Clocker with Weave",
         description="Docker Cloud infrastructure with Weave networking",
-        iconUrl="classpath://docker-top-logo.png")
+        iconUrl="classpath://docker-logo.png")
 public class WeaveDockerCloud extends AbstractApplication {
 
     @CatalogConfig(label="Docker Version", priority=100)

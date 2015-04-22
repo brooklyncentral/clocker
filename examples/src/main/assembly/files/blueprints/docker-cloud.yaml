@@ -46,9 +46,5 @@ services:
             minRam: 7g
             stopIptables: true
           start.timeout: 15m
-          docker.host.nameFormat: "docker-host-%2$d"
-          docker.container.spec:
-            $brooklyn:entitySpec:
-              type: brooklyn.entity.container.docker.DockerContainer
-              brooklyn.config:
-                docker.container.nameFormat: "container-%2$02x"
+          docker.host.nameFormat: "docker-%2$d"
+          docker.container.nameFormat: "container-%2$02x"
