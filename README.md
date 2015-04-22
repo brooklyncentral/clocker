@@ -1,45 +1,52 @@
 Clocker
 =======
 
-Clocker creates and manages a [Docker](http://docker.io/) cloud infrastructure. Clocker support 
+Clocker creates and manages a **[Docker](http://docker.io/)** cloud infrastructure. Clocker supports
 single-click deployment and runtime management of multi-node applications that can run on
-containers distributed across multiple hosts, using the [Weave](http://github.com/zettio/weave/) SDN.
-Application blueprints written for [Brooklyn](https://brooklyn.incubator.apache.org/) can thus
-be deployed to a distributed Docker Cloud Infrastructure.
+containers distributed across multiple hosts. Plugins are included for both
+**[Project Calico](https://github.com/Metaswitch/calico-docker)** and **[Weave](http://github.com/zettio/weave/)**
+to provide seamless Software-Defined Networking integration. Application blueprints written for
+**[Apache Brooklyn](https://brooklyn.incubator.apache.org/)** can thus be deployed to a distributed
+Docker Cloud infrastructure.
 
-This repository contains the required Brooklyn entities, locations and examples.
+This repository contains all of the required Brooklyn entities, locations and examples.
 
 [![Build Status](https://api.travis-ci.org/brooklyncentral/clocker.svg?branch=master)](https://travis-ci.org/brooklyncentral/clocker)
-[![Latest Builds](http://img.shields.io/badge/version-0.8.0--SNAPSHOT-blue.svg?style=flat)](http://clocker-latest.s3-website-eu-west-1.amazonaws.com/)
+[![Latest Builds](http://img.shields.io/badge/version-0.9.0--SNAPSHOT-blue.svg?style=flat)](http://clocker-latest.s3-website-eu-west-1.amazonaws.com/)
 [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/brooklyncentral/clocker)
 
 ## Getting started
 
-To get started, you just have to download Clocker, deploy the _Docker Cloud_ blueprint to the 
-cloud or machines of your choice, and then use Clocker to deploy your applications. This will 
-automatically create the required Docker containers.
+To get started, you just have to download the Clocker distribution archive, deploy one of the
+**Docker Cloud** blueprints to the cloud or machines of your choice, and then use Clocker to
+deploy your applications. This will automatically create the required Docker containers.
 
 You can create a Docker based cloud infrastructure on your favourite cloud provider or on a 
 private cloud using any of the jclouds supported APIs. Alternatively you can target one or 
 more existing machines for running Docker.
 
-If you are keen to peek under the covers, you can find the Docker cloud infrastructure blueprint at 
-[docker-cloud.yaml](https://raw.githubusercontent.com/brooklyncentral/clocker/master/examples/src/main/assembly/files/blueprints/docker-cloud.yaml). 
+If you are keen to peek under the covers, you will find the Docker Cloud infrastructure
+blueprints at either
+[docker-cloud-weave.yaml](https://raw.githubusercontent.com/brooklyncentral/clocker/master/examples/src/main/assembly/files/blueprints/docker-cloud-weave.yaml) or
+[docker-cloud-calico.yaml](https://raw.githubusercontent.com/brooklyncentral/clocker/master/examples/src/main/assembly/files/blueprints/docker-cloud-calico.yaml) depending on your choice of SDN provider. 
 
 ### Using the latest Clocker release
 
-The latest version of Clocker is [0.8.0](https://github.com/brooklyncentral/clocker/releases/tag/v0.8.0).
-You can deploy your own *Docker Cloud* by running these commands:
+The latest version of Clocker is [0.8.1](https://github.com/brooklyncentral/clocker/releases/tag/v0.8.1).
+You can deploy your own **Docker Cloud** with a Weave SDN by running these commands, to use
+Project Calico as your SDN provider, change the last command to `./bin/calico.sh` instead:
 ```Bash
 % wget --no-check-certificate --quiet \
-    -O brooklyn-clocker-dist.tar.gz http://git.io/vvVSn
+    -O brooklyn-clocker-dist.tar.gz http://git.io/vfCE8
 % tar zxf brooklyn-clocker-dist.tar.gz
 % cd brooklyn-clocker
 % ./bin/clocker.sh location
 ```
-Where _location_ specifies the destination to deploy to. For example this can be a jclouds provider
-like _jclouds:softlayer:sjc01_, a group of machines _byon:(hosts="10.1.2.3,10.1.2.4")_ or a named
-location from your `brooklyn.properties` file.
+The _location_ argument specifies the destination to deploy to.
+
+For example, you can specify the jclouds provider for SoftLayer in San Jose by using
+_jclouds:softlayer:sjc01_, a group of machines as _byon:(hosts="10.1.2.3,10.1.2.4")_ or a specific
+location from your `brooklyn.properties` file as _named:alias_.
 
 For all cloud locations you must first configure the `~/.brooklyn/brooklyn.properties` file with any
 necessary credentials and security details, and select an SSH key (defaulting to `~/.ssh/id_rsa`).
@@ -69,14 +76,14 @@ The Brooklyn web-console, which will be deploying and managing your Docker Cloud
 A preview of the new Clocker web-console, which shows a summary of the deployed Docker Clouds, is also available on the
 same server, at [http://localhost:8081/clocker/](http://localhost:8081/clocker/).
 
-Once the `DockerCloud`  application has started, a new location named `my-docker-cloud` will be
+Once the Docker Cloud application has started, a new location named `my-docker-cloud` will be
 available in the Locations drop-down list when adding new applications. Simply start a new application in this location
 and it will use Docker containers instead of virtual machines.
 
 For more information on deploying applications from the Brooklyn catalog, see
 [Getting Started - Policies and Catalogs](https://brooklyn.incubator.apache.org/quickstart/policies-and-catalogs.html).
-You can also paste a YAML blueprint into the _YAML_ tab of the _Add Application_ dialog, as follows:
 
+You can also paste a YAML blueprint into the _YAML_ tab of the _Add Application_ dialog, as follows:
 ```JS
 location: my-docker-cloud
 services:
@@ -86,10 +93,21 @@ services:
     - "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/hello-world.war"
 ```
 
+A blueprint for an application using a Docker image would look like this:
+```JS
+location: my-docker-cloud
+services:
+- type: docker:redis:2.8.19
+  openPorts:
+  - 6379
+  directPorts:
+  - 6379
+```
+
 ### Building from source
 
 <!-- CLOCKER_VERSION_BELOW -->
-The master branch of Clocker is at version [0.8.0-SNAPSHOT](http://github.com/brooklyncentral/clocker/).
+The master branch of Clocker is at version [0.9.0-SNAPSHOT](http://github.com/brooklyncentral/clocker/).
 Build and run this version of Clocker from source as follows:
 
 ```Bash
