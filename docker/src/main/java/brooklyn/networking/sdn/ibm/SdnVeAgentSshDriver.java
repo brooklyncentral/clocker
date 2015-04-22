@@ -282,12 +282,12 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     @Override
-    public void createSubnet(String subnetId, String subnetName, Cidr subnetCidr) {
+    public void createSubnet(String virtualNetworkId, String subnetId, Cidr subnetCidr) {
         Tasks.setBlockingDetails("Creating " + subnetId);
         try {
             InetAddress gatewayIp = subnetCidr.addressAtOffset(1);
 
-            createSubnet(subnetId, subnetName, gatewayIp, subnetCidr);
+            createSubnet(virtualNetworkId, subnetId, gatewayIp, subnetCidr);
         } finally {
             Tasks.resetBlockingDetails();
         }

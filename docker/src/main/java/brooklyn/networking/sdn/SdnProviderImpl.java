@@ -214,13 +214,13 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
     public void start(Collection<? extends Location> locations) {
         setAttribute(SERVICE_UP, Boolean.FALSE);
 
-        addHostTrackerPolicy();
-
         // Add ouserlves as an extension to the Docker location
         DockerInfrastructure infrastructure = (DockerInfrastructure) config().get(DOCKER_INFRASTRUCTURE);
         infrastructure.getDynamicLocation().addExtension(NetworkProvisioningExtension.class, this);
 
         super.start(locations);
+
+        addHostTrackerPolicy();
 
         setAttribute(SERVICE_UP, Boolean.TRUE);
     }

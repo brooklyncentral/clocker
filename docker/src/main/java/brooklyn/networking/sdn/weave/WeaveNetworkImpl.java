@@ -48,21 +48,20 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
         EntitySpec<?> agentSpec = EntitySpec.create(getConfig(SdnProvider.SDN_AGENT_SPEC, EntitySpec.create(WeaveContainer.class)))
                 .configure(WeaveContainer.WEAVE_PORT, config().get(WeaveNetwork.WEAVE_PORT))
                 .configure(WeaveContainer.SDN_PROVIDER, this);
-        String weaveVersion = getConfig(WEAVE_VERSION);
+        String weaveVersion = config().get(WEAVE_VERSION);
         if (Strings.isNonBlank(weaveVersion)) {
             agentSpec.configure(SoftwareProcess.SUGGESTED_VERSION, weaveVersion);
         }
-
         setAttribute(SdnProvider.SDN_AGENT_SPEC, agentSpec);
 
         Cidr weaveCidr = getNextSubnetCidr();
-        setConfig(AGENT_CIDR,  weaveCidr);
+        config().set(AGENT_CIDR, weaveCidr);
     }
 
     @Override
     public Collection<IpPermission> getIpPermissions() {
         Collection<IpPermission> permissions = MutableList.of();
-        Integer weavePort = getConfig(WeaveContainer.WEAVE_PORT);
+        Integer weavePort = config().get(WeaveContainer.WEAVE_PORT);
         IpPermission weaveTcpPort = IpPermission.builder()
                 .ipProtocol(IpProtocol.TCP)
                 .fromPort(weavePort)
@@ -89,20 +88,20 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
         Entities.manage(agent);
         getAgents().addMember(agent);
         agent.start(ImmutableList.of(machine));
-        if (LOG.isDebugEnabled()) LOG.debug("{} added weave service {}", this, agent);
+        LOG.debug("{} added Weave service {}", this, agent);
     }
 
     @Override
     public void removeHost(DockerHost host) {
         SdnAgent agent = host.getAttribute(SdnAgent.SDN_AGENT);
         if (agent == null) {
-            LOG.warn("{} cannot find weave service: {}", this, host);
+            LOG.warn("{} cannot find Weave service: {}", this, host);
             return;
         }
         agent.stop();
         getAgents().removeMember(agent);
         Entities.unmanage(agent);
-        if (LOG.isDebugEnabled()) LOG.debug("{} removed weave service {}", this, agent);
+        LOG.debug("{} removed Weave service {}", this, agent);
     }
 
 }

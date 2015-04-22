@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-id: docker-cloud
-name: "Docker Cloud"
+id: docker-cloud-calico
+name: "Docker Cloud with Project Calico"
 origin: https://github.com/brooklyncentral/clocker/
 
 services:
@@ -23,32 +23,41 @@ services:
     docker.version: 1.6.0
     docker.tls.certificate: conf/server-cert.pem
     docker.tls.key: conf/server-key.pem
-    docker.host.cluster.initial.size: 2
+    docker.host.cluster.initial.size: 3
     docker.container.cluster.headroom.count: 4
     docker.policy.ha.enable: false
     docker.container.strategies:
     - $brooklyn:object:
         type: brooklyn.location.docker.strategy.MaxContainersPlacementStrategy
         brooklyn.config:
-          maxContainers: 8
+          maxContainers: 12
     - $brooklyn:object:
         type: brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy
-    - $brooklyn:object:
-        type: brooklyn.location.docker.strategy.MaxCpuUsagePlacementStrategy
+    sdn.enable: true
+    sdn.debug: true
+    sdn.provider.spec:
+      $brooklyn:entitySpec:
+        type: brooklyn.networking.sdn.calico.CalicoNetwork
         brooklyn.config:
-          maxCpuUsage: 0.75
-    sdn.enable: false
+          calico.version: 0.3.2
+          etcd.version: 2.0.5
+          sdn.network.cidr: 50.0.0.0/16
+          sdn.network.size: 24
     docker.host.spec:
       $brooklyn:entitySpec:
         type: brooklyn.entity.container.docker.DockerHost
         brooklyn.config:
+          docker.host.driver.storage: overlay
           docker.host.flags:
             minRam: 7g
+            minCores: 2
             stopIptables: true
+            osFamily: ubuntu
+            osVersionRegex: 14.04
           start.timeout: 15m
           docker.host.nameFormat: "docker-host-%2$d"
           docker.container.spec:
             $brooklyn:entitySpec:
               type: brooklyn.entity.container.docker.DockerContainer
               brooklyn.config:
-                docker.container.nameFormat: "container-%2$02x"
+                docker.container.nameFormat: "calico-%2$02x"

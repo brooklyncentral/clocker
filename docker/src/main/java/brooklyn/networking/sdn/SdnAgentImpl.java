@@ -154,10 +154,6 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
         InetAddress address = getDriver().attachNetwork(containerId, networkId);
         LOG.info("Attached container ID {} to {}: {}", new Object[] { containerId, networkId,  address.getHostAddress() });
 
-        Multimap<String, InetAddress> addresses = provider.getAttribute(SdnProvider.CONTAINER_ADDRESSES);
-        addresses.put(containerId, address);
-        ((EntityLocal) provider).setAttribute(SdnProvider.CONTAINER_ADDRESSES, addresses);
-
         // Rescan SDN network groups for containers
         DynamicGroup network = (DynamicGroup) Iterables.find(provider.getAttribute(SdnProvider.SDN_APPLICATIONS).getMembers(),
                 EntityPredicates.attributeEqualTo(VirtualNetwork.NETWORK_ID, networkId));

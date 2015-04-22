@@ -490,7 +490,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                     .configure(flags)
                     .configure(DynamicLocation.OWNER, this)
                     .configure("machine", container) // the underlying JcloudsLocation
-                    .configure(container.getAllConfig(true))
+                    .configure(container.config().getBag().getAllConfig())
                     .configureIfNotNull(SshMachineLocation.SSH_HOST, getSshHostAddress())
                     .displayName(getDockerContainerName());
             DockerContainerLocation location = getManagementContext().getLocationManager().createLocation(spec);

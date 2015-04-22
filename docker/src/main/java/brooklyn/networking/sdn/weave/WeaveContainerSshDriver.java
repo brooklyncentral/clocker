@@ -111,7 +111,7 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
     }
 
     @Override
-    public void createSubnet(String subnetId, String subnetName, Cidr subnetCidr) {
+    public void createSubnet(String svirtualNetworkId, String subnetId, Cidr subnetCidr) {
         LOG.debug("Nothing to do for Weave subnet creation");
     }
 

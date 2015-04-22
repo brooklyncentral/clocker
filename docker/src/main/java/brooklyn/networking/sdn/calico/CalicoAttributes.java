@@ -13,26 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.networking.sdn.weave;
+package brooklyn.networking.sdn.calico;
 
-import brooklyn.catalog.Catalog;
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.entity.proxying.ImplementedBy;
-import brooklyn.networking.sdn.SdnProvider;
-import brooklyn.util.flags.SetFromFlag;
 
 /**
- * A collection of machines running Weave.
+ * Calico networking configuration and attributes.
  */
-@Catalog(name = "Weave Infrastructure", description = "Weave SDN")
-@ImplementedBy(WeaveNetworkImpl.class)
-public interface WeaveNetwork extends SdnProvider {
+public class CalicoAttributes {
 
-    @SetFromFlag("version")
-    ConfigKey<String> WEAVE_VERSION = ConfigKeys.newStringConfigKey("weave.version", "The Weave SDN version number", "0.9.0");
-
-    @SetFromFlag("weavePort")
-    ConfigKey<Integer> WEAVE_PORT = WeaveContainer.WEAVE_PORT;
+    public static final ConfigKey<String> SECURITY_GROUP = ConfigKeys.newStringConfigKey("sdn.calico.securityGroup", "The Calico security group name");
 
 }
