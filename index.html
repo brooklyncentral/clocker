@@ -99,8 +99,8 @@ brooklyn.location.named.Amazon\ Ireland = jclouds:aws-ec2:eu-west-1
 </code></pre>
 
 <p>For more information on setting up locations, including supplying cloud provider credentials, see the
-<a href="https://brooklyn.incubator.apache.org/quickstart/#configuring-a-location"><em>Setting up Locations</em> section of Brooklyn Getting Started</a>,
-and the more detailed <a href="https://brooklyn.incubator.apache.org/v/0.7.0-M2/use/guide/locations/index.html">locations guide</a>.</p>
+<a href="https://brooklyn.incubator.apache.org/v/latest/yaml/setting-locations.html"><em>Setting Locations</em></a> section of the Brooklyn user guide.
+For a more in-depth look, see <a href="https://brooklyn.incubator.apache.org/v/latest/ops/locations/index.html"><em>Locations</em></a>.</p>
 
 <p>The Brooklyn web-console, which will be deploying and managing your Docker Cloud, can be accessed at 
 <a href="http://localhost:8081">http://localhost:8081</a> - this URL will have been written to standard out during startup.</p>
@@ -110,8 +110,8 @@ available in the <em>Locations</em> drop-down list when adding new applications.
 and it will use Docker containers instead of virtual machines.</p>
 
 <p>For more information on deploying applications from the Brooklyn catalog, see
-<a href="https://brooklyn.incubator.apache.org/quickstart/policies-and-catalogs.html">Getting Started - Policies and Catalogs</a>.
-You can also paste a YAML blueprint into the <em>YAML</em> tab of the <em>Add Application</em> dialog, as follows:</p>
+<a href="https://brooklyn.incubator.apache.org/v/latest/start/blueprints.html#launching-from-the-catalog"><em>Launching from the Catalog</em></a>
+in the Brooklyn user guide. You can also paste a YAML blueprint into the <em>YAML</em> tab of the <em>Add Application</em> dialog, as follows:</p>
 
 <div class="highlight highlight-Yaml"><pre><span class="l-Scalar-Plain">location</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">my-docker-cloud</span>
 <span class="l-Scalar-Plain">services</span><span class="p-Indicator">:</span>
