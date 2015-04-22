@@ -81,6 +81,7 @@ public class EtcdClusterImpl extends DynamicClusterImpl implements EtcdCluster {
                 EntityPredicates.attributeEqualTo(EtcdNode.ETCD_NODE_HAS_JOINED_CLUSTER, true),
                 EntityPredicates.attributeEqualTo(Startable.SERVICE_UP, true)));
         if (config().get(Cluster.INITIAL_SIZE) == 0 || anyNode.isPresent()) {
+            setAttribute(Startable.SERVICE_UP, true);
             ServiceStateLogic.setExpectedState(this, Lifecycle.RUNNING);
         } else {
             log.warn("No Etcd nodes are found on the cluster: {}. Initialization Failed", getId());
