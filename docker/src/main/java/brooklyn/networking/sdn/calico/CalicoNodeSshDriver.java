@@ -18,9 +18,11 @@ import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityLocal;
+import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.nosql.etcd.EtcdNode;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.networking.sdn.SdnAgent;
+import brooklyn.util.collections.MutableList;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.os.Os;
@@ -95,7 +97,7 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     @Override
-    public void createSubnet(String subnetId, String subnetName, Cidr subnetCidr) {
+    public void createSubnet(String virtualNetworkId, String subnetId, Cidr subnetCidr) {
         newScript("createSubnet")
                 .body.append(
                         sudo(String.format("%s profile add %s", getCalicoCommand(), subnetId)),
@@ -103,27 +105,45 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .execute();
     }
 
+    /** For Calico we use profiles to group containers in networks and add the required IP address to the eth1 calico interface. */
     @Override
     public InetAddress attachNetwork(String containerId, String subnetId) {
         InetAddress address = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getNextContainerAddress(subnetId);
 
-        newScript("attachNetwork")
-                .body.append(
-                        sudo(String.format("%s profile %s member add %s", getCalicoCommand(), subnetId, containerId)),
-                        sudo(String.format("%s container add %s %s", getCalicoCommand(), containerId, address.getHostAddress())))
-                .execute();
-
+        // Run some commands to get information about the container network namespace
         String ipAddrOutput = getEntity().getAttribute(SdnAgent.DOCKER_HOST).execCommand(sudo("ip addr show dev docker0 scope global label docker0"));
         String dockerIp = Strings.getFirstWordAfter(ipAddrOutput.replace('/', ' '), "inet");
         String dockerPid = Strings.trimEnd(getEntity().getAttribute(SdnAgent.DOCKER_HOST).runDockerCommand("inspect -f '{{.State.Pid}}' " + containerId));
         Cidr subnetCidr = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getSubnetCidr(subnetId);
         InetAddress agentAddress = getEntity().getAttribute(SdnAgent.SDN_AGENT_ADDRESS);
 
-        newScript("setupRouting")
-                .body.append(
-                        sudo(String.format("ip netns exec %s ip route del default", dockerPid)),
-                        sudo(String.format("ip netns exec %s ip route add default via %s", dockerPid, dockerIp)),
-                        sudo(String.format("ip netns exec %s ip route add %s via %s", dockerPid, subnetCidr.toString(), agentAddress.getHostAddress())))
+        // Determine whether we are attatching the container to the initial application network
+        boolean initial = false;
+        for (Entity container : getEntity().getAttribute(SdnAgent.DOCKER_HOST).getDockerContainerList()) {
+            if (containerId.equals(container.getAttribute(DockerContainer.CONTAINER_ID))) {
+                Entity running = container.getAttribute(DockerContainer.ENTITY);
+                String applicationId = running.getApplicationId();
+                if (subnetId.equals(applicationId)) {
+                    initial = true;
+                }
+                break;
+            }
+        }
+
+        // Add the container to the profile and set up the network
+        List<String> commands = MutableList.of();
+        if (initial) {
+            commands.add(sudo(String.format("%s container add %s %s", getCalicoCommand(), containerId, address.getHostAddress())));
+            commands.add(sudo(String.format("ip netns exec %s ip route del default", dockerPid)));
+            commands.add(sudo(String.format("ip netns exec %s ip route add default via %s", dockerPid, dockerIp)));
+        } else {
+            commands.add(sudo(String.format("ip netns exec %s ip addr add %s/%d dev eth1", dockerPid, address.getHostAddress(), subnetCidr.getLength())));
+        }
+        commands.add(sudo(String.format("%s profile %s member add %s", getCalicoCommand(), subnetId, containerId)));
+        commands.add(sudo(String.format("ip netns exec %s ip route add %s via %s", dockerPid, subnetCidr.toString(), agentAddress.getHostAddress())));
+
+        newScript("attachNetwork")
+                .body.append(commands)
                 .execute();
 
         return address;
