@@ -18,6 +18,8 @@ package brooklyn.networking.sdn.calico;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.config.render.RendererHints;
+import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.event.feed.ConfigToAttributes;
 import brooklyn.networking.sdn.SdnAgentImpl;
@@ -38,6 +40,10 @@ public class CalicoNodeImpl extends SdnAgentImpl implements CalicoNode {
     @Override
     public Class getDriverInterface() {
         return CalicoNodeDriver.class;
+    }
+
+    static {
+        RendererHints.register(ETCD_NODE, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }

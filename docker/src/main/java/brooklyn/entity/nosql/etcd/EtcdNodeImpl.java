@@ -23,7 +23,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.config.render.RendererHints;
 import brooklyn.entity.Entity;
+import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.SoftwareProcessImpl;
 import brooklyn.util.text.Strings;
 
@@ -89,6 +91,10 @@ public class EtcdNodeImpl extends SoftwareProcessImpl implements EtcdNode {
     @Override
     public boolean hasJoinedCluster() {
         return Boolean.TRUE.equals(getAttribute(EtcdNode.ETCD_NODE_HAS_JOINED_CLUSTER));
+    }
+
+    static {
+        RendererHints.register(ETCD_CLUSTER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }

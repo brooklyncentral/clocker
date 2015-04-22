@@ -18,21 +18,19 @@ package brooklyn.networking.sdn.calico;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collection;
-import java.util.Map;
 
 import org.jclouds.net.domain.IpPermission;
 import org.jclouds.net.domain.IpProtocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import brooklyn.config.render.RendererHints;
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Attributes;
+import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
-import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.basic.SoftwareProcess;
-import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.DockerHost;
-import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.nosql.etcd.EtcdCluster;
@@ -40,10 +38,8 @@ import brooklyn.entity.nosql.etcd.EtcdNode;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.networking.sdn.SdnAgent;
-import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.networking.sdn.SdnProviderImpl;
-import brooklyn.networking.sdn.weave.WeaveContainer;
 import brooklyn.util.collections.MutableList;
 import brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import brooklyn.util.exceptions.Exceptions;
@@ -160,6 +156,10 @@ public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork 
         getAgents().removeMember(agent);
         Entities.unmanage(agent);
         if (LOG.isDebugEnabled()) LOG.debug("{} removed calico plugin {}", this, agent);
+    }
+
+    static {
+        RendererHints.register(ETCD_CLUSTER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }
