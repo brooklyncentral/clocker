@@ -21,10 +21,14 @@ services:
 - type: brooklyn.entity.container.docker.DockerInfrastructure
   brooklyn.config:
     entity.dynamicLocation.name: "docker-localhost"
-    docker.version: 1.5.0
+    docker.version: 1.6.0
     docker.tls.certificate: conf/server-cert.pem
-    docker.tls.certificate: conf/server-key.pem
-    docker.host.initial.size: 1
+    docker.tls.key: conf/server-key.pem
+    docker.host.cluster.initial.size: 1
+    docker.container.cluster.headroom.count: 0
     sdn.enable: false
-    install.skip: false
+    install.skip: true
+    docker.container.strategies:
+    - $brooklyn:object:
+        type: brooklyn.location.docker.strategy.DepthFirstPlacementStrategy
     docker.container.nameFormat: "container-%2$02x"

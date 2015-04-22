@@ -55,7 +55,7 @@ services:
             osFamily: ubuntu
             osVersionRegex: 14.04
           start.timeout: 15m
-          docker.host.nameFormat: "docker-host-%2$d"
+          docker.host.nameFormat: "docker-%2$d"
           docker.container.spec:
             $brooklyn:entitySpec:
               type: brooklyn.entity.container.docker.DockerContainer

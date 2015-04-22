@@ -29,7 +29,7 @@ import brooklyn.entity.proxying.EntitySpec;
  */
 @Catalog(name="Local Clocker",
         description="Local Docker infrastructure",
-        iconUrl="classpath://docker-top-logo.png")
+        iconUrl="classpath://docker-logo.png")
 public class LocalDocker extends AbstractApplication {
 
     @CatalogConfig(label="Docker Version", priority=90)

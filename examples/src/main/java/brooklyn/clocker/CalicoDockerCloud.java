@@ -42,11 +42,11 @@ import brooklyn.util.time.Duration;
 import com.google.common.collect.ImmutableList;
 
 /**
- * Brooklyn managed Docker cloud infrastructure.
+ * Brooklyn managed Docker cloud infrastructure with {@link CalicoNetwork}.
  */
-@Catalog(name="Clocker",
+@Catalog(name="Clocker with Calico",
         description="Docker Cloud infrastructure with Calico networking",
-        iconUrl="classpath://docker-top-logo.png")
+        iconUrl="classpath://calico-logo.png")
 public class CalicoDockerCloud extends AbstractApplication {
 
     @CatalogConfig(label="Docker Version", priority=100)

@@ -53,7 +53,7 @@ import com.google.common.reflect.TypeToken;
  */
 @Catalog(name = "Docker Infrastructure",
         description = "Docker is an open-source engine to easily create lightweight, portable, self-sufficient containers from any application.",
-        iconUrl = "classpath:///docker-top-logo.png")
+        iconUrl = "classpath:///docker-logo.png")
 @ImplementedBy(DockerInfrastructureImpl.class)
 public interface DockerInfrastructure extends BasicStartable, Resizable, LocationOwner<DockerLocation, DockerInfrastructure> {
 

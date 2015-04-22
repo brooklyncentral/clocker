@@ -23,10 +23,9 @@ services:
     entity.dynamicLocation.name: "my-docker-cloud"
     docker.version: 1.6.0
     docker.tls.certificate: conf/server-cert.pem
-    docker.tls.certificate: conf/server-key.pem
+    docker.tls.key: conf/server-key.pem
     docker.host.cluster.initial.size: 1
-    docker.host.register: false
-    docker.container.cluster.headroom.count: 0
+    docker.container.cluster.headroom.count: 8
     sdn.enable: false
     docker.policy.ha.enable: false
     docker.container.strategies:
@@ -35,19 +34,6 @@ services:
         brooklyn.config:
           maxContainers: 32
     - $brooklyn:object:
-        type: brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy
-    docker.host.spec:
-      $brooklyn:entitySpec:
-        type: brooklyn.entity.container.docker.DockerHost
-        brooklyn.config:
-          docker.host.flags:
-            minRam: 7g
-            minCores: 4
-            stopIptables: true
-          start.timeout: 15m
-          docker.host.nameFormat: "docker-host-%2$d"
-          docker.container.spec:
-            $brooklyn:entitySpec:
-              type: brooklyn.entity.container.docker.DockerContainer
-              brooklyn.config:
-                docker.container.nameFormat: "container-%2$02x"
+        type: brooklyn.location.docker.strategy.DepthFirstPlacementStrategy
+    docker.host.nameFormat: "docker-%2$d"
+    docker.container.nameFormat: "container-%2$02x"
