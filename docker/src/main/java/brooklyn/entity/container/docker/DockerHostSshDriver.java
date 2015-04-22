@@ -32,16 +32,18 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
-import org.eclipse.jetty.util.log.Log;
 import org.jclouds.net.domain.IpPermission;
 import org.jclouds.net.domain.IpProtocol;
 
+import brooklyn.entity.Entity;
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.lifecycle.ScriptHelper;
 import brooklyn.entity.container.DockerUtils;
+import brooklyn.entity.nosql.etcd.EtcdNode;
 import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.location.OsDetails;
+import brooklyn.location.PortRange;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.geo.LocalhostExternalIpLoader;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
@@ -49,6 +51,7 @@ import brooklyn.location.jclouds.networking.JcloudsLocationSecurityGroupCustomiz
 import brooklyn.management.Task;
 import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.networking.sdn.SdnProvider;
+import brooklyn.networking.sdn.calico.CalicoNode;
 import brooklyn.networking.sdn.weave.WeaveNetwork;
 import brooklyn.util.collections.MutableList;
 import brooklyn.util.collections.MutableMap;
@@ -59,7 +62,6 @@ import brooklyn.util.net.Networking;
 import brooklyn.util.net.Urls;
 import brooklyn.util.os.Os;
 import brooklyn.util.repeat.Repeater;
-import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.task.DynamicTasks;
 import brooklyn.util.task.TaskBuilder;
 import brooklyn.util.task.system.ProcessTaskWrapper;
@@ -84,14 +86,20 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     protected Map<String, Integer> getPortMap() {
         Map<String, Integer> ports = MutableMap.of();
         ports.put("dockerPort", getDockerPort());
-        if (getEntity().getConfig(SdnAttributes.SDN_ENABLE)) {
-            // XXX make generic
-            // Best guess at available port, as Weave is started _after_ the DockerHost
-            Integer weavePort = getEntity()
-                    .getAttribute(DockerHost.DOCKER_INFRASTRUCTURE)
-                    .getAttribute(DockerInfrastructure.SDN_PROVIDER)
-                    .getConfig(WeaveNetwork.WEAVE_PORT);
-            if (weavePort != null) ports.put("weavePort", weavePort);
+        // Best guess at available ports, as SDN is started _after_ the DockerHost
+        if (entity.config().get(DockerInfrastructure.SDN_ENABLE)) {
+            Entity sdn = entity.getAttribute(DockerHost.DOCKER_INFRASTRUCTURE)
+                    .getAttribute(DockerInfrastructure.SDN_PROVIDER);
+            if (DockerUtils.isSdnProvider(entity, "WeaveNetwork")) {
+                Integer weavePort = sdn.config().get(WeaveNetwork.WEAVE_PORT);
+                if (weavePort != null) ports.put("weavePort", weavePort);
+            }
+            if (DockerUtils.isSdnProvider(entity, "CalicoNetwork")) {
+                PortRange etcdPort = sdn.config().get(EtcdNode.ETCD_CLIENT_PORT);
+                if (etcdPort != null) ports.put("etcdPort", etcdPort.iterator().next());
+                Integer powerstripPort = sdn.config().get(CalicoNode.POWERSTRIP_PORT);
+                if (powerstripPort != null) ports.put("powerstripPort", powerstripPort);
+            }
         }
         return ports;
     }
@@ -217,7 +225,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
             // TODO check GCE compatibility?
             JcloudsSshMachineLocation location = (JcloudsSshMachineLocation) getLocation();
             JcloudsLocationSecurityGroupCustomizer customizer = JcloudsLocationSecurityGroupCustomizer.getInstance(getEntity().getApplicationId());
-            Collection<IpPermission> permissions = getIpPermissions(customizer);
+            Collection<IpPermission> permissions = getIpPermissions();
             log.debug("Applying custom security groups to {}: {}", location, permissions);
             customizer.addPermissionsToLocation(location, permissions);
         }
@@ -226,18 +234,19 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     /**
      * @return Extra IP permissions to be configured on this entity's location.
      */
-    protected Collection<IpPermission> getIpPermissions(JcloudsLocationSecurityGroupCustomizer customizer) {
+    protected Collection<IpPermission> getIpPermissions() {
+        String localhost = LocalhostExternalIpLoader.getLocalhostIpWithin(Duration.minutes(1));
         IpPermission dockerPort = IpPermission.builder()
                 .ipProtocol(IpProtocol.TCP)
                 .fromPort(getEntity().getAttribute(DockerHost.DOCKER_PORT))
                 .toPort(getEntity().getAttribute(DockerHost.DOCKER_PORT))
-                .cidrBlock(LocalhostExternalIpLoader.getLocalhostIpWithin(Duration.THIRTY_SECONDS) + "/32")
+                .cidrBlock(localhost + "/32")
                 .build();
         IpPermission dockerSslPort = IpPermission.builder()
                 .ipProtocol(IpProtocol.TCP)
                 .fromPort(getEntity().getAttribute(DockerHost.DOCKER_SSL_PORT))
                 .toPort(getEntity().getAttribute(DockerHost.DOCKER_SSL_PORT))
-                .cidrBlock(LocalhostExternalIpLoader.getLocalhostIpWithin(Duration.THIRTY_SECONDS) + "/32")
+                .cidrBlock(localhost + "/32")
                 .build();
         IpPermission dockerPortForwarding = IpPermission.builder()
                 .ipProtocol(IpProtocol.TCP)
@@ -248,7 +257,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         List<IpPermission> permissions = MutableList.of(dockerPort, dockerSslPort, dockerPortForwarding);
 
         if (getEntity().config().get(SdnAttributes.SDN_ENABLE)) {
-            SdnProvider provider = (SdnProvider) (getEntity().getAttribute(DockerHost.DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER));
+            SdnProvider provider = (SdnProvider) (entity.getAttribute(DockerHost.DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER));
             Collection<IpPermission> sdnPermissions = provider.getIpPermissions();
             permissions.addAll(sdnPermissions);
         }

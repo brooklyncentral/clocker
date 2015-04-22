@@ -24,6 +24,10 @@
         <description>Docker Cloud infrastructure with Weave networking</description>
         <iconUrl>classpath://docker-top-logo.png</iconUrl>
     </template>
+    <template type="brooklyn.clocker.CalicoDockerCloud" name="Clocker with Calico">
+        <description>Docker Cloud infrastructure with Calico networking</description>
+        <iconUrl>classpath://docker-top-logo.png</iconUrl>
+    </template>
     <template type="brooklyn.clocker.LocalDocker" name="Local Clocker">
         <description>Local Docker infrastructure</description>
         <iconUrl>classpath://docker-top-logo.png</iconUrl>

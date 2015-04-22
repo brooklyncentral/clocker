@@ -70,6 +70,7 @@ import brooklyn.management.LocationManager;
 import brooklyn.networking.portforwarding.DockerPortForwarder;
 import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnAttributes;
+import brooklyn.networking.sdn.calico.CalicoNode;
 import brooklyn.networking.sdn.ibm.SdnVeNetwork;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.networking.subnet.SubnetTierImpl;
@@ -115,8 +116,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         LOG.info("Starting Docker host id {}", getId());
         super.init();
 
-        AtomicInteger counter = getConfig(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.DOCKER_HOST_COUNTER);
-        String dockerHostName = String.format(getConfig(DockerHost.DOCKER_HOST_NAME_FORMAT), getId(), counter.incrementAndGet());
+        AtomicInteger counter = config().get(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.DOCKER_HOST_COUNTER);
+        String dockerHostName = String.format(config().get(DockerHost.DOCKER_HOST_NAME_FORMAT), getId(), counter.incrementAndGet());
         setDisplayName(dockerHostName);
         setAttribute(DOCKER_HOST_NAME, dockerHostName);
 
@@ -129,10 +130,10 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
         ConfigToAttributes.apply(this, DOCKER_INFRASTRUCTURE);
 
-        EntitySpec<?> dockerContainerSpec = EntitySpec.create(getConfig(DOCKER_CONTAINER_SPEC))
+        EntitySpec<?> dockerContainerSpec = EntitySpec.create(config().get(DOCKER_CONTAINER_SPEC))
                 .configure(DockerContainer.DOCKER_HOST, this)
                 .configure(DockerContainer.DOCKER_INFRASTRUCTURE, getInfrastructure());
-        if (getConfig(DockerInfrastructure.HA_POLICY_ENABLE)) {
+        if (config().get(DockerInfrastructure.HA_POLICY_ENABLE)) {
             dockerContainerSpec.policy(PolicySpec.create(ServiceRestarter.class)
                     .configure(ServiceRestarter.FAILURE_SENSOR_TO_MONITOR, ServiceFailureDetector.ENTITY_FAILED));
         }
@@ -145,7 +146,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 .configure(DynamicCluster.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .configure(DynamicCluster.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .displayName("Docker Containers"));
-        if (getConfig(DockerInfrastructure.HA_POLICY_ENABLE)) {
+        if (config().get(DockerInfrastructure.HA_POLICY_ENABLE)) {
             containers.addPolicy(PolicySpec.create(ServiceReplacer.class)
                     .configure(ServiceReplacer.FAILURE_SENSOR_TO_MONITOR, ServiceRestarter.ENTITY_RESTART_FAILED));
         }
@@ -161,8 +162,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     protected Map<String, Object> obtainProvisioningFlags(MachineProvisioningLocation location) {
-        Map<String, Object> flags = super.obtainProvisioningFlags(location);
-        flags.putAll(getConfig(PROVISIONING_FLAGS));
+        Map<String, Object> flags = MutableMap.copyOf(super.obtainProvisioningFlags(location));
+        flags.putAll(config().get(PROVISIONING_FLAGS));
 
         // Configure template for host virtual machine
         if (location instanceof JcloudsLocation) {
@@ -180,7 +181,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                     JcloudsLocationConfig.MIN_RAM,
                     JcloudsLocationConfig.MIN_CORES,
                     JcloudsLocationConfig.MIN_DISK);
-            Map<String, Object> existingConfigOptions = location.getAllConfig(true);
+            Map<String, Object> existingConfigOptions = ((JcloudsLocation) location).config().getBag().getAllConfig();
             TemplateBuilder template = (TemplateBuilder) flags.get(JcloudsLocationConfig.TEMPLATE_BUILDER.getName());
 
             boolean overrideImageChoice = true;
@@ -239,7 +240,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
             // Setup SoftLayer template options required for IBM SDN VE
             // TODO Move this into a callback on the SdnProvider interface
-            if (isJcloudsLocation(location, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME) && isSdnProvider("SdnVeNetwork")) {
+            if (isJcloudsLocation(location, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME) && DockerUtils.isSdnProvider(this, "SdnVeNetwork")) {
                 if (template == null) template = new PortableTemplateBuilder();
                 template.osFamily(OsFamily.CENTOS).osVersionMatches("6").os64Bit(true);
                 Integer vlanId = getAttribute(DOCKER_INFRASTRUCTURE)
@@ -258,12 +259,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     private boolean isJcloudsLocation(MachineProvisioningLocation location, String providerName) {
         return location instanceof JcloudsLocation
                 && ((JcloudsLocation) location).getProvider().equals(providerName);
-    }
-
-    private boolean isSdnProvider(String providerName) {
-        Entity sdn = getAttribute(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER);
-        if (sdn == null) return false;
-        return sdn.getEntityType().getSimpleName().equalsIgnoreCase(providerName);
     }
 
     @Override
@@ -478,13 +473,26 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     protected void preStart() {
         getDriver().configureSecurityGroups();
 
+        Integer dockerPort = getDockerPort();
+        boolean tlsEnabled = true;
+        if (DockerUtils.isSdnProvider(this, "CalicoNetwork")) {
+            dockerPort = getAttribute(DockerHost.DOCKER_INFRASTRUCTURE)
+                    .getAttribute(DockerInfrastructure.SDN_PROVIDER)
+                    .config().get(CalicoNode.POWERSTRIP_PORT);
+            tlsEnabled = false;
+        }
         Maybe<SshMachineLocation> found = Machines.findUniqueSshMachineLocation(getLocations());
-        String dockerLocationSpec = String.format("jclouds:docker:https://%s:%s",
-                found.get().getSshHostAndPort().getHostText(), getDockerPort());
+        String dockerLocationSpec = String.format("jclouds:docker:%s://%s:%s",
+                tlsEnabled ? "https" : "http", found.get().getSshHostAndPort().getHostText(), dockerPort);
+
         String certificatePath = config().get(DockerInfrastructure.DOCKER_CERTIFICATE_PATH);
         String keyPath = config().get(DockerInfrastructure.DOCKER_KEY_PATH);
         JcloudsLocation jcloudsLocation = (JcloudsLocation) getManagementContext().getLocationRegistry()
-                .resolve(dockerLocationSpec, MutableMap.of("identity", certificatePath, "credential", keyPath, ComputeServiceProperties.IMAGE_LOGIN_USER, "root:" + getPassword()));
+                .resolve(dockerLocationSpec, MutableMap.builder()
+                        .put("identity", certificatePath)
+                        .put("credential", keyPath)
+                        .put(ComputeServiceProperties.IMAGE_LOGIN_USER, "root:" + getPassword())
+                        .build());
         setAttribute(JCLOUDS_DOCKER_LOCATION, jcloudsLocation);
 
         DockerPortForwarder portForwarder = new DockerPortForwarder();

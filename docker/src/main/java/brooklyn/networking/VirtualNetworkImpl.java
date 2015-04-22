@@ -22,8 +22,10 @@ import org.slf4j.LoggerFactory;
 
 import brooklyn.config.render.RendererHints;
 import brooklyn.entity.basic.BasicStartableImpl;
+import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.location.Location;
 import brooklyn.networking.location.NetworkProvisioningExtension;
+import brooklyn.networking.sdn.calico.CalicoNode;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.text.StringFunctions;
 import brooklyn.util.text.Strings;
@@ -87,5 +89,7 @@ public class VirtualNetworkImpl extends BasicStartableImpl implements VirtualNet
 
     static {
         RendererHints.register(Cidr.class, RendererHints.displayValue(StringFunctions.toStringFunction()));
+
+        RendererHints.register(NETWORKED_APPLICATIONS, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
     }
 }
