@@ -63,12 +63,12 @@ and container naming schemes.</p>
 You can deploy your own <b>Docker Cloud</b> with a Weave SDN by running these commands, to use Project Calico as your SDN
 provider, change the last command to <code>./bin/calico.sh</code> instead:
 
-<div class="highlight highlight-Bash"><pre>% wget --no-check-certificate --quiet <span class="se">\</span>
+<pre><code>% wget --no-check-certificate --quiet \
     -O brooklyn-clocker-dist.tar.gz http://git.io/vfCE8
 % tar zxf brooklyn-clocker-dist.tar.gz
-% <span class="nb">cd </span>brooklyn-clocker
+% cd brooklyn-clocker
 % ./bin/clocker.sh &lt;location&gt;
-</pre></div>
+</code></pre>
 
 <p>Where <code>&lt;location&gt;</code> can be a jclouds
 supported provider such as <code>jclouds:softlayer:lon02</code> for SoftLayer London,
@@ -123,27 +123,40 @@ and it will use Docker containers instead of virtual machines.</p>
 <a href="https://brooklyn.incubator.apache.org/v/latest/start/blueprints.html#launching-from-the-catalog"><em>Launching from the Catalog</em></a>
 in the Brooklyn user guide. You can also paste a YAML blueprint into the <em>YAML</em> tab of the <em>Add Application</em> dialog, as follows:</p>
 
-<div class="highlight highlight-Yaml"><pre><span class="l-Scalar-Plain">location</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">my-docker-cloud</span>
-<span class="l-Scalar-Plain">services</span><span class="p-Indicator">:</span>
-<span class="p-Indicator">-</span> <span class="l-Scalar-Plain">type</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">brooklyn.entity.webapp.jboss.JBoss7Server</span>
-  <span class="l-Scalar-Plain">brooklyn.config</span><span class="p-Indicator">:</span>
-    <span class="l-Scalar-Plain">wars.root</span><span class="p-Indicator">:</span>
-    <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">"https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/hello-world.war"</span>
-</pre></div>
+<pre><code>
+location: my-docker-cloud
+services:
+- type: brooklyn.entity.webapp.jboss.JBoss7Server
+  brooklyn.config:
+    wars.root:
+    - "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/hello-world.war"
+</code></pre>
+
+<p>A blueprint for an application using a Docker image would look like this:</p>
+
+<pre><code>
+location: my-docker-cloud
+services:
+- type: docker:redis:2.8.19
+  openPorts:
+  - 6379
+  directPorts:
+  - 6379
+</code></pre>
 
 <h3><a name="building-from-source" class="anchor" href="#building-from-source"><span class="octicon octicon-link"></span></a>Building from source</h3>
 
 <p>Build and run the examples as follows:</p>
 
-<div class="highlight highlight-Bash"><pre>    % git clone https://github.com/brooklyncentral/clocker.git
-    ...
-    % <span class="nb">cd </span>clocker
-    % mvn clean install
-    ...
-    % <span class="nb">cd </span>examples/target/brooklyn-clocker-dist/brooklyn-clocker
-    % ./bin/clocker.sh &lt;location&gt;
-    ...
-</pre></div>
+<pre><code>% git clone https://github.com/brooklyncentral/clocker.git
+...
+% cd clocker
+% mvn clean install
+...
+% cd examples/target/brooklyn-clocker-dist/brooklyn-clocker
+% ./bin/clocker.sh &lt;location&gt;
+...
+</code></pre>
 
 <p>If you just want to test the latest code, then our <a href="https://travis-ci.org/brooklyncentral/clocker">Travis CI</a>
 build runs for every commit and the resulting distribution files are archived and made available for download on
