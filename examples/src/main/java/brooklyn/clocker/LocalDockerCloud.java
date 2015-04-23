@@ -30,7 +30,7 @@ import brooklyn.entity.proxying.EntitySpec;
 @Catalog(name="Local Clocker",
         description="Local Docker infrastructure",
         iconUrl="classpath://docker-logo.png")
-public class LocalDocker extends AbstractApplication {
+public class LocalDockerCloud extends AbstractApplication {
 
     @CatalogConfig(label="Docker Version", priority=90)
     public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_VERSION, "1.6.0");
@@ -49,6 +49,6 @@ public class LocalDocker extends AbstractApplication {
                 .configure(DockerInfrastructure.LOCATION_NAME, getConfig(LOCATION_NAME))
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 1)
                 .configure(SoftwareProcess.SKIP_INSTALLATION, getConfig(DOCKER_INSTALLED))
-                .displayName("Docker Infrastructure"));
+                .displayName("Local Docker Cloud"));
     }
 }

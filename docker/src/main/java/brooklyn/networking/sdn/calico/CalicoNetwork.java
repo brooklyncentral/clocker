@@ -29,7 +29,7 @@ import brooklyn.util.flags.SetFromFlag;
 /**
  * A collection of machines running Calico.
  */
-@Catalog(name = "Calico Infrastructure", description = "Calico SDN")
+@Catalog(name = "Calico Infrastructure", description = "Calico SDN", iconUrl = "classpath://calico-logo.png")
 @ImplementedBy(CalicoNetworkImpl.class)
 public interface CalicoNetwork extends SdnProvider {
 
