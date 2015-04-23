@@ -100,7 +100,6 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
     public void createSubnet(String virtualNetworkId, String subnetId, Cidr subnetCidr) {
         newScript("createSubnet")
                 .body.append(
-                        sudo(String.format("%s profile add %s", getCalicoCommand(), subnetId)),
                         sudo(String.format("%s ipv4 pool add %s", getCalicoCommand(), subnetCidr)))
                 .execute();
     }
@@ -130,17 +129,18 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
             }
         }
 
-        // Add the container to the profile and set up the network
+        // Add the container to the application profile and set up the network
         List<String> commands = MutableList.of();
         if (initial) {
             commands.add(sudo(String.format("%s container add %s %s", getCalicoCommand(), containerId, address.getHostAddress())));
+            commands.add(sudo(String.format("%s profile add %s", getCalicoCommand(), subnetId))); // Idempotent
+            commands.add(sudo(String.format("%s profile %s member add %s", getCalicoCommand(), subnetId, containerId)));
             commands.add(sudo(String.format("ip netns exec %s ip route del default", dockerPid)));
             commands.add(sudo(String.format("ip netns exec %s ip route add default via %s", dockerPid, dockerIp)));
+            commands.add(sudo(String.format("ip netns exec %s ip route add %s via %s", dockerPid, subnetCidr.toString(), agentAddress.getHostAddress())));
         } else {
             commands.add(sudo(String.format("ip netns exec %s ip addr add %s/%d dev eth1", dockerPid, address.getHostAddress(), subnetCidr.getLength())));
         }
-        commands.add(sudo(String.format("%s profile %s member add %s", getCalicoCommand(), subnetId, containerId)));
-        commands.add(sudo(String.format("ip netns exec %s ip route add %s via %s", dockerPid, subnetCidr.toString(), agentAddress.getHostAddress())));
 
         newScript("attachNetwork")
                 .body.append(commands)
