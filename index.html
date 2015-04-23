@@ -107,11 +107,17 @@ brooklyn.location.named.Amazon\ Ireland = jclouds:aws-ec2:eu-west-1
 For a more in-depth look, see <a href="https://brooklyn.incubator.apache.org/v/latest/ops/locations/index.html"><em>Locations</em></a>.</p>
 
 <p>The Brooklyn web-console, which will be deploying and managing your Docker Cloud, can be accessed at 
-<a href="http://localhost:8081">http://localhost:8081</a> - this URL will have been written to standard out during startup.</p>
+<a href="http://localhost:8081">http://localhost:8081</a> - this URL will have been written to standard out during startup.
+A read-only view of the running Docker Clouds is also available at <a href="http://localhost:8081/clocker/">http://localhost:8081/clocker</a></p>
+
+<img src="images/clocker-calico.png" />
+<img src="images/clocker-console.png" />
 
 <p>Once your Docker Cloud application has started, a new location named <code>my-docker-cloud</code> will be
 available in the <em>Locations</em> drop-down list when adding new applications. Simply start a new application in this location
 and it will use Docker containers instead of virtual machines.</p>
+
+<img src="images/clocker-calico-add-app.png" />
 
 <p>For more information on deploying applications from the Brooklyn catalog, see
 <a href="https://brooklyn.incubator.apache.org/v/latest/start/blueprints.html#launching-from-the-catalog"><em>Launching from the Catalog</em></a>
@@ -169,6 +175,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.</p>
+
       </section>
       <footer>
         <p><small>Hosted on <a href="http://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
