@@ -138,9 +138,9 @@ hr {
   margin:0 0 24px;
 }
 
-/* Images */
+/* Images and Video */
 
-img {
+.youtube, img {
   position: relative;
   margin: 0 auto;
   max-width: 650px;
@@ -149,7 +149,7 @@ img {
   border: 1px solid #ccc;
 }
 
-p img {
+p .youtube, p img {
   display: inline;
   margin: 0;
   padding: 0;

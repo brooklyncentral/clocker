@@ -29,7 +29,7 @@
       <section>
         <h1><a name="clocker" class="anchor" href="#clocker"><span class="octicon octicon-link"></span></a>Clocker</h1>
 
-<img src="images/clocker-io.png" />
+<img width="640" src="images/clocker-io.png" />
 
 <p>Clocker creates and manages a <b><a href="http://docker.io/">Docker</a></b> cloud infrastructure.  Clocker
 supports single-click deployment and runtime management of composite applications distributed across multiple hosts.  Plugins
@@ -47,9 +47,11 @@ Cloud infrastructure.</p>
 Cloud</b> blueprints to the cloud or machines of your choice, and then use Clocker to deploy your applications. This
 will automatically create the required Docker containers.</p>
 
-<iframe width="640" height="480" src="//www.youtube.com/embed/i2Nhg2J8puM" frameborder="0" allowfullscreen></iframe>
+<iframe class="youtube" width="640" height="480" src="//www.youtube.com/embed/i2Nhg2J8puM" frameborder="0" allowfullscreen></iframe>
 
-<p>You can create a Docker Cloud on your favourite cloud provider or on a private or hybrid cloud, using any of the APIs supported by <a href="http://jclouds.apache.org">Apache jclouds</a>. Alternatively you can target one or more existing machines for running Docker, for example using Vagrant and VirtualBox.</p>
+<p>You can create a Docker Cloud on your favourite cloud provider or on a private or hybrid cloud, using any of the APIs
+supported by <a href="http://jclouds.apache.org">Apache jclouds</a>. Alternatively you can target one or more existing
+machines for running Docker, for example using Vagrant and VirtualBox.</p>
 
 <p>If you are keen to peek under the covers, you will find the Docker Cloud infrastructure blueprints at either
 <a href="https://raw.githubusercontent.com/brooklyncentral/clocker/master/examples/src/main/assembly/files/blueprints/docker-cloud-weave.yaml">docker-cloud-weave.yaml</a>
@@ -110,14 +112,14 @@ For a more in-depth look, see <a href="https://brooklyn.incubator.apache.org/v/l
 <a href="http://localhost:8081">http://localhost:8081</a> - this URL will have been written to standard out during startup.
 A read-only view of the running Docker Clouds is also available at <a href="http://localhost:8081/clocker/">http://localhost:8081/clocker</a></p>
 
-<img src="images/clocker-calico.png" />
-<img src="images/clocker-console.png" />
+<img width="310" src="images/clocker-calico.png" />
+<img width="310" src="images/clocker-console.png" />
 
 <p>Once your Docker Cloud application has started, a new location named <code>my-docker-cloud</code> will be
 available in the <em>Locations</em> drop-down list when adding new applications. Simply start a new application in this location
 and it will use Docker containers instead of virtual machines.</p>
 
-<img src="images/clocker-calico-add-app.png" />
+<img width="310" src="images/clocker-calico-add-app.png" />
 
 <p>For more information on deploying applications from the Brooklyn catalog, see
 <a href="https://brooklyn.incubator.apache.org/v/latest/start/blueprints.html#launching-from-the-catalog"><em>Launching from the Catalog</em></a>
