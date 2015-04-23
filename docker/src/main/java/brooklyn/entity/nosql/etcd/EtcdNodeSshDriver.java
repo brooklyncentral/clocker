@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.jetty.util.log.Log;
+
 import brooklyn.entity.Entity;
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Attributes;
@@ -198,14 +200,19 @@ public class EtcdNodeSshDriver extends AbstractSoftwareProcessSshDriver implemen
         listMembersCommands.add(String.format("%s --peers %s member list", getEtcdCtlCommand(), getClientUrl()));
         ScriptHelper listMembersScript = newScript("listMembers")
                 .body.append(listMembersCommands)
-                .failOnNonZeroResultCode()
                 .gatherOutput();
-        listMembersScript.execute();
-
+        int result = listMembersScript.execute();
+        if (result != 0) {
+            log.warn("{}: The 'member list' command on etcd '{}' failed: {}", new Object[] { entity, getClientUrl(), result });;
+            log.debug("{}: STDOUT: {}", entity, listMembersScript.getResultStdout());
+            log.debug("{}: STDERR: {}", entity, listMembersScript.getResultStderr());
+            return; // Do not throw exception as may not be possible during shutdown
+        }
         String output = listMembersScript.getResultStdout();
         Optional<String> found = Iterables.tryFind(Splitter.on(CharMatcher.anyOf("\r\n")).split(output), Predicates.containsPattern("name=" + nodeName));
         if (found.isPresent()) {
             String nodeId = Strings.getFirstWord(found.get()).replace(":", "");
+            log.debug("{}: Removing etcd node {} with id {} from {}", new Object[] { entity, nodeName, nodeId, getClientUrl() });
 
             List<String> removeMemberCommands = Lists.newLinkedList();
             removeMemberCommands.add("cd " + getRunDir());
@@ -214,6 +221,8 @@ public class EtcdNodeSshDriver extends AbstractSoftwareProcessSshDriver implemen
                     .body.append(removeMemberCommands)
                     .failOnNonZeroResultCode()
                     .execute();
+        } else {
+            log.warn("{}: Did not find {} in list of etcd members", entity, nodeName);
         }
     }
 
