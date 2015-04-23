@@ -33,30 +33,21 @@ import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
 import brooklyn.location.docker.strategy.MaxContainersPlacementStrategy;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.networking.sdn.SdnAttributes;
-import brooklyn.networking.sdn.SdnProvider;
-import brooklyn.networking.sdn.calico.CalicoNetwork;
 import brooklyn.util.collections.MutableMap;
-import brooklyn.util.net.Cidr;
 import brooklyn.util.time.Duration;
 
 import com.google.common.collect.ImmutableList;
 
 /**
- * Brooklyn managed Docker cloud infrastructure with {@link CalicoNetwork}.
+ * Brooklyn managed Docker cloud infrastructure.
  */
-@Catalog(name="Clocker with Calico",
-        description="Docker Cloud infrastructure with Calico networking",
-        iconUrl="classpath://calico-logo.png")
-public class CalicoDockerCloud extends AbstractApplication {
+@Catalog(name="Clocker",
+        description="Docker Cloud infrastructure with host networking",
+        iconUrl="classpath://docker-logo.png")
+public class DockerCloud extends AbstractApplication {
 
     @CatalogConfig(label="Docker Version", priority=100)
     public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_VERSION, "1.6.0");
-
-    @CatalogConfig(label="Calico Version", priority=90)
-    public static final ConfigKey<String> CALICO_VERSION = ConfigKeys.newStringConfigKey("calico.version", "Calico SDN version", "0.3.2");
-
-    @CatalogConfig(label="Etcd Version", priority=90)
-    public static final ConfigKey<String> ETCD_VERSION = ConfigKeys.newStringConfigKey("etcd.version", "Etcd version", "2.0.5");
 
     @CatalogConfig(label="Location Name", priority=80)
     public static final ConfigKey<String> LOCATION_NAME = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.LOCATION_NAME.getConfigKey(), "my-docker-cloud");
@@ -96,12 +87,7 @@ public class CalicoDockerCloud extends AbstractApplication {
                 .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM, getConfig(DOCKER_CONTAINER_CLUSTER_HEADROOM))
                 .configure(DockerInfrastructure.HA_POLICY_ENABLE, false)
                 .configure(DockerInfrastructure.PLACEMENT_STRATEGIES, ImmutableList.<DockerAwarePlacementStrategy>of(maxContainers, breadthFirst))
-                .configure(SdnAttributes.SDN_ENABLE, true)
-                .configure(DockerInfrastructure.SDN_PROVIDER_SPEC, EntitySpec.create(CalicoNetwork.class)
-                        .configure(CalicoNetwork.CALICO_VERSION, getConfig(CALICO_VERSION))
-                        .configure(CalicoNetwork.ETCD_VERSION, getConfig(ETCD_VERSION))
-                        .configure(SdnProvider.CONTAINER_NETWORK_CIDR, Cidr.LINK_LOCAL)
-                        .configure(SdnProvider.CONTAINER_NETWORK_SIZE, 24))
+                .configure(SdnAttributes.SDN_ENABLE, false)
                 .configure(DockerInfrastructure.DOCKER_HOST_SPEC, EntitySpec.create(DockerHost.class)
                         .configure(DockerHost.DOCKER_STORAGE_DRIVER, "overlay")
                         .configure(DockerHost.PROVISIONING_FLAGS, MutableMap.<String,Object>of(
@@ -114,6 +100,6 @@ public class CalicoDockerCloud extends AbstractApplication {
                         .configure(DockerHost.DOCKER_HOST_NAME_FORMAT, "docker-host-%2$d")
                         .configure(DockerHost.DOCKER_CONTAINER_SPEC, EntitySpec.create(DockerContainer.class)
                                 .configure(DockerContainer.DOCKER_CONTAINER_NAME_FORMAT, "container-%2$02x")))
-                .displayName("Calico Docker Cloud"));
+                .displayName("Docker Cloud"));
     }
 }

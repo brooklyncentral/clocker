@@ -25,12 +25,12 @@ import brooklyn.util.flags.SetFromFlag;
 /**
  * A collection of machines running Weave.
  */
-@Catalog(name = "Weave Infrastructure", description = "Weave SDN")
+@Catalog(name = "Weave Infrastructure", description = "Weave SDN", iconUrl = "classpath://weaveworks-logo.png")
 @ImplementedBy(WeaveNetworkImpl.class)
 public interface WeaveNetwork extends SdnProvider {
 
     @SetFromFlag("version")
-    ConfigKey<String> WEAVE_VERSION = ConfigKeys.newStringConfigKey("weave.version", "The Weave SDN version number", "0.9.0");
+    ConfigKey<String> WEAVE_VERSION = ConfigKeys.newStringConfigKey("weave.version", "The Weave SDN version number", "0.10.0");
 
     @SetFromFlag("weavePort")
     ConfigKey<Integer> WEAVE_PORT = WeaveContainer.WEAVE_PORT;
