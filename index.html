@@ -62,14 +62,15 @@ and container naming schemes.</p>
 <h3><a name="using-the-latest-clocker-release" class="anchor" href="#using-the-latest-clocker-release"><span class="octicon octicon-link"></span></a>Using the latest Clocker release</h3>
 
 <p>The current version of Clocker is <b><a href="https://github.com/brooklyncentral/clocker/releases/tag/v0.8.1">0.8.1</a></b>.
-You can deploy your own <b>Docker Cloud</b> with a Weave SDN by running these commands, to use Project Calico as your SDN
-provider, change the last command to <code>./bin/calico.sh</code> instead:
+You can deploy your own <b>Docker Cloud</b> with a Weave SDN by running these commands with the
+<code>&lt;network&gt;</code> argument set to <code>weave</code>, to use Project Calico as your SDN
+provider, change the argument to <code>calico</code> instead:
 
 <pre><code>% wget --no-check-certificate --quiet \
     -O brooklyn-clocker-dist.tar.gz http://git.io/vfCE8
 % tar zxf brooklyn-clocker-dist.tar.gz
 % cd brooklyn-clocker
-% ./bin/clocker.sh &lt;location&gt;
+% ./bin/clocker.sh &lt;location&gt; &lt;network&gt;
 </code></pre>
 
 <p>Where <code>&lt;location&gt;</code> can be a jclouds
@@ -156,7 +157,7 @@ services:
 % mvn clean install
 ...
 % cd examples/target/brooklyn-clocker-dist/brooklyn-clocker
-% ./bin/clocker.sh &lt;location&gt;
+% ./bin/clocker.sh &lt;location&gt; &lt;network&gt;
 ...
 </code></pre>
 
