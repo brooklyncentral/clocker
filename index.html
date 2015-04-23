@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>Clocker by brooklyncentral</title>
+    <title>Clocker - The Docker Cloud Maker</title>
 
     <link rel="stylesheet" href="stylesheets/styles.css">
     <link rel="stylesheet" href="stylesheets/pygment_trac.css">
@@ -17,11 +17,11 @@
     <div class="wrapper">
       <header>
         <h1 class="header">Clocker</h1>
-        <p class="header">Brooklyn Managed Docker Containers</p>
+        <p class="header">The Docker Cloud Maker</p>
         <ul>
           <li class="download"><a class="buttons" href="https://github.com/brooklyncentral/clocker/zipball/master">Source ZIP</a></li>
           <li class="download"><a class="buttons" href="https://github.com/brooklyncentral/clocker/tarball/master">Source TAR</a></li>
-          <li class="download"><a class="buttons" href="https://github.com/brooklyncentral/clocker/releases/download/v0.8.0/brooklyn-clocker-dist.tar.gz">Distribution TGZ</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/brooklyncentral/clocker/releases/download/v0.8.1/brooklyn-clocker-dist.tar.gz">Distribution TGZ</a></li>
           <li><a class="buttons github" href="https://github.com/brooklyncentral/clocker">View On GitHub</a></li>
         </ul>
         <p class="header">This project is maintained by <a class="header name" href="https://github.com/grkvlt">@grkvlt</a> and <a class="header name" href="https://github.com/andreaturli">@andreaturli</a></p>
@@ -31,36 +31,40 @@
 
 <img src="images/clocker-io.png" />
 
-<p>Clocker creates and manages a <a href="http://docker.io/">Docker</a> Cloud infrastructure. Clocker supports
-single-click deployment and runtime management of composite applications distributed across multiple hosts.
-Application blueprints written to run in virtual machines provisioned using <a href="https://brooklyn.incubator.apache.org/">Apache Brooklyn</a>
-can thus be deployed to containers on your Docker Cloud infrastructure.</p>
+<p>Clocker creates and manages a <b><a href="http://docker.io/">Docker</a></b> cloud infrastructure.  Clocker
+supports single-click deployment and runtime management of composite applications distributed across multiple hosts.  Plugins
+are included for both <b><a href="https://github.com/Metaswitch/calico-docker">Project Calico</a></b> and
+<b><a href="http://github.com/zettio/weave/">Weave</a></b> to provide seamless Software-Defined Networking
+integration.  Application blueprints written to run in virtual machines provisioned using <b><a
+href="https://brooklyn.incubator.apache.org/">Apache Brooklyn</a></b> can thus be deployed to containers on your Docker
+Cloud infrastructure.</p>
 
 <p>This repository contains the required Brooklyn entities and locations, and some example application blueprints.</p>
 
 <h2><a name="getting-started" class="anchor" href="#getting-started"><span class="octicon octicon-link"></span></a>Getting started</h2>
 
-<p>To get started, you just have to download and run Clocker, using the 
-cloud or machines of your choice, and then use Clocker to deploy your applications. This will 
-automatically create the required Docker containers.</p>
+<p>To get started, you just have to download the Clocker distribution archive, deploy one of the <b>Docker
+Cloud</b> blueprints to the cloud or machines of your choice, and then use Clocker to deploy your applications. This
+will automatically create the required Docker containers.</p>
 
 <iframe width="640" height="480" src="//www.youtube.com/embed/i2Nhg2J8puM" frameborder="0" allowfullscreen></iframe>
 
-<p>You can create a Docker Cloud on your favourite cloud provider or on a 
-private or hybrid cloud, using any of the APIs supported by <a href="http://jclouds.apache.org">Apache jclouds</a>.
-Alternatively you can target one or more existing machines for running Docker, for example using Vagrant and VirtualBox.</p>
+<p>You can create a Docker Cloud on your favourite cloud provider or on a private or hybrid cloud, using any of the APIs supported by <a href="http://jclouds.apache.org">Apache jclouds</a>. Alternatively you can target one or more existing machines for running Docker, for example using Vagrant and VirtualBox.</p>
 
-<p>If you are keen to peek under the covers, you can find the Clocker blueprint for a Docker Cloud
-with a <a href="http://weave.works/">Weave</a> SDN at
-<a href="https://raw.githubusercontent.com/brooklyncentral/clocker/master/examples/src/main/assembly/files/blueprints/docker-cloud-weave.yaml">docker-cloud-weave.yaml</a>.
-This shows the components being created, including examples of placement strategies and container naming schemes.</p> 
+<p>If you are keen to peek under the covers, you will find the Docker Cloud infrastructure blueprints at either
+<a href="https://raw.githubusercontent.com/brooklyncentral/clocker/master/examples/src/main/assembly/files/blueprints/docker-cloud-weave.yaml">docker-cloud-weave.yaml</a>
+or <a href="https://raw.githubusercontent.com/brooklyncentral/clocker/master/examples/src/main/assembly/files/blueprints/docker-cloud-calico.yaml">docker-cloud-calico.yaml</a>
+depending on your choice of SDN provider. These show the components being created, including examples of placement strategies
+and container naming schemes.</p>
 
 <h3><a name="using-the-latest-clocker-release" class="anchor" href="#using-the-latest-clocker-release"><span class="octicon octicon-link"></span></a>Using the latest Clocker release</h3>
 
-<p>You can build a <em>Docker Cloud</em> by running these commands:</p>
+<p>The current version of Clocker is <b><a href="https://github.com/brooklyncentral/clocker/releases/tag/v0.8.1">0.8.1</a></b>.
+You can deploy your own <b>Docker Cloud</b> with a Weave SDN by running these commands, to use Project Calico as your SDN
+provider, change the last command to <code>./bin/calico.sh</code> instead:
 
 <div class="highlight highlight-Bash"><pre>% wget --no-check-certificate --quiet <span class="se">\</span>
-    -O brooklyn-clocker-dist.tar.gz http://git.io/vvVSn
+    -O brooklyn-clocker-dist.tar.gz http://git.io/vfCE8
 % tar zxf brooklyn-clocker-dist.tar.gz
 % <span class="nb">cd </span>brooklyn-clocker
 % ./bin/clocker.sh &lt;location&gt;
