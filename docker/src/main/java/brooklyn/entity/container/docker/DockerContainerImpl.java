@@ -90,6 +90,7 @@ import com.google.common.base.CharMatcher;
 import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
 
@@ -465,7 +466,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 SdnAgent agent = Entities.attributeSupplierWhenReady(dockerHost, SdnAgent.SDN_AGENT).get();
 
                 // Save attached network list
-                Set<String> networks = Sets.newHashSet(entity.getApplicationId());
+                List<String> networks = Lists.newArrayList(entity.getApplicationId());
                 Collection<String> extra = entity.config().get(SdnAttributes.NETWORK_LIST);
                 if (extra != null) networks.addAll(extra);
                 setAttribute(SdnAttributes.ATTACHED_NETWORKS, networks);
