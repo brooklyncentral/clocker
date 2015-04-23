@@ -17,7 +17,7 @@ package brooklyn.networking.sdn;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Set;
+import java.util.List;
 
 import javax.annotation.Nullable;
 
@@ -42,8 +42,8 @@ public class SdnAttributes {
     public static final ConfigKey<Boolean> SDN_ENABLE = ConfigKeys.newBooleanConfigKey("sdn.enable", "Enable Sofware-Defined Networking", Boolean.FALSE);
     public static final ConfigKey<Boolean> SDN_DEBUG = ConfigKeys.newBooleanConfigKey("sdn.debug", "Enable SDN debugging utility installation", Boolean.FALSE);
 
-    public static final AttributeSensor<Set<String>> ATTACHED_NETWORKS = Sensors.newSensor(new TypeToken<Set<String>>() { },
-            "sdn.networks.attached", "The set of networks that an entity is attached to");
+    public static final AttributeSensor<List<String>> ATTACHED_NETWORKS = Sensors.newSensor(new TypeToken<List<String>>() { },
+            "sdn.networks.attached", "The list of networks that an entity is attached to");
 
     public static final Predicate<Entity> attachedToNetwork(String networkId) {
         Preconditions.checkNotNull(networkId, "networkId");
@@ -60,7 +60,7 @@ public class SdnAttributes {
 
         @Override
         public boolean apply(@Nullable Entity input) {
-            Set<String> networks = input.getAttribute(SdnAttributes.ATTACHED_NETWORKS);
+            List<String> networks = input.getAttribute(SdnAttributes.ATTACHED_NETWORKS);
             if (networks != null) {
                 return networks.contains(id);
             } else {
