@@ -23,14 +23,17 @@ ROOT=$(cd "$(dirname "$0")/.." && pwd -P)
 if [ $# -ge 1 -a $# -le 2 ] ; then
     location=$1
     network=$2
-    blueprint="${ROOT}/blueprints/docker-cloud-${network:-weave}.yaml"
-    if [ -f ${blueprint} ] ; then
-        LAUNCH_FLAGS="--app ${blueprint} --location ${location}"
+    if [ -f "${network}" ] ; then
+        blueprint="${network}"
     else
+        blueprint="${ROOT}/blueprints/docker-cloud-${network:-weave}.yaml"
+    fi
+    if [ ! -f ${blueprint} ] ; then
         echo "Cannot find blueprint for network ${network}"
         echo "Supported network options: weave, calico, host, localhost"
         exit 1
     fi
+    LAUNCH_FLAGS="--app ${blueprint} --location ${location}"
 elif [ $# -ne 0 ] ; then
     echo "Too many arguments; Usage: clocker.sh [location [network]]"
     exit 1
@@ -43,5 +46,6 @@ export JAVA_OPTS
 
 # launch clocker
 ${ROOT}/bin/brooklyn.sh clocker ${LAUNCH_FLAGS} \
+    ${PERSISTENCE_FLAGS} \
     --ignoreManagedAppsStartupErrors \
     --stopOnShutdown none 2>&1 | tee -a ${ROOT}/console.log
