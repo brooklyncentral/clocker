@@ -19,32 +19,8 @@
 # get base directory
 ROOT=$(cd "$(dirname "$0")/.." && pwd -P)
 
-# check command line arguments for location
-if [ $# -ge 1 -a $# -le 2 ] ; then
-    location=$1
-    network=$2
-    blueprint="${ROOT}/blueprints/docker-cloud-${network:-weave}.yaml"
-    if [ -f ${blueprint} ] ; then
-        LAUNCH_FLAGS="--app ${blueprint} --location ${location}"
-    else
-        echo "Cannot find blueprint for network ${network}"
-        echo "Supported network options: weave, calico, host, localhost"
-        exit 1
-    fi
-elif [ $# -ne 0 ] ; then
-    echo "Too many arguments; Usage: clocker.sh [location [network]]"
-    exit 1
-fi
-
-# set catalog and java options
-CATALOG_OPTS="-Dbrooklyn.catalog.url=classpath://catalog.xml -Dbrooklyn.catalog.mode=LOAD_BROOKLYN_CATALOG_URL"
-JAVA_OPTS="${JAVA_OPTS:--Xms1g -Xmx1g} ${CLOCKER_OPTS} ${CATALOG_OPTS}"
-export JAVA_OPTS
+# set persistence flags
+export PERSISTENCE_FLAGS="--ignorePersistenceStartupErrors --persist auto --persistenceDir ${PERSISTENCE_DIR:-${ROOT}/data}"
 
 # launch clocker
-${ROOT}/bin/brooklyn.sh clocker ${LAUNCH_FLAGS} \
-    --ignorePersistenceStartupErrors \
-    --persist auto \
-    --persistenceDir ${PERSISTENCE_DIR:-${ROOT}/data} \
-    --ignoreManagedAppsStartupErrors \
-    --stopOnShutdown none 2>&1 | tee -a ${ROOT}/console.log
+${ROOT}/bin/clocker.sh $@
