@@ -196,18 +196,18 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
      * @return Extra IP permissions to be configured on this entity's location.
      */
     protected Collection<IpPermission> getIpPermissions() {
-        String localhost = LocalhostExternalIpLoader.getLocalhostIpWithin(Duration.minutes(1));
+        String localhost = LocalhostExternalIpLoader.getLocalhostIpWithin(Duration.minutes(1)) + "/32";
         IpPermission dockerPort = IpPermission.builder()
                 .ipProtocol(IpProtocol.TCP)
                 .fromPort(getEntity().getAttribute(DockerHost.DOCKER_PORT))
                 .toPort(getEntity().getAttribute(DockerHost.DOCKER_PORT))
-                .cidrBlock(localhost + "/32")
+                .cidrBlock(localhost)
                 .build();
         IpPermission dockerSslPort = IpPermission.builder()
                 .ipProtocol(IpProtocol.TCP)
                 .fromPort(getEntity().getAttribute(DockerHost.DOCKER_SSL_PORT))
                 .toPort(getEntity().getAttribute(DockerHost.DOCKER_SSL_PORT))
-                .cidrBlock(localhost + "/32")
+                .cidrBlock(localhost)
                 .build();
         IpPermission dockerPortForwarding = IpPermission.builder()
                 .ipProtocol(IpProtocol.TCP)
@@ -219,7 +219,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
         if (getEntity().config().get(SdnAttributes.SDN_ENABLE)) {
             SdnProvider provider = (SdnProvider) (entity.getAttribute(DockerHost.DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER));
-            Collection<IpPermission> sdnPermissions = provider.getIpPermissions();
+            Collection<IpPermission> sdnPermissions = provider.getIpPermissions(localhost);
             permissions.addAll(sdnPermissions);
         }
 
