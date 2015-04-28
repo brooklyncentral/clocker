@@ -16,6 +16,7 @@
 package brooklyn.entity.container.docker;
 
 import java.net.URI;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -47,6 +48,7 @@ import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.machine.MachineEntityImpl;
+import brooklyn.entity.nosql.etcd.EtcdNode;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.entity.trait.Startable;
@@ -56,6 +58,7 @@ import brooklyn.event.feed.function.FunctionPollConfig;
 import brooklyn.location.Location;
 import brooklyn.location.LocationDefinition;
 import brooklyn.location.MachineProvisioningLocation;
+import brooklyn.location.PortRange;
 import brooklyn.location.basic.BasicLocationDefinition;
 import brooklyn.location.basic.Machines;
 import brooklyn.location.basic.SshMachineLocation;
@@ -72,6 +75,7 @@ import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.networking.sdn.calico.CalicoNode;
 import brooklyn.networking.sdn.ibm.SdnVeNetwork;
+import brooklyn.networking.sdn.weave.WeaveNetwork;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.networking.subnet.SubnetTierImpl;
 import brooklyn.policy.PolicySpec;
@@ -158,6 +162,26 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 .propagating(ImmutableMap.of(DynamicCluster.GROUP_SIZE, DockerAttributes.DOCKER_CONTAINER_COUNT))
                 .from(containers)
                 .build());
+    }
+
+    @Override
+    protected Collection<Integer> getRequiredOpenPorts() {
+        Collection<Integer> ports = super.getRequiredOpenPorts();
+        if (config().get(DockerInfrastructure.SDN_ENABLE)) {
+            Entity sdn = getAttribute(DockerHost.DOCKER_INFRASTRUCTURE)
+                    .getAttribute(DockerInfrastructure.SDN_PROVIDER);
+            if (DockerUtils.isSdnProvider(this, "WeaveNetwork")) {
+                Integer weavePort = sdn.config().get(WeaveNetwork.WEAVE_PORT);
+                if (weavePort != null) ports.add(weavePort);
+            }
+            if (DockerUtils.isSdnProvider(this, "CalicoNetwork")) {
+                PortRange etcdPort = sdn.config().get(EtcdNode.ETCD_CLIENT_PORT);
+                if (etcdPort != null) ports.add(etcdPort.iterator().next());
+                Integer powerstripPort = sdn.config().get(CalicoNode.POWERSTRIP_PORT);
+                if (powerstripPort != null) ports.add(powerstripPort);
+            }
+        }
+        return ports;
     }
 
     @Override

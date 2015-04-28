@@ -15,11 +15,14 @@
  */
 package brooklyn.networking.sdn.weave;
 
+import java.util.Set;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.networking.sdn.SdnAgentImpl;
+import brooklyn.util.collections.MutableSet;
 
 /**
  * A single Weave router running in a {@link DockerContainer}.
@@ -31,6 +34,11 @@ public class WeaveContainerImpl extends SdnAgentImpl implements WeaveContainer {
     @Override
     public Class getDriverInterface() {
         return WeaveContainerDriver.class;
+    }
+
+    @Override
+    protected Set<Integer> getRequiredOpenPorts() {
+        return MutableSet.of(config().get(WeaveContainer.WEAVE_PORT));
     }
 
 }
