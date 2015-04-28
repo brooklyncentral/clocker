@@ -59,7 +59,7 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
     }
 
     @Override
-    public Collection<IpPermission> getIpPermissions() {
+    public Collection<IpPermission> getIpPermissions(String source) {
         Collection<IpPermission> permissions = MutableList.of();
         Integer weavePort = config().get(WeaveContainer.WEAVE_PORT);
         IpPermission weaveTcpPort = IpPermission.builder()

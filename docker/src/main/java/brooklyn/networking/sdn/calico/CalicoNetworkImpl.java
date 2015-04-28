@@ -36,6 +36,7 @@ import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.nosql.etcd.EtcdCluster;
 import brooklyn.entity.nosql.etcd.EtcdNode;
 import brooklyn.entity.proxying.EntitySpec;
+import brooklyn.location.PortRange;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnProvider;
@@ -91,14 +92,32 @@ public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork 
     }
 
     @Override
-    public Collection<IpPermission> getIpPermissions() {
+    public Collection<IpPermission> getIpPermissions(String source) {
         Collection<IpPermission> permissions = MutableList.of();
+        PortRange etcdClientPortConfig = config().get(EtcdNode.ETCD_CLIENT_PORT);
+        Integer etcdClientPort = etcdClientPortConfig.iterator().next();
+        IpPermission etcdClientTcpPort = IpPermission.builder()
+                .ipProtocol(IpProtocol.TCP)
+                .fromPort(etcdClientPort)
+                .toPort(etcdClientPort)
+                .cidrBlock(Cidr.UNIVERSAL.toString()) // TODO could be tighter restricted?
+                .build();
+        permissions.add(etcdClientTcpPort);
+        PortRange etcdPeerPortConfig = config().get(EtcdNode.ETCD_PEER_PORT);
+        Integer etcdPeerPort = etcdPeerPortConfig.iterator().next();
+        IpPermission etcdPeerTcpPort = IpPermission.builder()
+                .ipProtocol(IpProtocol.TCP)
+                .fromPort(etcdPeerPort)
+                .toPort(etcdPeerPort)
+                .cidrBlock(Cidr.UNIVERSAL.toString()) // TODO could be tighter restricted?
+                .build();
+        permissions.add(etcdPeerTcpPort);
         Integer powerstripPort = config().get(CalicoNode.POWERSTRIP_PORT);
         IpPermission powerstripTcpPort = IpPermission.builder()
                 .ipProtocol(IpProtocol.TCP)
                 .fromPort(powerstripPort)
                 .toPort(powerstripPort)
-                .cidrBlock(Cidr.UNIVERSAL.toString()) // TODO could be tighter restricted?
+                .cidrBlock(source)
                 .build();
         permissions.add(powerstripTcpPort);
         return permissions;

@@ -82,7 +82,7 @@ public interface SdnProvider extends BasicStartable, NetworkProvisioningExtensio
     AttributeSensor<Group> SDN_NETWORKS = Sensors.newSensor(Group.class, "sdn.networks.managed", "Collection of virtual network entites managed by this SDN");
     AttributeSensor<Group> SDN_APPLICATIONS = Sensors.newSensor(Group.class, "sdn.networks.applications", "Groupings of application containers attached to each managed network");
 
-    Collection<IpPermission> getIpPermissions();
+    Collection<IpPermission> getIpPermissions(String source);
 
     DynamicCluster getDockerHostCluster();
 
