@@ -5,8 +5,6 @@ package brooklyn.networking.sdn.weave;
 
 import java.net.InetAddress;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,12 +19,10 @@ import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.net.Cidr;
-import brooklyn.util.net.Networking;
 import brooklyn.util.os.Os;
 import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.task.Tasks;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver implements WeaveContainerDriver {
@@ -35,18 +31,6 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
 
     public WeaveContainerSshDriver(EntityLocal entity, SshMachineLocation machine) {
         super(entity, machine);
-    }
-
-    @Override
-    public Set<Integer> getPortsUsed() {
-        return ImmutableSet.<Integer>builder()
-                .addAll(super.getPortsUsed())
-                .addAll(getPortMap().values())
-                .build();
-    }
-
-    protected Map<String, Integer> getPortMap() {
-        return MutableMap.of("weave", getEntity().config().get(WeaveContainer.WEAVE_PORT));
     }
 
     public String getWeaveCommand() {
@@ -71,8 +55,6 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
 
     @Override
     public void customize() {
-        Networking.checkPortsValid(getPortMap());
-
         newScript(CUSTOMIZING).execute();
     }
 

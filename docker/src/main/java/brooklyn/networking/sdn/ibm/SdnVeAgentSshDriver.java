@@ -9,7 +9,6 @@ import java.net.InetAddress;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +29,6 @@ import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.net.Cidr;
-import brooklyn.util.net.Networking;
 import brooklyn.util.net.Urls;
 import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.task.DynamicTasks;
@@ -45,7 +43,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
@@ -59,18 +56,6 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     public SdnVeAgentSshDriver(EntityLocal entity, SshMachineLocation machine) {
         super(entity, machine);
-    }
-
-    @Override
-    public Set<Integer> getPortsUsed() {
-        return ImmutableSet.<Integer>builder()
-                .addAll(super.getPortsUsed())
-                .addAll(getPortMap().values())
-                .build();
-    }
-
-    protected Map<String, Integer> getPortMap() {
-        return MutableMap.<String, Integer>of();
     }
 
     @Override
@@ -98,8 +83,6 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     @Override
     public void customize() {
-        Networking.checkPortsValid(getPortMap());
-
         String netstat = getEntity().getAttribute(SdnVeAgent.DOCKER_HOST).execCommand("netstat -rn");
         Iterable<String> routes = Iterables.filter(Splitter.on(CharMatcher.anyOf("\r\n")).split(netstat), StringPredicates.containsLiteral("eth0"));
         String subnetAddress = getEntity().getAttribute(SoftwareProcess.SUBNET_ADDRESS);

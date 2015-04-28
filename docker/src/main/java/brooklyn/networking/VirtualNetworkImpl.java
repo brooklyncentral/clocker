@@ -25,7 +25,6 @@ import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.location.Location;
 import brooklyn.networking.location.NetworkProvisioningExtension;
-import brooklyn.networking.sdn.calico.CalicoNode;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.text.StringFunctions;
 import brooklyn.util.text.Strings;

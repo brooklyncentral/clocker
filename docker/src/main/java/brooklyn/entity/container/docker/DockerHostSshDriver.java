@@ -29,21 +29,17 @@ import static java.lang.String.format;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Callable;
 
 import org.jclouds.net.domain.IpPermission;
 import org.jclouds.net.domain.IpProtocol;
 
-import brooklyn.entity.Entity;
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.lifecycle.ScriptHelper;
 import brooklyn.entity.container.DockerUtils;
-import brooklyn.entity.nosql.etcd.EtcdNode;
 import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.location.OsDetails;
-import brooklyn.location.PortRange;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.geo.LocalhostExternalIpLoader;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
@@ -51,14 +47,11 @@ import brooklyn.location.jclouds.networking.JcloudsLocationSecurityGroupCustomiz
 import brooklyn.management.Task;
 import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.networking.sdn.SdnProvider;
-import brooklyn.networking.sdn.calico.CalicoNode;
-import brooklyn.networking.sdn.weave.WeaveNetwork;
 import brooklyn.util.collections.MutableList;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.file.ArchiveUtils;
 import brooklyn.util.file.ArchiveUtils.ArchiveType;
 import brooklyn.util.net.Cidr;
-import brooklyn.util.net.Networking;
 import brooklyn.util.net.Urls;
 import brooklyn.util.os.Os;
 import brooklyn.util.repeat.Repeater;
@@ -70,46 +63,14 @@ import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 import brooklyn.util.time.Time;
 
-import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implements DockerHostDriver {
 
     public DockerHostSshDriver(DockerHostImpl entity, SshMachineLocation machine) {
         super(entity, machine);
-    }
-
-    protected Map<String, Integer> getPortMap() {
-        Map<String, Integer> ports = MutableMap.of();
-        ports.put("dockerPort", getDockerPort());
-        // Best guess at available ports, as SDN is started _after_ the DockerHost
-        if (entity.config().get(DockerInfrastructure.SDN_ENABLE)) {
-            Entity sdn = entity.getAttribute(DockerHost.DOCKER_INFRASTRUCTURE)
-                    .getAttribute(DockerInfrastructure.SDN_PROVIDER);
-            if (DockerUtils.isSdnProvider(entity, "WeaveNetwork")) {
-                Integer weavePort = sdn.config().get(WeaveNetwork.WEAVE_PORT);
-                if (weavePort != null) ports.put("weavePort", weavePort);
-            }
-            if (DockerUtils.isSdnProvider(entity, "CalicoNetwork")) {
-                PortRange etcdPort = sdn.config().get(EtcdNode.ETCD_CLIENT_PORT);
-                if (etcdPort != null) ports.put("etcdPort", etcdPort.iterator().next());
-                Integer powerstripPort = sdn.config().get(CalicoNode.POWERSTRIP_PORT);
-                if (powerstripPort != null) ports.put("powerstripPort", powerstripPort);
-            }
-        }
-        return ports;
-    }
-
-    @Override
-    public Set<Integer> getPortsUsed() {
-        return ImmutableSet.<Integer> builder()
-                .addAll(super.getPortsUsed())
-                .addAll(getPortMap().values())
-                .build();
     }
 
     @Override
@@ -291,6 +252,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                     if ("ubuntu".equalsIgnoreCase(osDetails.getName())) {
                         commands.add(installPackage("software-properties-common"));
                         commands.add(sudo("add-apt-repository -y ppa:canonical-kernel-team/ppa"));
+                        commands.add("export UCF_FORCE_CONFFNEW=1");
                         if ("overlay".equals(storage) || "btrfs".equals(storage)) {
                             commands.add(installPackage("linux-{image,headers,image-extra}-3.19.\\*-generic"));
                         } else if ("aufs".equals(storage) || Strings.isBlank(storage)) { // aufs is default
@@ -414,8 +376,6 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
             log.info("Stopping running Docker instance at {} before customising", getMachine());
             stop();
         }
-
-        Networking.checkPortsValid(getPortMap());
 
         newScript(CUSTOMIZING)
                 .body.append(

@@ -44,7 +44,6 @@ import brooklyn.util.time.Duration;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Multimap;
 
 /**
  * An SDN agent process on a Docker host.
