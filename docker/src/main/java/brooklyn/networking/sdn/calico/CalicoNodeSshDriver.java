@@ -152,7 +152,7 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
     @Override
     public Map<String, String> getShellEnvironment() {
         Entity etcdNode = getEntity().config().get(CalicoNode.ETCD_NODE);
-        HostAndPort etcdAuthority = HostAndPort.fromParts(etcdNode.getAttribute(Attributes.HOSTNAME), etcdNode.getAttribute(EtcdNode.ETCD_CLIENT_PORT));
+        HostAndPort etcdAuthority = HostAndPort.fromParts(etcdNode.getAttribute(Attributes.SUBNET_ADDRESS), etcdNode.getAttribute(EtcdNode.ETCD_CLIENT_PORT));
         Map<String, String> environment = MutableMap.copyOf(super.getShellEnvironment());
         environment.put("ETCD_AUTHORITY", etcdAuthority.toString());
         return environment;

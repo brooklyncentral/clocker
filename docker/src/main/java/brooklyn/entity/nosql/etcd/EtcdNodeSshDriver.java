@@ -129,14 +129,16 @@ public class EtcdNodeSshDriver extends AbstractSoftwareProcessSshDriver implemen
         // Build etcd startup command
         List<String> commands = Lists.newLinkedList();
         commands.add("cd " + getRunDir());
-        commands.add(format("%s -listen-client-urls %s -advertise-client-urls %<s "
-                + "-listen-peer-urls %s -initial-advertise-peer-urls %<s "
+        commands.add(format("%s -bind-addr 0.0.0.0:%d -advertise-client-urls %s "
+                + "-peer-bind-addr 0.0.0.0:%d -initial-advertise-peer-urls %s "
                 + "-initial-cluster-token %s -name %s -initial-cluster-state %s "
                 + "-initial-cluster %s "
                 + "> %s 2>&1 < /dev/null &",
-                Os.mergePathsUnix(getExpandedInstallDir(), "etcd"),
-                getClientUrl(), getPeerUrl(), getClusterToken(), getNodeName(), state, nodes,
-                getLogFileLocation()));
+                        Os.mergePathsUnix(getExpandedInstallDir(), "etcd"),
+                        getEntity().getAttribute(EtcdNode.ETCD_CLIENT_PORT), getClientUrl(),
+                        getEntity().getAttribute(EtcdNode.ETCD_PEER_PORT), getPeerUrl(),
+                        getClusterToken(), getNodeName(), state, nodes,
+                        getLogFileLocation()));
 
         newScript(ImmutableMap.of(USE_PID_FILE, true), LAUNCHING)
                 .body.append(commands)
