@@ -91,6 +91,7 @@ import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.task.DynamicTasks;
 import brooklyn.util.task.Tasks;
 import brooklyn.util.task.system.ProcessTaskWrapper;
+import brooklyn.util.task.system.ProcessTaskStub.ScriptReturnType;
 import brooklyn.util.text.Identifiers;
 import brooklyn.util.text.StringPredicates;
 import brooklyn.util.text.Strings;
@@ -397,24 +398,25 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     public String execCommandTimeout(String command, Duration timeout) {
+        ProcessTaskWrapper<String> task = SshEffectorTasks.ssh(command)
+                .environmentVariables(((AbstractSoftwareProcessSshDriver) getDriver()).getShellEnvironment())
+                .requiringZeroAndReturningStdout()
+                .machine(getMachine())
+                .summary(command)
+                .newTask();
+
         try {
-            ProcessTaskWrapper<Integer> task = SshEffectorTasks.ssh(command)
-                    .environmentVariables(((AbstractSoftwareProcessSshDriver) getDriver()).getShellEnvironment())
-                    .machine(getMachine())
-                    .summary(command)
-                    .newTask();
-            int result = DynamicTasks.queueIfPossible(task)
+            String result = DynamicTasks.queueIfPossible(task)
                     .executionContext(this)
                     .orSubmitAsync()
                     .asTask()
                     .get(timeout);
-            if (result != 0) {
-                LOG.warn("Command failed (result {}): {}", result, task.getStderr());
-            }
-            return task.getStdout();
+            return result;
         } catch (TimeoutException te) {
             throw new IllegalStateException("Timed out running command: " + command);
         } catch (Exception e) {
+            Integer exitCode = task.getExitCode();
+            LOG.warn("Command failed, return code {}: {}", exitCode == null ? -1 : exitCode, task.getStderr());
             throw Exceptions.propagate(e);
         }
     }
@@ -426,21 +428,26 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     public int execCommandStatusTimeout(String command, Duration timeout) {
+        ProcessTaskWrapper<Object> task = SshEffectorTasks.ssh(command)
+                .environmentVariables(((AbstractSoftwareProcessSshDriver) getDriver()).getShellEnvironment())
+                .returning(ScriptReturnType.EXIT_CODE)
+                .allowingNonZeroExitCode()
+                .machine(getMachine())
+                .summary(command)
+                .newTask();
+
         try {
-            ProcessTaskWrapper<Integer> task = SshEffectorTasks.ssh(command)
-                    .environmentVariables(((AbstractSoftwareProcessSshDriver) getDriver()).getShellEnvironment())
-                    .machine(getMachine())
-                    .summary(command)
-                    .newTask();
-            int result = DynamicTasks.queueIfPossible(task)
+            Object result = DynamicTasks.queueIfPossible(task)
                     .executionContext(this)
                     .orSubmitAsync()
                     .asTask()
                     .get(timeout);
-            return result;
+            return (Integer) result;
         } catch (TimeoutException te) {
             throw new IllegalStateException("Timed out running command: " + command);
         } catch (Exception e) {
+            Integer exitCode = task.getExitCode();
+            LOG.warn("Command failed, return code {}: {}", exitCode == null ? -1 : exitCode, task.getStderr());
             throw Exceptions.propagate(e);
         }
     }
