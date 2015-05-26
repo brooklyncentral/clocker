@@ -59,6 +59,8 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
         commands.addAll(BashCommands.commandsToDownloadUrlsAs(resolver.getTargets(), getCalicoCommand()));
         commands.add("chmod 755 " + getCalicoCommand());
         commands.add(BashCommands.installPackage("ipset"));
+        commands.add(BashCommands.sudo("modprobe ip6_tables"));
+        commands.add(BashCommands.sudo("modprobe xt_set"));
 
         newScript(INSTALLING)
                 .body.append(commands)
@@ -74,7 +76,7 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
     public void launch() {
         InetAddress address = getEntity().getAttribute(SdnAgent.SDN_AGENT_ADDRESS);
         Boolean firstMember = getEntity().getAttribute(AbstractGroup.FIRST_MEMBER);
-        LOG.info("Launching {} calico service at {}", Boolean.TRUE.equals(firstMember) ? "first" : "next", address);
+        LOG.info("Launching {} calico service at {}", Boolean.TRUE.equals(firstMember) ? "first" : "next", address.getHostAddress());
 
         newScript(MutableMap.of(USE_PID_FILE, false), LAUNCHING)
                 .updateTaskAndFailOnNonZeroResultCode()
