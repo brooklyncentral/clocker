@@ -38,7 +38,7 @@ import brooklyn.util.flags.SetFromFlag;
 public interface EtcdNode extends SoftwareProcess {
 
     @SetFromFlag("version")
-    ConfigKey<String> SUGGESTED_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "2.0.5");
+    ConfigKey<String> SUGGESTED_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "2.0.11");
 
     @SetFromFlag("downloadUrl")
     ConfigKey<String> DOWNLOAD_URL = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.DOWNLOAD_URL.getConfigKey(),

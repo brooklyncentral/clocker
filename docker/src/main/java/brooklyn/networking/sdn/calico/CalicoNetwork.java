@@ -34,10 +34,10 @@ import brooklyn.util.flags.SetFromFlag;
 public interface CalicoNetwork extends SdnProvider {
 
     @SetFromFlag("calicoVersion")
-    ConfigKey<String> CALICO_VERSION = ConfigKeys.newStringConfigKey("calico.version", "The Calico SDN version number", "0.3.2");
+    ConfigKey<String> CALICO_VERSION = ConfigKeys.newStringConfigKey("calico.version", "The Calico SDN version number", "0.4.2");
 
     @SetFromFlag("etcdVersion")
-    ConfigKey<String> ETCD_VERSION = ConfigKeys.newStringConfigKey("etcd.version", "The Etcd version number", "2.0.5");
+    ConfigKey<String> ETCD_VERSION = ConfigKeys.newStringConfigKey("etcd.version", "The Etcd version number", "2.0.11");
 
     ConfigKey<Boolean> EXTERNAL_ETCD_CLUSTER = ConfigKeys.newBooleanConfigKey("calico.etcd.external", "Whether to use an external Etcd cluster", Boolean.FALSE);
     ConfigKey<Integer> EXTERNAL_ETCD_INITIAL_SIZE = ConfigKeys.newIntegerConfigKey("calico.etcd.external.initialSize", "The initial size of the external Etcd cluster");

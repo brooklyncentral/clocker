@@ -50,13 +50,13 @@ import com.google.common.collect.ImmutableList;
 public class CalicoDockerCloud extends AbstractApplication {
 
     @CatalogConfig(label="Docker Version", priority=100)
-    public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_VERSION, "1.6.0");
+    public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_VERSION, "1.6.2");
 
     @CatalogConfig(label="Calico Version", priority=90)
-    public static final ConfigKey<String> CALICO_VERSION = ConfigKeys.newStringConfigKey("calico.version", "Calico SDN version", "0.3.2");
+    public static final ConfigKey<String> CALICO_VERSION = ConfigKeys.newStringConfigKey("calico.version", "Calico SDN version", "0.4.2");
 
     @CatalogConfig(label="Etcd Version", priority=90)
-    public static final ConfigKey<String> ETCD_VERSION = ConfigKeys.newStringConfigKey("etcd.version", "Etcd version", "2.0.5");
+    public static final ConfigKey<String> ETCD_VERSION = ConfigKeys.newStringConfigKey("etcd.version", "Etcd version", "2.0.11");
 
     @CatalogConfig(label="Location Name", priority=80)
     public static final ConfigKey<String> LOCATION_NAME = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.LOCATION_NAME.getConfigKey(), "my-docker-cloud");
