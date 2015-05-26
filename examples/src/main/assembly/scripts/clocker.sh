@@ -47,5 +47,4 @@ export JAVA_OPTS
 # launch clocker
 ${ROOT}/bin/brooklyn.sh clocker ${LAUNCH_FLAGS} \
     ${PERSISTENCE_FLAGS} \
-    --ignoreManagedAppsStartupErrors \
     --stopOnShutdown none 2>&1 | tee -a ${ROOT}/console.log
