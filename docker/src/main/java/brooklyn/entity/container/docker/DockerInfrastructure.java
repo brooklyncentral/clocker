@@ -58,7 +58,7 @@ import com.google.common.reflect.TypeToken;
 public interface DockerInfrastructure extends BasicStartable, Resizable, LocationOwner<DockerLocation, DockerInfrastructure> {
 
     @SetFromFlag("dockerVersion")
-    ConfigKey<String> DOCKER_VERSION = ConfigKeys.newStringConfigKey("docker.version", "The Docker Engine version number", "1.4.1");
+    ConfigKey<String> DOCKER_VERSION = ConfigKeys.newStringConfigKey("docker.version", "The Docker Engine version number", "1.6.2");
 
     @SetFromFlag("securityGroup")
     ConfigKey<String> SECURITY_GROUP = ConfigKeys.newStringConfigKey(

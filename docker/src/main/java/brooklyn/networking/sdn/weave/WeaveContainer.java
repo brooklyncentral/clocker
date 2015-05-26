@@ -37,7 +37,7 @@ public interface WeaveContainer extends SdnAgent {
 
     @SetFromFlag("downloadUrl")
     BasicAttributeSensorAndConfigKey<String> DOWNLOAD_URL = new BasicAttributeSensorAndConfigKey<String>(
-            SoftwareProcess.DOWNLOAD_URL, "https://raw.githubusercontent.com/zettio/weave/v${version}/weave");
+            SoftwareProcess.DOWNLOAD_URL, "https://raw.githubusercontent.com/weaveworks/weave/v${version}/weave");
 
 
 }

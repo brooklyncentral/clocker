@@ -47,7 +47,7 @@ import com.google.common.collect.ImmutableList;
 public class DockerCloud extends AbstractApplication {
 
     @CatalogConfig(label="Docker Version", priority=100)
-    public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_VERSION, "1.6.0");
+    public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_VERSION, "1.6.2");
 
     @CatalogConfig(label="Location Name", priority=80)
     public static final ConfigKey<String> LOCATION_NAME = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.LOCATION_NAME.getConfigKey(), "my-docker-cloud");
