@@ -38,7 +38,7 @@ services:
       $brooklyn:entitySpec:
         type: brooklyn.networking.sdn.weave.WeaveNetwork
         brooklyn.config:
-          weave.version: 0.10.0
+          weave.version: 0.11.0
     docker.host.spec:
       $brooklyn:entitySpec:
         type: brooklyn.entity.container.docker.DockerHost
