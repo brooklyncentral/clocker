@@ -22,7 +22,7 @@
     <parent>
         <artifactId>brooklyn-clocker-parent</artifactId>
         <groupId>io.brooklyn.clocker</groupId>
-        <version>0.8.1</version>  <!-- CLOCKER_VERSION -->
+        <version>0.8.2</version>  <!-- CLOCKER_VERSION -->
         <relativePath>../pom.xml</relativePath>
     </parent>
 
