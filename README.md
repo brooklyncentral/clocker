@@ -32,12 +32,12 @@ blueprints at either
 
 ### Using the latest Clocker release
 
-The latest version of Clocker is [0.8.1](https://github.com/brooklyncentral/clocker/releases/tag/v0.8.1).
+The latest version of Clocker is [0.8.2](https://github.com/brooklyncentral/clocker/releases/tag/v0.8.2).
 You can deploy your own **Docker Cloud** with a Weave SDN by running these commands with the _network_ argument
 st to `weave`, to use Project Calico as your SDN provider, change the last argument to `calico` instead:
 ```Bash
 % wget --no-check-certificate --quiet \
-    -O brooklyn-clocker-dist.tar.gz http://git.io/vfCE8
+    -O brooklyn-clocker-dist.tar.gz http://git.io/vkVBD
 % tar zxf brooklyn-clocker-dist.tar.gz
 % cd brooklyn-clocker
 % ./bin/clocker.sh location network
