@@ -55,6 +55,9 @@
         <brooklyn.version>0.7.0-SNAPSHOT</brooklyn.version> <!-- BROOKLYN_VERSION -->
         <includedTestGroups/>
         <excludedTestGroups>Integration,Live,WIP</excludedTestGroups>
+
+        <!-- Deployment -->
+        <gpg.passphrase />
     </properties>
 
     <scm>
