@@ -42,6 +42,7 @@ import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.location.OsDetails;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.geo.LocalhostExternalIpLoader;
+import brooklyn.location.jclouds.JcloudsMachineLocation;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.location.jclouds.networking.JcloudsLocationSecurityGroupCustomizer;
 import brooklyn.management.Task;
@@ -184,7 +185,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 return;
             }
             // TODO check GCE compatibility?
-            JcloudsSshMachineLocation location = (JcloudsSshMachineLocation) getLocation();
+            JcloudsMachineLocation location = (JcloudsMachineLocation) getLocation();
             JcloudsLocationSecurityGroupCustomizer customizer = JcloudsLocationSecurityGroupCustomizer.getInstance(getEntity().getApplicationId());
             Collection<IpPermission> permissions = getIpPermissions();
             log.debug("Applying custom security groups to {}: {}", location, permissions);
