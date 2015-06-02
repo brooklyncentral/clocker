@@ -450,7 +450,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
         try {
             // Create a new container using jclouds Docker driver
-            JcloudsSshMachineLocation container = host.getJcloudsLocation().obtain(dockerFlags);
+            JcloudsSshMachineLocation container = (JcloudsSshMachineLocation) host.getJcloudsLocation().obtain(dockerFlags);
             String containerId = container.getNode().getId();
             setAttribute(CONTAINER_ID, containerId);
             Entity entity = getRunningEntity();
