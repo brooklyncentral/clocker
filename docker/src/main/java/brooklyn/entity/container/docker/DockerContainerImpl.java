@@ -68,7 +68,7 @@ import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.dynamic.DynamicLocation;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
-import brooklyn.location.jclouds.JcloudsSshMachineLocation;
+import brooklyn.location.jclouds.JcloudsMachineLocation;
 import brooklyn.location.jclouds.templates.PortableTemplateBuilder;
 import brooklyn.management.LocationManager;
 import brooklyn.networking.portforwarding.subnet.JcloudsPortforwardingSubnetLocation;
@@ -450,7 +450,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
         try {
             // Create a new container using jclouds Docker driver
-            JcloudsSshMachineLocation container = host.getJcloudsLocation().obtain(dockerFlags);
+            JcloudsMachineLocation container = (JcloudsMachineLocation) host.getJcloudsLocation().obtain(dockerFlags);
             String containerId = container.getNode().getId();
             setAttribute(CONTAINER_ID, containerId);
             Entity entity = getRunningEntity();
@@ -491,7 +491,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                     .configure(flags)
                     .configure(DynamicLocation.OWNER, this)
                     .configure("machine", container) // the underlying JcloudsLocation
-                    .configure(container.config().getBag().getAllConfig())
+                    .configure(((ConfigurationSupportInternal) container.config()).getBag().getAllConfig())
                     .configureIfNotNull(SshMachineLocation.SSH_HOST, getSshHostAddress())
                     .displayName(getDockerContainerName());
             DockerContainerLocation location = getManagementContext().getLocationManager().createLocation(spec);
