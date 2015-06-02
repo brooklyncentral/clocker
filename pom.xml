@@ -26,9 +26,9 @@
     </modules>
 
     <parent>
-        <groupId>org.sonatype.oss</groupId>
-        <artifactId>oss-parent</artifactId>
-        <version>9</version>
+        <groupId>org.apache.brooklyn</groupId>
+        <artifactId>brooklyn-downstream-parent</artifactId>
+        <version>0.7.0-SNAPSHOT</version> <!-- BROOKLYN_VERSION -->
     </parent>
 
     <groupId>io.brooklyn.clocker</groupId>
@@ -103,7 +103,7 @@
         </repository>
         <!-- Cloudsoft repo, for early custom releases of jclouds-docker -->
         <repository>
-            <id>cloudsoft-deploy-artifactory-release</id>
+            <id>cloudsoft</id>
             <url>http://ccweb.cloudsoftcorp.com/maven/libs-release-local/</url>
             <releases>
                 <enabled>true</enabled>
@@ -291,12 +291,9 @@
             <id>Release</id>
             <activation>
                 <property>
-                    <name>performRelease</name>
+                    <name>brooklyn.deployTo</name>
                 </property>
             </activation>
-            <properties>
-                <gpg.passphrase></gpg.passphrase>
-            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -390,11 +387,11 @@
             </properties>
         </profile>
         <profile>
-          <id>cloudsoft-artifactory-repo</id>
+          <id>cloudsoft-release</id>
           <activation>
             <property>
               <name>brooklyn.deployTo</name>
-              <value>cloudsoftArtifactory</value>
+              <value>cloudsoft</value>
             </property>
           </activation>
           <distributionManagement>
