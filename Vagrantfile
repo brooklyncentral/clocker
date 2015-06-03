@@ -13,7 +13,6 @@ Vagrant.configure(2) do |config|
   # remote debug
   config.vm.network "forwarded_port", guest: 4000, host: 4000
 
-  config.vm.synced_folder "examples/target/brooklyn-clocker-dist/brooklyn-clocker", "/home/vagrant/clocker"
   config.vm.synced_folder "~/.brooklyn", "/home/vagrant/.brooklyn"
 
   config.vm.provision "shell", inline: <<-SHELL
