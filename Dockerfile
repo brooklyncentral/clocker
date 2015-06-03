@@ -11,4 +11,4 @@ VOLUME /root/.brooklyn
 
 EXPOSE 8081
 
-CMD bin/clocker.sh
+ENTRYPOINT ["bin/clocker.sh"]
