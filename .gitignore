@@ -26,3 +26,5 @@ obj
 *.swp
 .DS_Store
 *.swp
+
+.vagrant
