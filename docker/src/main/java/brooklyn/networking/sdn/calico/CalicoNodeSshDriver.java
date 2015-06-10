@@ -102,7 +102,7 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
     public void createSubnet(String virtualNetworkId, String subnetId, Cidr subnetCidr) {
         newScript("createSubnet")
                 .body.append(
-                        sudo(String.format("%s ipv4 pool add %s", getCalicoCommand(), subnetCidr)))
+                        sudo(String.format("%s pool add %s", getCalicoCommand(), subnetCidr)))
                 .execute();
     }
 
