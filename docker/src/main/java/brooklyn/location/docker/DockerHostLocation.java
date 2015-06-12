@@ -48,6 +48,7 @@ import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.group.DynamicCluster;
+import brooklyn.entity.trait.Startable;
 import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
 import brooklyn.location.MachineProvisioningLocation;
@@ -57,6 +58,7 @@ import brooklyn.location.basic.LocationConfigKeys;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.dynamic.DynamicLocation;
 import brooklyn.location.jclouds.JcloudsLocation;
+import brooklyn.management.Task;
 import brooklyn.networking.common.subnet.PortForwarder;
 import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnAttributes;
@@ -67,6 +69,7 @@ import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.ssh.BashCommands;
+import brooklyn.util.task.BasicTask;
 import brooklyn.util.text.Strings;
 
 import com.google.common.base.Objects.ToStringHelper;
@@ -213,7 +216,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             if (added == null) {
                 throw new NoMachinesAvailableException(String.format("Failed to create container at %s", dockerHost.getDockerHostName()));
             } else {
-                Entities.start(added, ImmutableList.of(machine));
+                Entities.invokeEffectorWithArgs((EntityLocal) entity, added, Startable.START,  MutableMap.of("locations", ImmutableList.of(machine)));
             }
             DockerContainer dockerContainer = (DockerContainer) added;
 
