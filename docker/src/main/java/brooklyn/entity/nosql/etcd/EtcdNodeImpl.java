@@ -63,7 +63,7 @@ public class EtcdNodeImpl extends SoftwareProcessImpl implements EtcdNode {
     }
 
     @Override
-    public Class<EtcdNodeDriver> getDriverInterface() {
+    public Class<? extends EtcdNodeDriver> getDriverInterface() {
         return EtcdNodeDriver.class;
     }
 

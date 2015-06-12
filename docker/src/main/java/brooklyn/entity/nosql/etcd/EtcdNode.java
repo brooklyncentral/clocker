@@ -31,6 +31,7 @@ import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
+import brooklyn.location.basic.PortRanges;
 import brooklyn.util.flags.SetFromFlag;
 
 @Catalog(name="Etcd Node")
@@ -45,10 +46,10 @@ public interface EtcdNode extends SoftwareProcess {
             "https://github.com/coreos/etcd/releases/download/v${version}/etcd-v${version}-linux-amd64.tar.gz");
 
     @SetFromFlag("etcdClientPort")
-    PortAttributeSensorAndConfigKey ETCD_CLIENT_PORT = new PortAttributeSensorAndConfigKey("etcd.port.client", "Etcd client port", "2379");
+    PortAttributeSensorAndConfigKey ETCD_CLIENT_PORT = new PortAttributeSensorAndConfigKey("etcd.port.client", "Etcd client port", PortRanges.fromInteger(2379));
 
     @SetFromFlag("etcdPeerPort")
-    PortAttributeSensorAndConfigKey ETCD_PEER_PORT = new PortAttributeSensorAndConfigKey("etcd.port.peer", "Etcd peer port", "2380");
+    PortAttributeSensorAndConfigKey ETCD_PEER_PORT = new PortAttributeSensorAndConfigKey("etcd.port.peer", "Etcd peer port", PortRanges.fromInteger(2380));
 
     @SetFromFlag("nodeName")
     AttributeSensorAndConfigKey<String, String> ETCD_NODE_NAME = ConfigKeys.newStringSensorAndConfigKey(

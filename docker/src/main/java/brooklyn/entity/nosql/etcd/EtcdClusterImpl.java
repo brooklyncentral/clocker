@@ -96,6 +96,11 @@ public class EtcdClusterImpl extends DynamicClusterImpl implements EtcdCluster {
                 .configure("group", this));
     }
 
+    public boolean isProxied() {
+        String memberType = config().get(MEMBER_SPEC).getType().getSimpleName();
+        return memberType.contains("Proxy");
+    }
+
     protected void onServerPoolMemberChanged(Entity member) {
         synchronized (mutex) {
             log.debug("For {}, considering membership of {} which is in locations {}", new Object[]{ this, member, member.getLocations() });
