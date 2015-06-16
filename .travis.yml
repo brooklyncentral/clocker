@@ -14,7 +14,7 @@
 
 language: java
 jdk:
-- openjdk6
+- openjdk7
 script: mvn clean install
 before_deploy: "mkdir artifacts && mv examples/target/brooklyn-clocker-dist.tar.gz artifacts/brooklyn-clocker-${TRAVIS_BUILD_NUMBER}-${TRAVIS_COMMIT}-dist.tar.gz"
 deploy:
