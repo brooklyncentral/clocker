@@ -31,7 +31,7 @@ import brooklyn.util.flags.SetFromFlag;
 public interface CalicoNode extends SdnAgent {
 
     @SetFromFlag("version")
-    ConfigKey<String> SUGGESTED_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "0.4.2");
+    ConfigKey<String> SUGGESTED_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "0.4.4");
 
     @SetFromFlag("downloadUrl")
     ConfigKey<String> DOWNLOAD_URL = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.DOWNLOAD_URL.getConfigKey(),

@@ -53,7 +53,7 @@ public class CalicoDockerCloud extends AbstractApplication {
     public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_VERSION, "1.6.2");
 
     @CatalogConfig(label="Calico Version", priority=90)
-    public static final ConfigKey<String> CALICO_VERSION = ConfigKeys.newStringConfigKey("calico.version", "Calico SDN version", "0.4.2");
+    public static final ConfigKey<String> CALICO_VERSION = ConfigKeys.newStringConfigKey("calico.version", "Calico SDN version", "0.4.4");
 
     @CatalogConfig(label="Etcd Version", priority=90)
     public static final ConfigKey<String> ETCD_VERSION = ConfigKeys.newStringConfigKey("etcd.version", "Etcd version", "2.0.11");
