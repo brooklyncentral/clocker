@@ -17,6 +17,7 @@ import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityLocal;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.networking.sdn.SdnAgent;
+import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.os.Os;
@@ -67,7 +68,8 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
 
         newScript(MutableMap.of(USE_PID_FILE, false), LAUNCHING)
                 .updateTaskAndFailOnNonZeroResultCode()
-                .body.append(BashCommands.sudo(String.format("%s launch %s", getWeaveCommand(),
+                .body.append(BashCommands.sudo(String.format("%s launch -iprange %s %s", getWeaveCommand(),
+                        entity.config().get(SdnProvider.CONTAINER_NETWORK_CIDR),
                         Boolean.TRUE.equals(firstMember) ? "" : first.getAttribute(Attributes.SUBNET_ADDRESS))))
                 .execute();
     }
