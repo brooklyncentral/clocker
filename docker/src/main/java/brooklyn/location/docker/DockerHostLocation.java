@@ -216,7 +216,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             if (added == null) {
                 throw new NoMachinesAvailableException(String.format("Failed to create container at %s", dockerHost.getDockerHostName()));
             } else {
-                Entities.invokeEffectorWithArgs((EntityLocal) entity, added, Startable.START,  MutableMap.of("locations", ImmutableList.of(machine))).getUnchecked();
+                Entities.invokeEffector((EntityLocal) entity, added, Startable.START,  MutableMap.of("locations", ImmutableList.of(machine))).getUnchecked();
             }
             DockerContainer dockerContainer = (DockerContainer) added;
 
