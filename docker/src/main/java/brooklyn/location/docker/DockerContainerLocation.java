@@ -21,6 +21,7 @@ import static java.lang.String.format;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -169,20 +170,39 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
 
     @Override
     public int execScript(Map<String,?> props, String summaryForLogging, List<String> commands, Map<String,?> env) {
-        Iterable<String> filtered = Iterables.filter(commands, DockerCallbacks.FILTER);
-        for (String commandString : filtered) {
-            parseDockerCallback(commandString);
+        if(getOwner().config().get(DockerContainer.DOCKER_USE_EXEC)) {
+            SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
+            return host.execCommands(props, summaryForLogging, getExecCommands(commands));
+        } else {
+            Iterable<String> filtered = Iterables.filter(commands, DockerCallbacks.FILTER);
+            for (String commandString : filtered) {
+                parseDockerCallback(commandString);
+            }
+            return super.execScript(props, summaryForLogging, commands, env);
         }
-        return super.execScript(props, summaryForLogging, commands, env);
     }
 
     @Override
     public int execCommands(Map<String,?> props, String summaryForLogging, List<String> commands, Map<String,?> env) {
-        Iterable<String> filtered = Iterables.filter(commands, DockerCallbacks.FILTER);
-        for (String commandString : filtered) {
-            parseDockerCallback(commandString);
+        if(getOwner().config().get(DockerContainer.DOCKER_USE_EXEC)) {
+            SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
+            return host.execCommands(props, summaryForLogging, getExecCommands(commands));
+        } else {
+            Iterable<String> filtered = Iterables.filter(commands, DockerCallbacks.FILTER);
+            for (String commandString : filtered) {
+                parseDockerCallback(commandString);
+            }
+            return super.execCommands(props, summaryForLogging, commands, env);
         }
-        return super.execCommands(props, summaryForLogging, commands, env);
+    }
+
+    private List<String> getExecCommands(List<String> commands) {
+        List<String> result = new LinkedList<String>();
+        String prefix = "docker exec " + dockerContainer.getContainerId() + " ";
+        for(String command: commands) {
+            result.add(prefix + command);
+        }
+        return result;
     }
 
     private void parseDockerCallback(String commandString) {
