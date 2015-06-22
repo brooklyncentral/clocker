@@ -1,0 +1,170 @@
+# Copyright 2014-2015 by Cloudsoft Corporation Limited
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+brooklyn.catalog:
+  version: 0.9.0
+  items:
+  - id: docker-infrastructure
+    name: Docker Infrastructure
+    iconUrl: classpath://docker-logo.png
+    item:
+      type: brooklyn.entity.container.docker.DockerInfrastructure
+      brooklyn.config:
+        docker.version: 1.6.2
+        entity.dynamicLocation.name: "my-docker-cloud"
+        docker.tls.certificate: conf/server-cert.pem
+        docker.tls.key: conf/server-key.pem
+        docker.host.spec:
+          $brooklyn:entitySpec:
+            type: docker-host
+  - id: docker-host
+    name: Docker Host
+    iconUrl: classpath://docker-logo.png
+    item:
+      type: brooklyn.entity.container.docker.DockerHost
+      brooklyn.config:
+        docker.host.driver.storage: overlay
+        docker.host.nameFormat: "docker-%2$d"
+        docker.container.spec:
+          $brooklyn:entitySpec:
+            type: docker-container
+  - id: docker-container
+    name: Docker Container
+    iconUrl: classpath://docker-logo.png
+    item:
+      type: brooklyn.entity.container.docker.DockerContainer
+      brooklyn.config:
+        docker.container.nameFormat: "container-%2$02x"
+  - id: calico-network
+    name: Calico Network
+    iconUrl: classpath://calico-logo.png
+    item:
+      type: brooklyn.networking.sdn.calico.CalicoNetwork
+      brooklyn.config:
+        calico.version: 0.4.2
+        sdn.agent.spec:
+          $brooklyn:entitySpec:
+            type: calico-node
+  - id: calico-node
+    name: Calico Node
+    iconUrl: classpath://calico-logo.png
+    item:
+      type: brooklyn.networking.sdn.calico.CalicoNode
+  - id: etcd-cluster
+    name: Etcd Cluster
+    item:
+      type: brooklyn.entity.nosql.etcd.EtcdCluster
+      brooklyn.config:
+        etcd.version: 2.0.11
+        etcd.node.spec:
+          $brooklyn:entitySpec:
+            type: etcd-node
+  - id: etcd-node
+    name: Etcd Node
+    item:
+      type: brooklyn.entity.nosql.etcd.EtcdNode
+  - id: etcd-proxy
+    name: Etcd Proxy
+    item:
+      type: brooklyn.entity.nosql.etcd.EtcdProxy
+  - id: weave-network
+    iconUrl: classpath://weaveworks-logo.png
+    item:
+      type: brooklyn.networking.sdn.weave.WeaveNetwork
+      brooklyn.config:
+        etcd.version: 0.11.2
+        sdn.agent.spec:
+          $brooklyn:entitySpec:
+            type: weave-router
+  - id: weave-router
+    iconUrl: classpath://weaveworks-logo.png
+    item:
+      type: brooklyn.networking.sdn.weave.WeaveContainer
+  - id: docker-cloud-calico
+    name: Clocker with Calico
+    description: Docker Cloud infrastructure with Calico networking
+    iconUrl: classpath://calico-logo.png
+    itemType: template
+    item:
+      services:
+      - type: docker-infrastructure
+        brooklyn.config:
+          docker.host.cluster.initial.size: 3
+          docker.container.cluster.headroom.count: 4
+          docker.policy.ha.enable: false
+          docker.container.strategies:
+          - $brooklyn:object:
+              type: brooklyn.location.docker.strategy.MaxContainersPlacementStrategy
+              brooklyn.config:
+                maxContainers: 12
+          - $brooklyn:object:
+              type: brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy
+          sdn.enable: true
+          sdn.debug: true
+          sdn.provider.spec:
+            $brooklyn:entitySpec:
+              type: calico-network
+              brooklyn.config:
+                sdn.network.cidr: 50.0.0.0/16
+                sdn.network.size: 24
+          docker.host.spec:
+            $brooklyn:entitySpec:
+              type: docker-host
+              brooklyn.config:
+                docker.host.flags:
+                  minRam: 7g
+                  minCores: 2
+                  stopIptables: true
+                  osFamily: ubuntu
+                  osVersionRegex: 14.04
+                start.timeout: 15m
+                docker.container.spec:
+                  $brooklyn:entitySpec:
+                    type: docker-container
+                    brooklyn.config:
+                      docker.container.nameFormat: "calico-%2$02x"
+  - id: docker-cloud-weave
+    name: Clocker with Weave
+    description: Docker Cloud infrastructure with Weave networking
+    iconUrl: classpath://weaveworks-logo.png
+    itemType: template
+    item:
+      services:
+      - type: docker-infrastructure
+        brooklyn.config:
+          docker.host.cluster.initial.size: 2
+          docker.container.cluster.headroom.count: 4
+          docker.policy.ha.enable: false
+          docker.container.strategies:
+          - $brooklyn:object:
+              type: brooklyn.location.docker.strategy.MaxContainersPlacementStrategy
+              brooklyn.config:
+                maxContainers: 12
+          - $brooklyn:object:
+              type: brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy
+          sdn.enable: true
+          sdn.provider.spec:
+            $brooklyn:entitySpec:
+              type: weave-network
+          docker.host.spec:
+            $brooklyn:entitySpec:
+              type: docker-host
+              brooklyn.config:
+                docker.host.flags:
+                  minRam: 7g
+                  minCores: 2
+                  stopIptables: true
+                  osFamily: ubuntu
+                  osVersionRegex: 14.04
+                start.timeout: 15m
