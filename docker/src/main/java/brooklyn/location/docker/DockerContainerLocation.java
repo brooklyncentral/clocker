@@ -175,7 +175,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
         if(getOwner().config().get(DockerContainer.DOCKER_USE_EXEC)) {
             Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
             SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
-            return host.execCommands(nonPortProps, summaryForLogging, getExecScript(commands));
+            return host.execCommands(nonPortProps, summaryForLogging, getExecScript(commands, env));
         } else {
             Iterable<String> filtered = Iterables.filter(commands, DockerCallbacks.FILTER);
             for (String commandString : filtered) {
@@ -188,9 +188,10 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     @Override
     public int execCommands(Map<String,?> props, String summaryForLogging, List<String> commands, Map<String,?> env) {
         if(getOwner().config().get(DockerContainer.DOCKER_USE_EXEC)) {
+
             SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
             Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
-            return host.execCommands(nonPortProps, summaryForLogging, getExecCommands(commands));
+            return host.execCommands(nonPortProps, summaryForLogging, getExecCommands(commands, env));
         } else {
             Iterable<String> filtered = Iterables.filter(commands, DockerCallbacks.FILTER);
             for (String commandString : filtered) {
@@ -200,16 +201,26 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
         }
     }
 
-    private List<String> getExecScript(List<String> commands) {
+    private List<String> getExecScript(List<String> commands, Map<String,?> env) {
         String prefix = "docker exec " + dockerContainer.getContainerId() + " '";
-        return Collections.singletonList(prefix + Joiner.on(';').join(commands) + "'");
+        return Collections.singletonList(prefix + Joiner.on(';').join(
+                Iterables.concat(getEnvVarCommands(env), commands)) + "'");
     }
 
-    private List<String> getExecCommands(List<String> commands) {
+    private List<String> getExecCommands(List<String> commands, Map<String,?> env) {
         List<String> result = new LinkedList<String>();
+        result.addAll(getEnvVarCommands(env));
         String prefix = "docker exec " + dockerContainer.getContainerId() + " ";
         for(String command: commands) {
             result.add(prefix + command);
+        }
+        return result;
+    }
+
+    private List<String> getEnvVarCommands(Map<String,?> env) {
+        List<String> result = new LinkedList<String>();
+        for(Map.Entry<String, ?> envVar : env.entrySet()) {
+            result.add("export " + envVar.getKey() + "=" + envVar.getValue());
         }
         return result;
     }
