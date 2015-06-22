@@ -21,6 +21,7 @@ import static java.lang.String.format;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -172,7 +173,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     public int execScript(Map<String,?> props, String summaryForLogging, List<String> commands, Map<String,?> env) {
         if(getOwner().config().get(DockerContainer.DOCKER_USE_EXEC)) {
             SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
-            return host.execCommands(props, summaryForLogging, getExecCommands(commands));
+            return host.execCommands(props, summaryForLogging, getExecScript(commands));
         } else {
             Iterable<String> filtered = Iterables.filter(commands, DockerCallbacks.FILTER);
             for (String commandString : filtered) {
@@ -194,6 +195,11 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
             }
             return super.execCommands(props, summaryForLogging, commands, env);
         }
+    }
+
+    private List<String> getExecScript(List<String> commands) {
+        String prefix = "docker exec " + dockerContainer.getContainerId() + " '";
+        return Collections.singletonList(prefix + Joiner.on(';').join(commands) + "'");
     }
 
     private List<String> getExecCommands(List<String> commands) {
