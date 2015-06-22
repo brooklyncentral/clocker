@@ -26,6 +26,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -171,8 +172,9 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     @Override
     public int execScript(Map<String,?> props, String summaryForLogging, List<String> commands, Map<String,?> env) {
         if(getOwner().config().get(DockerContainer.DOCKER_USE_EXEC)) {
+            Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
             SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
-            return host.execCommands(props, summaryForLogging, getExecScript(commands));
+            return host.execCommands(nonPortProps, summaryForLogging, getExecScript(commands));
         } else {
             Iterable<String> filtered = Iterables.filter(commands, DockerCallbacks.FILTER);
             for (String commandString : filtered) {
@@ -186,7 +188,8 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     public int execCommands(Map<String,?> props, String summaryForLogging, List<String> commands, Map<String,?> env) {
         if(getOwner().config().get(DockerContainer.DOCKER_USE_EXEC)) {
             SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
-            return host.execCommands(props, summaryForLogging, getExecCommands(commands));
+            Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
+            return host.execCommands(nonPortProps, summaryForLogging, getExecCommands(commands));
         } else {
             Iterable<String> filtered = Iterables.filter(commands, DockerCallbacks.FILTER);
             for (String commandString : filtered) {
