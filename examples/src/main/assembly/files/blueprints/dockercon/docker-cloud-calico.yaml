@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-id: docker-cloud-weave
-name: "Docker Cloud with Weave"
+id: docker-cloud-calico-openstack
+name: "Docker Cloud with Project Calico and OpenStack"
 origin: https://github.com/brooklyncentral/clocker/
 
 services:
@@ -23,7 +23,7 @@ services:
     docker.version: 1.6.2
     docker.tls.certificate: "conf/server-cert.pem"
     docker.tls.key: "conf/server-key.pem"
-    docker.host.cluster.initial.size: 2
+    docker.host.cluster.initial.size: 3
     docker.container.cluster.headroom.count: 4
     docker.policy.ha.enable: false
     docker.container.strategies:
@@ -34,11 +34,32 @@ services:
     - $brooklyn:object:
         type: brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy
     sdn.enable: true
+    sdn.debug: true
     sdn.provider.spec:
       $brooklyn:entitySpec:
-        type: brooklyn.networking.sdn.weave.WeaveNetwork
+        type: brooklyn.networking.sdn.calico.CalicoNetwork
         brooklyn.config:
-          weave.version: 1.0.0
+          calico.version: latest
+          etcd.version: 2.0.11
+          sdn.network.cidr: 50.3.0.0/16
+          sdn.network.size: 24
+          sdn.agent.spec:
+            $brooklyn:entitySpec:
+              type: brooklyn.networking.sdn.calico.CalicoNode
+              brooklyn.config:
+                download.url:
+                  "https://s3-eu-west-1.amazonaws.com/clocker-calico-downloads/calicoctl"
+                files.install:
+                  "https://s3-eu-west-1.amazonaws.com/clocker-calico-downloads/calico_node.tar.gz": "calico_node.tar.gz"
+                pre.install.command: |
+                  gzip -d calico_node.tar.gz &&
+                  docker load < calico_node.tar
+          etcd.node.spec:
+            $brooklyn:entitySpec:
+              type: brooklyn.entity.nosql.etcd.EtcdProxy
+              brooklyn.config:
+                etcd.cluster.name: "openstack02.abstractvisitorpattern.co.uk"
+                etcd.cluster.url: "http://5.153.18.74:2380"
     docker.host.spec:
       $brooklyn:entitySpec:
         type: brooklyn.entity.container.docker.DockerHost
@@ -52,3 +73,8 @@ services:
             osVersionRegex: 14.04
           start.timeout: 15m
           docker.host.nameFormat: "docker-%2$d"
+          docker.container.spec:
+            $brooklyn:entitySpec:
+              type: brooklyn.entity.container.docker.DockerContainer
+              brooklyn.config:
+                docker.container.nameFormat: "calico-%2$02x"

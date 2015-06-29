@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-id: docker-mysql
-name: "Docker Hub MySQL Service"
-origin: "https://registry.hub.docker.com/_/mysql/"
+id: etcd-cluster
+name: Etcd Cluster
+origin: "https://github.com/apache/incubator-brooklyn/"
 locations:
 - my-docker-cloud
 
 services:
-- type: docker:mysql:5.7
-  openPorts:
-  - 3306
-  directPorts:
-  - 3306
-  docker.container.environment:
-    MYSQL_ROOT_PASSWORD: "s3cr3t"
+- type: brooklyn.entity.nosql.etcd.EtcdCluster
+  initialSize: 3
+  id: cluster
+  brooklyn.config:
+    install.version: 2.0.5
+    etcd.port.client: 4001
+    etcd.cluster.name: "test"

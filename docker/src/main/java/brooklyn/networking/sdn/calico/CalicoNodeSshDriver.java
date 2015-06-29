@@ -133,6 +133,8 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
 
         // Add the container to the application profile and set up the network
         List<String> commands = MutableList.of();
+        commands.add(sudo(BashCommands.ok("mkdir -p /var/run/netns")));
+        commands.add(sudo(BashCommands.ok(String.format("ln -s /proc/%s/ns/net /var/run/netns/%s", dockerPid, dockerPid))));
         if (initial) {
             commands.add(sudo(String.format("%s container add %s %s", getCalicoCommand(), containerId, address.getHostAddress())));
             commands.add(sudo(String.format("%s profile add %s", getCalicoCommand(), subnetId))); // Idempotent

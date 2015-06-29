@@ -15,6 +15,7 @@
  */
 package brooklyn.location.docker;
 
+import static brooklyn.util.GroovyJavaMethods.truth;
 import static brooklyn.util.ssh.BashCommands.sudo;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.format;
@@ -45,16 +46,21 @@ import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.location.jclouds.JcloudsUtil;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.flags.SetFromFlag;
+import brooklyn.util.internal.ssh.ShellTool;
+import brooklyn.util.internal.ssh.SshTool;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.Protocol;
+import brooklyn.util.pool.Pool;
 import brooklyn.util.ssh.IptablesCommands;
 import brooklyn.util.ssh.IptablesCommands.Chain;
 import brooklyn.util.ssh.IptablesCommands.Policy;
 import brooklyn.util.time.Duration;
 
+import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Predicates;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.net.HostAndPort;

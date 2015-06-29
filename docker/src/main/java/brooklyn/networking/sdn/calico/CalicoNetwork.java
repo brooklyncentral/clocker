@@ -34,7 +34,7 @@ import brooklyn.util.flags.SetFromFlag;
 public interface CalicoNetwork extends SdnProvider {
 
     @SetFromFlag("calicoVersion")
-    ConfigKey<String> CALICO_VERSION = ConfigKeys.newStringConfigKey("calico.version", "The Calico SDN version number", "0.4.2");
+    ConfigKey<String> CALICO_VERSION = ConfigKeys.newStringConfigKey("calico.version", "The Calico SDN version number", "0.4.4");
 
     @SetFromFlag("etcdVersion")
     ConfigKey<String> ETCD_VERSION = ConfigKeys.newStringConfigKey("etcd.version", "The Etcd version number", "2.0.11");
