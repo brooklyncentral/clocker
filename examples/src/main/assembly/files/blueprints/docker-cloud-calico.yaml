@@ -20,9 +20,10 @@ services:
 - type: brooklyn.entity.container.docker.DockerInfrastructure
   brooklyn.config:
     entity.dynamicLocation.name: "my-docker-cloud"
-    docker.version: 1.6.2
+    docker.version: 1.7.0
     docker.tls.certificate: "conf/server-cert.pem"
     docker.tls.key: "conf/server-key.pem"
+    docker.tls.cacert: "conf/ca-cert.pem"
     docker.host.cluster.initial.size: 3
     docker.container.cluster.headroom.count: 4
     docker.policy.ha.enable: false
@@ -39,7 +40,7 @@ services:
       $brooklyn:entitySpec:
         type: brooklyn.networking.sdn.calico.CalicoNetwork
         brooklyn.config:
-          calico.version: 0.4.4
+          calico.version: 0.4.8
           etcd.version: 2.0.11
           sdn.network.cidr: 50.0.0.0/16
           sdn.network.size: 24

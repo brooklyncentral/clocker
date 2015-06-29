@@ -47,7 +47,7 @@ import com.google.common.collect.ImmutableList;
 public class DockerCloud extends AbstractApplication {
 
     @CatalogConfig(label="Docker Version", priority=100)
-    public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_VERSION, "1.6.2");
+    public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_VERSION, "1.7.0");
 
     @CatalogConfig(label="Location Name", priority=80)
     public static final ConfigKey<String> LOCATION_NAME = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.LOCATION_NAME.getConfigKey(), "my-docker-cloud");
@@ -83,6 +83,7 @@ public class DockerCloud extends AbstractApplication {
                 .configure(DockerInfrastructure.DOCKER_VERSION, getConfig(DOCKER_VERSION))
                 .configure(DockerInfrastructure.DOCKER_CERTIFICATE_PATH, "conf/server-cert.pem")
                 .configure(DockerInfrastructure.DOCKER_KEY_PATH, "conf/server-key.pem")
+                .configure(DockerInfrastructure.DOCKER_CERTIFICATE_AUTHORITY_PATH, "conf/ca-cert.pem")
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE))
                 .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM, getConfig(DOCKER_CONTAINER_CLUSTER_HEADROOM))
                 .configure(DockerInfrastructure.HA_POLICY_ENABLE, false)

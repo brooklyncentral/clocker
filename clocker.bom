@@ -24,10 +24,11 @@ brooklyn.catalog:
     item:
       type: brooklyn.entity.container.docker.DockerInfrastructure
       brooklyn.config:
-        docker.version: 1.6.2
+        docker.version: 1.7.0
         entity.dynamicLocation.name: "my-docker-cloud"
-        docker.tls.certificate: conf/server-cert.pem
-        docker.tls.key: conf/server-key.pem
+        docker.tls.certificate: "conf/server-cert.pem"
+        docker.tls.key: "conf/server-key.pem"
+        docker.tls.cacert: "conf/ca-cert.pem"
         docker.host.spec:
           $brooklyn:entitySpec:
             type: docker-host
@@ -55,7 +56,7 @@ brooklyn.catalog:
     item:
       type: brooklyn.networking.sdn.calico.CalicoNetwork
       brooklyn.config:
-        calico.version: 0.4.2
+        calico.version: 0.4.8
         sdn.agent.spec:
           $brooklyn:entitySpec:
             type: calico-node
@@ -86,7 +87,7 @@ brooklyn.catalog:
     item:
       type: brooklyn.networking.sdn.weave.WeaveNetwork
       brooklyn.config:
-        etcd.version: 0.11.2
+        weave.version: 1.0.1
         sdn.agent.spec:
           $brooklyn:entitySpec:
             type: weave-router
