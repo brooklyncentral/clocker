@@ -83,6 +83,9 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
     @SetFromFlag("openIptables")
     ConfigKey<Boolean> OPEN_IPTABLES = ConfigKeys.newConfigKeyWithPrefix("docker.host.", JcloudsLocationConfig.OPEN_IPTABLES);
 
+    @SetFromFlag("useSsh")
+    ConfigKey<Boolean> DOCKER_USE_SSH = DockerAttributes.DOCKER_USE_SSH;
+
     @SetFromFlag("containerSpec")
     AttributeSensorAndConfigKey<EntitySpec, EntitySpec> DOCKER_CONTAINER_SPEC = ConfigKeys.newSensorAndConfigKey(
             EntitySpec.class, "docker.container.spec", "Specification to use when creating child Docker container",
@@ -173,22 +176,25 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
      */
     Optional<String> getImageNamed(String name, String tag);
 
-    MethodEffector<String> CREATE_SSHABLE_IMAGE = new MethodEffector<String>(DockerHost.class, "createSshableImage");
+    MethodEffector<String> BUILD_IMAGE = new MethodEffector<String>(DockerHost.class, "buildImage");
     MethodEffector<String> RUN_DOCKER_COMMAND = new MethodEffector<String>(DockerHost.class, "runDockerCommand");
     MethodEffector<String> RUN_DOCKER_COMMAND_TIMEOUT = new MethodEffector<String>(DockerHost.class, "runDockerCommandTimeout");
     MethodEffector<String> DEPLOY_ARCHIVE = new MethodEffector<String>(DockerHost.class, "deployArchive");
 
+
     /**
-     * Create an SSHable image and returns the image ID.
+     * Create an image from a Dockerfile and returns the image ID.
      *
      * @param dockerFile URL of Dockerfile to copy
      * @param name Repository name
+     * @param useSsh Add SSHable layer after building
      * @see DockerHostDriver#buildImage(String, String)
      */
-    @Effector(description="Create an SSHable image and returns the image ID")
-    String createSshableImage(
+    @Effector(description="Create an image from a Dockerfile and returns the image ID")
+    String buildImage(
             @EffectorParam(name="dockerFile", description="URL of Dockerfile to copy") String dockerFile,
-            @EffectorParam(name="name", description="Repository name") String name);
+            @EffectorParam(name="name", description="Repository name") String name,
+            @EffectorParam(name="useSsh", description="Add an SSHable layer after building") boolean useSsh);
 
     /**
      * Create an SSHable image based on the image with the given name.

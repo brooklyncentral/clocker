@@ -338,8 +338,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     /** {@inheritDoc} */
     @Override
-    public String createSshableImage(String dockerFile, String name) {
-        String imageId = getDriver().buildImage(dockerFile, name);
+    public String buildImage(String dockerFile, String name, boolean useSsh) {
+        String imageId = getDriver().buildImage(dockerFile, name, useSsh);
         LOG.debug("Successfully created image {} ({})", new Object[] { imageId, name });
         return imageId;
     }
@@ -347,7 +347,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     @Override
     public String layerSshableImageOn(String baseImage, String tag) {
         String imageId = getDriver().layerSshableImageOn(baseImage, tag);
-        LOG.debug("Successfully created SSHable image {} from {}", imageId, baseImage);
+        LOG.debug("Successfully added SSHable layer as {} from {}", imageId, baseImage);
         return imageId;
     }
 
@@ -536,7 +536,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         if (Strings.isBlank(imageId)) {
             String dockerfileUrl = config().get(DockerInfrastructure.DOCKERFILE_URL);
             String imageName = DockerUtils.imageName(this, dockerfileUrl);
-            imageId = createSshableImage(dockerfileUrl, imageName);
+            imageId = buildImage(dockerfileUrl, imageName, config().get(DockerHost.DOCKER_USE_SSH));
             setAttribute(DOCKER_IMAGE_NAME, imageName);
         }
 
