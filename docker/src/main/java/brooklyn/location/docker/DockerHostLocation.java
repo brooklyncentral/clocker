@@ -58,7 +58,6 @@ import brooklyn.location.basic.LocationConfigKeys;
 import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.dynamic.DynamicLocation;
 import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.management.Task;
 import brooklyn.networking.common.subnet.PortForwarder;
 import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnAttributes;
@@ -69,7 +68,6 @@ import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.ssh.BashCommands;
-import brooklyn.util.task.BasicTask;
 import brooklyn.util.text.Strings;
 
 import com.google.common.base.Objects.ToStringHelper;
@@ -132,6 +130,10 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             }
             Entity entity = (Entity) context;
 
+            // Flag to configure adding SSHable layer
+            boolean useSsh = entity.config().get(DockerContainer.DOCKER_USE_SSH) ||
+                    dockerHost.config().get(DockerContainer.DOCKER_USE_SSH);
+
             // Configure the entity
             LOG.info("Configuring entity {} via subnet {}", entity, dockerHost.getSubnetTier());
             entity.config().set(SubnetTier.PORT_FORWARDING_MANAGER, dockerHost.getSubnetTier().getPortForwardManager());
@@ -171,9 +173,14 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                 // Skip install phase
                 entity.config().set(SoftwareProcess.SKIP_INSTALLATION, true);
             } else if (baseImage.isPresent()) {
-                // Create an SSHable image from the one configured
-                imageId = dockerHost.layerSshableImageOn(baseImage.get(), imageTag);
-                LOG.info("Created SSHable image from {}: {}", baseImage.get(), imageId);
+                if (useSsh) {
+                    // Create an SSHable image from the one configured
+                    imageId = dockerHost.layerSshableImageOn(baseImage.get(), imageTag);
+                    LOG.info("Created SSHable image from {}: {}", baseImage.get(), imageId);
+                } else {
+                    dockerHost.runDockerCommand(String.format("pull %s:%s", baseImage.get(), imageTag));
+                    imageId = dockerHost.getImageNamed(baseImage.get(), imageTag).get();
+                }
                 entity.config().set(SoftwareProcess.SKIP_INSTALLATION, true);
             } else {
                 // Otherwise Clocker is going to make an image for the entity once it is installed.
@@ -183,7 +190,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                     if (imageId != null) {
                         LOG.warn("Ignoring container imageId {} as dockerfile URL is set: {}", imageId, dockerfile);
                     }
-                    imageId = dockerHost.createSshableImage(dockerfile, imageName);
+                    imageId = dockerHost.buildImage(dockerfile, imageName, useSsh);
                 }
                 if (Strings.isBlank(imageId)) {
                     imageId = getOwner().getAttribute(DockerHost.DOCKER_IMAGE_ID);
@@ -207,6 +214,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             LOG.info("Starting container with imageId {} and hardwareId {} at {}", new Object[] { imageId, hardwareId, machine });
             Map<Object, Object> containerFlags = MutableMap.builder()
                     .putAll(flags)
+                    .put("useSsh", useSsh)
                     .put("entity", entity)
                     .putIfNotNull("imageId", imageId)
                     .putIfNotNull("hardwareId", hardwareId)
