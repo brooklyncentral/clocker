@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.Maps;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,6 +62,7 @@ import brooklyn.util.net.Protocol;
 import brooklyn.util.ssh.IptablesCommands;
 import brooklyn.util.ssh.IptablesCommands.Chain;
 import brooklyn.util.ssh.IptablesCommands.Policy;
+import brooklyn.util.text.StringEscapes.BashStringEscapes;
 import brooklyn.util.time.Duration;
 
 /**
@@ -172,46 +174,48 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
 
     @Override
     public int execScript(Map<String,?> props, String summaryForLogging, List<String> commands, Map<String,?> env) {
-        if(getOwner().config().get(DockerContainer.DOCKER_USE_EXEC)) {
+        Iterable<String> filtered = Iterables.filter(commands, DockerCallbacks.FILTER);
+        for (String commandString : filtered) {
+            parseDockerCallback(commandString);
+        }
+        if (getOwner().config().get(DockerContainer.DOCKER_USE_EXEC)) {
             Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
             SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
             return host.execCommands(nonPortProps, summaryForLogging, getExecScript(commands, env));
         } else {
-            Iterable<String> filtered = Iterables.filter(commands, DockerCallbacks.FILTER);
-            for (String commandString : filtered) {
-                parseDockerCallback(commandString);
-            }
             return super.execScript(props, summaryForLogging, commands, env);
         }
     }
 
     @Override
     public int execCommands(Map<String,?> props, String summaryForLogging, List<String> commands, Map<String,?> env) {
-        if(getOwner().config().get(DockerContainer.DOCKER_USE_EXEC)) {
-
+        Iterable<String> filtered = Iterables.filter(commands, DockerCallbacks.FILTER);
+        for (String commandString : filtered) {
+            parseDockerCallback(commandString);
+        }
+        if (getOwner().config().get(DockerContainer.DOCKER_USE_EXEC)) {
             SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
             Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
             return host.execCommands(nonPortProps, summaryForLogging, getExecCommands(commands, env));
         } else {
-            Iterable<String> filtered = Iterables.filter(commands, DockerCallbacks.FILTER);
-            for (String commandString : filtered) {
-                parseDockerCallback(commandString);
-            }
             return super.execCommands(props, summaryForLogging, commands, env);
         }
     }
 
     private List<String> getExecScript(List<String> commands, Map<String,?> env) {
-        String prefix = "docker exec " + dockerContainer.getContainerId() + " '";
-        return Collections.singletonList(prefix + Joiner.on(';').join(
-                Iterables.concat(getEnvVarCommands(env), commands)) + "'");
+        StringBuilder target = new StringBuilder("docker exec ")
+                .append(dockerContainer.getContainerId())
+                .append(" '");
+        Joiner.on(";").appendTo(target, Iterables.concat(getEnvVarCommands(env), commands));
+        target.append("'");
+        return ImmutableList.of(target.toString());
     }
 
     private List<String> getExecCommands(List<String> commands, Map<String,?> env) {
-        List<String> result = new LinkedList<String>();
+        List<String> result = Lists.newLinkedList();
         result.addAll(getEnvVarCommands(env));
         String prefix = "docker exec " + dockerContainer.getContainerId() + " ";
-        for(String command: commands) {
+        for (String command : commands) {
             result.add(prefix + command);
         }
         return result;
@@ -219,8 +223,9 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
 
     private List<String> getEnvVarCommands(Map<String,?> env) {
         List<String> result = new LinkedList<String>();
-        for(Map.Entry<String, ?> envVar : env.entrySet()) {
-            result.add("export " + envVar.getKey() + "=" + envVar.getValue());
+        for (Map.Entry<String, ?> entry : env.entrySet()) {
+            String escaped = BashStringEscapes.escapeLiteralForDoubleQuotedBash(entry.getValue().toString());
+            result.add("export " + entry.getKey() + "=\"" + escaped + "\"");
         }
         return result;
     }
