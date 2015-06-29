@@ -82,8 +82,8 @@ public interface DockerContainer extends BasicStartable, HasNetworkAddresses, Ha
     @SetFromFlag("useHostDnsName")
     ConfigKey<Boolean> DOCKER_USE_HOST_DNS_NAME = DockerAttributes.DOCKER_USE_HOST_DNS_NAME;
 
-    @SetFromFlag("useExec")
-    ConfigKey<Boolean> DOCKER_USE_EXEC = DockerAttributes.DOCKER_USE_EXEC;
+    @SetFromFlag("useSsh")
+    ConfigKey<Boolean> DOCKER_USE_SSH = DockerAttributes.DOCKER_USE_SSH;
 
     @SetFromFlag("cpuShares")
     ConfigKey<Integer> DOCKER_CPU_SHARES = DockerAttributes.DOCKER_CPU_SHARES;
