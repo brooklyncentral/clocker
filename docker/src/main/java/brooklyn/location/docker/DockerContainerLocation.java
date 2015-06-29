@@ -21,12 +21,9 @@ import static java.lang.String.format;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
-import com.google.common.collect.Maps;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +33,8 @@ import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.api.entity.Entity;
@@ -178,12 +177,12 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
         for (String commandString : filtered) {
             parseDockerCallback(commandString);
         }
-        if (getOwner().config().get(DockerContainer.DOCKER_USE_EXEC)) {
+        if (getOwner().config().get(DockerContainer.DOCKER_USE_SSH)) {
+            return super.execScript(props, summaryForLogging, commands, env);
+        } else {
             Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
             SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
             return host.execCommands(nonPortProps, summaryForLogging, getExecScript(commands, env));
-        } else {
-            return super.execScript(props, summaryForLogging, commands, env);
         }
     }
 
@@ -193,12 +192,12 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
         for (String commandString : filtered) {
             parseDockerCallback(commandString);
         }
-        if (getOwner().config().get(DockerContainer.DOCKER_USE_EXEC)) {
+        if (getOwner().config().get(DockerContainer.DOCKER_USE_SSH)) {
+            return super.execCommands(props, summaryForLogging, commands, env);
+        } else {
             SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
             Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
             return host.execCommands(nonPortProps, summaryForLogging, getExecCommands(commands, env));
-        } else {
-            return super.execCommands(props, summaryForLogging, commands, env);
         }
     }
 

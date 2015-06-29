@@ -82,11 +82,12 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     /** {@inheritDoc} */
     @Override
-    public String buildImage(String dockerFile, String name) {
+    public String buildImage(String dockerFile, String name, boolean useSsh) {
+        String imageId;
         if (!ArchiveType.UNKNOWN.equals(ArchiveType.of(dockerFile)) || Urls.isDirectory(dockerFile)) {
             ArchiveUtils.deploy(dockerFile, getMachine(), Os.mergePaths(getRunDir(), name));
-            String baseImageId = buildDockerfileDirectory(name);
-            log.info("Created base Dockerfile image with ID {}", baseImageId);
+            imageId = buildDockerfileDirectory(name);
+            log.info("Created base Dockerfile image with ID {}", imageId);
         } else {
             ProcessTaskWrapper<Integer> task = SshEffectorTasks.ssh(format("mkdir -p %s", Os.mergePaths(getRunDir(), name)))
                     .machine(getMachine())
@@ -98,17 +99,19 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
             // Build an image from the base Dockerfile
             copyTemplate(dockerFile, Os.mergePaths(name, "Base" + DockerUtils.DOCKERFILE),
                     false, getExtraTemplateSubstitutions(name));
-            String baseImageId = buildDockerfile("Base" + DockerUtils.DOCKERFILE, name);
-            log.info("Created base Dockerfile image with ID {}", baseImageId);
+            imageId = buildDockerfile("Base" + DockerUtils.DOCKERFILE, name);
+            log.info("Created Dockerfile image with ID {}", imageId);
         }
 
-        // Update the image with the Clocker sshd Dockerfile
-        copyTemplate(DockerUtils.SSHD_DOCKERFILE, Os.mergePaths(name, "Sshd" + DockerUtils.DOCKERFILE),
-                false, getExtraTemplateSubstitutions(name));
-        String sshdImageId = buildDockerfile("Sshd" + DockerUtils.DOCKERFILE, name);
-        log.info("Created SSHable Dockerfile image with ID {}", sshdImageId);
+        if (useSsh) {
+            // Update the image with the Clocker sshd Dockerfile
+            copyTemplate(DockerUtils.SSHD_DOCKERFILE, Os.mergePaths(name, "Sshd" + DockerUtils.DOCKERFILE),
+                    false, getExtraTemplateSubstitutions(name));
+            imageId = buildDockerfile("Sshd" + DockerUtils.DOCKERFILE, name);
+            log.info("Created SSHable Dockerfile image with ID {}", imageId);
+        }
 
-        return sshdImageId;
+        return imageId;
     }
 
     /** {@inheritDoc} */

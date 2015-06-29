@@ -76,8 +76,8 @@ public class DockerAttributes {
     public static final ConfigKey<Boolean> DOCKER_USE_HOST_DNS_NAME = ConfigKeys.newBooleanConfigKey(
             "docker.useHostDnsName", "Container uses same DNS hostname as Docker host", Boolean.TRUE);
 
-    public static final ConfigKey<Boolean> DOCKER_USE_EXEC = ConfigKeys.newBooleanConfigKey(
-            "docker.useExec", "Use docker exec instead of SSH", Boolean.FALSE);
+    public static final ConfigKey<Boolean> DOCKER_USE_SSH = ConfigKeys.newBooleanConfigKey(
+            "docker.useSsh", "Use SSH layer instead of docker exec for container commands", Boolean.TRUE);
 
     public static final ConfigKey<Integer> DOCKER_CPU_SHARES = ConfigKeys.newIntegerConfigKey(
             "docker.cpuShares", "Container CPU shares configuration");
