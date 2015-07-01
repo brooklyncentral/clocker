@@ -101,6 +101,7 @@ brooklyn.catalog:
       services:
       - type: docker-infrastructure
         brooklyn.config:
+          docker.version: 1.6.2
           docker.host.cluster.initial.size: 3
           docker.container.cluster.headroom.count: 4
           docker.policy.ha.enable: false

@@ -18,6 +18,7 @@ import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityLocal;
+import brooklyn.entity.basic.lifecycle.ScriptHelper;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.nosql.etcd.EtcdNode;
 import brooklyn.location.basic.SshMachineLocation;
@@ -131,22 +132,38 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
             }
         }
 
-        // Add the container to the application profile and set up the network
-        List<String> commands = MutableList.of();
-        commands.add(sudo(BashCommands.ok("mkdir -p /var/run/netns")));
-        commands.add(sudo(BashCommands.ok(String.format("ln -s /proc/%s/ns/net /var/run/netns/%s", dockerPid, dockerPid))));
+        // Add the container if we have not yet done so
         if (initial) {
-            commands.add(sudo(String.format("%s container add %s %s", getCalicoCommand(), containerId, address.getHostAddress())));
-            commands.add(sudo(String.format("%s profile add %s", getCalicoCommand(), subnetId))); // Idempotent
-            commands.add(sudo(String.format("%s profile %s member add %s", getCalicoCommand(), subnetId, containerId)));
+            newScript("addContainer")
+                    .body.append(sudo(String.format("%s container add %s %s", getCalicoCommand(), containerId, address.getHostAddress())))
+                    .execute();
+        }
+
+        // Return its endpoint ID
+        ScriptHelper getEndpointId = newScript("getEndpointId")
+                .body.append(sudo(String.format("%s container %s endpoint-id show", getCalicoCommand(), containerId, address.getHostAddress())))
+                .noExtraOutput()
+                .gatherOutput();
+        getEndpointId.execute();
+        String endpointId = Strings.getFirstWord(getEndpointId.getResultStdout());
+
+        // Add to the application profile
+        newScript("addCalico")
+                .body.append(sudo(String.format("%s endpoint %s profile append %s", getCalicoCommand(), endpointId, subnetId))) // Idempotent
+                .execute();
+
+        // Set up the network
+        List<String> commands = MutableList.of();
+        commands.add(sudo("mkdir -p /var/run/netns"));
+        commands.add(BashCommands.ok(sudo(String.format("ln -s /proc/%s/ns/net /var/run/netns/%s", dockerPid, dockerPid))));
+        if (initial) {
             commands.add(sudo(String.format("ip netns exec %s ip route del default", dockerPid)));
             commands.add(sudo(String.format("ip netns exec %s ip route add default via %s", dockerPid, dockerIp)));
             commands.add(sudo(String.format("ip netns exec %s ip route add %s via %s", dockerPid, subnetCidr.toString(), agentAddress.getHostAddress())));
         } else {
             commands.add(sudo(String.format("ip netns exec %s ip addr add %s/%d dev eth1", dockerPid, address.getHostAddress(), subnetCidr.getLength())));
         }
-
-        newScript("attachNetwork")
+        newScript("setupNetwork")
                 .body.append(commands)
                 .execute();
 
