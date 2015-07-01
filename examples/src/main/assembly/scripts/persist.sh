@@ -20,7 +20,7 @@
 ROOT=$(cd "$(dirname "$0")/.." && pwd -P)
 
 # set persistence flags
-export PERSISTENCE_FLAGS="--ignorePersistenceStartupErrors --persist auto --persistenceDir ${PERSISTENCE_DIR:-${ROOT}/data}"
+export PERSISTENCE_FLAGS="--persist auto --persistenceDir ${PERSISTENCE_DIR:-${ROOT}/data}"
 
 # launch clocker
 ${ROOT}/bin/clocker.sh $@
