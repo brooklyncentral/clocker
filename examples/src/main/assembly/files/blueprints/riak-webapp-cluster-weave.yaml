@@ -43,9 +43,10 @@ services:
         brooklyn.config:
           network.list:
           - webapp
+          - riak
           wars.root:
             "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/brooklyn-example-hello-world-sql-webapp.war"
-          java.sysprops: 
+          java.sysprops:
             brooklyn.example.riak.nodes:
               $brooklyn:component("cluster").attributeWhenReady("riak.cluster.nodeList")
     controlleddynamicwebappcluster.controllerSpec:

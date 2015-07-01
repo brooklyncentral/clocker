@@ -381,14 +381,14 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         newScript(CUSTOMIZING)
                 .body.append(
                         ifExecutableElse0("apt-get", chainGroup(
-                                format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock %s --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem\"' | ",
+                                format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock %s --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem --tlscacert=%<s/ca.pem\"' | ",
                                                 getDockerPort(), getStorageOpts(), getRunDir()) +
                                         sudo("tee -a /etc/default/docker"),
                                 sudo("groupadd -f docker"),
                                 sudo(format("gpasswd -a %s docker", getMachine().getUser())),
                                 sudo("newgrp docker"))),
                         ifExecutableElse0("yum",
-                                format("echo 'other_args=\"--selinux-enabled -H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock -e lxc %s --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem\"' | ",
+                                format("echo 'other_args=\"--selinux-enabled -H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock -e lxc %s --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem --tlscacert=%<s/ca.pem\"' | ",
                                                 getDockerPort(), getStorageOpts(), getRunDir()) +
                                         sudo("tee -a /etc/sysconfig/docker")))
                 .failOnNonZeroResultCode()

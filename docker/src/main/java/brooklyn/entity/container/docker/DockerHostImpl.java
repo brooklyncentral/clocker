@@ -491,11 +491,11 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         String dockerLocationSpec = String.format("jclouds:docker:%s://%s:%s",
                 tlsEnabled ? "https" : "http", found.get().getSshHostAndPort().getHostText(), dockerPort);
 
-        String certificatePath = config().get(DockerInfrastructure.DOCKER_CERTIFICATE_PATH);
+        String certPath = config().get(DockerInfrastructure.DOCKER_CERTIFICATE_PATH);
         String keyPath = config().get(DockerInfrastructure.DOCKER_KEY_PATH);
         JcloudsLocation jcloudsLocation = (JcloudsLocation) getManagementContext().getLocationRegistry()
                 .resolve(dockerLocationSpec, MutableMap.builder()
-                        .put("identity", certificatePath)
+                        .put("identity", certPath)
                         .put("credential", keyPath)
                         .put(ComputeServiceProperties.IMAGE_LOGIN_USER, "root:" + getPassword())
                         .build());

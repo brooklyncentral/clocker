@@ -53,7 +53,7 @@ public class CalicoDockerCloud extends AbstractApplication {
     public static final ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(DockerInfrastructure.DOCKER_VERSION, "1.6.2");
 
     @CatalogConfig(label="Calico Version", priority=90)
-    public static final ConfigKey<String> CALICO_VERSION = ConfigKeys.newStringConfigKey("calico.version", "Calico SDN version", "0.4.4");
+    public static final ConfigKey<String> CALICO_VERSION = ConfigKeys.newStringConfigKey("calico.version", "Calico SDN version", "0.4.8");
 
     @CatalogConfig(label="Etcd Version", priority=90)
     public static final ConfigKey<String> ETCD_VERSION = ConfigKeys.newStringConfigKey("etcd.version", "Etcd version", "2.0.11");
@@ -92,6 +92,7 @@ public class CalicoDockerCloud extends AbstractApplication {
                 .configure(DockerInfrastructure.DOCKER_VERSION, getConfig(DOCKER_VERSION))
                 .configure(DockerInfrastructure.DOCKER_CERTIFICATE_PATH, "conf/server-cert.pem")
                 .configure(DockerInfrastructure.DOCKER_KEY_PATH, "conf/server-key.pem")
+                .configure(DockerInfrastructure.DOCKER_CERTIFICATE_AUTHORITY_PATH, "conf/ca-cert.pem")
                 .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, getConfig(DOCKER_HOST_CLUSTER_MIN_SIZE))
                 .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM, getConfig(DOCKER_CONTAINER_CLUSTER_HEADROOM))
                 .configure(DockerInfrastructure.HA_POLICY_ENABLE, false)

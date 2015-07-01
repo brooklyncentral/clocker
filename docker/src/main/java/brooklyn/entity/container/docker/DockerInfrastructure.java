@@ -58,7 +58,7 @@ import com.google.common.reflect.TypeToken;
 public interface DockerInfrastructure extends BasicStartable, Resizable, LocationOwner<DockerLocation, DockerInfrastructure> {
 
     @SetFromFlag("dockerVersion")
-    ConfigKey<String> DOCKER_VERSION = ConfigKeys.newStringConfigKey("docker.version", "The Docker Engine version number", "1.6.2");
+    ConfigKey<String> DOCKER_VERSION = ConfigKeys.newStringConfigKey("docker.version", "The Docker Engine version number", "1.7.0");
 
     @SetFromFlag("securityGroup")
     ConfigKey<String> SECURITY_GROUP = ConfigKeys.newStringConfigKey(
@@ -92,7 +92,7 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
 
     ConfigKey<Boolean> DOCKER_GENERATE_TLS_CERTIFICATES = ConfigKeys.newBooleanConfigKey("docker.tls.generate", "Generate the TLS required TLS certificate and keys for each host", Boolean.FALSE);
 
-    ConfigKey<String> DOCKER_CERTIFICATE_AUTHORITY_PATH = ConfigKeys.newStringConfigKey("docker.tls.ca", "The Docker Engine TLS CA certificate PEM file path", "conf/ca-cert.pem");
+    ConfigKey<String> DOCKER_CERTIFICATE_AUTHORITY_PATH = ConfigKeys.newStringConfigKey("docker.tls.cacert", "The Docker Engine TLS CA certificate PEM file path", "conf/ca-cert.pem");
 
     ConfigKey<String> DOCKER_CERTIFICATE_PATH = ConfigKeys.newStringConfigKey("docker.tls.certificate", "The Docker Engine TLS Server certificate PEM file path", "conf/server-cert.pem");
 

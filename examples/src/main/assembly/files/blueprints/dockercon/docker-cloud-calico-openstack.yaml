@@ -23,6 +23,7 @@ services:
     docker.version: 1.6.2
     docker.tls.certificate: "conf/server-cert.pem"
     docker.tls.key: "conf/server-key.pem"
+    docker.tls.cacert: "conf/ca-cert.pem"
     docker.host.cluster.initial.size: 3
     docker.container.cluster.headroom.count: 4
     docker.policy.ha.enable: false
@@ -39,20 +40,10 @@ services:
       $brooklyn:entitySpec:
         type: brooklyn.networking.sdn.calico.CalicoNetwork
         brooklyn.config:
-          calico.version: latest
+          calico.version: 0.4.8
           etcd.version: 2.0.11
           sdn.network.cidr: 50.3.0.0/16
           sdn.network.size: 24
-          sdn.agent.spec:
-            $brooklyn:entitySpec:
-              type: brooklyn.networking.sdn.calico.CalicoNode
-              brooklyn.config:
-                download.url:
-                  "https://s3-eu-west-1.amazonaws.com/clocker-calico-downloads/calicoctl"
-                pre.install.command: |
-                  wget https://s3-eu-west-1.amazonaws.com/clocker-calico-downloads/calico_node.tar.gz -O calico_node.tar.gz &&
-                  gzip -d calico_node.tar.gz &&
-                  docker load < calico_node.tar
           etcd.node.spec:
             $brooklyn:entitySpec:
               type: brooklyn.entity.nosql.etcd.EtcdProxy
