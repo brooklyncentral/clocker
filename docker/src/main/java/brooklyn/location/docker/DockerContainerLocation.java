@@ -22,9 +22,12 @@ import static java.lang.String.format;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -174,20 +177,57 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
 
     @Override
     public int execScript(Map<String,?> props, String summaryForLogging, List<String> commands, Map<String,?> env) {
-        Iterable<String> filtered = Iterables.filter(commands, DockerCallbacks.FILTER);
-        for (String commandString : filtered) {
-            parseDockerCallback(commandString);
+        if(getOwner().config().get(DockerContainer.DOCKER_USE_EXEC)) {
+            Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
+            SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
+            return host.execCommands(nonPortProps, summaryForLogging, getExecScript(commands, env));
+        } else {
+            Iterable<String> filtered = Iterables.filter(commands, DockerCallbacks.FILTER);
+            for (String commandString : filtered) {
+                parseDockerCallback(commandString);
+            }
+            return super.execScript(props, summaryForLogging, commands, env);
         }
-        return super.execScript(props, summaryForLogging, commands, env);
     }
 
     @Override
     public int execCommands(Map<String,?> props, String summaryForLogging, List<String> commands, Map<String,?> env) {
-        Iterable<String> filtered = Iterables.filter(commands, DockerCallbacks.FILTER);
-        for (String commandString : filtered) {
-            parseDockerCallback(commandString);
+        if(getOwner().config().get(DockerContainer.DOCKER_USE_EXEC)) {
+
+            SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
+            Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
+            return host.execCommands(nonPortProps, summaryForLogging, getExecCommands(commands, env));
+        } else {
+            Iterable<String> filtered = Iterables.filter(commands, DockerCallbacks.FILTER);
+            for (String commandString : filtered) {
+                parseDockerCallback(commandString);
+            }
+            return super.execCommands(props, summaryForLogging, commands, env);
         }
-        return super.execCommands(props, summaryForLogging, commands, env);
+    }
+
+    private List<String> getExecScript(List<String> commands, Map<String,?> env) {
+        String prefix = "docker exec " + dockerContainer.getContainerId() + " '";
+        return Collections.singletonList(prefix + Joiner.on(';').join(
+                Iterables.concat(getEnvVarCommands(env), commands)) + "'");
+    }
+
+    private List<String> getExecCommands(List<String> commands, Map<String,?> env) {
+        List<String> result = new LinkedList<String>();
+        result.addAll(getEnvVarCommands(env));
+        String prefix = "docker exec " + dockerContainer.getContainerId() + " ";
+        for(String command: commands) {
+            result.add(prefix + command);
+        }
+        return result;
+    }
+
+    private List<String> getEnvVarCommands(Map<String,?> env) {
+        List<String> result = new LinkedList<String>();
+        for(Map.Entry<String, ?> envVar : env.entrySet()) {
+            result.add("export " + envVar.getKey() + "=" + envVar.getValue());
+        }
+        return result;
     }
 
     private void parseDockerCallback(String commandString) {
