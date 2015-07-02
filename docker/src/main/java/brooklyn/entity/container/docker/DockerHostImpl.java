@@ -24,6 +24,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jclouds.Constants;
 import org.jclouds.compute.config.ComputeServiceProperties;
 import org.jclouds.compute.domain.OsFamily;
 import org.jclouds.compute.domain.TemplateBuilder;
@@ -498,6 +499,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                         .put("identity", certPath)
                         .put("credential", keyPath)
                         .put(ComputeServiceProperties.IMAGE_LOGIN_USER, "root:" + getPassword())
+                        .put(Constants.PROPERTY_TRUST_ALL_CERTS, "true")
+                        .put(Constants.PROPERTY_RELAX_HOSTNAME, "true")
                         .build());
         setAttribute(JCLOUDS_DOCKER_LOCATION, jcloudsLocation);
 
