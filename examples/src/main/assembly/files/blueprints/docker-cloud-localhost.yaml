@@ -22,9 +22,6 @@ services:
   brooklyn.config:
     entity.dynamicLocation.name: "docker-localhost"
     docker.version: 1.7.0
-    docker.tls.certificate: "conf/server-cert.pem"
-    docker.tls.key: "conf/server-key.pem"
-    docker.tls.cacert: "conf/ca-cert.pem"
     docker.host.cluster.initial.size: 1
     docker.container.cluster.headroom.count: 0
     sdn.enable: false

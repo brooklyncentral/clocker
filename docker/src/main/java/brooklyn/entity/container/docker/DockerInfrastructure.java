@@ -90,13 +90,14 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
             EntitySpec.class, "docker.host.spec", "Specification to use when creating child Docker Hosts",
             EntitySpec.create(DockerHost.class));
 
-    ConfigKey<Boolean> DOCKER_GENERATE_TLS_CERTIFICATES = ConfigKeys.newBooleanConfigKey("docker.tls.generate", "Generate the TLS required TLS certificate and keys for each host", Boolean.FALSE);
+    @SetFromFlag("generateCerts")
+    ConfigKey<Boolean> DOCKER_GENERATE_TLS_CERTIFICATES = ConfigKeys.newBooleanConfigKey("docker.tls.generate", "Generate the TLS required TLS certificate and keys for each host", Boolean.TRUE);
 
-    ConfigKey<String> DOCKER_CERTIFICATE_AUTHORITY_PATH = ConfigKeys.newStringConfigKey("docker.tls.cacert", "The Docker Engine TLS CA certificate PEM file path", "conf/ca-cert.pem");
-
-    ConfigKey<String> DOCKER_CERTIFICATE_PATH = ConfigKeys.newStringConfigKey("docker.tls.certificate", "The Docker Engine TLS Server certificate PEM file path", "conf/server-cert.pem");
-
-    ConfigKey<String> DOCKER_KEY_PATH = ConfigKeys.newStringConfigKey("docker.tls.key", "The Docker Engine TLS Server key PEM file path", "conf/server-key.pem");
+    ConfigKey<String> DOCKER_CA_CERTIFICATE_PATH = ConfigKeys.newStringConfigKey("docker.tls.caCert", "The Docker Engine TLS CA certificate PEM file path");
+    ConfigKey<String> DOCKER_SERVER_CERTIFICATE_PATH = ConfigKeys.newStringConfigKey("docker.tls.serverCert", "The Docker Engine TLS Server certificate PEM file path");
+    ConfigKey<String> DOCKER_SERVER_KEY_PATH = ConfigKeys.newStringConfigKey("docker.tls.serverKey", "The Docker Engine TLS Server key PEM file path");
+    ConfigKey<String> DOCKER_CLIENT_CERTIFICATE_PATH = ConfigKeys.newStringConfigKey("docker.tls.clientCert", "The Docker Engine TLS Client certificate PEM file path");
+    ConfigKey<String> DOCKER_CLIENT_KEY_PATH = ConfigKeys.newStringConfigKey("docker.tls.clientKey", "The Docker Engine TLS Client key PEM file path");
 
     @SetFromFlag("dockerfileUrl")
     ConfigKey<String> DOCKERFILE_URL = ConfigKeys.newConfigKeyWithDefault(DockerAttributes.DOCKERFILE_URL, DockerUtils.UBUNTU_DOCKERFILE);

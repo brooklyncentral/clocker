@@ -82,11 +82,13 @@ import brooklyn.policy.PolicySpec;
 import brooklyn.policy.ha.ServiceFailureDetector;
 import brooklyn.policy.ha.ServiceReplacer;
 import brooklyn.policy.ha.ServiceRestarter;
+import brooklyn.util.ResourceUtils;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.guava.Maybe;
 import brooklyn.util.net.Cidr;
+import brooklyn.util.os.Os;
 import brooklyn.util.ssh.BashCommands;
 import brooklyn.util.task.DynamicTasks;
 import brooklyn.util.task.Tasks;
@@ -491,8 +493,19 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         String dockerLocationSpec = String.format("jclouds:docker:%s://%s:%s",
                 tlsEnabled ? "https" : "http", found.get().getSshHostAndPort().getHostText(), dockerPort);
 
-        String certPath = config().get(DockerInfrastructure.DOCKER_CERTIFICATE_PATH);
-        String keyPath = config().get(DockerInfrastructure.DOCKER_KEY_PATH);
+        String certPath, keyPath;
+        if (config().get(DockerInfrastructure.DOCKER_GENERATE_TLS_CERTIFICATES)) {
+            getMachine().copyTo(ResourceUtils.create().getResourceFromUrl("classpath://brooklyn/entity/container/docker/create-certs.sh"), "create-certs.sh");
+            getMachine().execCommands("createCertificates",
+                    ImmutableList.of("chmod 755 create-certs.sh", "./create-certs.sh " + getAttribute(ADDRESS)));
+            certPath = Os.mergePaths(Os.tmp(), getId() + "-cert.pem");
+            getMachine().copyFrom("client-cert.pem", certPath);
+            keyPath = Os.mergePaths(Os.tmp(), getId() + "-key.pem");
+            getMachine().copyFrom("client-key.pem", keyPath);
+        } else {
+            certPath = config().get(DockerInfrastructure.DOCKER_CLIENT_CERTIFICATE_PATH);
+            keyPath = config().get(DockerInfrastructure.DOCKER_CLIENT_KEY_PATH);
+        }
         JcloudsLocation jcloudsLocation = (JcloudsLocation) getManagementContext().getLocationRegistry()
                 .resolve(dockerLocationSpec, MutableMap.builder()
                         .put("identity", certPath)
@@ -622,7 +635,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                             .configure(DockerContainer.DOCKER_HOST, this)
                             .configure(DockerContainer.DOCKER_INFRASTRUCTURE, getInfrastructure())
                             .configure(DockerContainer.DOCKER_IMAGE_ID, imageId)
-                            .configure(DockerAttributes.DOCKER_IMAGE_NAME, imageName)
+                            .configure(DockerContainer.DOCKER_IMAGE_NAME, imageName)
                             .configure(DockerContainer.LOCATION_FLAGS, MutableMap.of("container", getMachine()));
 
                     // Create, manage and start the container
