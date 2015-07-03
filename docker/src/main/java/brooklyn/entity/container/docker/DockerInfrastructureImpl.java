@@ -15,7 +15,14 @@
  */
 package brooklyn.entity.container.docker;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +30,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nullable;
+import javax.net.ssl.X509TrustManager;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,8 +70,11 @@ import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.policy.EnricherSpec;
 import brooklyn.policy.PolicySpec;
 import brooklyn.policy.autoscaling.AutoScalerPolicy;
+import brooklyn.util.ResourceUtils;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.collections.QuorumCheck.QuorumChecks;
+import brooklyn.util.crypto.SecureKeys;
+import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 
@@ -97,6 +108,21 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                     .put(config().get(DOCKER_CA_CERTIFICATE_PATH), "ca.pem")
                     .build();
         }
+
+        try {
+            String caCertPath = config().get(DOCKER_CA_CERTIFICATE_PATH);
+            try (InputStream caCert = ResourceUtils.create().getResourceFromUrl(caCertPath)) {
+                X509Certificate certificate = (X509Certificate) CertificateFactory.getInstance("X.509")
+                        .generateCertificate(caCert);
+                KeyStore store = SecureKeys.newKeyStore();
+                store.setCertificateEntry("ca", certificate);
+                X509TrustManager trustManager = SecureKeys.getTrustManager(certificate);
+                // TODO incorporate this trust manager into jclouds SSL context
+            }
+        } catch (IOException | KeyStoreException | CertificateException e) {
+            Exceptions.propagate(e);
+        }
+
         EntitySpec<?> dockerHostSpec = EntitySpec.create(config().get(DOCKER_HOST_SPEC))
                 .configure(DockerHost.DOCKER_INFRASTRUCTURE, this)
                 .configure(DockerHost.RUNTIME_FILES, runtimeFiles)

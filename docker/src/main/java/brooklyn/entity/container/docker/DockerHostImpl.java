@@ -495,6 +495,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
         String certPath, keyPath;
         if (config().get(DockerInfrastructure.DOCKER_GENERATE_TLS_CERTIFICATES)) {
+            getMachine().copyTo(ResourceUtils.create().getResourceFromUrl(config().get(DockerInfrastructure.DOCKER_CA_CERTIFICATE_PATH)), "ca-cert.pem");
+            getMachine().copyTo(ResourceUtils.create().getResourceFromUrl(config().get(DockerInfrastructure.DOCKER_CA_KEY_PATH)), "ca-key.pem");
             getMachine().copyTo(ResourceUtils.create().getResourceFromUrl("classpath://brooklyn/entity/container/docker/create-certs.sh"), "create-certs.sh");
             getMachine().execCommands("createCertificates",
                     ImmutableList.of("chmod 755 create-certs.sh", "./create-certs.sh " + getAttribute(ADDRESS)));

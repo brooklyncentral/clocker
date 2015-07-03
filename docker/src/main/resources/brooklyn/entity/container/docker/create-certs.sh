@@ -20,8 +20,6 @@ echo "extendedKeyUsage = clientAuth" > client.cnf
 echo "subjectAltName = IP:$1" > server.cnf
 echo "01" > ca-cert.srl
 
-openssl genrsa -out ca-key.pem
-openssl req -subj '/CN=docker' -new -x509 -days 365 -key ca-key.pem -out ca-cert.pem
 openssl genrsa -out server-key.pem 2048
 openssl req -subj '/CN=*' -new -key server-key.pem -out server.csr
 openssl x509 -req -days 365 -in server.csr -CA ca-cert.pem -CAkey ca-key.pem -out server-cert.pem -extfile server.cnf
