@@ -68,6 +68,7 @@ public class OpenStackNetworkProvisioner implements NetworkProvisioningExtension
                     .toPort(65535)
                     .build();
             extension.addIpPermission(rules, added);
+            LOG.info("Added new security group {} with ID {}: {}", new Object[] { added.getName(), id, rules.toString() });
         }
 
         // Use the OpenStack UUID as the virtual network id
