@@ -66,7 +66,7 @@ public class SSLContextWithKeysSupplier implements Supplier<SSLContext> {
     public SSLContext get() {
         Credentials currentCreds = checkNotNull(creds.get(), "credential supplier returned null");
         try {
-            try (InputStream caCert = Files.asByteSource(new File("/Users/csabapalfi/clocker/examples/target/brooklyn-clocker-dist/brooklyn-clocker/conf/ca-cert.pem")).openStream()) {
+            try (InputStream caCert = ResourceUtils.create().getResourceFromUrl("conf/ca-cert.pem")) {
                 X509Certificate caCertificate = (X509Certificate) CertificateFactory.getInstance("X.509")
                         .generateCertificate(caCert);
                 KeyStore store = SecureKeys.newKeyStore();
