@@ -32,6 +32,7 @@ import javax.net.ssl.*;
 
 import brooklyn.util.ResourceUtils;
 import brooklyn.util.crypto.SecureKeys;
+import com.google.api.client.repackaged.com.google.common.annotations.VisibleForTesting;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
@@ -57,6 +58,7 @@ public class SSLContextWithKeysSupplier implements Supplier<SSLContext> {
         this.creds = creds;
     }
 
+    @VisibleForTesting
     public SSLContextWithKeysSupplier(Supplier<Credentials> creds) {
         this.trustManager = null;
         this.creds = creds;
@@ -66,6 +68,7 @@ public class SSLContextWithKeysSupplier implements Supplier<SSLContext> {
     public SSLContext get() {
         Credentials currentCreds = checkNotNull(creds.get(), "credential supplier returned null");
         try {
+            //TODO get ca cert path from config instead of hardcoding.
             try (InputStream caCert = ResourceUtils.create().getResourceFromUrl("conf/ca-cert.pem")) {
                 X509Certificate caCertificate = (X509Certificate) CertificateFactory.getInstance("X.509")
                         .generateCertificate(caCert);
