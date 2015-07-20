@@ -21,7 +21,7 @@ brooklyn.catalog:
     item:
       type: brooklyn.entity.container.docker.DockerInfrastructure
       brooklyn.config:
-        docker.version: 1.7.0
+        docker.version: 1.7.1
         entity.dynamicLocation.name: "my-docker-cloud"
         docker.host.spec:
           $brooklyn:entitySpec:
