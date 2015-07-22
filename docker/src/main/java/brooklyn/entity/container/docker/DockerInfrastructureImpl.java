@@ -15,7 +15,14 @@
  */
 package brooklyn.entity.container.docker;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +30,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nullable;
+import javax.net.ssl.X509TrustManager;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,8 +70,11 @@ import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.policy.EnricherSpec;
 import brooklyn.policy.PolicySpec;
 import brooklyn.policy.autoscaling.AutoScalerPolicy;
+import brooklyn.util.ResourceUtils;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.collections.QuorumCheck.QuorumChecks;
+import brooklyn.util.crypto.SecureKeys;
+import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 
@@ -87,15 +98,34 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
         setAttribute(DOCKER_HOST_COUNTER, new AtomicInteger(0));
         setAttribute(DOCKER_CONTAINER_COUNTER, new AtomicInteger(0));
-
         int initialSize = config().get(DOCKER_HOST_CLUSTER_MIN_SIZE);
+
+        Map<String, String> runtimeFiles = ImmutableMap.of();
+        if (!config().get(DOCKER_GENERATE_TLS_CERTIFICATES)) {
+            runtimeFiles = ImmutableMap.<String, String>builder()
+                    .put(config().get(DOCKER_SERVER_CERTIFICATE_PATH), "cert.pem")
+                    .put(config().get(DOCKER_SERVER_KEY_PATH), "key.pem")
+                    .put(config().get(DOCKER_CA_CERTIFICATE_PATH), "ca.pem")
+                    .build();
+        }
+
+        try {
+            String caCertPath = config().get(DOCKER_CA_CERTIFICATE_PATH);
+            try (InputStream caCert = ResourceUtils.create().getResourceFromUrl(caCertPath)) {
+                X509Certificate certificate = (X509Certificate) CertificateFactory.getInstance("X.509")
+                        .generateCertificate(caCert);
+                KeyStore store = SecureKeys.newKeyStore();
+                store.setCertificateEntry("ca", certificate);
+                X509TrustManager trustManager = SecureKeys.getTrustManager(certificate);
+                // TODO incorporate this trust manager into jclouds SSL context
+            }
+        } catch (IOException | KeyStoreException | CertificateException e) {
+            Exceptions.propagate(e);
+        }
+
         EntitySpec<?> dockerHostSpec = EntitySpec.create(config().get(DOCKER_HOST_SPEC))
                 .configure(DockerHost.DOCKER_INFRASTRUCTURE, this)
-                .configure(DockerHost.RUNTIME_FILES, ImmutableMap.builder()
-                        .put(config().get(DOCKER_CERTIFICATE_PATH), "cert.pem")
-                        .put(config().get(DOCKER_KEY_PATH), "key.pem")
-                        .put(config().get(DOCKER_CERTIFICATE_AUTHORITY_PATH), "ca.pem")
-                        .build())
+                .configure(DockerHost.RUNTIME_FILES, runtimeFiles)
                 .configure(SoftwareProcess.CHILDREN_STARTABLE_MODE, ChildStartableMode.BACKGROUND_LATE);
         String dockerVersion = config().get(DOCKER_VERSION);
         if (Strings.isNonBlank(dockerVersion)) {

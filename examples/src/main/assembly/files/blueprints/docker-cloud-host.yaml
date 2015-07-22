@@ -20,10 +20,7 @@ services:
 - type: brooklyn.entity.container.docker.DockerInfrastructure
   brooklyn.config:
     entity.dynamicLocation.name: "my-docker-cloud"
-    docker.version: 1.7.0
-    docker.tls.certificate: "conf/server-cert.pem"
-    docker.tls.key: "conf/server-key.pem"
-    docker.tls.cacert: "conf/ca-cert.pem"
+    docker.version: 1.7.1
     docker.host.cluster.initial.size: 2
     docker.container.cluster.headroom.count: 4
     docker.policy.ha.enable: false

@@ -25,7 +25,7 @@ MAINTAINER Cloudsoft "brooklyn@cloudsoftcorp.com"
 RUN ( echo "deb http://archive.ubuntu.com/ubuntu trusty main universe" ; echo "deb http://archive.ubuntu.com/ubuntu trusty-updates main universe" ) > /etc/apt/sources.list
 RUN apt-get update
 
-# install openjdk 1.7.0
+# install openjdk 1.7.1
 RUN apt-get -y --force-yes install tzdata=2015a-0ubuntu0.14.04
 RUN apt-get -y --force-yes install python2.7-minimal=2.7.3-0ubuntu3
 RUN apt-get -y --force-yes install python-minimal=2.7.3-0ubuntu2

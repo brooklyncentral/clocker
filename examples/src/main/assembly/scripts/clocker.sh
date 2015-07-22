@@ -41,7 +41,7 @@ fi
 
 # set catalog and java options
 CATALOG_OPTS="-Dbrooklyn.catalog.url=classpath://catalog.xml -Dbrooklyn.catalog.mode=LOAD_BROOKLYN_CATALOG_URL"
-JAVA_OPTS="${JAVA_OPTS:--Xms1g -Xmx1g} ${CLOCKER_OPTS} ${CATALOG_OPTS}"
+JAVA_OPTS="${JAVA_OPTS:--Xms1g -Xmx1g} ${CLOCKER_OPTS} ${CATALOG_OPTS} -Djclouds.trust-all-certs=true"
 export JAVA_OPTS
 
 # launch clocker

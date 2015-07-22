@@ -378,6 +378,16 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
             stop();
         }
 
+        if (entity.config().get(DockerInfrastructure.DOCKER_GENERATE_TLS_CERTIFICATES)) {
+            newScript(ImmutableMap.of(NON_STANDARD_LAYOUT, "true"), CUSTOMIZING)
+                    .body.append(
+                            String.format("cp ca-cert.pem %s/ca.pem", getRunDir()),
+                            String.format("cp server-cert.pem %s/cert.pem", getRunDir()),
+                            String.format("cp server-key.pem %s/key.pem", getRunDir()))
+                    .failOnNonZeroResultCode()
+                    .execute();
+        }
+
         newScript(CUSTOMIZING)
                 .body.append(
                         ifExecutableElse0("apt-get", chainGroup(
