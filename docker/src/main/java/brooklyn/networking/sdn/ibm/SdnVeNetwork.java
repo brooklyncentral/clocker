@@ -41,8 +41,6 @@ public interface SdnVeNetwork extends SdnProvider {
     @SetFromFlag("dmcPassword")
     ConfigKey<String> DOVE_CONTROLLER_PASSWORD = ConfigKeys.newStringConfigKey("sdn.ibm.dmc.password", "The IBM SDN VE DMC password");
 
-    @SetFromFlag("vlanId")
-    ConfigKey<Integer> VLAN_ID = ConfigKeys.newIntegerConfigKey("sdn.ibm.vlanId", "Softlayer VLAN ID");
 
     AttributeSensorAndConfigKey<String, String> CONFIGURATION_XML_TEMPLATE = ConfigKeys.newStringSensorAndConfigKey("sdn.ibm.config.xml.url",
             "Configuration XML template for Dove SDN", "classpath://brooklyn/networking/sdn/ibm/dove.xml");
