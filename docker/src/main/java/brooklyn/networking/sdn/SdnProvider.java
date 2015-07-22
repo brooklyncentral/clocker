@@ -56,6 +56,9 @@ public interface SdnProvider extends BasicStartable, NetworkProvisioningExtensio
 
     AttributeSensor<Integer> ALLOCATED_NETWORKS = Sensors.newIntegerSensor("sdn.networks.allocated", "Number of allocated networks");
 
+    @SetFromFlag("vlanId")
+    AttributeSensorAndConfigKey<Integer, Integer> VLAN_ID = ConfigKeys.newIntegerSensorAndConfigKey("sdn.softlayer.vlanId", "Softlayer VLAN ID");
+
     AttributeSensor<Map<String, Cidr>> SUBNETS = Sensors.newSensor(
             new TypeToken<Map<String, Cidr>>() { }, "sdn.networks.addresses", "Map of network subnets that have been created");
     AttributeSensor<Map<String, VirtualNetwork>> SUBNET_ENTITIES = Sensors.newSensor(

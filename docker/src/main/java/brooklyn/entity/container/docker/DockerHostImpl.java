@@ -28,7 +28,10 @@ import org.jclouds.compute.config.ComputeServiceProperties;
 import org.jclouds.compute.domain.OsFamily;
 import org.jclouds.compute.domain.TemplateBuilder;
 import org.jclouds.compute.domain.Volume;
+import org.jclouds.softlayer.SoftLayerApi;
 import org.jclouds.softlayer.compute.options.SoftLayerTemplateOptions;
+import org.jclouds.softlayer.domain.VirtualGuest;
+import org.jclouds.softlayer.features.VirtualGuestApi;
 import org.jclouds.softlayer.reference.SoftLayerConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +44,7 @@ import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityFunctions;
+import brooklyn.entity.basic.EntityInternal;
 import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
@@ -52,6 +56,7 @@ import brooklyn.entity.nosql.etcd.EtcdNode;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.entity.trait.Startable;
+import brooklyn.event.basic.DependentConfiguration;
 import brooklyn.event.feed.ConfigToAttributes;
 import brooklyn.event.feed.function.FunctionFeed;
 import brooklyn.event.feed.function.FunctionPollConfig;
@@ -67,14 +72,16 @@ import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.DockerResolver;
 import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
+import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.location.jclouds.networking.JcloudsLocationSecurityGroupCustomizer;
 import brooklyn.location.jclouds.templates.PortableTemplateBuilder;
 import brooklyn.management.LocationManager;
+import brooklyn.management.Task;
 import brooklyn.networking.portforwarding.DockerPortForwarder;
 import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnAttributes;
+import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.networking.sdn.calico.CalicoNode;
-import brooklyn.networking.sdn.ibm.SdnVeNetwork;
 import brooklyn.networking.sdn.weave.WeaveNetwork;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.networking.subnet.SubnetTierImpl;
@@ -245,6 +252,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 LOG.debug("Customising hardware choice for {}", this);
                 if (template != null) {
                     template.minRam(2048);
+                    flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), template);
                 } else {
                     flags.put(JcloudsLocationConfig.MIN_RAM.getName(), 2048);
                 }
@@ -265,18 +273,35 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                         ImmutableList.of(JcloudsLocationSecurityGroupCustomizer.getInstance(getApplicationId())));
             }
 
-            // Setup SoftLayer template options required for IBM SDN VE
-            // TODO Move this into a callback on the SdnProvider interface
-            if (isJcloudsLocation(location, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME) && DockerUtils.isSdnProvider(this, "SdnVeNetwork")) {
+            // Setup SoftLayer template options 
+            if (isJcloudsLocation(location, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME)) {
                 if (template == null) template = new PortableTemplateBuilder();
-                template.osFamily(OsFamily.CENTOS).osVersionMatches("6").os64Bit(true);
-                Integer vlanId = getAttribute(DOCKER_INFRASTRUCTURE)
+                SoftLayerTemplateOptions options = new SoftLayerTemplateOptions();
+                if (DockerUtils.isSdnProvider(this, "SdnVeNetwork")) {
+                    template.osFamily(OsFamily.CENTOS).osVersionMatches("6").os64Bit(true);
+                    options.diskType(Volume.Type.LOCAL.name());// FIXME Temporary setting overriding capacity limitation on account
+                }
+                options.portSpeed(1000); // TODO Make configurable
+
+                // Try and determine if we need to set a VLAN for this host (overriding location)
+                Optional<Integer> vlanOption = options.getPrimaryBackendNetworkComponentNetworkVlanId();
+                Optional<Integer> vlanConfig = Optional.fromNullable(getAttribute(DOCKER_INFRASTRUCTURE)
                         .getAttribute(DockerInfrastructure.SDN_PROVIDER)
-                        .config().get(SdnVeNetwork.VLAN_ID);
-                template.options(SoftLayerTemplateOptions.Builder
-                        .diskType(Volume.Type.LOCAL.name()) // FIXME Temporary setting overriding capacity limitation on account
-                        .primaryBackendNetworkComponentNetworkVlanId(vlanId)
-                        .portSpeed(1000)); // TODO Make configurable
+                        .config().get(SdnProvider.VLAN_ID));
+                Integer vlanId = vlanOption.or(vlanConfig).orNull();
+                if (vlanId == null) {
+                    // If a previous host has been configured, look up the VLAN id
+                    int count = getAttribute(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.DOCKER_HOST_COUNT);
+                    if (count > 1 && !getAttribute(DynamicCluster.FIRST_MEMBER)) {
+                        Task<Integer> lookup = DependentConfiguration.attributeWhenReady(getAttribute(DOCKER_INFRASTRUCTURE)
+                                .getAttribute(DockerInfrastructure.SDN_PROVIDER), SdnProvider.VLAN_ID);
+                        vlanId = DynamicTasks.submit(lookup, this).getUnchecked();
+                    }
+                }
+                if (vlanId != null) {
+                    options.primaryBackendNetworkComponentNetworkVlanId(vlanId);
+                }
+                template.options(options);
                 flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), template);
             }
         }
@@ -480,6 +505,25 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     @Override
     protected void preStart() {
         getDriver().configureSecurityGroups();
+
+        // Save the VLAN id for this machine
+        MachineProvisioningLocation location = getInfrastructure().getDynamicLocation().getProvisioner();
+        if (isJcloudsLocation(location, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME)) {
+            Integer vlanId = getAttribute(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER).getAttribute(SdnProvider.VLAN_ID);
+            if (vlanId == null) {
+                VirtualGuestApi api = ((JcloudsLocation) location).getComputeService().getContext().unwrapApi(SoftLayerApi.class).getVirtualGuestApi();
+                JcloudsSshMachineLocation machine = (JcloudsSshMachineLocation) getDriver().getLocation();
+                Long serverId = Long.parseLong(machine.getNode().getId());
+                // TODO getVirtualGuestFiltered(serverId, "primaryBackendNetworkComponent;primaryBackendNetworkComponent.networkVlan");
+                VirtualGuest guest = api.getVirtualGuest(serverId);
+                vlanId = guest.getPrimaryBackendNetworkComponent().getNetworkVlan().getId();
+                Integer vlanNumber = guest.getPrimaryBackendNetworkComponent().getNetworkVlan().getVlanNumber();
+                ((EntityInternal) getAttribute(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER)).setAttribute(SdnProvider.VLAN_ID, vlanId);
+                LOG.debug("Recorded VLAN #{} with id {} for server id {}: {}", new Object[] { vlanNumber, vlanId, serverId, this });
+            } else {
+                LOG.debug("Found VLAN {}: {}", new Object[] { vlanId, this });
+            }
+        }
 
         Integer dockerPort = getDockerPort();
         boolean tlsEnabled = true;
