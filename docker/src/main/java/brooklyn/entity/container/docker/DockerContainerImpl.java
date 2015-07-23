@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import brooklyn.config.ConfigKey;
 import brooklyn.config.render.RendererHints;
 import brooklyn.entity.Entity;
+import brooklyn.entity.basic.AbstractEntity;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.ConfigKeys;
@@ -49,6 +50,7 @@ import brooklyn.entity.basic.ServiceStateLogic;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
+import brooklyn.entity.container.docker.application.VanillaDockerApplication;
 import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.event.feed.ConfigToAttributes;
@@ -70,6 +72,7 @@ import brooklyn.location.jclouds.JcloudsLocation;
 import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.location.jclouds.templates.PortableTemplateBuilder;
+import brooklyn.management.ExecutionContext;
 import brooklyn.management.LocationManager;
 import brooklyn.networking.portforwarding.subnet.JcloudsPortforwardingSubnetLocation;
 import brooklyn.networking.sdn.SdnAgent;
@@ -626,6 +629,18 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     @Override
     public Set<String> getPrivateAddresses() {
         return getAttribute(CONTAINER_ADDRESSES);
+    }
+
+    /**
+     * Return the {@link VanillaDockerApplication} context if it is the running entity.
+     */
+    @Override
+    public ExecutionContext getExecutionContext() {
+        Entity running = getRunningEntity();
+        if (running instanceof VanillaDockerApplication) {
+            return ((AbstractEntity) running).getExecutionContext();
+        }
+        return super.getExecutionContext();
     }
 
     static {
