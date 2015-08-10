@@ -27,6 +27,7 @@ import brooklyn.entity.basic.EmptySoftwareProcess;
 import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.location.Location;
+import brooklyn.location.docker.DockerLocation;
 import brooklyn.test.EntityTestUtils;
 import brooklyn.test.entity.TestApplication;
 import brooklyn.util.time.Duration;
@@ -47,6 +48,9 @@ public class DockerInfrastructureTests {
                 .displayName("Docker Infrastructure"));
         LOG.info("Starting {} in {}", dockerInfrastructure, location);
         app.start(ImmutableList.of(location));
+
+        DockerLocation dockerLocation = dockerInfrastructure.getDynamicLocation();
+
         LOG.info("Waiting {} for {} to have started", Duration.TWO_MINUTES, dockerInfrastructure);
         EntityTestUtils.assertAttributeEqualsEventually(ImmutableMap.of("timeout", Duration.FIVE_MINUTES),
                 dockerInfrastructure, Attributes.SERVICE_UP, true);
