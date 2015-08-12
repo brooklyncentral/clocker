@@ -33,7 +33,7 @@
 
     <groupId>io.brooklyn.clocker</groupId>
     <artifactId>brooklyn-clocker-parent</artifactId>
-    <version>1.0.0-PREVIEW.20150722</version>  <!-- CLOCKER_VERSION -->
+    <version>1.0.0-PREVIEW.20150812</version>  <!-- CLOCKER_VERSION -->
     <packaging>pom</packaging>
     <name>Clocker Project (Parent)</name>
     <description>
