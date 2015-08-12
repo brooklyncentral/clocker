@@ -242,7 +242,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
     private void insertCallback(Entity entity, ConfigKey<String> commandKey, String callback) {
         String command = entity.config().get(commandKey);
         if (Strings.isNonBlank(command)) {
-            command = BashCommands.chain(command, callback);
+            command = BashCommands.chain(String.format("( %s )", command), callback);
         } else {
             command = callback;
         }
