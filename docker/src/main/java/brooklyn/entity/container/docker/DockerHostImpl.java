@@ -286,14 +286,11 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 options.portSpeed(1000); // TODO Make configurable
 
                 // Try and determine if we need to set a VLAN for this host (overriding location)
-                Optional<Integer> vlanOption = options.getPrimaryBackendNetworkComponentNetworkVlanId();
-                Entity sdnProviderAttribute = getAttribute(DOCKER_INFRASTRUCTURE)
-                        .getAttribute(DockerInfrastructure.SDN_PROVIDER);
-                Optional<Integer> vlanConfig = Optional.absent();
-                if (sdnProviderAttribute != null) {
-                    vlanConfig = Optional.fromNullable(sdnProviderAttribute.config().get(SdnProvider.VLAN_ID));
-                }
-                Integer vlanId = vlanOption.or(vlanConfig).orNull();
+                Integer vlanOption = options.getPrimaryBackendNetworkComponentNetworkVlanId();
+                Optional<Integer> vlanConfig = Optional.fromNullable(getAttribute(DOCKER_INFRASTRUCTURE)
+                        .getAttribute(DockerInfrastructure.SDN_PROVIDER)
+                        .config().get(SdnProvider.VLAN_ID));
+                Integer vlanId = vlanOption == null ? vlanConfig.orNull() : vlanOption;
                 if (vlanId == null) {
                     // If a previous host has been configured, look up the VLAN id
                     int count = getAttribute(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.DOCKER_HOST_COUNT);
