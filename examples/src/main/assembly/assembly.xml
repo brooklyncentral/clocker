@@ -114,5 +114,12 @@
                 <include>**</include>
             </includes>
         </fileSet>
+        <fileSet>
+            <directory>${project.basedir}/src/main/assembly/lib/patch</directory>
+            <outputDirectory>/lib/patch</outputDirectory>
+            <includes>
+                <include>**/*</include>
+            </includes>
+        </fileSet>
     </fileSets>
 </assembly>
