@@ -38,6 +38,14 @@ RUN type apt-get ; \
   mkdir /var/run/sshd ; \
   chmod 600 /var/run/sshd ;
 
+# create host keys if absent
+RUN if [ -f "/etc/ssh/ssh_host_dsa_key" -a -f "/etc/ssh/ssh_host_rsa_key" ] ; then \
+    echo "SSH host private keys already exists" ; \
+  else \
+    ssh-keygen -f /etc/ssh/ssh_host_rsa_key -N '' -t rsa ; \
+    ssh-keygen -f /etc/ssh/ssh_host_dsa_key -N '' -t dsa ; \
+  fi
+
 # configure sshd to allow login
 RUN sed -i.bk 's/PermitRootLogin.*$/PermitRootLogin yes/g' /etc/ssh/sshd_config ; \
   echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config
