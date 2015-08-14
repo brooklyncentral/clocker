@@ -25,9 +25,10 @@ import org.testng.annotations.Test;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-import brooklyn.entity.proxying.EntitySpec;
-import brooklyn.location.Location;
-import brooklyn.location.LocationDefinition;
+import org.apache.brooklyn.api.entity.proxying.EntitySpec;
+import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.location.LocationDefinition;
+
 import brooklyn.location.docker.DockerLocation;
 
 /**

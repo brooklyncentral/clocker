@@ -15,11 +15,12 @@
  */
 package brooklyn.networking.sdn.calico;
 
+import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
+
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.nosql.etcd.EtcdNode;
-import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.util.flags.SetFromFlag;

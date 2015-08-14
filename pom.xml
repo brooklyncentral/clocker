@@ -251,7 +251,7 @@
                     <properties>
                         <property>
                             <name>listener</name>
-                            <value>brooklyn.test.LoggingVerboseReporter</value>
+                            <value>org.apache.brooklyn.test.LoggingVerboseReporter</value>
                         </property>
                     </properties>
                     <enableAssertions>true</enableAssertions>

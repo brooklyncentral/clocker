@@ -17,7 +17,9 @@ package brooklyn.entity.container.docker.application;
 
 import java.util.List;
 
-import brooklyn.catalog.Catalog;
+import org.apache.brooklyn.api.catalog.Catalog;
+import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
+
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.BrooklynConfigKeys;
 import brooklyn.entity.basic.ConfigKeys;
@@ -25,7 +27,6 @@ import brooklyn.entity.basic.VanillaSoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
-import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.time.Duration;
 

@@ -6,30 +6,31 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.config.ConfigKey;
-import brooklyn.config.render.RendererHints;
-import brooklyn.enricher.basic.AbstractEnricher;
-import brooklyn.entity.basic.AbstractEntity;
-import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.entity.basic.EntityLocal;
-import brooklyn.entity.container.docker.DockerInfrastructure;
-import brooklyn.event.AttributeSensor;
-import brooklyn.event.SensorEvent;
-import brooklyn.event.SensorEventListener;
-import brooklyn.event.basic.BasicNotificationSensor;
-import brooklyn.event.basic.Sensors;
-import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
-import brooklyn.location.docker.strategy.MaxContainersPlacementStrategy;
-import brooklyn.policy.Enricher;
-import brooklyn.policy.autoscaling.AutoScalerPolicy;
-import brooklyn.util.flags.SetFromFlag;
-import brooklyn.util.math.MathFunctions;
-
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+
+import org.apache.brooklyn.api.entity.basic.EntityLocal;
+import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.api.event.SensorEvent;
+import org.apache.brooklyn.api.event.SensorEventListener;
+import org.apache.brooklyn.api.policy.Enricher;
+
+import brooklyn.config.ConfigKey;
+import brooklyn.config.render.RendererHints;
+import brooklyn.enricher.basic.AbstractEnricher;
+import brooklyn.entity.basic.AbstractEntity;
+import brooklyn.entity.basic.ConfigKeys;
+import brooklyn.entity.container.docker.DockerInfrastructure;
+import brooklyn.event.basic.BasicNotificationSensor;
+import brooklyn.event.basic.Sensors;
+import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
+import brooklyn.location.docker.strategy.MaxContainersPlacementStrategy;
+import brooklyn.policy.autoscaling.AutoScalerPolicy;
+import brooklyn.util.flags.SetFromFlag;
+import brooklyn.util.math.MathFunctions;
 
 /**
  * An {@link Enricher} that emits {@link #DOCKER_CONTAINER_CLUSTER_HOT hot} or {@link #DOCKER_CONTAINER_CLUSTER_COLD cold}

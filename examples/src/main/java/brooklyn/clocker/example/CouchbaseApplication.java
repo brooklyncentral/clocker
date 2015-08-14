@@ -15,10 +15,11 @@
  */
 package brooklyn.clocker.example;
 
-import brooklyn.catalog.Catalog;
+import org.apache.brooklyn.api.catalog.Catalog;
+import org.apache.brooklyn.api.entity.proxying.EntitySpec;
+import org.apache.brooklyn.entity.nosql.couchbase.CouchbaseCluster;
+
 import brooklyn.entity.basic.AbstractApplication;
-import brooklyn.entity.nosql.couchbase.CouchbaseCluster;
-import brooklyn.entity.proxying.EntitySpec;
 
 /**
  * Couchbase Cluster with 3 nodes

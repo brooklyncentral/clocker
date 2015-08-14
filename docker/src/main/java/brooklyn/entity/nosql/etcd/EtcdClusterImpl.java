@@ -25,7 +25,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.entity.Entity;
+import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
+
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.policy.PolicySpec;
+
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityInternal;
@@ -40,19 +51,9 @@ import brooklyn.entity.group.DynamicClusterImpl;
 import brooklyn.entity.trait.Startable;
 import brooklyn.event.basic.DependentConfiguration;
 import brooklyn.event.feed.ConfigToAttributes;
-import brooklyn.location.Location;
-import brooklyn.policy.PolicySpec;
 import brooklyn.util.task.DynamicTasks;
 import brooklyn.util.time.Duration;
 import brooklyn.util.time.Time;
-
-import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Predicates;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
 
 public class EtcdClusterImpl extends DynamicClusterImpl implements EtcdCluster {
 

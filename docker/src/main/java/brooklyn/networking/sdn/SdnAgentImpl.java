@@ -22,28 +22,29 @@ import java.util.concurrent.Callable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Optional;
+import com.google.common.collect.Iterables;
+
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.basic.EntityLocal;
+import org.apache.brooklyn.api.entity.proxying.EntitySpec;
+import org.apache.brooklyn.api.management.Task;
+
 import brooklyn.config.render.RendererHints;
-import brooklyn.entity.Entity;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.DynamicGroup;
 import brooklyn.entity.basic.Entities;
-import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.basic.EntityPredicates;
 import brooklyn.entity.basic.SoftwareProcessImpl;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
-import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.event.feed.ConfigToAttributes;
-import brooklyn.management.Task;
 import brooklyn.networking.VirtualNetwork;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.repeat.Repeater;
 import brooklyn.util.task.DynamicTasks;
 import brooklyn.util.task.TaskBuilder;
 import brooklyn.util.time.Duration;
-
-import com.google.common.base.Optional;
-import com.google.common.collect.Iterables;
 
 /**
  * An SDN agent process on a Docker host.

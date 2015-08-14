@@ -24,21 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import brooklyn.entity.Entity;
-import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
-import brooklyn.entity.basic.Attributes;
-import brooklyn.entity.basic.Entities;
-import brooklyn.entity.basic.lifecycle.ScriptHelper;
-import brooklyn.entity.group.DynamicCluster;
-import brooklyn.event.basic.DependentConfiguration;
-import brooklyn.location.OsDetails;
-import brooklyn.location.basic.SshMachineLocation;
-import brooklyn.util.collections.MutableMap;
-import brooklyn.util.os.Os;
-import brooklyn.util.ssh.BashCommands;
-import brooklyn.util.task.DynamicTasks;
-import brooklyn.util.text.Strings;
-
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicates;
@@ -47,6 +32,22 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.location.OsDetails;
+import org.apache.brooklyn.location.basic.SshMachineLocation;
+
+import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
+import brooklyn.entity.basic.Attributes;
+import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.lifecycle.ScriptHelper;
+import brooklyn.entity.group.DynamicCluster;
+import brooklyn.event.basic.DependentConfiguration;
+import brooklyn.util.collections.MutableMap;
+import brooklyn.util.os.Os;
+import brooklyn.util.ssh.BashCommands;
+import brooklyn.util.task.DynamicTasks;
+import brooklyn.util.text.Strings;
 
 public class EtcdNodeSshDriver extends AbstractSoftwareProcessSshDriver implements EtcdNodeDriver {
 

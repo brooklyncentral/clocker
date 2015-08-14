@@ -21,21 +21,23 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 
-import org.jclouds.cloudstack.filters.QuerySigner;
-import org.jclouds.compute.ComputeServiceContext;
-import org.jclouds.http.HttpResponse;
-import org.jclouds.softlayer.SoftLayerApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.util.http.HttpToolResponse;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
+
+import org.jclouds.cloudstack.filters.QuerySigner;
+import org.jclouds.compute.ComputeServiceContext;
+import org.jclouds.http.HttpResponse;
+import org.jclouds.softlayer.SoftLayerApi;
+
+import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+
+import brooklyn.util.http.HttpToolResponse;
 
 public class SoftLayerRestClient {
 

@@ -18,20 +18,21 @@
  */
 package brooklyn.entity.nosql.etcd;
 
-import brooklyn.catalog.Catalog;
+import org.apache.brooklyn.api.catalog.Catalog;
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
+import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.location.basic.PortRanges;
+
 import brooklyn.config.ConfigKey;
-import brooklyn.entity.Entity;
 import brooklyn.entity.annotation.Effector;
 import brooklyn.entity.annotation.EffectorParam;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.MethodEffector;
 import brooklyn.entity.basic.SoftwareProcess;
-import brooklyn.entity.proxying.ImplementedBy;
-import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
-import brooklyn.location.basic.PortRanges;
 import brooklyn.util.flags.SetFromFlag;
 
 @Catalog(name="Etcd Node")

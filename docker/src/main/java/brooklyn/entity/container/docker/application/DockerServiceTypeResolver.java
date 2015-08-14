@@ -18,9 +18,6 @@
  */
 package brooklyn.entity.container.docker.application;
 
-import io.brooklyn.camp.brooklyn.spi.creation.BrooklynComponentTemplateResolver;
-import io.brooklyn.camp.brooklyn.spi.creation.service.BrooklynServiceTypeResolver;
-import io.brooklyn.camp.brooklyn.spi.creation.service.ServiceTypeResolver;
 import io.brooklyn.camp.spi.PlatformComponentTemplate;
 
 import java.util.List;
@@ -28,14 +25,18 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.catalog.CatalogItem;
-import brooklyn.entity.Entity;
-import brooklyn.entity.container.DockerAttributes;
-import brooklyn.entity.proxying.EntitySpec;
-import brooklyn.util.text.Strings;
-
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
+
+import org.apache.brooklyn.api.catalog.CatalogItem;
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.proxying.EntitySpec;
+import org.apache.brooklyn.camp.brooklyn.spi.creation.BrooklynComponentTemplateResolver;
+import org.apache.brooklyn.camp.brooklyn.spi.creation.service.BrooklynServiceTypeResolver;
+import org.apache.brooklyn.camp.brooklyn.spi.creation.service.ServiceTypeResolver;
+
+import brooklyn.entity.container.DockerAttributes;
+import brooklyn.util.text.Strings;
 
 /**
  * This converts {@link PlatformComponentTemplate} instances whose type is prefixed {@code docker:}

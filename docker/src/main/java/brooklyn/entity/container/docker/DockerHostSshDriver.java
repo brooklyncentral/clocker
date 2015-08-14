@@ -31,21 +31,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
+import com.google.common.base.Stopwatch;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+
 import org.jclouds.net.domain.IpPermission;
 import org.jclouds.net.domain.IpProtocol;
+
+import org.apache.brooklyn.api.location.OsDetails;
+import org.apache.brooklyn.api.management.Task;
+import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.location.geo.LocalhostExternalIpLoader;
+import org.apache.brooklyn.location.jclouds.JcloudsMachineLocation;
+import org.apache.brooklyn.location.jclouds.JcloudsSshMachineLocation;
+import org.apache.brooklyn.location.jclouds.networking.JcloudsLocationSecurityGroupCustomizer;
 
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.lifecycle.ScriptHelper;
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.software.SshEffectorTasks;
-import brooklyn.location.OsDetails;
-import brooklyn.location.basic.SshMachineLocation;
-import brooklyn.location.geo.LocalhostExternalIpLoader;
-import brooklyn.location.jclouds.JcloudsMachineLocation;
-import brooklyn.location.jclouds.JcloudsSshMachineLocation;
-import brooklyn.location.jclouds.networking.JcloudsLocationSecurityGroupCustomizer;
-import brooklyn.management.Task;
 import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.util.collections.MutableList;
@@ -63,10 +68,6 @@ import brooklyn.util.text.Identifiers;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
 import brooklyn.util.time.Time;
-
-import com.google.common.base.Stopwatch;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 
 public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implements DockerHostDriver {
 

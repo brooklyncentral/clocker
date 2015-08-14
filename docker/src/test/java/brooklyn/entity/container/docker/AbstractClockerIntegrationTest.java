@@ -23,10 +23,11 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
 
+import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.launcher.BrooklynLauncher;
+
 import brooklyn.entity.BrooklynAppLiveTestSupport;
 import brooklyn.entity.basic.Entities;
-import brooklyn.launcher.BrooklynLauncher;
-import brooklyn.location.Location;
 import brooklyn.util.text.Strings;
 
 public class AbstractClockerIntegrationTest extends BrooklynAppLiveTestSupport {

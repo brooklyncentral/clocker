@@ -15,7 +15,7 @@
  */
 package brooklyn.entity.proxy.haproxy;
 
-import brooklyn.entity.proxy.AbstractControllerImpl;
+import org.apache.brooklyn.entity.proxy.AbstractControllerImpl;
 
 public class HAProxyControllerImpl extends AbstractControllerImpl implements HAProxyController {
 

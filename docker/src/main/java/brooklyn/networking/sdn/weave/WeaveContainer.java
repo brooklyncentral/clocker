@@ -15,10 +15,11 @@
  */
 package brooklyn.networking.sdn.weave;
 
+import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
+
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.SoftwareProcess;
-import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.event.basic.BasicAttributeSensorAndConfigKey;
 import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.util.flags.SetFromFlag;

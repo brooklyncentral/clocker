@@ -28,22 +28,48 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nullable;
 
-import org.jclouds.compute.domain.Processor;
-import org.jclouds.compute.domain.TemplateBuilder;
-import org.jclouds.docker.compute.options.DockerTemplateOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.CaseFormat;
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Functions;
+import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.google.common.primitives.Ints;
+
+import org.jclouds.compute.domain.Processor;
+import org.jclouds.compute.domain.TemplateBuilder;
+import org.jclouds.docker.compute.options.DockerTemplateOptions;
+
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.basic.EntityLocal;
+import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.location.LocationSpec;
+import org.apache.brooklyn.api.location.NoMachinesAvailableException;
+import org.apache.brooklyn.api.location.OsDetails;
+import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.api.management.LocationManager;
+import org.apache.brooklyn.location.basic.LocationConfigKeys;
+import org.apache.brooklyn.location.basic.PortRanges;
+import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.location.cloud.CloudLocationConfig;
+import org.apache.brooklyn.location.dynamic.DynamicLocation;
+import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+import org.apache.brooklyn.location.jclouds.JcloudsLocationConfig;
+import org.apache.brooklyn.location.jclouds.JcloudsSshMachineLocation;
+import org.apache.brooklyn.location.jclouds.templates.PortableTemplateBuilder;
+
 import brooklyn.config.ConfigKey;
 import brooklyn.config.render.RendererHints;
-import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.EntityInternal;
-import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.basic.ServiceStateLogic;
 import brooklyn.entity.basic.SoftwareProcess;
@@ -54,23 +80,8 @@ import brooklyn.event.basic.Sensors;
 import brooklyn.event.feed.ConfigToAttributes;
 import brooklyn.event.feed.function.FunctionFeed;
 import brooklyn.event.feed.function.FunctionPollConfig;
-import brooklyn.location.Location;
-import brooklyn.location.LocationSpec;
-import brooklyn.location.NoMachinesAvailableException;
-import brooklyn.location.OsDetails;
-import brooklyn.location.PortRange;
-import brooklyn.location.basic.LocationConfigKeys;
-import brooklyn.location.basic.PortRanges;
-import brooklyn.location.basic.SshMachineLocation;
-import brooklyn.location.cloud.CloudLocationConfig;
 import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.location.docker.DockerHostLocation;
-import brooklyn.location.dynamic.DynamicLocation;
-import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.location.jclouds.JcloudsLocationConfig;
-import brooklyn.location.jclouds.JcloudsSshMachineLocation;
-import brooklyn.location.jclouds.templates.PortableTemplateBuilder;
-import brooklyn.management.LocationManager;
 import brooklyn.networking.portforwarding.subnet.JcloudsPortforwardingSubnetLocation;
 import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnAttributes;
@@ -84,15 +95,6 @@ import brooklyn.util.net.Cidr;
 import brooklyn.util.net.Urls;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
-
-import com.google.common.base.CaseFormat;
-import com.google.common.base.CharMatcher;
-import com.google.common.base.Functions;
-import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import com.google.common.primitives.Ints;
 
 /**
  * A single Docker container.

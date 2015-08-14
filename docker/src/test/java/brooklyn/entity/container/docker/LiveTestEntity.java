@@ -1,3 +1,18 @@
+/*
+ * Copyright 2014-2015 by Cloudsoft Corporation Limited
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package brooklyn.entity.container.docker;
 
 import java.util.Collection;
@@ -5,21 +20,22 @@ import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.entity.basic.Lifecycle;
-import brooklyn.entity.basic.ServiceStateLogic;
-import brooklyn.entity.proxying.ImplementedBy;
-import brooklyn.location.Location;
-import brooklyn.location.MachineLocation;
-import brooklyn.location.MachineProvisioningLocation;
-import brooklyn.location.NoMachinesAvailableException;
-import brooklyn.location.docker.DockerLocation;
-import brooklyn.test.entity.TestEntity;
-import brooklyn.test.entity.TestEntityImpl;
-
 import com.google.common.base.Predicates;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+
+import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
+import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.location.MachineLocation;
+import org.apache.brooklyn.api.location.MachineProvisioningLocation;
+import org.apache.brooklyn.api.location.NoMachinesAvailableException;
+import org.apache.brooklyn.test.entity.TestEntity;
+import org.apache.brooklyn.test.entity.TestEntityImpl;
+
+import brooklyn.entity.basic.Lifecycle;
+import brooklyn.entity.basic.ServiceStateLogic;
+import brooklyn.location.docker.DockerLocation;
 
 @ImplementedBy(LiveTestEntity.LiveTestEntityImpl.class)
 public interface LiveTestEntity extends TestEntity {

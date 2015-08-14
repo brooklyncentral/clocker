@@ -1,3 +1,18 @@
+/*
+ * Copyright 2014 by Cloudsoft Corporation Limited
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package brooklyn.clocker;
 
 import io.airlift.command.Cli.CliBuilder;
@@ -8,10 +23,10 @@ import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.launcher.BrooklynLauncher;
+import org.apache.brooklyn.launcher.BrooklynLauncher;
 
 
-public class Main extends brooklyn.cli.Main {
+public class Main extends org.apache.brooklyn.cli.Main {
 
     private static final Logger log = LoggerFactory.getLogger(Main.class);
 
@@ -26,7 +41,7 @@ public class Main extends brooklyn.cli.Main {
     }
 
     @Command(name = "clocker", description = "Starts the Brooklyn server with the Clocker console")
-    public static class LaunchClocker extends brooklyn.cli.Main.LaunchCommand {
+    public static class LaunchClocker extends org.apache.brooklyn.cli.Main.LaunchCommand {
         @Override
         protected BrooklynLauncher createLauncher() {
             return super.createLauncher()

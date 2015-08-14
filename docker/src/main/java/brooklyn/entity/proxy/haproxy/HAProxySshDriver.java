@@ -20,18 +20,19 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.entity.Entity;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
+
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.basic.EntityLocal;
+import org.apache.brooklyn.entity.proxy.LoadBalancer;
+import org.apache.brooklyn.location.basic.Machines;
+import org.apache.brooklyn.location.basic.SshMachineLocation;
+
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
-import brooklyn.entity.basic.EntityLocal;
-import brooklyn.entity.proxy.LoadBalancer;
-import brooklyn.location.basic.Machines;
-import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.guava.Maybe;
 import brooklyn.util.os.Os;
-
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableMap;
 
 public class HAProxySshDriver extends AbstractSoftwareProcessSshDriver implements HAProxyDriver {
 

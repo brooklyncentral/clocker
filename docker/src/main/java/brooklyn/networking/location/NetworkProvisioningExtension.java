@@ -17,7 +17,8 @@ package brooklyn.networking.location;
 
 import java.util.Map;
 
-import brooklyn.location.Location;
+import org.apache.brooklyn.api.location.Location;
+
 import brooklyn.networking.VirtualNetwork;
 import brooklyn.util.net.Cidr;
 

@@ -17,8 +17,9 @@ package brooklyn.location.docker.strategy;
 
 import java.util.List;
 
+import org.apache.brooklyn.api.entity.Entity;
+
 import brooklyn.config.ConfigKey;
-import brooklyn.entity.Entity;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.docker.DockerVirtualLocation;

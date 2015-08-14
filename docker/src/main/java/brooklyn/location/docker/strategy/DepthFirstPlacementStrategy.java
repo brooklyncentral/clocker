@@ -15,9 +15,9 @@
  */
 package brooklyn.location.docker.strategy;
 
-import brooklyn.location.docker.DockerHostLocation;
-
 import com.google.common.collect.Ordering;
+
+import brooklyn.location.docker.DockerHostLocation;
 
 /**
  * Placement strategy that adds containers to Docker hosts in order.

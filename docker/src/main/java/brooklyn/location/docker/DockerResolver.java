@@ -26,24 +26,25 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.entity.container.docker.DockerHost;
-import brooklyn.entity.container.docker.DockerInfrastructure;
-import brooklyn.location.Location;
-import brooklyn.location.LocationRegistry;
-import brooklyn.location.LocationResolver.EnableableLocationResolver;
-import brooklyn.location.LocationSpec;
-import brooklyn.location.basic.BasicLocationRegistry;
-import brooklyn.location.basic.LocationInternal;
-import brooklyn.location.basic.LocationPropertiesFromBrooklynProperties;
-import brooklyn.location.dynamic.DynamicLocation;
-import brooklyn.management.ManagementContext;
-import brooklyn.util.collections.MutableMap;
-import brooklyn.util.text.KeyValueParser;
-import brooklyn.util.text.Strings;
-
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+
+import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.location.LocationRegistry;
+import org.apache.brooklyn.api.location.LocationResolver.EnableableLocationResolver;
+import org.apache.brooklyn.api.location.LocationSpec;
+import org.apache.brooklyn.api.management.ManagementContext;
+import org.apache.brooklyn.location.basic.BasicLocationRegistry;
+import org.apache.brooklyn.location.basic.LocationInternal;
+import org.apache.brooklyn.location.basic.LocationPropertiesFromBrooklynProperties;
+import org.apache.brooklyn.location.dynamic.DynamicLocation;
+
+import brooklyn.entity.container.docker.DockerHost;
+import brooklyn.entity.container.docker.DockerInfrastructure;
+import brooklyn.util.collections.MutableMap;
+import brooklyn.util.text.KeyValueParser;
+import brooklyn.util.text.Strings;
 
 /**
  * Examples of valid specs:

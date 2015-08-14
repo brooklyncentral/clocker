@@ -35,10 +35,29 @@ import javax.net.ssl.X509TrustManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
+import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+
+import org.apache.brooklyn.api.entity.Application;
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.proxying.EntitySpec;
+import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.location.LocationDefinition;
+import org.apache.brooklyn.api.location.LocationRegistry;
+import org.apache.brooklyn.api.management.LocationManager;
+import org.apache.brooklyn.api.management.ManagementContext;
+import org.apache.brooklyn.api.policy.EnricherSpec;
+import org.apache.brooklyn.api.policy.PolicySpec;
+import org.apache.brooklyn.location.basic.BasicLocationDefinition;
+import org.apache.brooklyn.location.basic.BasicLocationRegistry;
+
 import brooklyn.config.render.RendererHints;
 import brooklyn.enricher.Enrichers;
-import brooklyn.entity.Application;
-import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.BasicGroup;
 import brooklyn.entity.basic.BasicStartableImpl;
@@ -55,20 +74,10 @@ import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.group.DynamicMultiGroup;
 import brooklyn.entity.machine.MachineAttributes;
-import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.entity.trait.Startable;
-import brooklyn.location.Location;
-import brooklyn.location.LocationDefinition;
-import brooklyn.location.LocationRegistry;
-import brooklyn.location.basic.BasicLocationDefinition;
-import brooklyn.location.basic.BasicLocationRegistry;
 import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.DockerResolver;
-import brooklyn.management.LocationManager;
-import brooklyn.management.ManagementContext;
 import brooklyn.networking.sdn.SdnAttributes;
-import brooklyn.policy.EnricherSpec;
-import brooklyn.policy.PolicySpec;
 import brooklyn.policy.autoscaling.AutoScalerPolicy;
 import brooklyn.util.ResourceUtils;
 import brooklyn.util.collections.MutableMap;
@@ -77,14 +86,6 @@ import brooklyn.util.crypto.SecureKeys;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
-
-import com.google.common.base.Function;
-import com.google.common.base.Joiner;
-import com.google.common.base.Predicates;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 
 public class DockerInfrastructureImpl extends BasicStartableImpl implements DockerInfrastructure {
 

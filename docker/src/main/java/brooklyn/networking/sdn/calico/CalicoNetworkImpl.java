@@ -19,13 +19,21 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collection;
 
-import org.jclouds.net.domain.IpPermission;
-import org.jclouds.net.domain.IpProtocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
+
+import org.jclouds.net.domain.IpPermission;
+import org.jclouds.net.domain.IpProtocol;
+
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.proxying.EntitySpec;
+import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.location.basic.SshMachineLocation;
+
 import brooklyn.config.render.RendererHints;
-import brooklyn.entity.Entity;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
@@ -35,9 +43,6 @@ import brooklyn.entity.group.Cluster;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.nosql.etcd.EtcdCluster;
 import brooklyn.entity.nosql.etcd.EtcdNode;
-import brooklyn.entity.proxying.EntitySpec;
-import brooklyn.location.PortRange;
-import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.networking.sdn.SdnProviderImpl;
@@ -46,9 +51,6 @@ import brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.text.Strings;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Maps;
 
 public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork {
 

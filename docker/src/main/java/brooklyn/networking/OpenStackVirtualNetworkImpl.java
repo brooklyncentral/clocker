@@ -20,13 +20,14 @@ import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.location.Location;
-import brooklyn.location.jclouds.JcloudsLocation;
-import brooklyn.networking.location.NetworkProvisioningExtension;
-
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
+
+import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+
+import brooklyn.networking.location.NetworkProvisioningExtension;
 
 public class OpenStackVirtualNetworkImpl extends VirtualNetworkImpl implements OpenStackVirtualNetwork {
 

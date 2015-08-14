@@ -17,11 +17,12 @@ package brooklyn.entity.proxy.haproxy;
 
 import java.util.List;
 
+import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
+import org.apache.brooklyn.entity.proxy.AbstractController;
+
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.container.DockerAttributes;
-import brooklyn.entity.proxy.AbstractController;
-import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
 import brooklyn.util.collections.MutableList;
 import brooklyn.util.flags.SetFromFlag;

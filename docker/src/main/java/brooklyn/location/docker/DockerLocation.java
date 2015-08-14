@@ -26,31 +26,6 @@ import java.util.concurrent.Semaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.entity.Entity;
-import brooklyn.entity.basic.Entities;
-import brooklyn.entity.basic.EntityFunctions;
-import brooklyn.entity.container.DockerAttributes;
-import brooklyn.entity.container.docker.DockerHost;
-import brooklyn.entity.container.docker.DockerInfrastructure;
-import brooklyn.entity.group.DynamicCluster;
-import brooklyn.entity.rebind.BasicLocationRebindSupport;
-import brooklyn.entity.rebind.RebindContext;
-import brooklyn.entity.rebind.RebindSupport;
-import brooklyn.location.MachineLocation;
-import brooklyn.location.MachineProvisioningLocation;
-import brooklyn.location.NoMachinesAvailableException;
-import brooklyn.location.basic.AbstractLocation;
-import brooklyn.location.basic.LocationConfigKeys;
-import brooklyn.location.basic.SshMachineLocation;
-import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
-import brooklyn.location.docker.strategy.DockerAwareProvisioningStrategy;
-import brooklyn.location.dynamic.DynamicLocation;
-import brooklyn.mementos.LocationMemento;
-import brooklyn.networking.location.NetworkProvisioningExtension;
-import brooklyn.util.collections.MutableMap;
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.flags.SetFromFlag;
-
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicates;
@@ -61,6 +36,32 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
+
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.rebind.RebindContext;
+import org.apache.brooklyn.api.entity.rebind.RebindSupport;
+import org.apache.brooklyn.api.location.MachineLocation;
+import org.apache.brooklyn.api.location.MachineProvisioningLocation;
+import org.apache.brooklyn.api.location.NoMachinesAvailableException;
+import org.apache.brooklyn.api.mementos.LocationMemento;
+import org.apache.brooklyn.location.basic.AbstractLocation;
+import org.apache.brooklyn.location.basic.LocationConfigKeys;
+import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.location.dynamic.DynamicLocation;
+
+import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.EntityFunctions;
+import brooklyn.entity.container.DockerAttributes;
+import brooklyn.entity.container.docker.DockerHost;
+import brooklyn.entity.container.docker.DockerInfrastructure;
+import brooklyn.entity.group.DynamicCluster;
+import brooklyn.entity.rebind.BasicLocationRebindSupport;
+import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
+import brooklyn.location.docker.strategy.DockerAwareProvisioningStrategy;
+import brooklyn.networking.location.NetworkProvisioningExtension;
+import brooklyn.util.collections.MutableMap;
+import brooklyn.util.exceptions.Exceptions;
+import brooklyn.util.flags.SetFromFlag;
 
 public class DockerLocation extends AbstractLocation implements DockerVirtualLocation, MachineProvisioningLocation<MachineLocation>,
         DynamicLocation<DockerInfrastructure, DockerLocation>, Closeable {

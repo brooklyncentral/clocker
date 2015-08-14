@@ -18,11 +18,12 @@ package brooklyn.location.docker.strategy;
 import java.util.Collections;
 import java.util.List;
 
-import brooklyn.entity.Entity;
+import com.google.common.collect.ImmutableList;
+
+import org.apache.brooklyn.api.entity.Entity;
+
 import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.util.collections.MutableList;
-
-import com.google.common.collect.ImmutableList;
 
 /**
  * Placement strategy that randomises the list of hosts.

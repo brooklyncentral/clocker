@@ -21,13 +21,6 @@ import java.util.Queue;
 
 import javax.annotation.Nullable;
 
-import brooklyn.config.ConfigKey;
-import brooklyn.entity.Entity;
-import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.entity.basic.EntityPredicates;
-import brooklyn.location.docker.DockerHostLocation;
-import brooklyn.util.javalang.Reflections;
-
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -38,6 +31,14 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.google.common.reflect.TypeToken;
+
+import org.apache.brooklyn.api.entity.Entity;
+
+import brooklyn.config.ConfigKey;
+import brooklyn.entity.basic.ConfigKeys;
+import brooklyn.entity.basic.EntityPredicates;
+import brooklyn.location.docker.DockerHostLocation;
+import brooklyn.util.javalang.Reflections;
 
 /**
  * Affinity rules for Docker hosts.

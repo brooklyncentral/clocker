@@ -15,13 +15,14 @@
  */
 package brooklyn.clocker.example;
 
-import brooklyn.catalog.Catalog;
-import brooklyn.catalog.CatalogConfig;
+import org.apache.brooklyn.api.catalog.Catalog;
+import org.apache.brooklyn.api.catalog.CatalogConfig;
+import org.apache.brooklyn.api.entity.proxying.EntitySpec;
+
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.container.docker.application.VanillaDockerApplication;
-import brooklyn.entity.proxying.EntitySpec;
 
 /**
  * Brooklyn managed {@link VanillaDockerApplication}.

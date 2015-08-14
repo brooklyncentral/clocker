@@ -15,7 +15,7 @@
  */
 package brooklyn.networking;
 
-import brooklyn.entity.proxying.ImplementedBy;
+import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
 
 /**
  * An OpenStack virtual network segment.

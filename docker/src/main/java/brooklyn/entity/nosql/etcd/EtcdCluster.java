@@ -21,19 +21,20 @@ package brooklyn.entity.nosql.etcd;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import brooklyn.catalog.Catalog;
+import com.google.common.reflect.TypeToken;
+
+import org.apache.brooklyn.api.catalog.Catalog;
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.proxying.EntitySpec;
+import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
+import org.apache.brooklyn.api.event.AttributeSensor;
+
 import brooklyn.config.ConfigKey;
-import brooklyn.entity.Entity;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.group.DynamicCluster;
-import brooklyn.entity.proxying.EntitySpec;
-import brooklyn.entity.proxying.ImplementedBy;
-import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.util.flags.SetFromFlag;
-
-import com.google.common.reflect.TypeToken;
 
 @Catalog(name="Etcd Cluster", description="Etcd is an open-source distributed key-value store that serves as "
         + "the backbone of distributed systems by providing a canonical hub for cluster coordination and state management.")

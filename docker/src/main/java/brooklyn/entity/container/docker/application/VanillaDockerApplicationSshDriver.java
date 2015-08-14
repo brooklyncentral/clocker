@@ -18,10 +18,11 @@ package brooklyn.entity.container.docker.application;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.brooklyn.location.basic.SshMachineLocation;
+
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
-import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.docker.DockerContainerLocation;
 
 /**

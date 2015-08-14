@@ -21,18 +21,19 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
+
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.location.HardwareDetails;
+import org.apache.brooklyn.location.cloud.CloudLocationConfig;
+
 import brooklyn.config.ConfigKey;
-import brooklyn.entity.Entity;
 import brooklyn.entity.basic.EntityPredicates;
 import brooklyn.entity.basic.SoftwareProcess;
-import brooklyn.location.HardwareDetails;
-import brooklyn.location.cloud.CloudLocationConfig;
 import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.util.collections.MutableList;
 import brooklyn.util.collections.MutableMap;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Maps;
 
 /**
  * Placement strategy that selects the Docker host with the lowest CPU usage.

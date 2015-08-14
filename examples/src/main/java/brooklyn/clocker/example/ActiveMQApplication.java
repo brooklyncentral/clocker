@@ -15,15 +15,16 @@
  */
 package brooklyn.clocker.example;
 
-import brooklyn.catalog.Catalog;
-import brooklyn.catalog.CatalogConfig;
+import org.apache.brooklyn.api.catalog.Catalog;
+import org.apache.brooklyn.api.catalog.CatalogConfig;
+import org.apache.brooklyn.api.entity.proxying.EntitySpec;
+import org.apache.brooklyn.location.basic.PortRanges;
+
 import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.java.UsesJmx;
 import brooklyn.entity.java.UsesJmx.JmxAgentModes;
 import brooklyn.entity.messaging.activemq.ActiveMQBroker;
-import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
-import brooklyn.location.basic.PortRanges;
 
 @Catalog(name="ActiveMQ Broker",
         description="Single ActiveMQ message broker",

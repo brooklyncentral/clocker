@@ -26,14 +26,15 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
+import org.apache.brooklyn.api.entity.proxying.EntitySpec;
+import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.management.ManagementContext;
+import org.apache.brooklyn.test.entity.TestApplication;
+
 import brooklyn.config.BrooklynProperties;
 import brooklyn.entity.basic.ApplicationBuilder;
-import brooklyn.entity.proxying.EntitySpec;
-import brooklyn.location.Location;
 import brooklyn.location.docker.DockerHostLocation;
-import brooklyn.management.ManagementContext;
 import brooklyn.management.internal.LocalManagementContext;
-import brooklyn.test.entity.TestApplication;
 import brooklyn.util.collections.MutableMap;
 
 @Test(groups="Live")

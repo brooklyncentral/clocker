@@ -17,9 +17,9 @@ package brooklyn.location.docker.strategy;
 
 import java.util.Map;
 
-import brooklyn.entity.basic.SoftwareProcess;
-
 import com.google.common.base.Function;
+
+import brooklyn.entity.basic.SoftwareProcess;
 
 /**
  * Provisioning strategy for new Docker hosts.

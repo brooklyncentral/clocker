@@ -17,10 +17,11 @@ package brooklyn.networking.sdn.ibm;
 
 import java.net.InetAddress;
 
-import brooklyn.catalog.Catalog;
+import org.apache.brooklyn.api.catalog.Catalog;
+import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
+
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.util.flags.SetFromFlag;

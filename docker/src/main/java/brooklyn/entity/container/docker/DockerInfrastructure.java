@@ -19,9 +19,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import brooklyn.catalog.Catalog;
+import com.google.common.reflect.TypeToken;
+
+import org.apache.brooklyn.api.catalog.Catalog;
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.proxying.EntitySpec;
+import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
+import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.location.dynamic.LocationOwner;
+
 import brooklyn.config.ConfigKey;
-import brooklyn.entity.Entity;
 import brooklyn.entity.basic.BasicStartable;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.DynamicGroup;
@@ -29,24 +36,18 @@ import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.group.DynamicMultiGroup;
-import brooklyn.entity.proxying.EntitySpec;
-import brooklyn.entity.proxying.ImplementedBy;
 import brooklyn.entity.trait.Resizable;
-import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.strategy.DepthFirstPlacementStrategy;
 import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
 import brooklyn.location.docker.strategy.affinity.AffinityRules;
-import brooklyn.location.dynamic.LocationOwner;
 import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.util.collections.MutableList;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.time.Duration;
-
-import com.google.common.reflect.TypeToken;
 
 /**
  * A collection of machines running Docker.

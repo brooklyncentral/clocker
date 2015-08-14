@@ -16,10 +16,6 @@
  */
 package org.jclouds.softlayer.features;
 
-import static org.jclouds.Fallbacks.FalseOnNotFoundOr404;
-import static org.jclouds.Fallbacks.NullOnNotFoundOr404;
-import static org.jclouds.Fallbacks.VoidOnNotFoundOr404;
-
 import java.util.Set;
 
 import javax.inject.Named;
@@ -32,6 +28,9 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
+import org.jclouds.Fallbacks.FalseOnNotFoundOr404;
+import org.jclouds.Fallbacks.NullOnNotFoundOr404;
+import org.jclouds.Fallbacks.VoidOnNotFoundOr404;
 import org.jclouds.http.filters.BasicAuthentication;
 import org.jclouds.rest.annotations.BinderParam;
 import org.jclouds.rest.annotations.Fallback;

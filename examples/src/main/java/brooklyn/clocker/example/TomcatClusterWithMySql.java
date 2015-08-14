@@ -24,8 +24,20 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.catalog.Catalog;
-import brooklyn.catalog.CatalogConfig;
+import com.google.common.collect.ImmutableMap;
+
+import org.apache.brooklyn.api.catalog.Catalog;
+import org.apache.brooklyn.api.catalog.CatalogConfig;
+import org.apache.brooklyn.api.entity.proxying.EntitySpec;
+import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.entity.proxy.nginx.NginxController;
+import org.apache.brooklyn.entity.webapp.ControlledDynamicWebAppCluster;
+import org.apache.brooklyn.entity.webapp.DynamicWebAppCluster;
+import org.apache.brooklyn.entity.webapp.JavaWebAppService;
+import org.apache.brooklyn.entity.webapp.WebAppService;
+import org.apache.brooklyn.entity.webapp.tomcat.TomcatServer;
+import org.apache.brooklyn.location.basic.PortRanges;
+
 import brooklyn.config.ConfigKey;
 import brooklyn.enricher.Enrichers;
 import brooklyn.enricher.HttpLatencyDetector;
@@ -40,20 +52,9 @@ import brooklyn.entity.database.mysql.MySqlNode;
 import brooklyn.entity.group.Cluster;
 import brooklyn.entity.java.UsesJmx;
 import brooklyn.entity.java.UsesJmx.JmxAgentModes;
-import brooklyn.entity.proxy.nginx.NginxController;
-import brooklyn.entity.proxying.EntitySpec;
-import brooklyn.entity.webapp.ControlledDynamicWebAppCluster;
-import brooklyn.entity.webapp.DynamicWebAppCluster;
-import brooklyn.entity.webapp.JavaWebAppService;
-import brooklyn.entity.webapp.WebAppService;
-import brooklyn.entity.webapp.tomcat.TomcatServer;
-import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.Sensors;
-import brooklyn.location.basic.PortRanges;
 import brooklyn.policy.autoscaling.AutoScalerPolicy;
 import brooklyn.util.time.Duration;
-
-import com.google.common.collect.ImmutableMap;
 
 /**
  * Launches a 3-tier app with nginx, clustered jboss, and mysql.
