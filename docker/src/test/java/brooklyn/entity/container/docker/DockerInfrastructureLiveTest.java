@@ -16,31 +16,19 @@
 package brooklyn.entity.container.docker;
 
 import static org.testng.Assert.assertTrue;
-
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Optional;
-import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
-
-import brooklyn.entity.BrooklynAppLiveTestSupport;
-import brooklyn.entity.basic.Entities;
-import brooklyn.entity.proxying.EntitySpec;
-import brooklyn.launcher.BrooklynLauncher;
-import brooklyn.location.Location;
-import brooklyn.location.LocationDefinition;
-import brooklyn.location.docker.DockerLocation;
-import brooklyn.util.text.Strings;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+
+import brooklyn.entity.proxying.EntitySpec;
+import brooklyn.location.Location;
+import brooklyn.location.LocationDefinition;
+import brooklyn.location.docker.DockerLocation;
 
 /**
  * Brooklyn managed basic Docker infrastructure.

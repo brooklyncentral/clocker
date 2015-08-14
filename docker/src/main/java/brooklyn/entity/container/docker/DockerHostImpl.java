@@ -36,6 +36,16 @@ import org.jclouds.softlayer.reference.SoftLayerConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Functions;
+import com.google.common.base.Optional;
+import com.google.common.base.Predicates;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+
 import brooklyn.config.ConfigKey;
 import brooklyn.config.render.RendererHints;
 import brooklyn.enricher.Enrichers;
@@ -105,16 +115,6 @@ import brooklyn.util.text.Identifiers;
 import brooklyn.util.text.StringPredicates;
 import brooklyn.util.text.Strings;
 import brooklyn.util.time.Duration;
-
-import com.google.common.base.CharMatcher;
-import com.google.common.base.Functions;
-import com.google.common.base.Optional;
-import com.google.common.base.Predicates;
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 
 /**
  * The host running the Docker service.
@@ -269,11 +269,13 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                     flags.put("securityGroups", securityGroup);
                 }
             } else {
-                flags.put(JcloudsLocationConfig.JCLOUDS_LOCATION_CUSTOMIZERS.getName(),
-                        ImmutableList.of(JcloudsLocationSecurityGroupCustomizer.getInstance(getApplicationId())));
+                //if (!isJcloudsLocation(location, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME)) {
+                    flags.put(JcloudsLocationConfig.JCLOUDS_LOCATION_CUSTOMIZERS.getName(),
+                            ImmutableList.of(JcloudsLocationSecurityGroupCustomizer.getInstance(getApplicationId())));
+                //}
             }
 
-            // Setup SoftLayer template options 
+            // Setup SoftLayer template options
             if (isJcloudsLocation(location, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME)) {
                 if (template == null) template = new PortableTemplateBuilder();
                 SoftLayerTemplateOptions options = new SoftLayerTemplateOptions();
@@ -285,9 +287,12 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
                 // Try and determine if we need to set a VLAN for this host (overriding location)
                 Optional<Integer> vlanOption = options.getPrimaryBackendNetworkComponentNetworkVlanId();
-                Optional<Integer> vlanConfig = Optional.fromNullable(getAttribute(DOCKER_INFRASTRUCTURE)
-                        .getAttribute(DockerInfrastructure.SDN_PROVIDER)
-                        .config().get(SdnProvider.VLAN_ID));
+                Entity sdnProviderAttribute = getAttribute(DOCKER_INFRASTRUCTURE)
+                        .getAttribute(DockerInfrastructure.SDN_PROVIDER);
+                Optional<Integer> vlanConfig = Optional.absent();
+                if (sdnProviderAttribute != null) {
+                    vlanConfig = Optional.fromNullable(sdnProviderAttribute.config().get(SdnProvider.VLAN_ID));
+                }
                 Integer vlanId = vlanOption.or(vlanConfig).orNull();
                 if (vlanId == null) {
                     // If a previous host has been configured, look up the VLAN id
@@ -509,19 +514,22 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         // Save the VLAN id for this machine
         MachineProvisioningLocation location = getInfrastructure().getDynamicLocation().getProvisioner();
         if (isJcloudsLocation(location, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME)) {
-            Integer vlanId = getAttribute(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER).getAttribute(SdnProvider.VLAN_ID);
-            if (vlanId == null) {
-                VirtualGuestApi api = ((JcloudsLocation) location).getComputeService().getContext().unwrapApi(SoftLayerApi.class).getVirtualGuestApi();
-                JcloudsSshMachineLocation machine = (JcloudsSshMachineLocation) getDriver().getLocation();
-                Long serverId = Long.parseLong(machine.getNode().getId());
-                // TODO getVirtualGuestFiltered(serverId, "primaryBackendNetworkComponent;primaryBackendNetworkComponent.networkVlan");
-                VirtualGuest guest = api.getVirtualGuest(serverId);
-                vlanId = guest.getPrimaryBackendNetworkComponent().getNetworkVlan().getId();
-                Integer vlanNumber = guest.getPrimaryBackendNetworkComponent().getNetworkVlan().getVlanNumber();
-                ((EntityInternal) getAttribute(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER)).setAttribute(SdnProvider.VLAN_ID, vlanId);
-                LOG.debug("Recorded VLAN #{} with id {} for server id {}: {}", new Object[] { vlanNumber, vlanId, serverId, this });
-            } else {
-                LOG.debug("Found VLAN {}: {}", new Object[] { vlanId, this });
+            Entity sdnProviderAttribute = getAttribute(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER);
+            if (sdnProviderAttribute != null) {
+                Integer vlanId = sdnProviderAttribute.getAttribute(SdnProvider.VLAN_ID);
+                if (vlanId == null) {
+                    VirtualGuestApi api = ((JcloudsLocation) location).getComputeService().getContext().unwrapApi(SoftLayerApi.class).getVirtualGuestApi();
+                    JcloudsSshMachineLocation machine = (JcloudsSshMachineLocation) getDriver().getLocation();
+                    Long serverId = Long.parseLong(machine.getNode().getId());
+                    // TODO getVirtualGuestFiltered(serverId, "primaryBackendNetworkComponent;primaryBackendNetworkComponent.networkVlan");
+                    VirtualGuest guest = api.getVirtualGuest(serverId);
+                    vlanId = guest.getPrimaryBackendNetworkComponent().getNetworkVlan().getId();
+                    Integer vlanNumber = guest.getPrimaryBackendNetworkComponent().getNetworkVlan().getVlanNumber();
+                    ((EntityInternal) getAttribute(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER)).setAttribute(SdnProvider.VLAN_ID, vlanId);
+                    LOG.debug("Recorded VLAN #{} with id {} for server id {}: {}", new Object[] { vlanNumber, vlanId, serverId, this });
+                } else {
+                    LOG.debug("Found VLAN {}: {}", new Object[] { vlanId, this });
+                }
             }
         }
 
