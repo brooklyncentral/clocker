@@ -15,7 +15,6 @@
  */
 package brooklyn.location.docker;
 
-import static brooklyn.util.GroovyJavaMethods.truth;
 import static brooklyn.util.ssh.BashCommands.sudo;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.format;
@@ -28,42 +27,38 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.entity.Entity;
+import com.google.common.base.Joiner;
+import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.net.HostAndPort;
+
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.basic.EntityLocal;
+import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.location.access.PortForwardManager;
+import org.apache.brooklyn.location.basic.HasSubnetHostname;
+import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.location.basic.SupportsPortForwarding;
+import org.apache.brooklyn.location.dynamic.DynamicLocation;
+import org.apache.brooklyn.location.jclouds.JcloudsSshMachineLocation;
+import org.apache.brooklyn.location.jclouds.JcloudsUtil;
+
 import brooklyn.entity.basic.Attributes;
-import brooklyn.entity.basic.EntityLocal;
 import brooklyn.entity.container.DockerCallbacks;
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
-import brooklyn.location.Location;
-import brooklyn.location.PortRange;
-import brooklyn.location.access.PortForwardManager;
-import brooklyn.location.basic.HasSubnetHostname;
-import brooklyn.location.basic.SshMachineLocation;
-import brooklyn.location.basic.SupportsPortForwarding;
-import brooklyn.location.dynamic.DynamicLocation;
-import brooklyn.location.jclouds.JcloudsSshMachineLocation;
-import brooklyn.location.jclouds.JcloudsUtil;
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.flags.SetFromFlag;
-import brooklyn.util.internal.ssh.ShellTool;
-import brooklyn.util.internal.ssh.SshTool;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.net.Protocol;
-import brooklyn.util.pool.Pool;
 import brooklyn.util.ssh.IptablesCommands;
 import brooklyn.util.ssh.IptablesCommands.Chain;
 import brooklyn.util.ssh.IptablesCommands.Policy;
 import brooklyn.util.time.Duration;
-
-import com.google.common.base.Function;
-import com.google.common.base.Joiner;
-import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.base.Predicates;
-import com.google.common.cache.LoadingCache;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.net.HostAndPort;
 
 /**
  * A {@link Location} that wraps a Docker container.

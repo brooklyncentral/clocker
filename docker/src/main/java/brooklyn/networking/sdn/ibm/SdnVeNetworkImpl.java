@@ -17,20 +17,22 @@ package brooklyn.networking.sdn.ibm;
 
 import java.util.Collection;
 
-import org.jclouds.net.domain.IpPermission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableList;
+
+import org.jclouds.net.domain.IpPermission;
+
+import org.apache.brooklyn.api.entity.proxying.EntitySpec;
+import org.apache.brooklyn.location.basic.SshMachineLocation;
+
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.container.docker.DockerHost;
-import brooklyn.entity.proxying.EntitySpec;
-import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.networking.sdn.SdnProviderImpl;
 import brooklyn.util.collections.MutableList;
-
-import com.google.common.collect.ImmutableList;
 
 public class SdnVeNetworkImpl extends SdnProviderImpl implements SdnVeNetwork {
 

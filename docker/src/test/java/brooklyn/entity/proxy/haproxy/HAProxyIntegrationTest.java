@@ -15,13 +15,23 @@
  */
 package brooklyn.entity.proxy.haproxy;
 
-import static brooklyn.test.HttpTestUtils.assertHttpStatusCodeEventuallyEquals;
+import static org.apache.brooklyn.test.HttpTestUtils.assertHttpStatusCodeEventuallyEquals;
 
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
 
-import brooklyn.entity.Entity;
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.proxying.EntitySpec;
+import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.api.event.Sensor;
+import org.apache.brooklyn.entity.webapp.JavaWebAppService;
+import org.apache.brooklyn.entity.webapp.WebAppService;
+import org.apache.brooklyn.entity.webapp.tomcat.TomcatServer;
+import org.apache.brooklyn.test.EntityTestUtils;
+import org.apache.brooklyn.test.TestResourceUnavailableException;
+import org.apache.brooklyn.test.entity.TestApplication;
+
 import brooklyn.entity.basic.ApplicationBuilder;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.Lifecycle;
@@ -31,16 +41,7 @@ import brooklyn.entity.container.docker.AbstractClockerIntegrationTest;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.container.docker.DockerInfrastructureTests;
 import brooklyn.entity.group.DynamicCluster;
-import brooklyn.entity.proxying.EntitySpec;
-import brooklyn.entity.webapp.JavaWebAppService;
-import brooklyn.entity.webapp.WebAppService;
-import brooklyn.entity.webapp.tomcat.TomcatServer;
-import brooklyn.event.AttributeSensor;
-import brooklyn.event.Sensor;
 import brooklyn.event.basic.Sensors;
-import brooklyn.test.EntityTestUtils;
-import brooklyn.test.TestResourceUnavailableException;
-import brooklyn.test.entity.TestApplication;
 
 public class HAProxyIntegrationTest extends AbstractClockerIntegrationTest {
 

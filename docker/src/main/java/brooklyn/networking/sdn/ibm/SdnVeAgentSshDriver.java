@@ -13,30 +13,6 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.entity.Entity;
-import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
-import brooklyn.entity.basic.Entities;
-import brooklyn.entity.basic.EntityLocal;
-import brooklyn.entity.basic.EntityPredicates;
-import brooklyn.entity.basic.SoftwareProcess;
-import brooklyn.entity.basic.lifecycle.ScriptHelper;
-import brooklyn.entity.container.docker.DockerContainer;
-import brooklyn.entity.container.docker.DockerInfrastructure;
-import brooklyn.entity.software.SshEffectorTasks;
-import brooklyn.location.basic.SshMachineLocation;
-import brooklyn.networking.VirtualNetwork;
-import brooklyn.networking.sdn.SdnAgent;
-import brooklyn.networking.sdn.SdnProvider;
-import brooklyn.util.collections.MutableMap;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.Urls;
-import brooklyn.util.ssh.BashCommands;
-import brooklyn.util.task.DynamicTasks;
-import brooklyn.util.task.Tasks;
-import brooklyn.util.text.Identifiers;
-import brooklyn.util.text.StringPredicates;
-import brooklyn.util.text.Strings;
-
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -49,6 +25,31 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.basic.EntityLocal;
+import org.apache.brooklyn.location.basic.SshMachineLocation;
+
+import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
+import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.EntityPredicates;
+import brooklyn.entity.basic.SoftwareProcess;
+import brooklyn.entity.basic.lifecycle.ScriptHelper;
+import brooklyn.entity.container.docker.DockerContainer;
+import brooklyn.entity.container.docker.DockerInfrastructure;
+import brooklyn.entity.software.SshEffectorTasks;
+import brooklyn.networking.VirtualNetwork;
+import brooklyn.networking.sdn.SdnAgent;
+import brooklyn.networking.sdn.SdnProvider;
+import brooklyn.util.collections.MutableMap;
+import brooklyn.util.net.Cidr;
+import brooklyn.util.net.Urls;
+import brooklyn.util.ssh.BashCommands;
+import brooklyn.util.task.DynamicTasks;
+import brooklyn.util.task.Tasks;
+import brooklyn.util.text.Identifiers;
+import brooklyn.util.text.StringPredicates;
+import brooklyn.util.text.Strings;
 
 public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implements SdnVeAgentDriver {
 

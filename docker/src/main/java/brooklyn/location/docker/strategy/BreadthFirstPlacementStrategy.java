@@ -21,11 +21,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.entity.Entity;
-import brooklyn.location.docker.DockerHostLocation;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+
+import org.apache.brooklyn.api.entity.Entity;
+
+import brooklyn.location.docker.DockerHostLocation;
 
 /**
  * Placement strategy that adds containers to each Docker host in turn.

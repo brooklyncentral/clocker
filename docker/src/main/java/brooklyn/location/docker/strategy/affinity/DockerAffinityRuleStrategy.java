@@ -20,16 +20,17 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.entity.Entity;
-import brooklyn.entity.basic.EntityPredicates;
-import brooklyn.entity.container.docker.DockerHost;
-import brooklyn.location.docker.DockerHostLocation;
-import brooklyn.location.docker.strategy.AbstractDockerPlacementStrategy;
-
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+
+import org.apache.brooklyn.api.entity.Entity;
+
+import brooklyn.entity.basic.EntityPredicates;
+import brooklyn.entity.container.docker.DockerHost;
+import brooklyn.location.docker.DockerHostLocation;
+import brooklyn.location.docker.strategy.AbstractDockerPlacementStrategy;
 
 /**
  * Docker host selection strategy using affinity rules to filter available hosts.

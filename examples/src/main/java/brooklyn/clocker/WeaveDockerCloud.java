@@ -15,10 +15,15 @@
  */
 package brooklyn.clocker;
 
+import com.google.common.collect.ImmutableList;
+
 import org.jclouds.compute.domain.OsFamily;
 
-import brooklyn.catalog.Catalog;
-import brooklyn.catalog.CatalogConfig;
+import org.apache.brooklyn.api.catalog.Catalog;
+import org.apache.brooklyn.api.catalog.CatalogConfig;
+import org.apache.brooklyn.api.entity.proxying.EntitySpec;
+import org.apache.brooklyn.location.jclouds.JcloudsLocationConfig;
+
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.ConfigKeys;
@@ -27,19 +32,15 @@ import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.container.policy.ContainerHeadroomEnricher;
-import brooklyn.entity.proxying.EntitySpec;
 import brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy;
 import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
 import brooklyn.location.docker.strategy.MaxContainersPlacementStrategy;
-import brooklyn.location.jclouds.JcloudsLocationConfig;
 import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.networking.sdn.weave.WeaveNetwork;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.time.Duration;
-
-import com.google.common.collect.ImmutableList;
 
 /**
  * Brooklyn managed Docker cloud infrastructure with {@link WeaveNetwork}.

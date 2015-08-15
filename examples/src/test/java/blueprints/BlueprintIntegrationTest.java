@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 by Cloudsoft Corporation Limited
+ * Copyright 2014-2015 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@ package blueprints;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Date;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.ws.rs.core.Response;
 
 import org.slf4j.Logger;
@@ -34,9 +34,10 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 
-import brooklyn.rest.client.BrooklynApi;
-import brooklyn.rest.domain.Status;
-import brooklyn.rest.domain.TaskSummary;
+import org.apache.brooklyn.rest.client.BrooklynApi;
+import org.apache.brooklyn.rest.domain.Status;
+import org.apache.brooklyn.rest.domain.TaskSummary;
+
 import brooklyn.util.exceptions.Exceptions;
 import brooklyn.util.repeat.Repeater;
 import brooklyn.util.time.Duration;

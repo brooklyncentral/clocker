@@ -20,18 +20,19 @@ import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+
+import org.apache.brooklyn.api.location.Location;
+
 import brooklyn.config.render.RendererHints;
 import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.DelegateEntity;
-import brooklyn.location.Location;
 import brooklyn.networking.location.NetworkProvisioningExtension;
 import brooklyn.util.net.Cidr;
 import brooklyn.util.text.StringFunctions;
 import brooklyn.util.text.Strings;
-
-import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
 
 public class VirtualNetworkImpl extends BasicStartableImpl implements VirtualNetwork {
 

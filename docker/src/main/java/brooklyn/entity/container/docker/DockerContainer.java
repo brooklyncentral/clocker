@@ -19,8 +19,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.reflect.TypeToken;
+
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
+import org.apache.brooklyn.api.entity.trait.HasShortName;
+import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.location.dynamic.LocationOwner;
+import org.apache.brooklyn.location.jclouds.JcloudsSshMachineLocation;
+
 import brooklyn.config.ConfigKey;
-import brooklyn.entity.Entity;
 import brooklyn.entity.annotation.Effector;
 import brooklyn.entity.basic.BasicStartable;
 import brooklyn.entity.basic.ConfigKeys;
@@ -28,19 +37,11 @@ import brooklyn.entity.basic.Lifecycle;
 import brooklyn.entity.basic.MethodEffector;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.DockerAttributes;
-import brooklyn.entity.proxying.ImplementedBy;
-import brooklyn.entity.trait.HasShortName;
-import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
-import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.location.docker.DockerContainerLocation;
-import brooklyn.location.dynamic.LocationOwner;
-import brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.HasNetworkAddresses;
-
-import com.google.common.reflect.TypeToken;
 
 /**
  * A Docker container.

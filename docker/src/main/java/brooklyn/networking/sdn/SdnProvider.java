@@ -19,28 +19,29 @@ import java.net.InetAddress;
 import java.util.Collection;
 import java.util.Map;
 
+import com.google.common.collect.Multimap;
+import com.google.common.reflect.TypeToken;
+import com.google.inject.ImplementedBy;
+
 import org.jclouds.net.domain.IpPermission;
 
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.Group;
+import org.apache.brooklyn.api.entity.proxying.EntitySpec;
+import org.apache.brooklyn.api.event.AttributeSensor;
+
 import brooklyn.config.ConfigKey;
-import brooklyn.entity.Entity;
-import brooklyn.entity.Group;
 import brooklyn.entity.basic.BasicStartable;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.group.DynamicCluster;
-import brooklyn.entity.proxying.EntitySpec;
-import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.networking.VirtualNetwork;
 import brooklyn.networking.location.NetworkProvisioningExtension;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
-
-import com.google.common.collect.Multimap;
-import com.google.common.reflect.TypeToken;
-import com.google.inject.ImplementedBy;
 
 /**
  * An SDN provider implementation.

@@ -18,16 +18,18 @@ package brooklyn.networking;
 import java.util.Map;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.jclouds.compute.domain.SecurityGroup;
 import org.jclouds.compute.extensions.SecurityGroupExtension;
 import org.jclouds.domain.Location;
 import org.jclouds.net.domain.IpPermission;
 import org.jclouds.net.domain.IpProtocol;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import brooklyn.entity.basic.EntityLocal;
-import brooklyn.location.jclouds.JcloudsLocation;
+import org.apache.brooklyn.api.entity.basic.EntityLocal;
+import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+
 import brooklyn.networking.location.NetworkProvisioningExtension;
 import brooklyn.util.net.Cidr;
 

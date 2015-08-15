@@ -47,8 +47,8 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <!-- Dependencies -->
-        <jclouds.groupId>io.cloudsoft.jclouds</jclouds.groupId>
-        <jclouds.version>1.9.1-alpha-cloudsoft.2</jclouds.version>
+        <jclouds.groupId>org.apache.jclouds</jclouds.groupId>
+        <jclouds.version>1.9.1</jclouds.version>
 
         <!-- Testing -->
         <testng.version>6.8</testng.version>
@@ -251,7 +251,7 @@
                     <properties>
                         <property>
                             <name>listener</name>
-                            <value>brooklyn.test.LoggingVerboseReporter</value>
+                            <value>org.apache.brooklyn.test.LoggingVerboseReporter</value>
                         </property>
                     </properties>
                     <enableAssertions>true</enableAssertions>

@@ -15,14 +15,15 @@
  */
 package brooklyn.clocker;
 
-import brooklyn.catalog.Catalog;
-import brooklyn.catalog.CatalogConfig;
+import org.apache.brooklyn.api.catalog.Catalog;
+import org.apache.brooklyn.api.catalog.CatalogConfig;
+import org.apache.brooklyn.api.entity.proxying.EntitySpec;
+
 import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.entity.container.docker.DockerInfrastructure;
-import brooklyn.entity.proxying.EntitySpec;
 
 /**
  * Brooklyn managed local Docker infrastructure.

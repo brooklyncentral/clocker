@@ -21,26 +21,6 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import brooklyn.entity.Entity;
-import brooklyn.entity.basic.SoftwareProcess;
-import brooklyn.entity.container.docker.DockerHost;
-import brooklyn.entity.container.docker.DockerInfrastructure;
-import brooklyn.entity.database.DatastoreMixins;
-import brooklyn.entity.messaging.MessageBroker;
-import brooklyn.entity.nosql.couchbase.CouchbaseCluster;
-import brooklyn.entity.nosql.couchbase.CouchbaseNode;
-import brooklyn.entity.webapp.WebAppServiceConstants;
-import brooklyn.event.AttributeSensor;
-import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
-import brooklyn.event.basic.Sensors;
-import brooklyn.location.Location;
-import brooklyn.location.LocationDefinition;
-import brooklyn.location.docker.DockerContainerLocation;
-import brooklyn.management.ManagementContext;
-import brooklyn.networking.sdn.SdnAttributes;
-import brooklyn.util.text.Identifiers;
-import brooklyn.util.text.Strings;
-
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
@@ -53,6 +33,27 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.hash.Hashing;
+
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.location.LocationDefinition;
+import org.apache.brooklyn.api.management.ManagementContext;
+import org.apache.brooklyn.entity.nosql.couchbase.CouchbaseCluster;
+import org.apache.brooklyn.entity.nosql.couchbase.CouchbaseNode;
+import org.apache.brooklyn.entity.webapp.WebAppServiceConstants;
+
+import brooklyn.entity.basic.SoftwareProcess;
+import brooklyn.entity.container.docker.DockerHost;
+import brooklyn.entity.container.docker.DockerInfrastructure;
+import brooklyn.entity.database.DatastoreMixins;
+import brooklyn.entity.messaging.MessageBroker;
+import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
+import brooklyn.event.basic.Sensors;
+import brooklyn.location.docker.DockerContainerLocation;
+import brooklyn.networking.sdn.SdnAttributes;
+import brooklyn.util.text.Identifiers;
+import brooklyn.util.text.Strings;
 
 public class DockerUtils {
 

@@ -17,20 +17,21 @@ package brooklyn.networking;
 
 import java.util.Map;
 
+import com.google.common.collect.Maps;
+import com.google.common.reflect.TypeToken;
+
+import org.apache.brooklyn.api.entity.Group;
+import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
+import org.apache.brooklyn.api.event.AttributeSensor;
+
 import brooklyn.config.ConfigKey;
-import brooklyn.entity.Group;
 import brooklyn.entity.basic.BasicStartable;
 import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.entity.proxying.ImplementedBy;
-import brooklyn.event.AttributeSensor;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.networking.location.NetworkProvisioningExtension;
 import brooklyn.util.flags.SetFromFlag;
 import brooklyn.util.net.Cidr;
-
-import com.google.common.collect.Maps;
-import com.google.common.reflect.TypeToken;
 
 /**
  * A virtual network segment.

@@ -22,36 +22,37 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.config.render.RendererHints;
-import brooklyn.entity.Entity;
-import brooklyn.entity.Group;
-import brooklyn.entity.basic.BasicGroup;
-import brooklyn.entity.basic.BasicStartableImpl;
-import brooklyn.entity.basic.DelegateEntity;
-import brooklyn.entity.basic.DynamicGroup;
-import brooklyn.entity.basic.Entities;
-import brooklyn.entity.basic.EntityLocal;
-import brooklyn.entity.basic.EntityPredicates;
-import brooklyn.entity.container.docker.DockerContainer;
-import brooklyn.entity.container.docker.DockerHost;
-import brooklyn.entity.container.docker.DockerInfrastructure;
-import brooklyn.entity.group.AbstractMembershipTrackingPolicy;
-import brooklyn.entity.group.DynamicCluster;
-import brooklyn.entity.proxying.EntitySpec;
-import brooklyn.event.feed.ConfigToAttributes;
-import brooklyn.location.Location;
-import brooklyn.networking.VirtualNetwork;
-import brooklyn.networking.location.NetworkProvisioningExtension;
-import brooklyn.policy.PolicySpec;
-import brooklyn.util.collections.QuorumCheck.QuorumChecks;
-import brooklyn.util.net.Cidr;
-
 import com.google.common.base.Optional;
 import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
+
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.Group;
+import org.apache.brooklyn.api.entity.basic.EntityLocal;
+import org.apache.brooklyn.api.entity.proxying.EntitySpec;
+import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.policy.PolicySpec;
+
+import brooklyn.config.render.RendererHints;
+import brooklyn.entity.basic.BasicGroup;
+import brooklyn.entity.basic.BasicStartableImpl;
+import brooklyn.entity.basic.DelegateEntity;
+import brooklyn.entity.basic.DynamicGroup;
+import brooklyn.entity.basic.Entities;
+import brooklyn.entity.basic.EntityPredicates;
+import brooklyn.entity.container.docker.DockerContainer;
+import brooklyn.entity.container.docker.DockerHost;
+import brooklyn.entity.container.docker.DockerInfrastructure;
+import brooklyn.entity.group.AbstractMembershipTrackingPolicy;
+import brooklyn.entity.group.DynamicCluster;
+import brooklyn.event.feed.ConfigToAttributes;
+import brooklyn.networking.VirtualNetwork;
+import brooklyn.networking.location.NetworkProvisioningExtension;
+import brooklyn.util.collections.QuorumCheck.QuorumChecks;
+import brooklyn.util.net.Cidr;
 
 public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnProvider{
 

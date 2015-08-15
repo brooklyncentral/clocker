@@ -23,14 +23,15 @@ import static java.lang.String.format;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+
+import org.apache.brooklyn.location.basic.SshMachineLocation;
+
 import brooklyn.event.basic.DependentConfiguration;
-import brooklyn.location.basic.SshMachineLocation;
 import brooklyn.util.collections.MutableMap;
 import brooklyn.util.os.Os;
 import brooklyn.util.task.DynamicTasks;
-
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 
 public class EtcdProxySshDriver extends EtcdNodeSshDriver implements EtcdProxyDriver {
 
