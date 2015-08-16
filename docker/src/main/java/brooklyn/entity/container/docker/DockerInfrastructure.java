@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.reflect.TypeToken;
 
 import org.apache.brooklyn.api.catalog.Catalog;
+import org.apache.brooklyn.api.catalog.CatalogConfig;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.proxying.EntitySpec;
 import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
@@ -38,6 +39,7 @@ import brooklyn.entity.group.DynamicCluster;
 import brooklyn.entity.group.DynamicMultiGroup;
 import brooklyn.entity.trait.Resizable;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
+import brooklyn.event.basic.BasicAttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.strategy.DepthFirstPlacementStrategy;
@@ -58,6 +60,11 @@ import brooklyn.util.time.Duration;
 @ImplementedBy(DockerInfrastructureImpl.class)
 public interface DockerInfrastructure extends BasicStartable, Resizable, LocationOwner<DockerLocation, DockerInfrastructure> {
 
+    @CatalogConfig(label = "Location Name", priority = 90)
+    @SetFromFlag("locationName")
+    BasicAttributeSensorAndConfigKey<String> LOCATION_NAME =LocationOwner.LOCATION_NAME;
+
+    @CatalogConfig(label = "Docker Version", priority = 10)
     @SetFromFlag("dockerVersion")
     ConfigKey<String> DOCKER_VERSION = ConfigKeys.newStringConfigKey("docker.version", "The Docker Engine version number", "1.7.1");
 
@@ -65,6 +72,7 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
     ConfigKey<String> SECURITY_GROUP = ConfigKeys.newStringConfigKey(
             "docker.host.securityGroup", "Set a network security group for cloud servers to use; (null to use default configuration)");
 
+    @CatalogConfig(label = "Docker Cluster Size", priority = 50)
     @SetFromFlag("minHost")
     ConfigKey<Integer> DOCKER_HOST_CLUSTER_MIN_SIZE = ConfigKeys.newConfigKeyWithPrefix("docker.host.", DynamicCluster.INITIAL_SIZE);
 

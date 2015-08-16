@@ -17,10 +17,10 @@ package brooklyn.clocker.example;
 
 import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.catalog.CatalogConfig;
-import org.apache.brooklyn.api.entity.proxying.EntitySpec;
+import org.apache.brooklyn.api.entity.Application;
+import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
 
 import brooklyn.config.ConfigKey;
-import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.container.docker.application.VanillaDockerApplication;
 
@@ -30,27 +30,19 @@ import brooklyn.entity.container.docker.application.VanillaDockerApplication;
 @Catalog(name = "Dockerfile Micro-Service",
         description = "A container micro-service defined by a Dockerfile",
         iconUrl = "classpath://container.png")
-public class MicroServiceDockerfile extends AbstractApplication {
+@ImplementedBy(MicroServiceDockerfileImpl.class)
+public interface MicroServiceDockerfile extends Application {
 
     @CatalogConfig(label = "Container Name", priority = 90)
-    public static final ConfigKey<String> CONTAINER_NAME = ConfigKeys.newStringConfigKey("docker.containerName", "Container name", "service");
+    ConfigKey<String> CONTAINER_NAME = ConfigKeys.newStringConfigKey("docker.containerName", "Container name", "service");
 
     @CatalogConfig(label = "Dockerfile URL", priority = 80)
-    public static final ConfigKey<String> DOCKERFILE_URL = VanillaDockerApplication.DOCKERFILE_URL;
+    ConfigKey<String> DOCKERFILE_URL = VanillaDockerApplication.DOCKERFILE_URL;
 
     @CatalogConfig(label = "Open Ports", priority = 70)
-    public static final ConfigKey<String> OPEN_PORTS = ConfigKeys.newStringConfigKey("docker.openPorts", "Comma separated list of ports the application uses");
+    ConfigKey<String> OPEN_PORTS = ConfigKeys.newStringConfigKey("docker.openPorts", "Comma separated list of ports the application uses");
 
     @CatalogConfig(label = "Direct Ports", priority = 70)
-    public static final ConfigKey<String> DIRECT_PORTS = ConfigKeys.newStringConfigKey("docker.directPorts", "Comma separated list of ports to open directly on the host");
-
-    @Override
-    public void initApp() {
-        addChild(EntitySpec.create(VanillaDockerApplication.class)
-                .configure("containerName", config().get(CONTAINER_NAME))
-                .configure("dockerfileUrl", config().get(DOCKERFILE_URL))
-                .configure("openPorts", config().get(OPEN_PORTS))
-                .configure("directPorts", config().get(DIRECT_PORTS)));
-    }
+    ConfigKey<String> DIRECT_PORTS = ConfigKeys.newStringConfigKey("docker.directPorts", "Comma separated list of ports to open directly on the host");
 
 }
