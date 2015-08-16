@@ -29,12 +29,12 @@ import com.google.common.collect.Maps;
 import org.apache.brooklyn.api.entity.proxying.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.management.ManagementContext;
+import org.apache.brooklyn.core.management.internal.LocalManagementContext;
 import org.apache.brooklyn.test.entity.TestApplication;
 
 import brooklyn.config.BrooklynProperties;
 import brooklyn.entity.basic.ApplicationBuilder;
 import brooklyn.location.docker.DockerHostLocation;
-import brooklyn.management.internal.LocalManagementContext;
 import brooklyn.util.collections.MutableMap;
 
 @Test(groups="Live")
