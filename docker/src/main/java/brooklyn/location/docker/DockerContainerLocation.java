@@ -21,6 +21,7 @@ import static java.lang.String.format;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -32,6 +33,8 @@ import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.api.entity.Entity;
@@ -58,6 +61,7 @@ import brooklyn.util.net.Protocol;
 import brooklyn.util.ssh.IptablesCommands;
 import brooklyn.util.ssh.IptablesCommands.Chain;
 import brooklyn.util.ssh.IptablesCommands.Policy;
+import brooklyn.util.text.StringEscapes.BashStringEscapes;
 import brooklyn.util.time.Duration;
 
 /**
@@ -173,7 +177,13 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
         for (String commandString : filtered) {
             parseDockerCallback(commandString);
         }
-        return super.execScript(props, summaryForLogging, commands, env);
+        if (getOwner().config().get(DockerContainer.DOCKER_USE_SSH)) {
+            return super.execScript(props, summaryForLogging, commands, env);
+        } else {
+            Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
+            SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
+            return host.execCommands(nonPortProps, summaryForLogging, getExecScript(commands, env));
+        }
     }
 
     @Override
@@ -182,7 +192,41 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
         for (String commandString : filtered) {
             parseDockerCallback(commandString);
         }
-        return super.execCommands(props, summaryForLogging, commands, env);
+        if (getOwner().config().get(DockerContainer.DOCKER_USE_SSH)) {
+            return super.execCommands(props, summaryForLogging, commands, env);
+        } else {
+            SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
+            Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
+            return host.execCommands(nonPortProps, summaryForLogging, getExecCommands(commands, env));
+        }
+    }
+
+    private List<String> getExecScript(List<String> commands, Map<String,?> env) {
+        StringBuilder target = new StringBuilder("docker exec ")
+                .append(dockerContainer.getContainerId())
+                .append(" '");
+        Joiner.on(";").appendTo(target, Iterables.concat(getEnvVarCommands(env), commands));
+        target.append("'");
+        return ImmutableList.of(target.toString());
+    }
+
+    private List<String> getExecCommands(List<String> commands, Map<String,?> env) {
+        List<String> result = Lists.newLinkedList();
+        result.addAll(getEnvVarCommands(env));
+        String prefix = "docker exec " + dockerContainer.getContainerId() + " ";
+        for (String command : commands) {
+            result.add(prefix + command);
+        }
+        return result;
+    }
+
+    private List<String> getEnvVarCommands(Map<String,?> env) {
+        List<String> result = new LinkedList<String>();
+        for (Map.Entry<String, ?> entry : env.entrySet()) {
+            String escaped = BashStringEscapes.escapeLiteralForDoubleQuotedBash(entry.getValue().toString());
+            result.add("export " + entry.getKey() + "=\"" + escaped + "\"");
+        }
+        return result;
     }
 
     private void parseDockerCallback(String commandString) {
