@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+sudo: false
 language: java
 script: mvn clean install
 before_deploy: "mkdir artifacts && mv examples/target/brooklyn-clocker-dist.tar.gz artifacts/brooklyn-clocker-${TRAVIS_BUILD_NUMBER}-${TRAVIS_COMMIT}-dist.tar.gz"
@@ -27,6 +28,9 @@ deploy:
     local-dir: artifacts
     on:
       branch: master
+cache:
+  directories:
+    - $HOME/.m2
 notifications:
   email:
   - andrew.kennedy@cloudsoft.io
