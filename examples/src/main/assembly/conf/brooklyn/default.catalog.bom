@@ -13,8 +13,9 @@
 # limitations under the License.
 
 brooklyn.catalog:
-  version: 0.9.0
+  version: 1.1.0
   items:
+
   - id: docker-infrastructure
     name: Docker Infrastructure
     iconUrl: classpath://docker-logo.png
@@ -26,6 +27,7 @@ brooklyn.catalog:
         docker.host.spec:
           $brooklyn:entitySpec:
             type: docker-host
+
   - id: docker-host
     name: Docker Host
     iconUrl: classpath://docker-logo.png
@@ -37,6 +39,7 @@ brooklyn.catalog:
         docker.container.spec:
           $brooklyn:entitySpec:
             type: docker-container
+
   - id: docker-container
     name: Docker Container
     iconUrl: classpath://docker-logo.png
@@ -44,6 +47,7 @@ brooklyn.catalog:
       type: brooklyn.entity.container.docker.DockerContainer
       brooklyn.config:
         docker.container.nameFormat: "container-%2$02x"
+
   - id: calico-network
     name: Calico Network
     iconUrl: classpath://calico-logo.png
@@ -54,11 +58,13 @@ brooklyn.catalog:
         sdn.agent.spec:
           $brooklyn:entitySpec:
             type: calico-node
+
   - id: calico-node
     name: Calico Node
     iconUrl: classpath://calico-logo.png
     item:
       type: brooklyn.networking.sdn.calico.CalicoNode
+
   - id: etcd-cluster
     name: Etcd Cluster
     item:
@@ -68,14 +74,17 @@ brooklyn.catalog:
         etcd.node.spec:
           $brooklyn:entitySpec:
             type: etcd-node
+
   - id: etcd-node
     name: Etcd Node
     item:
       type: brooklyn.entity.nosql.etcd.EtcdNode
+
   - id: etcd-proxy
     name: Etcd Proxy
     item:
       type: brooklyn.entity.nosql.etcd.EtcdProxy
+
   - id: weave-network
     iconUrl: classpath://weaveworks-logo.png
     item:
@@ -85,10 +94,12 @@ brooklyn.catalog:
         sdn.agent.spec:
           $brooklyn:entitySpec:
             type: weave-router
+
   - id: weave-router
     iconUrl: classpath://weaveworks-logo.png
     item:
       type: brooklyn.networking.sdn.weave.WeaveContainer
+
   - id: docker-cloud-calico
     name: Clocker with Calico
     description: Docker Cloud infrastructure with Calico networking
@@ -133,6 +144,7 @@ brooklyn.catalog:
                     type: docker-container
                     brooklyn.config:
                       docker.container.nameFormat: "calico-%2$02x"
+
   - id: docker-cloud-weave
     name: Clocker with Weave
     description: Docker Cloud infrastructure with Weave networking
@@ -167,3 +179,115 @@ brooklyn.catalog:
                   osFamily: ubuntu
                   osVersionRegex: 14.04
                 start.timeout: 15m
+
+  - id: image-microservice
+    name: "Image Micro-Service"
+    description: "A container micro-service defined by a Docker image"
+    iconUrl: classpath://container.png
+    itemType: template
+    item:
+      services:
+      - type: brooklyn.clocker.example.MicroServiceImage
+
+  - id: dockerfile-microservice
+    name: "Dockerfile Micro-Service"
+    description: "A container micro-service defined by a Dockerfile"
+    iconUrl: classpath://container.png
+    itemType: template
+    item:
+      services:
+      - type: brooklyn.clocker.example.MicroServiceDockerfile
+
+  - id: riak-cluster-demo-application
+    name: "Riak Cluster Demo Application"
+    description: "Riak cluster with load-balanced chatroom webapp"
+    iconUrl: https://clusterhq.com/assets/images/home/services/riak@2x.jpg
+    itemType: template
+    item:
+      services:
+      - type: org.apache.brooklyn.entity.basic.BasicApplication
+        brooklyn.children:
+        - type: brooklyn.networking.VirtualNetwork
+          networkId: webapp
+        - type: brooklyn.networking.VirtualNetwork
+          networkId: riak
+        - type: brooklyn.entity.nosql.riak.RiakCluster
+          initialSize: 3
+          id: cluster
+          name: "Riak Cluster"
+          brooklyn.config:
+            install.version: 2.0.5
+            riak.networking.optimize: false
+            network.list:
+            - riak
+        - type: org.apache.brooklyn.entity.webapp.ControlledDynamicWebAppCluster
+          name: "Web Cluster"
+          brooklyn.config:
+            initialSize: 2
+            dynamiccluster.memberspec:
+              $brooklyn:entitySpec:
+                type: org.apache.brooklyn.entity.webapp.jboss.JBoss7Server
+                brooklyn.config:
+                  network.list:
+                  - webapp
+                  - riak
+                  wars.root:
+                    "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/brooklyn-example-hello-world-sql-webapp.war"
+                  java.sysprops:
+                    brooklyn.example.riak.nodes:
+                      $brooklyn:component("cluster").attributeWhenReady("riak.cluster.nodeList")
+            controlleddynamicwebappcluster.controllerSpec:
+              $brooklyn:entitySpec:
+                type: brooklyn.entity.proxy.haproxy.HAProxyController
+                brooklyn.config:
+                  docker.image.name: haproxy
+                  docker.image.tag: 1.5.9
+                  install.dir: /usr/local/sbin/
+                  run.dir: /usr/local/etc/haproxy/
+                  network.list:
+                  - webapp
+                  member.sensor.hostname: "host.subnet.hostname"
+
+  - id: nodejs-demo-application
+    name: "Node.js Demo Application"
+    description: "Node.js todo list application with redis database"
+    iconUrl: http://craftworkz.co/wp-content/uploads/2015/04/node-js.png
+    itemType: template
+    item:
+      services:
+      - type: brooklyn.entity.basic.BasicApplication
+        brooklyn.children:
+        - type: org.apache.brooklyn.entity.nosql.redis.RedisStore
+          id: redis
+          name: "Redis"
+          brooklyn.config:
+            install.version: 3.0.0
+        - type: org.apache.brooklyn.entity.webapp.nodejs.NodeJsWebAppService
+          id: nodejs
+          name: "Node.js"
+          brooklyn.config:
+            docker.direct.ports:
+            - "http.port"
+            gitRepoUrl:
+              "https://github.com/grkvlt/nodejs-todo/"
+            appFileName: server.js
+            appName: nodejs-todo
+            nodePackages:
+            - express
+            - ejs
+            - jasmine-node
+            - underscore
+            - method-override
+            - cookie-parser
+            - express-session
+            - body-parser
+            - cookie-session
+            - redis
+            - redis-url
+            - connect
+            env:
+              REDISTOGO_URL: >
+                $brooklyn:formatString("redis://%s:%d/",
+                component("redis").attributeWhenReady("host.subnet.hostname"),
+                component("redis").attributeWhenReady("redis.port"))
+            launch.latch: $brooklyn:component("redis").attributeWhenReady("service.isUp")
