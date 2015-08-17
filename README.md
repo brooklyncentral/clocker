@@ -12,7 +12,7 @@ Docker Cloud infrastructure.
 This repository contains all of the required Brooklyn entities, locations and examples.
 
 [![Build Status](https://api.travis-ci.org/brooklyncentral/clocker.svg?branch=master)](https://travis-ci.org/brooklyncentral/clocker)
-[![Latest Builds](http://img.shields.io/badge/version-0.9.0--SNAPSHOT-blue.svg?style=flat)](http://clocker-latest.s3-website-eu-west-1.amazonaws.com/)
+[![Latest Builds](http://img.shields.io/badge/version-1.1.0--SNAPSHOT-blue.svg?style=flat)](http://clocker-latest.s3-website-eu-west-1.amazonaws.com/)
 [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/brooklyncentral/clocker)
 
 ## Getting started
@@ -32,12 +32,12 @@ blueprints at either
 
 ### Using the latest Clocker release
 
-The latest version of Clocker is [0.8.2](https://github.com/brooklyncentral/clocker/releases/tag/v0.8.2).
+The latest version of Clocker is [1.1.0-PREVIEW.20150816](https://github.com/brooklyncentral/clocker/releases/tag/v1.1.0-PREVIEW.20150816).
 You can deploy your own **Docker Cloud** with a Weave SDN by running these commands with the _network_ argument
 st to `weave`, to use Project Calico as your SDN provider, change the last argument to `calico` instead:
 ```Bash
 % wget --no-check-certificate --quiet \
-    -O brooklyn-clocker-dist.tar.gz http://git.io/vkVBD
+    -O brooklyn-clocker-dist.tar.gz http://git.io/v3NgU
 % tar zxf brooklyn-clocker-dist.tar.gz
 % cd brooklyn-clocker
 % ./bin/clocker.sh location network
@@ -106,7 +106,7 @@ services:
 ### Building from source
 
 <!-- CLOCKER_VERSION_BELOW -->
-The master branch of Clocker is at version [0.9.0-SNAPSHOT](http://github.com/brooklyncentral/clocker/).
+The master branch of Clocker is at version [1.1.0-SNAPSHOT](http://github.com/brooklyncentral/clocker/).
 Build and run this version of Clocker from source as follows:
 
 ```Bash
