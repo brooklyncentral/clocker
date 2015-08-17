@@ -255,16 +255,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 if (present != 0) {
                     List<String> commands = MutableList.of();
                     if ("ubuntu".equalsIgnoreCase(osDetails.getName())) {
-                        commands.add(installPackage("software-properties-common"));
-                        commands.add(sudo("add-apt-repository -y ppa:canonical-kernel-team/ppa"));
-                        commands.add("export UCF_FORCE_CONFFNEW=1");
-                        if ("overlay".equals(storage) || "btrfs".equals(storage)) {
-                            commands.add(installPackage("linux-{image,headers,image-extra}-3.19.\\*-generic"));
-                        } else if ("aufs".equals(storage) || Strings.isBlank(storage)) { // aufs is default
-                            commands.add(installPackage("linux-image-extra-" + kernelVersion));
-                        } else {
-                            commands.add(installPackage("linux-{image,headers,image-extra}-3.16.\\*-generic"));
-                        }
+                        commands.add(installPackage("software-properties-common linux-generic-lts-vivid"));
                         executeKernelInstallation(commands);
                     }
                     if ("centos".equalsIgnoreCase(osDetails.getName())) {
