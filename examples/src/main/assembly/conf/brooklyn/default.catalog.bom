@@ -205,15 +205,15 @@ brooklyn.catalog:
     itemType: template
     item:
       services:
-      - type: org.apache.brooklyn.entity.basic.BasicApplication
+      - type: brooklyn.entity.basic.BasicApplication
         brooklyn.children:
         - type: brooklyn.networking.VirtualNetwork
           networkId: webapp
         - type: brooklyn.networking.VirtualNetwork
           networkId: riak
-        - type: brooklyn.entity.nosql.riak.RiakCluster
+        - type: org.apache.brooklyn.entity.nosql.riak.RiakCluster
           initialSize: 3
-          id: cluster
+          id: riak-cluster
           name: "Riak Cluster"
           brooklyn.config:
             install.version: 2.0.5
@@ -222,11 +222,12 @@ brooklyn.catalog:
             - riak
         - type: org.apache.brooklyn.entity.webapp.ControlledDynamicWebAppCluster
           name: "Web Cluster"
+          id: web-cluster
           brooklyn.config:
             initialSize: 2
             dynamiccluster.memberspec:
               $brooklyn:entitySpec:
-                type: org.apache.brooklyn.entity.webapp.jboss.JBoss7Server
+                type: org.apache.brooklyn.entity.webapp.tomcat.Tomcat8Server
                 brooklyn.config:
                   network.list:
                   - webapp
@@ -235,7 +236,7 @@ brooklyn.catalog:
                     "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/brooklyn-example-hello-world-sql-webapp.war"
                   java.sysprops:
                     brooklyn.example.riak.nodes:
-                      $brooklyn:component("cluster").attributeWhenReady("riak.cluster.nodeList")
+                      $brooklyn:component("riak-cluster").attributeWhenReady("riak.cluster.nodeList")
             controlleddynamicwebappcluster.controllerSpec:
               $brooklyn:entitySpec:
                 type: brooklyn.entity.proxy.haproxy.HAProxyController
