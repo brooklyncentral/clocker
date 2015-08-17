@@ -196,7 +196,7 @@ public class EtcdClusterImpl extends DynamicClusterImpl implements EtcdCluster {
     }
 
     private String getNodeAddress(Entity node) {
-        return "http://" + node.getAttribute(Attributes.SUBNET_HOSTNAME) + ":" + node.getAttribute(EtcdNode.ETCD_PEER_PORT);
+        return "http://" + node.getAttribute(Attributes.SUBNET_ADDRESS) + ":" + node.getAttribute(EtcdNode.ETCD_PEER_PORT);
     }
 
     public static class MemberTrackingPolicy extends AbstractMembershipTrackingPolicy {

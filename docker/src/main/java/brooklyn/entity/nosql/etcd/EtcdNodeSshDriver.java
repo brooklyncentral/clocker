@@ -164,11 +164,11 @@ public class EtcdNodeSshDriver extends AbstractSoftwareProcessSshDriver implemen
     }
 
     protected String getClientUrl() {
-        return String.format("http://%s:%d", getHostname(), getEntity().getAttribute(EtcdNode.ETCD_CLIENT_PORT));
+        return String.format("http://%s:%d", getSubnetAddress(), getEntity().getAttribute(EtcdNode.ETCD_CLIENT_PORT));
     }
 
     protected String getPeerUrl() {
-        return String.format("http://%s:%d", getHostname(), getEntity().getAttribute(EtcdNode.ETCD_PEER_PORT));
+        return String.format("http://%s:%d", getSubnetAddress(), getEntity().getAttribute(EtcdNode.ETCD_PEER_PORT));
     }
 
     protected String getLogFileLocation() {
