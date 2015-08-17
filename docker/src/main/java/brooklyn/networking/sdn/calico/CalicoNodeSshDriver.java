@@ -138,20 +138,22 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
             newScript("addContainer")
                     .body.append(sudo(String.format("%s container add %s %s", getCalicoCommand(), containerId, address.getHostAddress())))
                     .execute();
+
+            // Return its endpoint ID
+            ScriptHelper getEndpointId = newScript("getEndpointId")
+                    .body.append(sudo(String.format("%s container %s endpoint-id show", getCalicoCommand(), containerId, address.getHostAddress())))
+                    .noExtraOutput()
+                    .gatherOutput();
+            getEndpointId.execute();
+            String endpointId = Strings.getFirstWord(getEndpointId.getResultStdout());
+
+            // Add to the application profile
+            newScript("addCalico")
+                    .body.append( // Idempotent
+                            sudo(String.format("%s profile add %s", getCalicoCommand(), subnetId)),
+                            sudo(String.format("%s endpoint %s profile set %s", getCalicoCommand(), endpointId, subnetId)))
+                    .execute();
         }
-
-        // Return its endpoint ID
-        ScriptHelper getEndpointId = newScript("getEndpointId")
-                .body.append(sudo(String.format("%s container %s endpoint-id show", getCalicoCommand(), containerId, address.getHostAddress())))
-                .noExtraOutput()
-                .gatherOutput();
-        getEndpointId.execute();
-        String endpointId = Strings.getFirstWord(getEndpointId.getResultStdout());
-
-        // Add to the application profile
-        newScript("addCalico")
-                .body.append(sudo(String.format("%s endpoint %s profile append %s", getCalicoCommand(), endpointId, subnetId))) // Idempotent
-                .execute();
 
         // Set up the network
         List<String> commands = MutableList.of();
