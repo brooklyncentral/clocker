@@ -21,7 +21,7 @@
         <ul>
           <li class="download"><a class="buttons" href="https://github.com/brooklyncentral/clocker/zipball/master">Source ZIP</a></li>
           <li class="download"><a class="buttons" href="https://github.com/brooklyncentral/clocker/tarball/master">Source TAR</a></li>
-          <li class="download"><a class="buttons" href="https://github.com/brooklyncentral/clocker/releases/download/v0.8.2/brooklyn-clocker-dist.tar.gz">Distribution TGZ</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/brooklyncentral/clocker/releases/download/v1.1.0-PREVIEW.20150816/brooklyn-clocker-dist.tar.gz">Distribution TGZ</a></li>
           <li><a class="buttons github" href="https://github.com/brooklyncentral/clocker">View On GitHub</a></li>
         </ul>
         <p class="header">This project is maintained by <a class="header name" href="https://github.com/grkvlt">@grkvlt</a> and <a class="header name" href="https://github.com/andreaturli">@andreaturli</a></p>
@@ -61,13 +61,13 @@ and container naming schemes.</p>
 
 <h3><a name="using-the-latest-clocker-release" class="anchor" href="#using-the-latest-clocker-release"><span class="octicon octicon-link"></span></a>Using the latest Clocker release</h3>
 
-<p>The current version of Clocker is <b><a href="https://github.com/brooklyncentral/clocker/releases/tag/v0.8.2">0.8.2</a></b>.
+<p>The current version of Clocker is <b><a href="https://github.com/brooklyncentral/clocker/releases/tag/v1.1.0-PREVIEW.20150816">1.1.0-PREVIEW.20150816</a></b>.
 You can deploy your own <b>Docker Cloud</b> with a Weave SDN by running these commands with the
 <code>&lt;network&gt;</code> argument set to <code>weave</code>, to use Project Calico as your SDN
 provider, change the argument to <code>calico</code> instead:
 
 <pre><code>% wget --no-check-certificate --quiet \
-    -O brooklyn-clocker-dist.tar.gz http://git.io/vkVBD
+    -O brooklyn-clocker-dist.tar.gz http://git.io/v3NgU
 % tar zxf brooklyn-clocker-dist.tar.gz
 % cd brooklyn-clocker
 % ./bin/clocker.sh &lt;location&gt; &lt;network&gt;
@@ -87,9 +87,10 @@ details, and create an SSH key (defaulting to <code>~/.ssh/id_rsa</code>). A sim
 
 <pre><code># Optional user and credential setup of admin:password for accessing the Brooklyn web-console.
 # To genreate the hashed password, see `brooklyn generate-password --user admin`
-brooklyn.webconsole.security.users=admin
-brooklyn.webconsole.security.user.admin.salt=DOp5
-brooklyn.webconsole.security.user.admin.sha256=ffc241eae74cd035fdab353229d53c20943d0c1b6a0a8972a4f24769d99a6826
+brooklyn.webconsole.security.provider = org.apache.brooklyn.rest.security.provider.ExplicitUsersSecurityProvider
+brooklyn.webconsole.security.users = admin
+brooklyn.webconsole.security.user.admin.salt = DOp5
+brooklyn.webconsole.security.user.admin.sha256 = ffc241eae74cd035fdab353229d53c20943d0c1b6a0a8972a4f24769d99a6826
 
 # Optional SSH configuration
 brooklyn.ssh.config.privateKeyFile = ~/.ssh/id_rsa_clocker
