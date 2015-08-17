@@ -109,8 +109,6 @@ brooklyn.catalog:
       services:
       - type: docker-infrastructure
         brooklyn.config:
-          docker.version: 1.6.2
-          docker.host.cluster.initial.size: 3
           docker.container.cluster.headroom.count: 4
           docker.policy.ha.enable: false
           docker.container.strategies:
@@ -121,7 +119,6 @@ brooklyn.catalog:
           - $brooklyn:object:
               type: brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy
           sdn.enable: true
-          sdn.debug: true
           sdn.provider.spec:
             $brooklyn:entitySpec:
               type: calico-network
@@ -154,7 +151,6 @@ brooklyn.catalog:
       services:
       - type: docker-infrastructure
         brooklyn.config:
-          docker.host.cluster.initial.size: 2
           docker.container.cluster.headroom.count: 4
           docker.policy.ha.enable: false
           docker.container.strategies:
@@ -179,6 +175,11 @@ brooklyn.catalog:
                   osFamily: ubuntu
                   osVersionRegex: 14.04
                 start.timeout: 15m
+                docker.container.spec:
+                  $brooklyn:entitySpec:
+                    type: docker-container
+                    brooklyn.config:
+                      docker.container.nameFormat: "weave-%2$02x"
 
   - id: image-microservice
     name: "Image Micro-Service"

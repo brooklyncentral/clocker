@@ -42,7 +42,8 @@ st to `weave`, to use Project Calico as your SDN provider, change the last argum
 % cd brooklyn-clocker
 % ./bin/clocker.sh location network
 ```
-The _location_ argument specifies the destination to deploy to.
+The _location_ argument specifies the destination to deploy to, and the _network_ argument can be either `calico` or `weave`. If these are omitted then
+Brooklyn will start up without running Clocker, and you can choose the application to deploy using the web UI instead.
 
 For example, you can specify the jclouds provider for SoftLayer in San Jose by using
 _jclouds:softlayer:sjc01_, a group of machines as _byon:(hosts="10.1.2.3,10.1.2.4")_ or a specific
