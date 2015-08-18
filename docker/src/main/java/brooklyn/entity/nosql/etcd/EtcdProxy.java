@@ -20,12 +20,12 @@ package brooklyn.entity.nosql.etcd;
 
 import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
+import org.apache.brooklyn.core.util.flags.SetFromFlag;
 import org.apache.brooklyn.location.basic.PortRanges;
 
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
-import brooklyn.util.flags.SetFromFlag;
 
 @Catalog(name="Etcd Proxy")
 @ImplementedBy(EtcdProxyImpl.class)

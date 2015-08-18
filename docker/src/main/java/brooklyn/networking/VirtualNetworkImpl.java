@@ -25,14 +25,14 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 
 import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.core.config.render.RendererHints;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.text.StringFunctions;
+import org.apache.brooklyn.util.text.Strings;
 
-import brooklyn.config.render.RendererHints;
 import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.networking.location.NetworkProvisioningExtension;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.text.StringFunctions;
-import brooklyn.util.text.Strings;
 
 public class VirtualNetworkImpl extends BasicStartableImpl implements VirtualNetwork {
 

@@ -18,14 +18,14 @@ package brooklyn.entity.proxy.haproxy;
 import java.util.List;
 
 import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
+import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.util.flags.SetFromFlag;
 import org.apache.brooklyn.entity.proxy.AbstractController;
+import org.apache.brooklyn.util.collections.MutableList;
 
-import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
-import brooklyn.util.collections.MutableList;
-import brooklyn.util.flags.SetFromFlag;
 
 @ImplementedBy(HAProxyControllerImpl.class)
 public interface HAProxyController extends AbstractController {

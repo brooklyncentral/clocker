@@ -35,8 +35,10 @@ import org.apache.brooklyn.api.entity.basic.EntityLocal;
 import org.apache.brooklyn.api.entity.proxying.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.policy.PolicySpec;
+import org.apache.brooklyn.core.config.render.RendererHints;
+import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
+import org.apache.brooklyn.util.net.Cidr;
 
-import brooklyn.config.render.RendererHints;
 import brooklyn.entity.basic.BasicGroup;
 import brooklyn.entity.basic.BasicStartableImpl;
 import brooklyn.entity.basic.DelegateEntity;
@@ -51,8 +53,6 @@ import brooklyn.entity.group.DynamicCluster;
 import brooklyn.event.feed.ConfigToAttributes;
 import brooklyn.networking.VirtualNetwork;
 import brooklyn.networking.location.NetworkProvisioningExtension;
-import brooklyn.util.collections.QuorumCheck.QuorumChecks;
-import brooklyn.util.net.Cidr;
 
 public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnProvider{
 

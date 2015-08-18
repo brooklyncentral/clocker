@@ -24,11 +24,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.core.config.render.RendererHints;
+import org.apache.brooklyn.util.text.Strings;
 
-import brooklyn.config.render.RendererHints;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.SoftwareProcessImpl;
-import brooklyn.util.text.Strings;
 
 public class EtcdNodeImpl extends SoftwareProcessImpl implements EtcdNode {
 

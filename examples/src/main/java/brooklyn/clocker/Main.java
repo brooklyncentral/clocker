@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.brooklyn.launcher.BrooklynLauncher;
 
-
 public class Main extends org.apache.brooklyn.cli.Main {
 
     private static final Logger log = LoggerFactory.getLogger(Main.class);

@@ -16,6 +16,7 @@
 package brooklyn.entity.container.docker;
 
 import static org.testng.Assert.assertTrue;
+
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;

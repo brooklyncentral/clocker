@@ -17,9 +17,12 @@ import org.apache.brooklyn.api.event.AttributeSensor;
 import org.apache.brooklyn.api.event.SensorEvent;
 import org.apache.brooklyn.api.event.SensorEventListener;
 import org.apache.brooklyn.api.policy.Enricher;
+import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.config.render.RendererHints;
+import org.apache.brooklyn.core.util.flags.SetFromFlag;
+import org.apache.brooklyn.policy.autoscaling.AutoScalerPolicy;
+import org.apache.brooklyn.util.math.MathFunctions;
 
-import brooklyn.config.ConfigKey;
-import brooklyn.config.render.RendererHints;
 import brooklyn.enricher.basic.AbstractEnricher;
 import brooklyn.entity.basic.AbstractEntity;
 import brooklyn.entity.basic.ConfigKeys;
@@ -28,9 +31,6 @@ import brooklyn.event.basic.BasicNotificationSensor;
 import brooklyn.event.basic.Sensors;
 import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
 import brooklyn.location.docker.strategy.MaxContainersPlacementStrategy;
-import brooklyn.policy.autoscaling.AutoScalerPolicy;
-import brooklyn.util.flags.SetFromFlag;
-import brooklyn.util.math.MathFunctions;
 
 /**
  * An {@link Enricher} that emits {@link #DOCKER_CONTAINER_CLUSTER_HOT hot} or {@link #DOCKER_CONTAINER_CLUSTER_COLD cold}

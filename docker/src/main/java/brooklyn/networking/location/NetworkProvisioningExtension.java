@@ -18,9 +18,9 @@ package brooklyn.networking.location;
 import java.util.Map;
 
 import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.util.net.Cidr;
 
 import brooklyn.networking.VirtualNetwork;
-import brooklyn.util.net.Cidr;
 
 /**
  * A {@link Location} extension that can provision new networks.

@@ -26,13 +26,16 @@ import org.apache.brooklyn.api.entity.proxying.EntitySpec;
 import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
 import org.apache.brooklyn.api.entity.trait.HasShortName;
 import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.util.flags.SetFromFlag;
 import org.apache.brooklyn.location.basic.PortRanges;
 import org.apache.brooklyn.location.basic.SshMachineLocation;
 import org.apache.brooklyn.location.dynamic.LocationOwner;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsLocationConfig;
+import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.time.Duration;
 
-import brooklyn.config.ConfigKey;
 import brooklyn.entity.annotation.Effector;
 import brooklyn.entity.annotation.EffectorParam;
 import brooklyn.entity.basic.ConfigKeys;
@@ -50,9 +53,6 @@ import brooklyn.event.basic.Sensors;
 import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.docker.strategy.affinity.AffinityRules;
 import brooklyn.networking.subnet.SubnetTier;
-import brooklyn.util.collections.MutableMap;
-import brooklyn.util.flags.SetFromFlag;
-import brooklyn.util.time.Duration;
 
 /**
  * A single machine running Docker.

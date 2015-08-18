@@ -31,9 +31,14 @@ import org.jclouds.net.domain.IpProtocol;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.proxying.EntitySpec;
 import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.util.collections.MutableList;
+import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.text.Strings;
 
-import brooklyn.config.render.RendererHints;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.basic.Entities;
@@ -46,11 +51,6 @@ import brooklyn.entity.nosql.etcd.EtcdNode;
 import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.networking.sdn.SdnProviderImpl;
-import brooklyn.util.collections.MutableList;
-import brooklyn.util.collections.QuorumCheck.QuorumChecks;
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.text.Strings;
 
 public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork {
 

@@ -33,7 +33,10 @@ import org.apache.brooklyn.api.entity.proxying.EntitySpec;
 import org.apache.brooklyn.api.event.SensorEvent;
 import org.apache.brooklyn.api.event.SensorEventListener;
 import org.apache.brooklyn.api.policy.EnricherSpec;
+import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.test.EntityTestUtils;
+import org.apache.brooklyn.util.time.Duration;
+import org.apache.brooklyn.util.time.Time;
 
 import brooklyn.entity.BrooklynAppUnitTestSupport;
 import brooklyn.entity.basic.BasicStartableImpl;
@@ -44,9 +47,6 @@ import brooklyn.entity.group.DynamicCluster;
 import brooklyn.event.basic.BasicNotificationSensor;
 import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.strategy.MaxContainersPlacementStrategy;
-import brooklyn.test.Asserts;
-import brooklyn.util.time.Duration;
-import brooklyn.util.time.Time;
 
 public class ContainerHeadroomEnricherTest extends BrooklynAppUnitTestSupport {
 

@@ -15,9 +15,9 @@
  */
 package brooklyn.location.docker;
 
-import static brooklyn.util.ssh.BashCommands.sudo;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.format;
+import static org.apache.brooklyn.util.ssh.BashCommands.sudo;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -41,6 +41,7 @@ import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.basic.EntityLocal;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.core.util.flags.SetFromFlag;
 import org.apache.brooklyn.location.access.PortForwardManager;
 import org.apache.brooklyn.location.basic.HasSubnetHostname;
 import org.apache.brooklyn.location.basic.SshMachineLocation;
@@ -48,21 +49,20 @@ import org.apache.brooklyn.location.basic.SupportsPortForwarding;
 import org.apache.brooklyn.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsUtil;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.Protocol;
+import org.apache.brooklyn.util.ssh.IptablesCommands;
+import org.apache.brooklyn.util.ssh.IptablesCommands.Chain;
+import org.apache.brooklyn.util.ssh.IptablesCommands.Policy;
+import org.apache.brooklyn.util.text.StringEscapes.BashStringEscapes;
+import org.apache.brooklyn.util.time.Duration;
 
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.container.DockerCallbacks;
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.flags.SetFromFlag;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.Protocol;
-import brooklyn.util.ssh.IptablesCommands;
-import brooklyn.util.ssh.IptablesCommands.Chain;
-import brooklyn.util.ssh.IptablesCommands.Policy;
-import brooklyn.util.text.StringEscapes.BashStringEscapes;
-import brooklyn.util.time.Duration;
 
 /**
  * A {@link Location} that wraps a Docker container.

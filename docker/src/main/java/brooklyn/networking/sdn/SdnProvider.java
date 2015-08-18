@@ -29,8 +29,10 @@ import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.Group;
 import org.apache.brooklyn.api.entity.proxying.EntitySpec;
 import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.util.flags.SetFromFlag;
+import org.apache.brooklyn.util.net.Cidr;
 
-import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.BasicStartable;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.container.DockerAttributes;
@@ -40,8 +42,6 @@ import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.networking.VirtualNetwork;
 import brooklyn.networking.location.NetworkProvisioningExtension;
-import brooklyn.util.flags.SetFromFlag;
-import brooklyn.util.net.Cidr;
 
 /**
  * An SDN provider implementation.

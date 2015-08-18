@@ -3,7 +3,7 @@
  */
 package brooklyn.networking.sdn.ibm;
 
-import static brooklyn.util.ssh.BashCommands.sudo;
+import static org.apache.brooklyn.util.ssh.BashCommands.sudo;
 
 import java.net.InetAddress;
 import java.util.Collection;
@@ -28,7 +28,16 @@ import com.google.gson.JsonParser;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.basic.EntityLocal;
+import org.apache.brooklyn.core.util.task.DynamicTasks;
+import org.apache.brooklyn.core.util.task.Tasks;
 import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.Urls;
+import org.apache.brooklyn.util.ssh.BashCommands;
+import org.apache.brooklyn.util.text.Identifiers;
+import org.apache.brooklyn.util.text.StringPredicates;
+import org.apache.brooklyn.util.text.Strings;
 
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 import brooklyn.entity.basic.Entities;
@@ -41,15 +50,6 @@ import brooklyn.entity.software.SshEffectorTasks;
 import brooklyn.networking.VirtualNetwork;
 import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnProvider;
-import brooklyn.util.collections.MutableMap;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.net.Urls;
-import brooklyn.util.ssh.BashCommands;
-import brooklyn.util.task.DynamicTasks;
-import brooklyn.util.task.Tasks;
-import brooklyn.util.text.Identifiers;
-import brooklyn.util.text.StringPredicates;
-import brooklyn.util.text.Strings;
 
 public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implements SdnVeAgentDriver {
 

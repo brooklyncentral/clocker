@@ -16,13 +16,13 @@
 package brooklyn.networking.sdn.weave;
 
 import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
+import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.util.flags.SetFromFlag;
 
-import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.event.basic.BasicAttributeSensorAndConfigKey;
 import brooklyn.networking.sdn.SdnAgent;
-import brooklyn.util.flags.SetFromFlag;
 
 /**
  * The Weave container.

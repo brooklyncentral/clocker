@@ -37,10 +37,9 @@ import com.google.common.io.Files;
 import org.apache.brooklyn.rest.client.BrooklynApi;
 import org.apache.brooklyn.rest.domain.Status;
 import org.apache.brooklyn.rest.domain.TaskSummary;
-
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.repeat.Repeater;
-import brooklyn.util.time.Duration;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.repeat.Repeater;
+import org.apache.brooklyn.util.time.Duration;
 
 public class BlueprintIntegrationTest {
 

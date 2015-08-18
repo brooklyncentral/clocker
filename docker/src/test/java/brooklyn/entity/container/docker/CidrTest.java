@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 by Cloudsoft Corporation Limited
+ * Copyright 2014-2015 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,9 @@ import java.net.InetAddress;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import org.apache.brooklyn.util.net.Cidr;
+
 import brooklyn.networking.sdn.SdnProviderImpl;
-import brooklyn.util.net.Cidr;
 
 public class CidrTest {
 

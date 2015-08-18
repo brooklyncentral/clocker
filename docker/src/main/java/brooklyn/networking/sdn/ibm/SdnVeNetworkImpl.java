@@ -26,13 +26,13 @@ import org.jclouds.net.domain.IpPermission;
 
 import org.apache.brooklyn.api.entity.proxying.EntitySpec;
 import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.util.collections.MutableList;
 
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.networking.sdn.SdnProviderImpl;
-import brooklyn.util.collections.MutableList;
 
 public class SdnVeNetworkImpl extends SdnProviderImpl implements SdnVeNetwork {
 

@@ -25,9 +25,9 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
 
 import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.util.collections.MutableList;
 
 import brooklyn.location.docker.DockerHostLocation;
-import brooklyn.util.collections.MutableList;
 
 /**
  * A basic placement strategy for Docker containers, implemented as a {@link Predicate} and a {@link Comparator}.

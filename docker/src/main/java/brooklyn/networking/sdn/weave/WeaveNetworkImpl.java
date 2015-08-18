@@ -27,6 +27,9 @@ import org.jclouds.net.domain.IpProtocol;
 
 import org.apache.brooklyn.api.entity.proxying.EntitySpec;
 import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.util.collections.MutableList;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.text.Strings;
 
 import brooklyn.entity.basic.Entities;
 import brooklyn.entity.basic.SoftwareProcess;
@@ -34,9 +37,6 @@ import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.networking.sdn.SdnProviderImpl;
-import brooklyn.util.collections.MutableList;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.text.Strings;
 
 public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
 

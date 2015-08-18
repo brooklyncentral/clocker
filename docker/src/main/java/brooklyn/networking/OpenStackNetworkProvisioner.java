@@ -29,9 +29,9 @@ import org.jclouds.net.domain.IpProtocol;
 
 import org.apache.brooklyn.api.entity.basic.EntityLocal;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+import org.apache.brooklyn.util.net.Cidr;
 
 import brooklyn.networking.location.NetworkProvisioningExtension;
-import brooklyn.util.net.Cidr;
 
 public class OpenStackNetworkProvisioner implements NetworkProvisioningExtension {
 

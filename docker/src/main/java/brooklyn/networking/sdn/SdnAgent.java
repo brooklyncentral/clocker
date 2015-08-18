@@ -18,6 +18,7 @@ package brooklyn.networking.sdn;
 import java.net.InetAddress;
 
 import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.core.util.flags.SetFromFlag;
 
 import brooklyn.entity.annotation.Effector;
 import brooklyn.entity.annotation.EffectorParam;
@@ -29,7 +30,6 @@ import brooklyn.event.basic.AttributeSensorAndConfigKey;
 import brooklyn.event.basic.Sensors;
 import brooklyn.networking.VirtualNetwork;
 import brooklyn.networking.subnet.SubnetTier;
-import brooklyn.util.flags.SetFromFlag;
 
 /**
  * An SDN agent process.

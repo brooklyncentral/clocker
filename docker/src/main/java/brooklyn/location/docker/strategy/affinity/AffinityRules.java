@@ -33,12 +33,12 @@ import com.google.common.collect.Queues;
 import com.google.common.reflect.TypeToken;
 
 import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.util.javalang.Reflections;
 
-import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.basic.EntityPredicates;
 import brooklyn.location.docker.DockerHostLocation;
-import brooklyn.util.javalang.Reflections;
 
 /**
  * Affinity rules for Docker hosts.

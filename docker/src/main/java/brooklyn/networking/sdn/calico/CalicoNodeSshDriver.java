@@ -1,9 +1,21 @@
 /*
  * Copyright 2014-2015 by Cloudsoft Corporation Limited
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package brooklyn.networking.sdn.calico;
 
-import static brooklyn.util.ssh.BashCommands.sudo;
+import static org.apache.brooklyn.util.ssh.BashCommands.sudo;
 
 import java.net.InetAddress;
 import java.util.List;
@@ -18,6 +30,12 @@ import com.google.common.net.HostAndPort;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.basic.EntityLocal;
 import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.util.collections.MutableList;
+import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.os.Os;
+import org.apache.brooklyn.util.ssh.BashCommands;
+import org.apache.brooklyn.util.text.Strings;
 
 import brooklyn.entity.basic.AbstractGroup;
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
@@ -27,12 +45,6 @@ import brooklyn.entity.basic.lifecycle.ScriptHelper;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.nosql.etcd.EtcdNode;
 import brooklyn.networking.sdn.SdnAgent;
-import brooklyn.util.collections.MutableList;
-import brooklyn.util.collections.MutableMap;
-import brooklyn.util.net.Cidr;
-import brooklyn.util.os.Os;
-import brooklyn.util.ssh.BashCommands;
-import brooklyn.util.text.Strings;
 
 public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implements CalicoNodeDriver {
 
@@ -61,8 +73,8 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
         commands.addAll(BashCommands.commandsToDownloadUrlsAs(resolver.getTargets(), getCalicoCommand()));
         commands.add("chmod 755 " + getCalicoCommand());
         commands.add(BashCommands.installPackage("ipset"));
-        commands.add(BashCommands.sudo("modprobe ip6_tables"));
-        commands.add(BashCommands.sudo("modprobe xt_set"));
+        commands.add(sudo("modprobe ip6_tables"));
+        commands.add(sudo("modprobe xt_set"));
 
         newScript(INSTALLING)
                 .body.append(commands)

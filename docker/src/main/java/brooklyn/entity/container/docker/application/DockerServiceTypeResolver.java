@@ -18,8 +18,6 @@
  */
 package brooklyn.entity.container.docker.application;
 
-import io.brooklyn.camp.spi.PlatformComponentTemplate;
-
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -34,9 +32,10 @@ import org.apache.brooklyn.api.entity.proxying.EntitySpec;
 import org.apache.brooklyn.camp.brooklyn.spi.creation.BrooklynComponentTemplateResolver;
 import org.apache.brooklyn.camp.brooklyn.spi.creation.service.BrooklynServiceTypeResolver;
 import org.apache.brooklyn.camp.brooklyn.spi.creation.service.ServiceTypeResolver;
+import org.apache.brooklyn.camp.spi.PlatformComponentTemplate;
+import org.apache.brooklyn.util.text.Strings;
 
 import brooklyn.entity.container.DockerAttributes;
-import brooklyn.util.text.Strings;
 
 /**
  * This converts {@link PlatformComponentTemplate} instances whose type is prefixed {@code docker:}

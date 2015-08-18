@@ -39,12 +39,12 @@ import org.apache.brooklyn.location.basic.BasicLocationRegistry;
 import org.apache.brooklyn.location.basic.LocationInternal;
 import org.apache.brooklyn.location.basic.LocationPropertiesFromBrooklynProperties;
 import org.apache.brooklyn.location.dynamic.DynamicLocation;
+import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.text.KeyValueParser;
+import org.apache.brooklyn.util.text.Strings;
 
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
-import brooklyn.util.collections.MutableMap;
-import brooklyn.util.text.KeyValueParser;
-import brooklyn.util.text.Strings;
 
 /**
  * Examples of valid specs:

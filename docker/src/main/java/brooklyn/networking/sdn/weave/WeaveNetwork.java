@@ -17,11 +17,11 @@ package brooklyn.networking.sdn.weave;
 
 import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
+import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.util.flags.SetFromFlag;
 
-import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.networking.sdn.SdnProvider;
-import brooklyn.util.flags.SetFromFlag;
 
 /**
  * A collection of machines running Weave.

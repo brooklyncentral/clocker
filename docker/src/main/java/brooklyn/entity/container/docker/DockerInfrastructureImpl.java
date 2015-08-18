@@ -53,10 +53,18 @@ import org.apache.brooklyn.api.management.LocationManager;
 import org.apache.brooklyn.api.management.ManagementContext;
 import org.apache.brooklyn.api.policy.EnricherSpec;
 import org.apache.brooklyn.api.policy.PolicySpec;
+import org.apache.brooklyn.core.config.render.RendererHints;
+import org.apache.brooklyn.core.util.ResourceUtils;
+import org.apache.brooklyn.core.util.crypto.SecureKeys;
 import org.apache.brooklyn.location.basic.BasicLocationDefinition;
 import org.apache.brooklyn.location.basic.BasicLocationRegistry;
+import org.apache.brooklyn.policy.autoscaling.AutoScalerPolicy;
+import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.text.Strings;
+import org.apache.brooklyn.util.time.Duration;
 
-import brooklyn.config.render.RendererHints;
 import brooklyn.enricher.Enrichers;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.BasicGroup;
@@ -78,14 +86,6 @@ import brooklyn.entity.trait.Startable;
 import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.DockerResolver;
 import brooklyn.networking.sdn.SdnAttributes;
-import brooklyn.policy.autoscaling.AutoScalerPolicy;
-import brooklyn.util.ResourceUtils;
-import brooklyn.util.collections.MutableMap;
-import brooklyn.util.collections.QuorumCheck.QuorumChecks;
-import brooklyn.util.crypto.SecureKeys;
-import brooklyn.util.exceptions.Exceptions;
-import brooklyn.util.text.Strings;
-import brooklyn.util.time.Duration;
 
 public class DockerInfrastructureImpl extends BasicStartableImpl implements DockerInfrastructure {
 

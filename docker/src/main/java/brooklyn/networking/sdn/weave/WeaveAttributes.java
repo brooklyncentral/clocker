@@ -15,7 +15,8 @@
  */
 package brooklyn.networking.sdn.weave;
 
-import brooklyn.config.ConfigKey;
+import org.apache.brooklyn.config.ConfigKey;
+
 import brooklyn.entity.basic.ConfigKeys;
 
 /**

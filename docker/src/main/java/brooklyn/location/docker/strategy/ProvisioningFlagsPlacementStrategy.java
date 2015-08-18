@@ -26,14 +26,14 @@ import com.google.common.collect.Maps;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.HardwareDetails;
+import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.location.cloud.CloudLocationConfig;
+import org.apache.brooklyn.util.collections.MutableList;
+import org.apache.brooklyn.util.collections.MutableMap;
 
-import brooklyn.config.ConfigKey;
 import brooklyn.entity.basic.EntityPredicates;
 import brooklyn.entity.basic.SoftwareProcess;
 import brooklyn.location.docker.DockerHostLocation;
-import brooklyn.util.collections.MutableList;
-import brooklyn.util.collections.MutableMap;
 
 /**
  * Placement strategy that selects the Docker host with the lowest CPU usage.

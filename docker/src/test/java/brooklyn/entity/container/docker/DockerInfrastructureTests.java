@@ -25,13 +25,13 @@ import org.apache.brooklyn.api.entity.proxying.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.test.EntityTestUtils;
 import org.apache.brooklyn.test.entity.TestApplication;
+import org.apache.brooklyn.util.time.Duration;
 
 import brooklyn.entity.basic.ApplicationBuilder;
 import brooklyn.entity.basic.Attributes;
 import brooklyn.entity.basic.EmptySoftwareProcess;
 import brooklyn.entity.basic.Lifecycle;
 import brooklyn.location.docker.DockerLocation;
-import brooklyn.util.time.Duration;
 
 /**
  * Contains static tests that can be run by any test class.

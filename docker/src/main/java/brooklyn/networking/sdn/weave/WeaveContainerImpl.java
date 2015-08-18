@@ -20,9 +20,10 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.brooklyn.util.collections.MutableSet;
+
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.networking.sdn.SdnAgentImpl;
-import brooklyn.util.collections.MutableSet;
 
 /**
  * A single Weave router running in a {@link DockerContainer}.

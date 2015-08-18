@@ -18,7 +18,8 @@ package brooklyn.networking.sdn.calico;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.config.render.RendererHints;
+import org.apache.brooklyn.core.config.render.RendererHints;
+
 import brooklyn.entity.basic.DelegateEntity;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.event.feed.ConfigToAttributes;

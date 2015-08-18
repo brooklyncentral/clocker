@@ -28,11 +28,11 @@ import org.apache.brooklyn.api.entity.basic.EntityLocal;
 import org.apache.brooklyn.entity.proxy.LoadBalancer;
 import org.apache.brooklyn.location.basic.Machines;
 import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.guava.Maybe;
+import org.apache.brooklyn.util.os.Os;
 
 import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
-import brooklyn.util.collections.MutableMap;
-import brooklyn.util.guava.Maybe;
-import brooklyn.util.os.Os;
 
 public class HAProxySshDriver extends AbstractSoftwareProcessSshDriver implements HAProxyDriver {
 

@@ -26,12 +26,12 @@ import java.util.Map;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
+import org.apache.brooklyn.core.util.task.DynamicTasks;
 import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.os.Os;
 
 import brooklyn.event.basic.DependentConfiguration;
-import brooklyn.util.collections.MutableMap;
-import brooklyn.util.os.Os;
-import brooklyn.util.task.DynamicTasks;
 
 public class EtcdProxySshDriver extends EtcdNodeSshDriver implements EtcdProxyDriver {
 
