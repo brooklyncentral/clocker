@@ -31,7 +31,7 @@ RUN echo 'root:${entity.password}' | chpasswd
 RUN if [ -x "$(which apt-get)" ] ; then \
     apt-get update ; \
     apt-get install -y openssh-server ; \
-  elif [ -x "$(which yum)" ] ; then \
+  elif [ -x "/usr/bin/yum" ] ; then \
     yum -y install openssh-server ; \
   elif [ -x "$(which apk-install)" ] ; then \
     apk-install openssh ; \
