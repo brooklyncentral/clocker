@@ -24,29 +24,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.CharMatcher;
-import com.google.common.base.Functions;
-import com.google.common.base.Optional;
-import com.google.common.base.Predicates;
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-
-import org.jclouds.compute.config.ComputeServiceProperties;
-import org.jclouds.compute.domain.OsFamily;
-import org.jclouds.compute.domain.TemplateBuilder;
-import org.jclouds.compute.domain.Volume;
-import org.jclouds.softlayer.SoftLayerApi;
-import org.jclouds.softlayer.compute.options.SoftLayerTemplateOptions;
-import org.jclouds.softlayer.domain.VirtualGuest;
-import org.jclouds.softlayer.features.VirtualGuestApi;
-import org.jclouds.softlayer.reference.SoftLayerConstants;
-
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.entity.EntitySpec;
@@ -102,6 +79,28 @@ import org.apache.brooklyn.util.text.Identifiers;
 import org.apache.brooklyn.util.text.StringPredicates;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
+import org.jclouds.compute.config.ComputeServiceProperties;
+import org.jclouds.compute.domain.OsFamily;
+import org.jclouds.compute.domain.TemplateBuilder;
+import org.jclouds.compute.domain.Volume;
+import org.jclouds.softlayer.SoftLayerApi;
+import org.jclouds.softlayer.compute.options.SoftLayerTemplateOptions;
+import org.jclouds.softlayer.domain.VirtualGuest;
+import org.jclouds.softlayer.features.VirtualGuestApi;
+import org.jclouds.softlayer.reference.SoftLayerConstants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.api.client.repackaged.com.google.common.base.Objects;
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Functions;
+import com.google.common.base.Optional;
+import com.google.common.base.Predicates;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
@@ -285,13 +284,17 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                     template.osFamily(OsFamily.CENTOS).osVersionMatches("6").os64Bit(true);
                     options.diskType(Volume.Type.LOCAL.name());// FIXME Temporary setting overriding capacity limitation on account
                 }
-                options.portSpeed(1000); // TODO Make configurable
+                options.portSpeed(Objects.firstNonNull(options.getPortSpeed(), 1000));
 
                 // Try and determine if we need to set a VLAN for this host (overriding location)
                 Integer vlanOption = options.getPrimaryBackendNetworkComponentNetworkVlanId();
-                Optional<Integer> vlanConfig = Optional.fromNullable(getAttribute(DOCKER_INFRASTRUCTURE)
-                        .getAttribute(DockerInfrastructure.SDN_PROVIDER)
-                        .config().get(SdnProvider.VLAN_ID));
+                Entity sdnProviderAttribute = getAttribute(DOCKER_INFRASTRUCTURE)
+                         .getAttribute(DockerInfrastructure.SDN_PROVIDER);
+                Optional<Integer> vlanConfig = Optional.absent();
+                if (sdnProviderAttribute != null) {
+                    vlanConfig = Optional.fromNullable(sdnProviderAttribute.config().get(SdnProvider.VLAN_ID));
+                }
+
                 Integer vlanId = vlanOption == null ? vlanConfig.orNull() : vlanOption;
                 if (vlanId == null) {
                     // If a previous host has been configured, look up the VLAN id
