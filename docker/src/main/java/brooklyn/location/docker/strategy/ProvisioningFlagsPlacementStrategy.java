@@ -27,9 +27,9 @@ import com.google.common.collect.Maps;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.HardwareDetails;
 import org.apache.brooklyn.config.ConfigKey;
-import org.apache.brooklyn.entity.core.EntityPredicates;
+import org.apache.brooklyn.core.entity.EntityPredicates;
+import org.apache.brooklyn.core.location.cloud.CloudLocationConfig;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
-import org.apache.brooklyn.location.cloud.CloudLocationConfig;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 

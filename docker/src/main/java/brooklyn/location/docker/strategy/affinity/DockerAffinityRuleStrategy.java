@@ -26,7 +26,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.entity.core.EntityPredicates;
+import org.apache.brooklyn.core.entity.EntityPredicates;
 
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.location.docker.DockerHostLocation;

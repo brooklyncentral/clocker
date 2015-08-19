@@ -16,7 +16,7 @@
 package brooklyn.clocker.example;
 
 import org.apache.brooklyn.api.entity.EntitySpec;
-import org.apache.brooklyn.entity.core.AbstractApplication;
+import org.apache.brooklyn.core.entity.AbstractApplication;
 
 import brooklyn.entity.container.docker.application.VanillaDockerApplication;
 
