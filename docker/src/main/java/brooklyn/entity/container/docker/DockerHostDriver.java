@@ -15,7 +15,7 @@
  */
 package brooklyn.entity.container.docker;
 
-import brooklyn.entity.basic.SoftwareProcessDriver;
+import org.apache.brooklyn.entity.software.base.SoftwareProcessDriver;
 
 /**
  * The {@link SoftwareProcessDriver driver} for Docker.

@@ -19,7 +19,7 @@ locations:
 - my-docker-cloud
 
 services:
-- type: brooklyn.entity.nosql.couchbase.CouchbaseCluster
+- type: org.apache.brooklyn.entity.nosql.couchbase.CouchbaseCluster
   initialSize: 3
   adminUsername: Administrator
   adminPassword: Password

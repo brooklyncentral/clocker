@@ -24,15 +24,14 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.basic.EntityLocal;
+import org.apache.brooklyn.api.internal.EntityLocal;
 import org.apache.brooklyn.entity.proxy.LoadBalancer;
-import org.apache.brooklyn.location.basic.Machines;
-import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.entity.software.base.AbstractSoftwareProcessSshDriver;
+import org.apache.brooklyn.location.core.Machines;
+import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.guava.Maybe;
 import org.apache.brooklyn.util.os.Os;
-
-import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
 
 public class HAProxySshDriver extends AbstractSoftwareProcessSshDriver implements HAProxyDriver {
 

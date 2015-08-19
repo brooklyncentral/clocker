@@ -21,7 +21,7 @@ package brooklyn.entity.nosql.etcd;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import brooklyn.event.feed.ConfigToAttributes;
+import org.apache.brooklyn.sensor.feed.ConfigToAttributes;
 
 public class EtcdProxyImpl extends EtcdNodeImpl implements EtcdProxy {
 

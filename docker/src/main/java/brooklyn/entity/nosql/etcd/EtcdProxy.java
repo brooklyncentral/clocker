@@ -19,13 +19,12 @@
 package brooklyn.entity.nosql.etcd;
 
 import org.apache.brooklyn.api.catalog.Catalog;
-import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
-import org.apache.brooklyn.core.util.flags.SetFromFlag;
-import org.apache.brooklyn.location.basic.PortRanges;
-
-import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.event.basic.AttributeSensorAndConfigKey;
-import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
+import org.apache.brooklyn.api.entity.ImplementedBy;
+import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.location.core.PortRanges;
+import org.apache.brooklyn.sensor.core.AttributeSensorAndConfigKey;
+import org.apache.brooklyn.sensor.core.PortAttributeSensorAndConfigKey;
+import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
 @Catalog(name="Etcd Proxy")
 @ImplementedBy(EtcdProxyImpl.class)

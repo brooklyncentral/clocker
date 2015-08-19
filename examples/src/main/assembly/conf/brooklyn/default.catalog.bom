@@ -206,7 +206,7 @@ brooklyn.catalog:
     itemType: template
     item:
       services:
-      - type: brooklyn.entity.basic.BasicApplication
+      - type: org.apache.brooklyn.entity.stock.BasicApplication
         brooklyn.children:
         - type: brooklyn.networking.VirtualNetwork
           networkId: webapp
@@ -257,7 +257,7 @@ brooklyn.catalog:
     itemType: template
     item:
       services:
-      - type: brooklyn.entity.basic.BasicApplication
+      - type: org.apache.brooklyn.entity.stock.BasicApplication
         brooklyn.children:
         - type: org.apache.brooklyn.entity.nosql.redis.RedisStore
           id: redis

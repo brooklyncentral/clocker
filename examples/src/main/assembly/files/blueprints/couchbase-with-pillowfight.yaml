@@ -30,7 +30,7 @@ services:
   brooklyn.config:
     couchbase.clusterInitRamSize: 4000
 
-- type: brooklyn.entity.basic.VanillaSoftwareProcess
+- type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
   name: CBC Pillowfight
   launch.command: |
     wget -O/etc/apt/sources.list.d/couchbase.list http://packages.couchbase.com/ubuntu/couchbase-ubuntu1204.list
@@ -46,7 +46,7 @@ services:
     base_url: $brooklyn:entity("couchbase").attributeWhenReady("couchbase.cluster.connection.url")
     launch.latch: $brooklyn:entity("couchbase").attributeWhenReady("service.isUp")
   brooklyn.initializers:
-  - type: brooklyn.entity.software.ssh.SshCommandEffector
+  - type: org.apache.brooklyn.sensor.ssh.SshCommandEffector
     brooklyn.config:
       name: pillow_fight
       description: runs cbc pillowfight

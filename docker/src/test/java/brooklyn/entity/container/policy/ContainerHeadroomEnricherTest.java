@@ -29,22 +29,22 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.proxying.EntitySpec;
-import org.apache.brooklyn.api.event.SensorEvent;
-import org.apache.brooklyn.api.event.SensorEventListener;
-import org.apache.brooklyn.api.policy.EnricherSpec;
+import org.apache.brooklyn.api.entity.EntitySpec;
+import org.apache.brooklyn.api.sensor.EnricherSpec;
+import org.apache.brooklyn.api.sensor.SensorEvent;
+import org.apache.brooklyn.api.sensor.SensorEventListener;
+import org.apache.brooklyn.core.test.BrooklynAppUnitTestSupport;
+import org.apache.brooklyn.entity.core.EntityInternal;
+import org.apache.brooklyn.entity.group.DynamicCluster;
+import org.apache.brooklyn.entity.group.DynamicGroup;
+import org.apache.brooklyn.entity.stock.BasicStartableImpl;
+import org.apache.brooklyn.sensor.core.BasicNotificationSensor;
 import org.apache.brooklyn.test.Asserts;
 import org.apache.brooklyn.test.EntityTestUtils;
 import org.apache.brooklyn.util.time.Duration;
 import org.apache.brooklyn.util.time.Time;
 
-import brooklyn.entity.BrooklynAppUnitTestSupport;
-import brooklyn.entity.basic.BasicStartableImpl;
-import brooklyn.entity.basic.DynamicGroup;
-import brooklyn.entity.basic.EntityInternal;
 import brooklyn.entity.container.docker.DockerInfrastructure;
-import brooklyn.entity.group.DynamicCluster;
-import brooklyn.event.basic.BasicNotificationSensor;
 import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.strategy.MaxContainersPlacementStrategy;
 

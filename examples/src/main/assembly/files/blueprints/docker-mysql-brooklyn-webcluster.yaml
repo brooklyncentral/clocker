@@ -21,12 +21,12 @@ name: "Run mysql on docker and webcluster on VM"
 origin: "https://github.com/apache/incubator-brooklyn/"
 
 services:
-- type: brooklyn.entity.webapp.ControlledDynamicWebAppCluster
+- type: org.apache.brooklyn.entity.webapp.ControlledDynamicWebAppCluster
   location: jclouds:softlayer:ams01
   initialSize: 2
   memberSpec:
     $brooklyn:entitySpec:
-      type: brooklyn.entity.webapp.jboss.JBoss7Server
+      type: org.apache.brooklyn.entity.webapp.tomcat.Tomcat8Server
       brooklyn.config:
         wars.root: http://search.maven.org/remotecontent?filepath=io/brooklyn/example/brooklyn-example-hello-world-sql-webapp/0.6.0/brooklyn-example-hello-world-sql-webapp-0.6.0.war
         http.port: 8080+
@@ -34,7 +34,7 @@ services:
           brooklyn.example.db.url: $brooklyn:formatString("jdbc:%s%s?user=%s\\&password=%s",
               component("db").attributeWhenReady("mapped.datastore.url"), "visitors", "brooklyn", "br00k11n")
 
-- type: brooklyn.entity.database.mysql.MySqlNode
+- type: org.apache.brooklyn.entity.database.mysql.MySqlNode
   id: db
   name: DB HelloWorld Visitors
   location: my-docker-cloud

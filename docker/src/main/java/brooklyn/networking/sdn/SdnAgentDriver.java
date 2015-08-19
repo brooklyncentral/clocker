@@ -17,9 +17,8 @@ package brooklyn.networking.sdn;
 
 import java.net.InetAddress;
 
+import org.apache.brooklyn.entity.software.base.SoftwareProcessDriver;
 import org.apache.brooklyn.util.net.Cidr;
-
-import brooklyn.entity.basic.SoftwareProcessDriver;
 
 public interface SdnAgentDriver extends SoftwareProcessDriver {
 

@@ -18,7 +18,7 @@
  */
 package brooklyn.entity.nosql.etcd;
 
-import brooklyn.entity.basic.SoftwareProcessDriver;
+import org.apache.brooklyn.entity.software.base.SoftwareProcessDriver;
 
 public interface EtcdNodeDriver extends SoftwareProcessDriver {
 

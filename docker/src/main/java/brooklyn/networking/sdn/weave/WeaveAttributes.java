@@ -16,8 +16,7 @@
 package brooklyn.networking.sdn.weave;
 
 import org.apache.brooklyn.config.ConfigKey;
-
-import brooklyn.entity.basic.ConfigKeys;
+import org.apache.brooklyn.core.config.ConfigKeys;
 
 /**
  * Weave networking configuration and attributes.

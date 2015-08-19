@@ -19,7 +19,7 @@ locations:
 - my-docker-cloud
 
 services:
-- type: brooklyn.entity.nosql.redis.RedisStore
+- type: org.apache.brooklyn.entity.nosql.redis.RedisStore
   id: redis
   name: "Redis"
   brooklyn.config:
@@ -30,7 +30,7 @@ services:
         brooklyn.config:
           minRam: 4000
 
-- type: brooklyn.entity.webapp.nodejs.NodeJsWebAppService
+- type: org.apache.brooklyn.entity.webapp.nodejs.NodeJsWebAppService
   id: nodejs
   name: "Node.JS"
   brooklyn.config:

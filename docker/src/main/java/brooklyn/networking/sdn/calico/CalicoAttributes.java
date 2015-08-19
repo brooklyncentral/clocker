@@ -16,8 +16,7 @@
 package brooklyn.networking.sdn.calico;
 
 import org.apache.brooklyn.config.ConfigKey;
-
-import brooklyn.entity.basic.ConfigKeys;
+import org.apache.brooklyn.core.config.ConfigKeys;
 
 /**
  * Calico networking configuration and attributes.

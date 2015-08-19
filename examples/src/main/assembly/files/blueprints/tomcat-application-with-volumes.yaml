@@ -19,7 +19,7 @@ locations:
 - my-docker-cloud
 
 services:
-- serviceType: brooklyn.entity.webapp.tomcat.TomcatServer
+- serviceType: org.apache.brooklyn.entity.webapp.tomcat.Tomcat8Server
   brooklyn.config:
     docker.dockerfile.url:
       "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/UsesJavaDockerfile"

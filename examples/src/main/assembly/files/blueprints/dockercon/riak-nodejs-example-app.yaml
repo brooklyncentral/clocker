@@ -28,16 +28,16 @@ services:
   networkId: example
   cidr: 50.2.0.0/24
 
-- type: brooklyn.entity.nosql.riak.RiakCluster
+- type: org.apache.brooklyn.entity.nosql.riak.RiakCluster
   initialSize: 3
   id: cluster
   brooklyn.config:
-    install.version: 2.0.5
+    install.version: 2.1.1
     riak.networking.optimize: false
     network.list:
     - example
 
-- type: brooklyn.entity.webapp.ControlledDynamicWebAppCluster
+- type: org.apache.brooklyn.entity.webapp.ControlledDynamicWebAppCluster
   location: my-docker-cloud
   name: Web Cluster
   brooklyn.config:
@@ -46,7 +46,7 @@ services:
     - example
     dynamiccluster.memberspec:
       $brooklyn:entitySpec:
-        type: brooklyn.entity.webapp.nodejs.NodeJsWebAppService
+        type: org.apache.brooklyn.entity.webapp.nodejs.NodeJsWebAppService
         id: riak-counters-example
         name: "Riak Counters Node.JS Example"
         brooklyn.config:

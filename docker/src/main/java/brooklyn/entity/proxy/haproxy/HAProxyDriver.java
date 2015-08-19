@@ -15,7 +15,7 @@
  */
 package brooklyn.entity.proxy.haproxy;
 
-import brooklyn.entity.basic.SoftwareProcessDriver;
+import org.apache.brooklyn.entity.software.base.SoftwareProcessDriver;
 
 public interface HAProxyDriver extends SoftwareProcessDriver {
 

@@ -17,15 +17,15 @@ package brooklyn.entity.proxy.haproxy;
 
 import java.util.List;
 
-import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
+import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.config.ConfigKey;
-import org.apache.brooklyn.core.util.flags.SetFromFlag;
+import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.entity.proxy.AbstractController;
+import org.apache.brooklyn.sensor.core.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.util.collections.MutableList;
+import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
-import brooklyn.entity.basic.ConfigKeys;
 import brooklyn.entity.container.DockerAttributes;
-import brooklyn.event.basic.PortAttributeSensorAndConfigKey;
 
 @ImplementedBy(HAProxyControllerImpl.class)
 public interface HAProxyController extends AbstractController {

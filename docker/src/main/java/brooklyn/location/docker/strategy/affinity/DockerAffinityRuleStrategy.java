@@ -26,8 +26,8 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.entity.core.EntityPredicates;
 
-import brooklyn.entity.basic.EntityPredicates;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.docker.strategy.AbstractDockerPlacementStrategy;

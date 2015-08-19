@@ -25,10 +25,9 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.core.config.render.RendererHints;
+import org.apache.brooklyn.entity.software.base.SoftwareProcessImpl;
+import org.apache.brooklyn.entity.stock.DelegateEntity;
 import org.apache.brooklyn.util.text.Strings;
-
-import brooklyn.entity.basic.DelegateEntity;
-import brooklyn.entity.basic.SoftwareProcessImpl;
 
 public class EtcdNodeImpl extends SoftwareProcessImpl implements EtcdNode {
 

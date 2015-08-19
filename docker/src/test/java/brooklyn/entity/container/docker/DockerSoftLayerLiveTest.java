@@ -20,8 +20,7 @@ import org.testng.annotations.Test;
 import com.google.common.collect.ImmutableMap;
 
 import org.apache.brooklyn.api.location.Location;
-
-import brooklyn.entity.AbstractSoftlayerLiveTest;
+import org.apache.brooklyn.entity.AbstractSoftlayerLiveTest;
 
 @Test(groups="Live")
 public class DockerSoftLayerLiveTest extends AbstractSoftlayerLiveTest {

@@ -19,20 +19,20 @@ locations:
 - my-docker-cloud
 
 services:
-- type: brooklyn.entity.nosql.riak.RiakCluster
+- type: org.apache.brooklyn.entity.nosql.riak.RiakCluster
   initialSize: 2
   id: cluster
   brooklyn.config:
-    install.version: 2.0.5
+    install.version: 2.1.1
     riak.networking.optimize: false
 
-- type: brooklyn.entity.webapp.ControlledDynamicWebAppCluster
+- type: org.apache.brooklyn.entity.webapp.ControlledDynamicWebAppCluster
   name: Web Cluster
   brooklyn.config:
     initialSize: 2
     controlleddynamicwebappcluster.controllerSpec:
       $brooklyn:entitySpec:
-        type: brooklyn.entity.proxy.nginx.NginxController
+        type: org.apache.brooklyn.entity.proxy.nginx.NginxController
         brooklyn.config:
           member.sensor.hostname: "host.subnet.hostname"
     wars.root:

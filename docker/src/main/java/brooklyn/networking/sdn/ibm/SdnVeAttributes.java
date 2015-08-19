@@ -17,13 +17,12 @@ package brooklyn.networking.sdn.ibm;
 
 import java.net.InetAddress;
 
-import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.sensor.core.AttributeSensorAndConfigKey;
+import org.apache.brooklyn.sensor.core.Sensors;
 import org.apache.brooklyn.util.net.Cidr;
-
-import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.event.basic.AttributeSensorAndConfigKey;
-import brooklyn.event.basic.Sensors;
 
 /**
  * IBM SDN VE configuration and attributes.

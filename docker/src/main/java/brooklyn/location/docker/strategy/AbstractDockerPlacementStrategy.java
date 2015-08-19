@@ -15,7 +15,7 @@
  */
 package brooklyn.location.docker.strategy;
 
-import org.apache.brooklyn.basic.BasicConfigurableObject;
+import org.apache.brooklyn.core.objs.BasicConfigurableObject;
 
 import brooklyn.entity.container.docker.DockerInfrastructure;
 

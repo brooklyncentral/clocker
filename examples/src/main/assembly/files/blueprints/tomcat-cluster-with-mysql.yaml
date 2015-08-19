@@ -19,7 +19,7 @@ locations:
 - my-docker-cloud
 
 services:
-- type: brooklyn.entity.webapp.ControlledDynamicWebAppCluster
+- type: org.apache.brooklyn.entity.webapp.ControlledDynamicWebAppCluster
   id: tomcat-cluster
   name: "Tomcat Cluster"
   brooklyn.config:
@@ -36,7 +36,7 @@ services:
         "visitors", "brooklyn", "br00k11n")
     memberSpec:
       $brooklyn:entitySpec:
-        type: brooklyn.entity.webapp.tomcat.TomcatServer
+        type: org.apache.brooklyn.entity.webapp.tomcat.Tomcat8Server
         brooklyn.config:
           docker.dockerfile.url:
             "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/UsesJavaDockerfile"
@@ -47,7 +47,7 @@ services:
           jmx.direct.port: "30000+"
     controlleddynamicwebappcluster.webClusterSpec:
       $brooklyn:entitySpec:
-        type: brooklyn.entity.webapp.DynamicWebAppCluster
+        type: org.apache.brooklyn.entity.webapp.DynamicWebAppCluster
     controlleddynamicwebappcluster.controllerSpec:
       $brooklyn:entitySpec:
         type: brooklyn.entity.proxy.haproxy.HAProxyController
@@ -58,7 +58,7 @@ services:
           run.dir: /usr/local/etc/haproxy/
           member.sensor.hostname: "host.subnet.hostname"
 
-- type: brooklyn.entity.database.mysql.MySqlNode
+- type: org.apache.brooklyn.entity.database.mysql.MySqlNode
   id: mysql
   name: MySQL Database
   brooklyn.config:

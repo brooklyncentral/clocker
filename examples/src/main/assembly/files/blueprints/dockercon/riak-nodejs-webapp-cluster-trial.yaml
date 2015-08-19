@@ -24,7 +24,7 @@ services:
 - type: brooklyn.networking.VirtualNetwork
   networkId: riak
 
-- type: brooklyn.entity.nosql.riak.RiakCluster
+- type: org.apache.brooklyn.entity.nosql.riak.RiakCluster
   initialSize: 3
   id: cluster
   brooklyn.config:
@@ -33,13 +33,13 @@ services:
     network.list:
     - riak
 
-- type: brooklyn.entity.webapp.ControlledDynamicWebAppCluster
+- type: org.apache.brooklyn.entity.webapp.ControlledDynamicWebAppCluster
   name: Web Cluster
   brooklyn.config:
     initialSize: 2
     dynamiccluster.memberspec:
       $brooklyn:entitySpec:
-        type: brooklyn.entity.webapp.jboss.JBoss7Server
+        type: org.apache.brooklyn.entity.webapp.tomcat.Tomcat8Server
         brooklyn.config:
           network.list:
           - webapp

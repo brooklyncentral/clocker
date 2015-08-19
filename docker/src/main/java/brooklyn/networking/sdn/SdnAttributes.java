@@ -26,11 +26,10 @@ import com.google.common.base.Predicate;
 import com.google.common.reflect.TypeToken;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
-
-import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.event.basic.Sensors;
+import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.sensor.core.Sensors;
 
 /**
  * SDN attributes and configuration keys.

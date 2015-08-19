@@ -25,16 +25,15 @@ import com.google.common.reflect.TypeToken;
 
 import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.proxying.EntitySpec;
-import org.apache.brooklyn.api.entity.proxying.ImplementedBy;
-import org.apache.brooklyn.api.event.AttributeSensor;
+import org.apache.brooklyn.api.entity.EntitySpec;
+import org.apache.brooklyn.api.entity.ImplementedBy;
+import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
-import org.apache.brooklyn.core.util.flags.SetFromFlag;
-
-import brooklyn.entity.basic.ConfigKeys;
-import brooklyn.entity.group.DynamicCluster;
-import brooklyn.event.basic.AttributeSensorAndConfigKey;
-import brooklyn.event.basic.Sensors;
+import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.entity.group.DynamicCluster;
+import org.apache.brooklyn.sensor.core.AttributeSensorAndConfigKey;
+import org.apache.brooklyn.sensor.core.Sensors;
+import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
 @Catalog(name="Etcd Cluster", description="Etcd is an open-source distributed key-value store that serves as "
         + "the backbone of distributed systems by providing a canonical hub for cluster coordination and state management.")

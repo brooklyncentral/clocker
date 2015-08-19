@@ -19,7 +19,7 @@ import java.util.Map;
 
 import com.google.common.base.Function;
 
-import brooklyn.entity.basic.SoftwareProcess;
+import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 
 /**
  * Provisioning strategy for new Docker hosts.

@@ -35,19 +35,18 @@ import com.google.common.collect.Lists;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.OsDetails;
-import org.apache.brooklyn.core.util.task.DynamicTasks;
-import org.apache.brooklyn.location.basic.SshMachineLocation;
+import org.apache.brooklyn.entity.core.Attributes;
+import org.apache.brooklyn.entity.core.Entities;
+import org.apache.brooklyn.entity.group.DynamicCluster;
+import org.apache.brooklyn.entity.software.base.AbstractSoftwareProcessSshDriver;
+import org.apache.brooklyn.entity.software.base.lifecycle.ScriptHelper;
+import org.apache.brooklyn.location.ssh.SshMachineLocation;
+import org.apache.brooklyn.sensor.core.DependentConfiguration;
 import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.os.Os;
 import org.apache.brooklyn.util.ssh.BashCommands;
 import org.apache.brooklyn.util.text.Strings;
-
-import brooklyn.entity.basic.AbstractSoftwareProcessSshDriver;
-import brooklyn.entity.basic.Attributes;
-import brooklyn.entity.basic.Entities;
-import brooklyn.entity.basic.lifecycle.ScriptHelper;
-import brooklyn.entity.group.DynamicCluster;
-import brooklyn.event.basic.DependentConfiguration;
 
 public class EtcdNodeSshDriver extends AbstractSoftwareProcessSshDriver implements EtcdNodeDriver {
 

@@ -15,9 +15,9 @@
  */
 package brooklyn.clocker.example;
 
-import org.apache.brooklyn.api.entity.proxying.EntitySpec;
+import org.apache.brooklyn.api.entity.EntitySpec;
+import org.apache.brooklyn.entity.core.AbstractApplication;
 
-import brooklyn.entity.basic.AbstractApplication;
 import brooklyn.entity.container.docker.application.VanillaDockerApplication;
 
 public class MicroServiceImageImpl extends AbstractApplication implements MicroServiceImage {

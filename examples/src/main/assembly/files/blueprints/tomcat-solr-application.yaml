@@ -19,7 +19,7 @@ locations:
 - my-docker-cloud
 
 services:
-- type: brooklyn.entity.nosql.solr.SolrServer
+- type: org.apache.brooklyn.entity.nosql.solr.SolrServer
   brooklyn.config:
     jmx.enabled: true
     jmx.agent.mode: "JMX_RMI"
@@ -29,7 +29,7 @@ services:
       example:
         "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/example.tgz"
 
-- type: brooklyn.entity.webapp.tomcat.TomcatServer
+- type: org.apache.brooklyn.entity.webapp.tomcat.Tomcat8Server
   brooklyn.config:
     docker.dockerfile.url:
       "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/UsesJavaDockerfile"

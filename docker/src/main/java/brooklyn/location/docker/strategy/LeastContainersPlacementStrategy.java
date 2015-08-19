@@ -15,7 +15,8 @@
  */
 package brooklyn.location.docker.strategy;
 
-import brooklyn.entity.basic.BasicGroup;
+import org.apache.brooklyn.entity.group.BasicGroup;
+
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.location.docker.DockerHostLocation;
 
