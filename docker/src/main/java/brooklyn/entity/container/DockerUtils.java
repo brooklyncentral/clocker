@@ -39,14 +39,14 @@ import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationDefinition;
 import org.apache.brooklyn.api.mgmt.ManagementContext;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
+import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
+import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.database.DatastoreMixins;
 import org.apache.brooklyn.entity.messaging.MessageBroker;
 import org.apache.brooklyn.entity.nosql.couchbase.CouchbaseCluster;
 import org.apache.brooklyn.entity.nosql.couchbase.CouchbaseNode;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.webapp.WebAppServiceConstants;
-import org.apache.brooklyn.sensor.core.PortAttributeSensorAndConfigKey;
-import org.apache.brooklyn.sensor.core.Sensors;
 import org.apache.brooklyn.util.text.Identifiers;
 import org.apache.brooklyn.util.text.Strings;
 

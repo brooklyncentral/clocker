@@ -60,6 +60,7 @@ import org.apache.brooklyn.core.entity.EntityPredicates;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.location.BasicLocationDefinition;
 import org.apache.brooklyn.core.location.BasicLocationRegistry;
+import org.apache.brooklyn.enricher.stock.Enrichers;
 import org.apache.brooklyn.entity.group.BasicGroup;
 import org.apache.brooklyn.entity.group.Cluster;
 import org.apache.brooklyn.entity.group.DynamicCluster;
@@ -71,7 +72,6 @@ import org.apache.brooklyn.entity.software.base.SoftwareProcess.ChildStartableMo
 import org.apache.brooklyn.entity.stock.BasicStartableImpl;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
 import org.apache.brooklyn.policy.autoscaling.AutoScalerPolicy;
-import org.apache.brooklyn.sensor.enricher.Enrichers;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import org.apache.brooklyn.util.core.ResourceUtils;

@@ -28,13 +28,13 @@ import org.apache.brooklyn.api.sensor.Sensor;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.factory.ApplicationBuilder;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
+import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.core.test.entity.TestApplication;
 import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.webapp.JavaWebAppService;
 import org.apache.brooklyn.entity.webapp.WebAppService;
 import org.apache.brooklyn.entity.webapp.tomcat.TomcatServer;
-import org.apache.brooklyn.sensor.core.Sensors;
 import org.apache.brooklyn.test.EntityTestUtils;
 import org.apache.brooklyn.test.support.TestResourceUnavailableException;
 

@@ -16,19 +16,22 @@ id: riak-nodejs-example
 name: Riak Cluster with Node.js Webapp Cluster
 origin: "https://github.com/csabapalfi/riak-counters-example/"
 
-locations:
-- jclouds:openstack-nova:http://openstack02.abstractvisitorpattern.co.uk:35357/v2.0/:
-    identity: admin:admin
-    credential: admin
-    publicKeyFile: /root/.ssh/os_rsa.pub
-    privateKeyFile: /root/.ssh/os_rsa
-
 services:
 - type: brooklyn.networking.OpenStackVirtualNetwork
+  location: jclouds:openstack-nova:http://openstack02.abstractvisitorpattern.co.uk:35357/v2.0/:
+    identity: admin:admin
+    credential: admin
   networkId: example
   cidr: 50.2.0.0/24
 
 - type: org.apache.brooklyn.entity.nosql.riak.RiakCluster
+  location: jclouds:openstack-nova:http://openstack02.abstractvisitorpattern.co.uk:35357/v2.0/:
+    identity: admin:admin
+    credential: admin
+    publicKeyFile: /root/.ssh/os_rsa.pub
+    privateKeyFile: /root/.ssh/os_rsa
+    keyPair: openstack
+    securityGroup: openstack
   initialSize: 3
   id: cluster
   brooklyn.config:
@@ -38,7 +41,7 @@ services:
     - example
 
 - type: org.apache.brooklyn.entity.webapp.ControlledDynamicWebAppCluster
-  location: my-docker-cloud
+  location: calico-openstack-cloud
   name: Web Cluster
   brooklyn.config:
     initialSize: 2

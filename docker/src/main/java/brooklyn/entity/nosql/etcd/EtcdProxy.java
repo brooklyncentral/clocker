@@ -22,8 +22,8 @@ import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.location.PortRanges;
-import org.apache.brooklyn.sensor.core.AttributeSensorAndConfigKey;
-import org.apache.brooklyn.sensor.core.PortAttributeSensorAndConfigKey;
+import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
+import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
 @Catalog(name="Etcd Proxy")

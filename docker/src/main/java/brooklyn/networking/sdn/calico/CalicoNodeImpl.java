@@ -19,8 +19,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.brooklyn.core.config.render.RendererHints;
+import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
-import org.apache.brooklyn.sensor.feed.ConfigToAttributes;
 
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.networking.sdn.SdnAgentImpl;

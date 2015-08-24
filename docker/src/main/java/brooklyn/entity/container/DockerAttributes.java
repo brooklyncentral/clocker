@@ -29,9 +29,9 @@ import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigInheritance;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
-import org.apache.brooklyn.sensor.core.AttributeSensorAndConfigKey;
-import org.apache.brooklyn.sensor.core.PortAttributeSensorAndConfigKey;
-import org.apache.brooklyn.sensor.core.Sensors;
+import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
+import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
+import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.util.core.flags.TypeCoercions;
 import org.apache.brooklyn.util.core.internal.ssh.SshTool;
 import org.apache.brooklyn.util.javalang.Reflections;
@@ -49,6 +49,9 @@ public class DockerAttributes {
 
     public static final ConfigKey<String> DOCKERFILE_URL = ConfigKeys.newStringConfigKey(
             "docker.dockerfile.url", "URL of a Dockerfile to use");
+
+    public static final ConfigKey<String> DOCKERFILE_ENTRYPOINT_URL = ConfigKeys.newStringConfigKey(
+            "docker.entrypoint.url", "URL of the Dockerfile entrypoint script to use. (default is no script)");
 
     public static final ConfigKey<String> DOCKERFILE_NAME = ConfigKeys.newStringConfigKey(
             "docker.dockerfile.name", "Name for the image created by the Dockerfile being used");

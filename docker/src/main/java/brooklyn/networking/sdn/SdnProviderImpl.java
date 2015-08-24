@@ -38,13 +38,13 @@ import org.apache.brooklyn.api.policy.PolicySpec;
 import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityPredicates;
+import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.entity.group.AbstractMembershipTrackingPolicy;
 import org.apache.brooklyn.entity.group.BasicGroup;
 import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.group.DynamicGroup;
 import org.apache.brooklyn.entity.stock.BasicStartableImpl;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
-import org.apache.brooklyn.sensor.feed.ConfigToAttributes;
 import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import org.apache.brooklyn.util.net.Cidr;
 

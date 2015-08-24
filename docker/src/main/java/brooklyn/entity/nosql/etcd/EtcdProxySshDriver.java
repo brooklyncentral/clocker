@@ -26,8 +26,8 @@ import java.util.Map;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
+import org.apache.brooklyn.core.sensor.DependentConfiguration;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
-import org.apache.brooklyn.sensor.core.DependentConfiguration;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.os.Os;

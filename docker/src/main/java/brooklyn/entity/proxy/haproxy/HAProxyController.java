@@ -20,8 +20,8 @@ import java.util.List;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.entity.proxy.AbstractController;
-import org.apache.brooklyn.sensor.core.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 

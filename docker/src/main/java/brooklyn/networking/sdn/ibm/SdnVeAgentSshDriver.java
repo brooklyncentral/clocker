@@ -28,6 +28,7 @@ import com.google.gson.JsonParser;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntityLocal;
+import org.apache.brooklyn.core.effector.ssh.SshEffectorTasks;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityPredicates;
 import org.apache.brooklyn.entity.software.base.AbstractSoftwareProcessSshDriver;
@@ -37,7 +38,6 @@ import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.core.task.Tasks;
-import org.apache.brooklyn.util.core.task.ssh.SshEffectorTasks;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Urls;
 import org.apache.brooklyn.util.ssh.BashCommands;

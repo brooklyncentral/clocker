@@ -54,11 +54,11 @@ import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.location.AbstractLocation;
 import org.apache.brooklyn.core.location.LocationConfigKeys;
 import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
+import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
-import org.apache.brooklyn.sensor.core.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.exceptions.Exceptions;
@@ -153,6 +153,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
             // Add the entity Dockerfile if configured
             String dockerfile = entity.config().get(DockerAttributes.DOCKERFILE_URL);
+            String entrypoint = entity.config().get(DockerAttributes.DOCKERFILE_ENTRYPOINT_URL);
             String imageId = entity.config().get(DockerAttributes.DOCKER_IMAGE_ID);
 
             Optional<String> baseImage = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_NAME));

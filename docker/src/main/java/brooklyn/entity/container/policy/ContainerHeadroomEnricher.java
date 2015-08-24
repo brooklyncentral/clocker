@@ -20,11 +20,11 @@ import org.apache.brooklyn.api.sensor.SensorEventListener;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.config.render.RendererHints;
+import org.apache.brooklyn.core.enricher.AbstractEnricher;
 import org.apache.brooklyn.core.entity.AbstractEntity;
+import org.apache.brooklyn.core.sensor.BasicNotificationSensor;
+import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.policy.autoscaling.AutoScalerPolicy;
-import org.apache.brooklyn.sensor.core.BasicNotificationSensor;
-import org.apache.brooklyn.sensor.core.Sensors;
-import org.apache.brooklyn.sensor.enricher.AbstractEnricher;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.math.MathFunctions;
 
