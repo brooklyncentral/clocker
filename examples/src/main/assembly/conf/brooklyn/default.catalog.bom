@@ -134,8 +134,8 @@ brooklyn.catalog:
                   minCores: 2
                   stopIptables: true
                   osFamily: ubuntu
-                  osVersionRegex: 14.04
-                start.timeout: 15m
+                  osVersionRegex: 15.04
+                start.timeout: 5m
                 docker.container.spec:
                   $brooklyn:entitySpec:
                     type: docker-container
@@ -173,8 +173,8 @@ brooklyn.catalog:
                   minCores: 2
                   stopIptables: true
                   osFamily: ubuntu
-                  osVersionRegex: 14.04
-                start.timeout: 15m
+                  osVersionRegex: 15.04
+                start.timeout: 5m
                 docker.container.spec:
                   $brooklyn:entitySpec:
                     type: docker-container

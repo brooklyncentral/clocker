@@ -47,6 +47,6 @@ services:
             minCores: 2
             stopIptables: true
             osFamily: ubuntu
-            osVersionRegex: 14.04
-          start.timeout: 15m
+            osVersionRegex: 15.04
+          start.timeout: 5m
           docker.host.nameFormat: "docker-%2$d"
