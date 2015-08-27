@@ -28,3 +28,4 @@ obj
 *.swp
 
 .vagrant
+brooklyn-clocker/
