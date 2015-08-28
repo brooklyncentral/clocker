@@ -110,7 +110,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         LOG.info("Starting Docker container id {}", getId());
         super.init();
 
-        AtomicInteger counter = config().get(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.DOCKER_CONTAINER_COUNTER);
+        AtomicInteger counter = config().get(DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.DOCKER_CONTAINER_COUNTER);
         String dockerContainerName = config().get(DOCKER_CONTAINER_NAME);
         String dockerContainerNameFormat = config().get(DOCKER_CONTAINER_NAME_FORMAT);
         if (Strings.isBlank(dockerContainerName) && Strings.isNonBlank(dockerContainerNameFormat)) {
@@ -119,7 +119,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         if (Strings.isNonBlank(dockerContainerName)) {
             dockerContainerName = CharMatcher.BREAKING_WHITESPACE.trimAndCollapseFrom(dockerContainerName, '-');
             setDisplayName(CaseFormat.LOWER_HYPHEN.to(CaseFormat.UPPER_CAMEL, dockerContainerName));
-            setAttribute(DOCKER_CONTAINER_NAME, dockerContainerName);
+            sensors().set(DOCKER_CONTAINER_NAME, dockerContainerName);
         }
 
         ConfigToAttributes.apply(this, DOCKER_INFRASTRUCTURE);
@@ -184,26 +184,26 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
     @Override
     public Entity getRunningEntity() {
-        return getAttribute(ENTITY);
+        return sensors().get(ENTITY);
     }
 
     public void setRunningEntity(Entity entity) {
-        setAttribute(ENTITY, entity);
+        sensors().set(ENTITY, entity);
     }
 
     @Override
     public String getDockerContainerName() {
-        return getAttribute(DOCKER_CONTAINER_NAME);
+        return sensors().get(DOCKER_CONTAINER_NAME);
     }
 
     @Override
     public String getContainerId() {
-        return getAttribute(CONTAINER_ID);
+        return sensors().get(CONTAINER_ID);
     }
 
     @Override
     public SshMachineLocation getMachine() {
-        return getAttribute(SSH_MACHINE_LOCATION);
+        return sensors().get(SSH_MACHINE_LOCATION);
     }
 
     @Override
@@ -218,7 +218,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
     @Override
     public DockerContainerLocation getDynamicLocation() {
-        return (DockerContainerLocation) getAttribute(DYNAMIC_LOCATION);
+        return (DockerContainerLocation) sensors().get(DYNAMIC_LOCATION);
     }
 
     @Override
@@ -228,21 +228,21 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
     @Override
     public void shutDown() {
-        String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
+        String dockerContainerName = sensors().get(DockerContainer.DOCKER_CONTAINER_NAME);
         LOG.info("Stopping {}", dockerContainerName);
         getDockerHost().runDockerCommand("kill " + getContainerId());
     }
 
     @Override
     public void pause() {
-        String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
+        String dockerContainerName = sensors().get(DockerContainer.DOCKER_CONTAINER_NAME);
         LOG.info("Pausing {}", dockerContainerName);
         getDockerHost().runDockerCommand("stop " + getContainerId());
     }
 
     @Override
     public void resume() {
-        String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
+        String dockerContainerName = sensors().get(DockerContainer.DOCKER_CONTAINER_NAME);
         LOG.info("Resuming {}", dockerContainerName);
         getDockerHost().runDockerCommand("start " + getContainerId());
     }
@@ -253,7 +253,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
      * Should only be called when the container is not running.
      */
     private void removeContainer() {
-        final String dockerContainerName = getAttribute(DockerContainer.DOCKER_CONTAINER_NAME);
+        final String dockerContainerName = sensors().get(DockerContainer.DOCKER_CONTAINER_NAME);
         LOG.info("Removing {}", dockerContainerName);
         getDockerHost().runDockerCommand("rm " + getContainerId());
     }
@@ -267,8 +267,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         if (useHostDns == null) useHostDns = config().get(DOCKER_USE_HOST_DNS_NAME);
         if (useHostDns != null && useHostDns) {
             // FIXME does not seem to work on Softlayer, should set HOSTNAME or SUBNET_HOSTNAME
-            String hostname = getDockerHost().getAttribute(Attributes.HOSTNAME);
-            String address = getDockerHost().getAttribute(Attributes.ADDRESS);
+            String hostname = getDockerHost().sensors().get(Attributes.HOSTNAME);
+            String address = getDockerHost().sensors().get(Attributes.ADDRESS);
             if (hostname.equalsIgnoreCase(address)) {
                 options.hostname(getDockerContainerName());
             } else {
@@ -328,7 +328,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         if (memory != null) options.memory(memory);
 
         // Volumes
-        Map<String, String> volumes = MutableMap.copyOf(getDockerHost().getAttribute(DockerHost.DOCKER_HOST_VOLUME_MAPPING));
+        Map<String, String> volumes = MutableMap.copyOf(getDockerHost().sensors().get(DockerHost.DOCKER_HOST_VOLUME_MAPPING));
         Map<String, String> mapping = entity.config().get(DockerHost.DOCKER_HOST_VOLUME_MAPPING);
         if (mapping != null) {
             for (String source : mapping.keySet()) {
@@ -425,7 +425,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         // Check the running entity for alternative container name
         String containerName = getRunningEntity().config().get(DOCKER_CONTAINER_NAME);
         if (Strings.isBlank(containerName)) {
-            containerName = getAttribute(DOCKER_CONTAINER_NAME);
+            containerName = sensors().get(DOCKER_CONTAINER_NAME);
         }
         if (Strings.isNonBlank(containerName)) {
             options.nodeNames(ImmutableList.of(DockerUtils.allowed(containerName)));
@@ -454,14 +454,14 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             // Create a new container using jclouds Docker driver
             JcloudsSshMachineLocation container = (JcloudsSshMachineLocation) host.getJcloudsLocation().obtain(dockerFlags);
             String containerId = container.getNode().getId();
-            setAttribute(CONTAINER_ID, containerId);
+            sensors().set(CONTAINER_ID, containerId);
             Entity entity = getRunningEntity();
 
             // Link the entity to the container
-            ((EntityLocal) entity).setAttribute(DockerContainer.DOCKER_INFRASTRUCTURE, dockerHost.getInfrastructure());
-            ((EntityLocal) entity).setAttribute(DockerContainer.DOCKER_HOST, dockerHost);
-            ((EntityLocal) entity).setAttribute(DockerContainer.CONTAINER, this);
-            ((EntityLocal) entity).setAttribute(DockerContainer.CONTAINER_ID, containerId);
+            ((EntityLocal) entity).sensors().set(DockerContainer.DOCKER_INFRASTRUCTURE, dockerHost.getInfrastructure());
+            ((EntityLocal) entity).sensors().set(DockerContainer.DOCKER_HOST, dockerHost);
+            ((EntityLocal) entity).sensors().set(DockerContainer.CONTAINER, this);
+            ((EntityLocal) entity).sensors().set(DockerContainer.CONTAINER_ID, containerId);
 
             // If SDN is enabled, attach networks
             if (config().get(SdnAttributes.SDN_ENABLE)) {
@@ -471,8 +471,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 List<String> networks = Lists.newArrayList(entity.getApplicationId());
                 Collection<String> extra = entity.config().get(SdnAttributes.NETWORK_LIST);
                 if (extra != null) networks.addAll(extra);
-                setAttribute(SdnAttributes.ATTACHED_NETWORKS, networks);
-                ((EntityLocal) entity).setAttribute(SdnAttributes.ATTACHED_NETWORKS, networks);
+                sensors().set(SdnAttributes.ATTACHED_NETWORKS, networks);
+                ((EntityLocal) entity).sensors().set(SdnAttributes.ATTACHED_NETWORKS, networks);
 
                 // Save container addresses
                 Set<String> addresses = Sets.newHashSet();
@@ -480,11 +480,11 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                     InetAddress address = agent.attachNetwork(containerId, networkId);
                     addresses.add(address.getHostAddress().toString());
                     if (networkId.equals(entity.getApplicationId())) {
-                        setAttribute(Attributes.SUBNET_ADDRESS, address.getHostAddress());
+                        sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
                     }
                 }
-                setAttribute(CONTAINER_ADDRESSES, addresses);
-                ((EntityLocal) entity).setAttribute(CONTAINER_ADDRESSES, addresses);
+                sensors().set(CONTAINER_ADDRESSES, addresses);
+                ((EntityLocal) entity).sensors().set(CONTAINER_ADDRESSES, addresses);
             }
 
             // Create our wrapper location around the container
@@ -498,8 +498,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                     .displayName(getDockerContainerName());
             DockerContainerLocation location = getManagementContext().getLocationManager().createLocation(spec);
 
-            setAttribute(DYNAMIC_LOCATION, location);
-            setAttribute(LOCATION_NAME, location.getId());
+            sensors().set(DYNAMIC_LOCATION, location);
+            sensors().set(LOCATION_NAME, location.getId());
 
             LOG.info("New Docker container location {} created", location);
             return location;
@@ -524,8 +524,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             }
         }
 
-        setAttribute(DYNAMIC_LOCATION, null);
-        setAttribute(LOCATION_NAME, null);
+        sensors().set(DYNAMIC_LOCATION, null);
+        sensors().set(LOCATION_NAME, null);
     }
 
     /** @return the ports required for a specific entity */
@@ -543,7 +543,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             for (int i = 0; i < entityOpenPorts.size(); i++) {
                 Integer port = entityOpenPorts.get(i);
                 String name = String.format("docker.port.%02d", port);
-                ((EntityInternal) entity).setAttribute(Sensors.newIntegerSensor(name), port);
+                ((EntityInternal) entity).sensors().set(Sensors.newIntegerSensor(name), port);
                 entity.config().set(ConfigKeys.newConfigKey(PortRange.class, name), PortRanges.fromInteger(port));
             }
 
@@ -564,13 +564,13 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         if (Boolean.TRUE.equals(started)) {
             DockerHost dockerHost = getDockerHost();
             DockerHostLocation host = dockerHost.getDynamicLocation();
-            setAttribute(DockerContainer.IMAGE_ID, config().get(DOCKER_IMAGE_ID));
-            setAttribute(DockerContainer.IMAGE_NAME, config().get(DockerAttributes.DOCKER_IMAGE_NAME));
-            setAttribute(SSH_MACHINE_LOCATION, host.getMachine());
+            sensors().set(DockerContainer.IMAGE_ID, config().get(DOCKER_IMAGE_ID));
+            sensors().set(DockerContainer.IMAGE_NAME, config().get(DockerAttributes.DOCKER_IMAGE_NAME));
+            sensors().set(SSH_MACHINE_LOCATION, host.getMachine());
         } else {
             Map<String, ?> flags = MutableMap.copyOf(config().get(LOCATION_FLAGS));
             DockerContainerLocation location = createLocation(flags);
-            setAttribute(SSH_MACHINE_LOCATION, location.getMachine());
+            sensors().set(SSH_MACHINE_LOCATION, location.getMachine());
         }
 
         connectSensors();
@@ -591,13 +591,13 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
     @Override
     public void stop() {
-        Lifecycle state = getAttribute(SERVICE_STATE_ACTUAL);
+        Lifecycle state = sensors().get(SERVICE_STATE_ACTUAL);
         if (Lifecycle.STOPPING.equals(state) || Lifecycle.STOPPED.equals(state)) {
             LOG.debug("Ignoring request to stop {} when it is already {}", this, state);
             LOG.trace("Duplicate stop came from: \n" + Joiner.on("\n").join(Thread.getAllStackTraces().get(Thread.currentThread())));
             return;
         }
-        LOG.info("Stopping {} when its state is {}", this, getAttribute(SERVICE_STATE_ACTUAL));
+        LOG.info("Stopping {} when its state is {}", this, sensors().get(SERVICE_STATE_ACTUAL));
         ServiceStateLogic.setExpectedState(this, Lifecycle.STOPPING);
 
         disconnectSensors();
@@ -606,7 +606,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         shutDown();
         removeContainer();
 
-        setAttribute(SSH_MACHINE_LOCATION, null);
+        sensors().set(SSH_MACHINE_LOCATION, null);
         Boolean started = config().get(SoftwareProcess.ENTITY_STARTED);
         if (!Boolean.TRUE.equals(started)) {
             deleteLocation();
@@ -622,12 +622,12 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
     @Override
     public Set<String> getPublicAddresses() {
-        return Sets.newHashSet(getAttribute(SoftwareProcess.SUBNET_ADDRESS));
+        return Sets.newHashSet(sensors().get(SoftwareProcess.SUBNET_ADDRESS));
     }
 
     @Override
     public Set<String> getPrivateAddresses() {
-        return getAttribute(CONTAINER_ADDRESSES);
+        return sensors().get(CONTAINER_ADDRESSES);
     }
 
     static {

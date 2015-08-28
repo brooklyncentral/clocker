@@ -44,7 +44,7 @@ public class EtcdProxySshDriver extends EtcdNodeSshDriver implements EtcdProxyDr
     }
 
     protected Map<String, Integer> getPortMap() {
-        return MutableMap.of("clientPort", getEntity().getAttribute(EtcdProxy.ETCD_CLIENT_PORT));
+        return MutableMap.of("clientPort", getEntity().sensors().get(EtcdProxy.ETCD_CLIENT_PORT));
     }
 
     @Override
@@ -60,7 +60,7 @@ public class EtcdProxySshDriver extends EtcdNodeSshDriver implements EtcdProxyDr
         commands.add("cd " + getRunDir());
         commands.add(format("%s -bind-addr 0.0.0.0:%d --proxy on --initial-cluster \"%s\" > %s 2>&1 < /dev/null &",
                         Os.mergePathsUnix(getExpandedInstallDir(), "etcd"),
-                        getEntity().getAttribute(EtcdNode.ETCD_CLIENT_PORT),
+                        getEntity().sensors().get(EtcdNode.ETCD_CLIENT_PORT),
                         nodes,
                         getLogFileLocation()));
 

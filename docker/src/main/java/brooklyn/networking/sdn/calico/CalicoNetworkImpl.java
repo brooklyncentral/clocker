@@ -66,7 +66,7 @@ public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork 
         if (Strings.isNonBlank(etcdVersion)) {
             etcdNodeSpec.configure(SoftwareProcess.SUGGESTED_VERSION, etcdVersion);
         }
-        setAttribute(EtcdCluster.ETCD_NODE_SPEC, etcdNodeSpec);
+        sensors().set(EtcdCluster.ETCD_NODE_SPEC, etcdNodeSpec);
 
         EtcdCluster etcd = addChild(EntitySpec.create(EtcdCluster.class)
                 .configure(Cluster.INITIAL_SIZE, 0)
@@ -82,7 +82,7 @@ public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork 
             Entities.manage(etcd);
         }
 
-        setAttribute(ETCD_CLUSTER, etcd);
+        sensors().set(ETCD_CLUSTER, etcd);
 
         EntitySpec<?> agentSpec = EntitySpec.create(getConfig(SdnProvider.SDN_AGENT_SPEC, EntitySpec.create(CalicoNode.class)))
                 .configure(CalicoNode.SDN_PROVIDER, this);
@@ -90,7 +90,7 @@ public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork 
         if (Strings.isNonBlank(calicoVersion)) {
             agentSpec.configure(SoftwareProcess.SUGGESTED_VERSION, calicoVersion);
         }
-        setAttribute(SdnProvider.SDN_AGENT_SPEC, agentSpec);
+        sensors().set(SdnProvider.SDN_AGENT_SPEC, agentSpec);
     }
 
     @Override
@@ -128,7 +128,7 @@ public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork 
     @Override
     public InetAddress getNextAgentAddress(String agentId) {
         Entity agent = getManagementContext().getEntityManager().getEntity(agentId);
-        String address = agent.getAttribute(CalicoNode.DOCKER_HOST).getAttribute(Attributes.ADDRESS);
+        String address = agent.sensors().get(CalicoNode.DOCKER_HOST).sensors().get(Attributes.ADDRESS);
         try {
             return InetAddress.getByName(address);
         } catch (UnknownHostException uhe) {
@@ -146,11 +146,11 @@ public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork 
     public void addHost(DockerHost host) {
         SshMachineLocation machine = host.getDynamicLocation().getMachine();
 
-        EtcdCluster etcd = getAttribute(ETCD_CLUSTER);
+        EtcdCluster etcd = sensors().get(ETCD_CLUSTER);
         EtcdNode node = (EtcdNode) etcd.addNode(machine, Maps.newHashMap());
         node.start(ImmutableList.of(machine));
 
-        EntitySpec<?> spec = EntitySpec.create(getAttribute(SDN_AGENT_SPEC))
+        EntitySpec<?> spec = EntitySpec.create(sensors().get(SDN_AGENT_SPEC))
                 .configure(CalicoNode.DOCKER_HOST, host)
                 .configure(CalicoNode.ETCD_NODE, node);
         CalicoNode agent = (CalicoNode) getAgents().addChild(spec);
@@ -162,14 +162,14 @@ public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork 
 
     @Override
     public void removeHost(DockerHost host) {
-        SdnAgent agent = host.getAttribute(SdnAgent.SDN_AGENT);
+        SdnAgent agent = host.sensors().get(SdnAgent.SDN_AGENT);
         if (agent == null) {
             LOG.warn("{} cannot find calico service: {}", this, host);
             return;
         }
 
-        EtcdCluster etcd = getAttribute(ETCD_CLUSTER);
-        EtcdNode node = agent.getAttribute(CalicoNode.ETCD_NODE);
+        EtcdCluster etcd = sensors().get(ETCD_CLUSTER);
+        EtcdNode node = agent.sensors().get(CalicoNode.ETCD_NODE);
         etcd.removeMember(node);
         node.stop();
 

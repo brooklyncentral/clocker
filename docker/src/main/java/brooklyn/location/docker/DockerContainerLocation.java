@@ -240,21 +240,21 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
         LOG.info("Executing callback for {}: {}", getOwner(), command);
         if (DockerCallbacks.COMMIT.equalsIgnoreCase(command)) {
             String containerId = getOwner().getContainerId();
-            String imageName = getOwner().getAttribute(DockerContainer.IMAGE_NAME);
+            String imageName = getOwner().sensors().get(DockerContainer.IMAGE_NAME);
             String output = getOwner().getDockerHost().runDockerCommandTimeout(
                     format("commit %s %s", containerId, imageName),
                     Duration.minutes(20));
             String imageId = DockerUtils.checkId(output);
-            ((EntityLocal) getOwner().getRunningEntity()).setAttribute(DockerContainer.IMAGE_ID, imageId);
-            ((EntityLocal) getOwner()).setAttribute(DockerContainer.IMAGE_ID, imageId);
+            ((EntityLocal) getOwner().getRunningEntity()).sensors().set(DockerContainer.IMAGE_ID, imageId);
+            ((EntityLocal) getOwner()).sensors().set(DockerContainer.IMAGE_ID, imageId);
             getOwner().getDockerHost().getDynamicLocation().markImage(imageName);
         } else if (DockerCallbacks.PUSH.equalsIgnoreCase(command)) {
-            String imageName = getOwner().getAttribute(DockerContainer.IMAGE_NAME);
+            String imageName = getOwner().sensors().get(DockerContainer.IMAGE_NAME);
             getOwner().getDockerHost().runDockerCommand(format("push %s", imageName));
         } else if (DockerCallbacks.SUBNET_ADDRESS.equalsIgnoreCase(command)) {
-            String address = getOwner().getAttribute(Attributes.SUBNET_ADDRESS);
-            ((EntityLocal) getOwner().getRunningEntity()).setAttribute(Attributes.SUBNET_ADDRESS, address);
-            ((EntityLocal) getOwner().getRunningEntity()).setAttribute(Attributes.SUBNET_HOSTNAME, address);
+            String address = getOwner().sensors().get(Attributes.SUBNET_ADDRESS);
+            ((EntityLocal) getOwner().getRunningEntity()).sensors().set(Attributes.SUBNET_ADDRESS, address);
+            ((EntityLocal) getOwner().getRunningEntity()).sensors().set(Attributes.SUBNET_HOSTNAME, address);
         } else {
             LOG.warn("Unknown Docker host command: {}", command);
         }
@@ -275,7 +275,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
         LOG.debug("Close called on Docker container {}: {}", machine, this);
         try {
             machine.close();
-            if (dockerContainer.getAttribute(DockerContainer.SERVICE_UP)) {
+            if (dockerContainer.sensors().get(DockerContainer.SERVICE_UP)) {
                 LOG.info("Stopping Docker container entity for {}: {}", this, dockerContainer);
                 dockerContainer.stop();
             }

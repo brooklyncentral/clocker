@@ -74,7 +74,7 @@ public class OpenStackNetworkProvisioner implements NetworkProvisioningExtension
         }
 
         // Use the OpenStack UUID as the virtual network id
-        ((EntityLocal) network).setAttribute(VirtualNetwork.NETWORK_ID, id);
+        ((EntityLocal) network).sensors().set(VirtualNetwork.NETWORK_ID, id);
     }
 
     @Override

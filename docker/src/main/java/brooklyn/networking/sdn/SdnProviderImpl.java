@@ -96,35 +96,35 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
             Entities.manage(applications);
         }
 
-        setAttribute(SDN_AGENTS, agents);
-        setAttribute(SDN_NETWORKS, networks);
-        setAttribute(SDN_APPLICATIONS, applications);
+        sensors().set(SDN_AGENTS, agents);
+        sensors().set(SDN_NETWORKS, networks);
+        sensors().set(SDN_APPLICATIONS, applications);
 
         synchronized (addressMutex) {
-            setAttribute(ALLOCATED_IPS, 0);
-            setAttribute(ALLOCATED_ADDRESSES, Maps.<String, InetAddress>newConcurrentMap());
-            setAttribute(SUBNET_ADDRESS_ALLOCATIONS, Maps.<String, Integer>newConcurrentMap());
+            sensors().set(ALLOCATED_IPS, 0);
+            sensors().set(ALLOCATED_ADDRESSES, Maps.<String, InetAddress>newConcurrentMap());
+            sensors().set(SUBNET_ADDRESS_ALLOCATIONS, Maps.<String, Integer>newConcurrentMap());
         }
 
         synchronized (networkMutex) {
-            setAttribute(ALLOCATED_NETWORKS, 0);
-            setAttribute(SUBNETS, Maps.<String, Cidr>newConcurrentMap());
+            sensors().set(ALLOCATED_NETWORKS, 0);
+            sensors().set(SUBNETS, Maps.<String, Cidr>newConcurrentMap());
         }
 
-        setAttribute(SUBNET_ENTITIES, Maps.<String, VirtualNetwork>newConcurrentMap());
-        setAttribute(CONTAINER_ADDRESSES, HashMultimap.<String, InetAddress>create());
+        sensors().set(SUBNET_ENTITIES, Maps.<String, VirtualNetwork>newConcurrentMap());
+        sensors().set(CONTAINER_ADDRESSES, HashMultimap.<String, InetAddress>create());
     }
 
     @Override
     public InetAddress getNextAgentAddress(String agentId) {
         synchronized (addressMutex) {
             Cidr cidr = config().get(AGENT_CIDR);
-            Integer allocated = getAttribute(ALLOCATED_IPS);
+            Integer allocated = sensors().get(ALLOCATED_IPS);
             InetAddress next = cidr.addressAtOffset(allocated + 1);
-            setAttribute(ALLOCATED_IPS, allocated + 1);
-            Map<String, InetAddress> addresses = getAttribute(ALLOCATED_ADDRESSES);
+            sensors().set(ALLOCATED_IPS, allocated + 1);
+            Map<String, InetAddress> addresses = sensors().get(ALLOCATED_ADDRESSES);
             addresses.put(agentId, next);
-            setAttribute(ALLOCATED_ADDRESSES, addresses);
+            sensors().set(ALLOCATED_ADDRESSES, addresses);
             return next;
         }
     }
@@ -134,12 +134,12 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
         Cidr cidr = getSubnetCidr(subnetId);
 
         synchronized (addressMutex) {
-            Map<String, Integer> allocations = getAttribute(SUBNET_ADDRESS_ALLOCATIONS);
+            Map<String, Integer> allocations = sensors().get(SUBNET_ADDRESS_ALLOCATIONS);
             Integer allocated = allocations.get(subnetId);
             if (allocated == null) allocated = 1;
             InetAddress next = cidr.addressAtOffset(allocated + 1);
             allocations.put(subnetId, allocated + 1);
-            setAttribute(SUBNET_ADDRESS_ALLOCATIONS, allocations);
+            sensors().set(SUBNET_ADDRESS_ALLOCATIONS, allocations);
             return next;
         }
     }
@@ -158,11 +158,11 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
         synchronized (networkMutex) {
             Cidr networkCidr = config().get(CONTAINER_NETWORK_CIDR);
             Integer networkSize = config().get(CONTAINER_NETWORK_SIZE);
-            Integer allocated = getAttribute(ALLOCATED_NETWORKS);
+            Integer allocated = sensors().get(ALLOCATED_NETWORKS);
             InetAddress baseAddress = networkCidr.addressAtOffset(allocated * (1 << (32 - networkSize)));
             Cidr subnetCidr = new Cidr(baseAddress.getHostAddress() + "/" + networkSize);
             LOG.debug("Allocated {} from {} for subnet #{}", new Object[] { subnetCidr, networkCidr, allocated });
-            setAttribute(ALLOCATED_NETWORKS, allocated + 1);
+            sensors().set(ALLOCATED_NETWORKS, allocated + 1);
             return subnetCidr;
         }
     }
@@ -170,9 +170,9 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
     @Override
     public void recordSubnetCidr(String networkId, Cidr subnetCidr) {
         synchronized (networkMutex) {
-            Map<String, Cidr> subnets = getAttribute(SdnProvider.SUBNETS);
+            Map<String, Cidr> subnets = sensors().get(SdnProvider.SUBNETS);
             subnets.put(networkId, subnetCidr);
-            setAttribute(SdnProvider.SUBNETS, subnets);
+            sensors().set(SdnProvider.SUBNETS, subnets);
         }
     }
 
@@ -180,16 +180,16 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
     public void recordSubnetCidr(String networkId, Cidr subnetCidr, int allocated) {
         synchronized (networkMutex) {
             recordSubnetCidr(networkId, subnetCidr);
-            Map<String, Integer> allocations = getAttribute(SUBNET_ADDRESS_ALLOCATIONS);
+            Map<String, Integer> allocations = sensors().get(SUBNET_ADDRESS_ALLOCATIONS);
             allocations.put(networkId, allocated);
-            setAttribute(SUBNET_ADDRESS_ALLOCATIONS, allocations);
+            sensors().set(SUBNET_ADDRESS_ALLOCATIONS, allocations);
         }
     }
 
     @Override
     public Cidr getSubnetCidr(String networkId) {
         synchronized (networkMutex) {
-            Map<String, Cidr> subnets = getAttribute(SdnProvider.SUBNETS);
+            Map<String, Cidr> subnets = sensors().get(SdnProvider.SUBNETS);
             return subnets.get(networkId);
         }
     }
@@ -199,11 +199,11 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
 
     @Override
     public DynamicCluster getDockerHostCluster() {
-        return config().get(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.DOCKER_HOST_CLUSTER);
+        return config().get(DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.DOCKER_HOST_CLUSTER);
     }
 
     @Override
-    public Group getAgents() { return getAttribute(SDN_AGENTS); }
+    public Group getAgents() { return sensors().get(SDN_AGENTS); }
 
     public static class MemberTrackingPolicy extends AbstractMembershipTrackingPolicy {
         @Override protected void onEntityEvent(EventType type, Entity member) {
@@ -213,7 +213,7 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
 
     @Override
     public void start(Collection<? extends Location> locations) {
-        setAttribute(SERVICE_UP, Boolean.FALSE);
+        sensors().set(SERVICE_UP, Boolean.FALSE);
 
         // Add ouserlves as an extension to the Docker location
         DockerInfrastructure infrastructure = (DockerInfrastructure) config().get(DOCKER_INFRASTRUCTURE);
@@ -223,12 +223,12 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
 
         addHostTrackerPolicy();
 
-        setAttribute(SERVICE_UP, Boolean.TRUE);
+        sensors().set(SERVICE_UP, Boolean.TRUE);
     }
 
     @Override
     public void stop() {
-        setAttribute(SERVICE_UP, Boolean.FALSE);
+        sensors().set(SERVICE_UP, Boolean.FALSE);
 
         super.stop();
     }
@@ -268,8 +268,8 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
     private void onHostChanged(Entity item) {
         synchronized (hostMutex) {
             boolean exists = getDockerHostCluster().hasMember(item);
-            Boolean running = item.getAttribute(SERVICE_UP);
-            if (exists && running && item.getAttribute(SdnAgent.SDN_AGENT) == null) {
+            Boolean running = item.sensors().get(SERVICE_UP);
+            if (exists && running && item.sensors().get(SdnAgent.SDN_AGENT) == null) {
                 onHostAdded(item);
             } else if (!exists) {
                 onHostRemoved(item);
@@ -279,7 +279,7 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
 
     @Override
     public Map<String, Cidr> listManagedNetworkAddressSpace() {
-        return ImmutableMap.copyOf(getAttribute(SUBNETS));
+        return ImmutableMap.copyOf(sensors().get(SUBNETS));
     }
 
     @Override
@@ -292,31 +292,31 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
         EntitySpec<DynamicGroup> networkSpec = EntitySpec.create(DynamicGroup.class)
                 .configure(DynamicGroup.ENTITY_FILTER, Predicates.and(
                         Predicates.not(Predicates.or(Predicates.instanceOf(DockerContainer.class), Predicates.instanceOf(DelegateEntity.class))),
-                        EntityPredicates.attributeEqualTo(DockerContainer.DOCKER_INFRASTRUCTURE, getAttribute(DOCKER_INFRASTRUCTURE)),
+                        EntityPredicates.attributeEqualTo(DockerContainer.DOCKER_INFRASTRUCTURE, sensors().get(DOCKER_INFRASTRUCTURE)),
                         SdnAttributes.attachedToNetwork(networkId)))
                 .configure(DynamicGroup.MEMBER_DELEGATE_CHILDREN, true)
                 .displayName(network.getDisplayName());
-        DynamicGroup subnet = getAttribute(SDN_APPLICATIONS).addMemberChild(networkSpec);
+        DynamicGroup subnet = sensors().get(SDN_APPLICATIONS).addMemberChild(networkSpec);
         Entities.manage(subnet);
-        ((EntityLocal) subnet).setAttribute(VirtualNetwork.NETWORK_ID, networkId);
-        ((EntityLocal) network).setAttribute(VirtualNetwork.NETWORKED_APPLICATIONS, subnet);
+        ((EntityLocal) subnet).sensors().set(VirtualNetwork.NETWORK_ID, networkId);
+        ((EntityLocal) network).sensors().set(VirtualNetwork.NETWORKED_APPLICATIONS, subnet);
 
-        getAttribute(SDN_NETWORKS).addMember(network);
+        sensors().get(SDN_NETWORKS).addMember(network);
     }
 
     @Override
     public void deallocateNetwork(VirtualNetwork network) {
-        String networkId = network.getAttribute(VirtualNetwork.NETWORK_ID);
-        Optional<Entity> found = Iterables.tryFind(getAttribute(SDN_APPLICATIONS).getMembers(), EntityPredicates.attributeEqualTo(VirtualNetwork.NETWORK_ID, networkId));
+        String networkId = network.sensors().get(VirtualNetwork.NETWORK_ID);
+        Optional<Entity> found = Iterables.tryFind(sensors().get(SDN_APPLICATIONS).getMembers(), EntityPredicates.attributeEqualTo(VirtualNetwork.NETWORK_ID, networkId));
         if (found.isPresent()) {
             Entity group = found.get();
-            getAttribute(SDN_APPLICATIONS).removeMember(group);
-            getAttribute(SDN_APPLICATIONS).removeChild(group);
+            sensors().get(SDN_APPLICATIONS).removeMember(group);
+            sensors().get(SDN_APPLICATIONS).removeChild(group);
             Entities.unmanage(group);
         } else {
             LOG.warn("Cannot find group containing {} network entities", networkId);
         }
-        getAttribute(SDN_NETWORKS).removeMember(network);
+        sensors().get(SDN_NETWORKS).removeMember(network);
 
         // TODO actually deprovision the network if possible?
     }

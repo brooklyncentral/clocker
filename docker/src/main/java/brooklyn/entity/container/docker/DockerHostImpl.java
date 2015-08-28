@@ -131,10 +131,10 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         LOG.info("Starting Docker host id {}", getId());
         super.init();
 
-        AtomicInteger counter = config().get(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.DOCKER_HOST_COUNTER);
+        AtomicInteger counter = config().get(DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.DOCKER_HOST_COUNTER);
         String dockerHostName = String.format(config().get(DockerHost.DOCKER_HOST_NAME_FORMAT), getId(), counter.incrementAndGet());
         setDisplayName(dockerHostName);
-        setAttribute(DOCKER_HOST_NAME, dockerHostName);
+        sensors().set(DOCKER_HOST_NAME, dockerHostName);
 
         // Set a password for this host's containers
         String password = config().get(DOCKER_PASSWORD);
@@ -152,7 +152,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             dockerContainerSpec.policy(PolicySpec.create(ServiceRestarter.class)
                     .configure(ServiceRestarter.FAILURE_SENSOR_TO_MONITOR, ServiceFailureDetector.ENTITY_FAILED));
         }
-        setAttribute(DOCKER_CONTAINER_SPEC, dockerContainerSpec);
+        sensors().set(DOCKER_CONTAINER_SPEC, dockerContainerSpec);
 
         DynamicCluster containers = addChild(EntitySpec.create(DynamicCluster.class)
                 .configure(Cluster.INITIAL_SIZE, 0)
@@ -165,7 +165,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             containers.addPolicy(PolicySpec.create(ServiceReplacer.class)
                     .configure(ServiceReplacer.FAILURE_SENSOR_TO_MONITOR, ServiceRestarter.ENTITY_RESTART_FAILED));
         }
-        setAttribute(DOCKER_CONTAINER_CLUSTER, containers);
+        sensors().set(DOCKER_CONTAINER_CLUSTER, containers);
 
         if (Entities.isManaged(this)) Entities.manage(containers);
 
@@ -179,8 +179,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     protected Collection<Integer> getRequiredOpenPorts() {
         Collection<Integer> ports = super.getRequiredOpenPorts();
         if (config().get(DockerInfrastructure.SDN_ENABLE)) {
-            Entity sdn = getAttribute(DockerHost.DOCKER_INFRASTRUCTURE)
-                    .getAttribute(DockerInfrastructure.SDN_PROVIDER);
+            Entity sdn = sensors().get(DockerHost.DOCKER_INFRASTRUCTURE)
+                    .sensors().get(DockerInfrastructure.SDN_PROVIDER);
             if (DockerUtils.isSdnProvider(this, "WeaveNetwork")) {
                 Integer weavePort = sdn.config().get(WeaveNetwork.WEAVE_PORT);
                 if (weavePort != null) ports.add(weavePort);
@@ -288,8 +288,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
                 // Try and determine if we need to set a VLAN for this host (overriding location)
                 Integer vlanOption = options.getPrimaryBackendNetworkComponentNetworkVlanId();
-                Entity sdnProviderAttribute = getAttribute(DOCKER_INFRASTRUCTURE)
-                         .getAttribute(DockerInfrastructure.SDN_PROVIDER);
+                Entity sdnProviderAttribute = sensors().get(DOCKER_INFRASTRUCTURE)
+                         .sensors().get(DockerInfrastructure.SDN_PROVIDER);
                 Optional<Integer> vlanConfig = Optional.absent();
                 if (sdnProviderAttribute != null) {
                     vlanConfig = Optional.fromNullable(sdnProviderAttribute.config().get(SdnProvider.VLAN_ID));
@@ -298,10 +298,10 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 Integer vlanId = vlanOption == null ? vlanConfig.orNull() : vlanOption;
                 if (vlanId == null) {
                     // If a previous host has been configured, look up the VLAN id
-                    int count = getAttribute(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.DOCKER_HOST_COUNT);
-                    if (count > 1 && !getAttribute(DynamicCluster.FIRST_MEMBER)) {
-                        Task<Integer> lookup = DependentConfiguration.attributeWhenReady(getAttribute(DOCKER_INFRASTRUCTURE)
-                                .getAttribute(DockerInfrastructure.SDN_PROVIDER), SdnProvider.VLAN_ID);
+                    int count = sensors().get(DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.DOCKER_HOST_COUNT);
+                    if (count > 1 && !sensors().get(DynamicCluster.FIRST_MEMBER)) {
+                        Task<Integer> lookup = DependentConfiguration.attributeWhenReady(sensors().get(DOCKER_INFRASTRUCTURE)
+                                .sensors().get(DockerInfrastructure.SDN_PROVIDER), SdnProvider.VLAN_ID);
                         vlanId = DynamicTasks.submit(lookup, this).getUnchecked();
                     }
                 }
@@ -347,12 +347,12 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     public Integer getDockerPort() {
-        return getAttribute(DOCKER_SSL_PORT);
+        return sensors().get(DOCKER_SSL_PORT);
     }
 
     @Override
     public String getDockerHostName() {
-        return getAttribute(DOCKER_HOST_NAME);
+        return sensors().get(DOCKER_HOST_NAME);
     }
 
     @Override
@@ -413,7 +413,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     public DockerHostLocation getDynamicLocation() {
-        return (DockerHostLocation) getAttribute(DYNAMIC_LOCATION);
+        return (DockerHostLocation) sensors().get(DYNAMIC_LOCATION);
     }
 
     @Override
@@ -422,13 +422,13 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     }
 
     @Override
-    public DynamicCluster getDockerContainerCluster() { return getAttribute(DOCKER_CONTAINER_CLUSTER); }
+    public DynamicCluster getDockerContainerCluster() { return sensors().get(DOCKER_CONTAINER_CLUSTER); }
 
     @Override
-    public JcloudsLocation getJcloudsLocation() { return getAttribute(JCLOUDS_DOCKER_LOCATION); }
+    public JcloudsLocation getJcloudsLocation() { return sensors().get(JCLOUDS_DOCKER_LOCATION); }
 
     @Override
-    public SubnetTier getSubnetTier() { return getAttribute(DOCKER_HOST_SUBNET_TIER); }
+    public SubnetTier getSubnetTier() { return sensors().get(DOCKER_HOST_SUBNET_TIER); }
 
     @Override
     public int execCommandStatus(String command) {
@@ -482,12 +482,12 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         String locationName = docker.getId() + "-" + getDockerHostName();
 
         String locationSpec = String.format(DockerResolver.DOCKER_HOST_MACHINE_SPEC, infrastructure.getId(), getId()) + String.format(":(name=\"%s\")", locationName);
-        setAttribute(LOCATION_SPEC, locationSpec);
+        sensors().set(LOCATION_SPEC, locationSpec);
 
         LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
         Location location = getManagementContext().getLocationRegistry().resolve(definition);
-        setAttribute(DYNAMIC_LOCATION, location);
-        setAttribute(LOCATION_NAME, location.getId());
+        sensors().set(DYNAMIC_LOCATION, location);
+        sensors().set(LOCATION_NAME, location.getId());
         getManagementContext().getLocationManager().manage(location);
 
         LOG.info("New Docker host location {} created", location);
@@ -505,8 +505,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             }
         }
 
-        setAttribute(DYNAMIC_LOCATION, null);
-        setAttribute(LOCATION_NAME, null);
+        sensors().set(DYNAMIC_LOCATION, null);
+        sensors().set(LOCATION_NAME, null);
     }
 
     @Override
@@ -516,9 +516,9 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         // Save the VLAN id for this machine
         MachineProvisioningLocation location = getInfrastructure().getDynamicLocation().getProvisioner();
         if (isJcloudsLocation(location, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME)) {
-            Entity sdnProviderAttribute = getAttribute(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER);
+            Entity sdnProviderAttribute = sensors().get(DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.SDN_PROVIDER);
             if (sdnProviderAttribute != null) {
-                Integer vlanId = sdnProviderAttribute.getAttribute(SdnProvider.VLAN_ID);
+                Integer vlanId = sdnProviderAttribute.sensors().get(SdnProvider.VLAN_ID);
                 if (vlanId == null) {
                     VirtualGuestApi api = ((JcloudsLocation) location).getComputeService().getContext().unwrapApi(SoftLayerApi.class).getVirtualGuestApi();
                     JcloudsSshMachineLocation machine = (JcloudsSshMachineLocation) getDriver().getLocation();
@@ -527,7 +527,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                     VirtualGuest guest = api.getVirtualGuest(serverId);
                     vlanId = guest.getPrimaryBackendNetworkComponent().getNetworkVlan().getId();
                     Integer vlanNumber = guest.getPrimaryBackendNetworkComponent().getNetworkVlan().getVlanNumber();
-                    ((EntityInternal) getAttribute(DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER)).setAttribute(SdnProvider.VLAN_ID, vlanId);
+                    ((EntityInternal) sensors().get(DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.SDN_PROVIDER)).sensors().set(SdnProvider.VLAN_ID, vlanId);
                     LOG.debug("Recorded VLAN #{} with id {} for server id {}: {}", new Object[] { vlanNumber, vlanId, serverId, this });
                 } else {
                     LOG.debug("Found VLAN {}: {}", new Object[] { vlanId, this });
@@ -538,8 +538,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         Integer dockerPort = getDockerPort();
         boolean tlsEnabled = true;
         if (DockerUtils.isSdnProvider(this, "CalicoNetwork")) {
-            dockerPort = getAttribute(DockerHost.DOCKER_INFRASTRUCTURE)
-                    .getAttribute(DockerInfrastructure.SDN_PROVIDER)
+            dockerPort = sensors().get(DockerHost.DOCKER_INFRASTRUCTURE)
+                    .sensors().get(DockerInfrastructure.SDN_PROVIDER)
                     .config().get(CalicoNode.POWERSTRIP_PORT);
             tlsEnabled = false;
         }
@@ -553,7 +553,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             getMachine().copyTo(ResourceUtils.create().getResourceFromUrl(config().get(DockerInfrastructure.DOCKER_CA_KEY_PATH)), "ca-key.pem");
             getMachine().copyTo(ResourceUtils.create().getResourceFromUrl("classpath://brooklyn/entity/container/docker/create-certs.sh"), "create-certs.sh");
             getMachine().execCommands("createCertificates",
-                    ImmutableList.of("chmod 755 create-certs.sh", "./create-certs.sh " + getAttribute(ADDRESS)));
+                    ImmutableList.of("chmod 755 create-certs.sh", "./create-certs.sh " + sensors().get(ADDRESS)));
             certPath = Os.mergePaths(Os.tmp(), getId() + "-cert.pem");
             getMachine().copyFrom("client-cert.pem", certPath);
             keyPath = Os.mergePaths(Os.tmp(), getId() + "-key.pem");
@@ -568,7 +568,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                         .put("credential", keyPath)
                         .put(ComputeServiceProperties.IMAGE_LOGIN_USER, "root:" + getPassword())
                         .build());
-        setAttribute(JCLOUDS_DOCKER_LOCATION, jcloudsLocation);
+        sensors().set(JCLOUDS_DOCKER_LOCATION, jcloudsLocation);
 
         DockerPortForwarder portForwarder = new DockerPortForwarder();
         portForwarder.injectManagementContext(getManagementContext());
@@ -578,7 +578,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 .configure(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL));
         Entities.manage(subnetTier);
         subnetTier.start(ImmutableList.of(found.get()));
-        setAttribute(DOCKER_HOST_SUBNET_TIER, subnetTier);
+        sensors().set(DOCKER_HOST_SUBNET_TIER, subnetTier);
 
         Map<String, ?> flags = MutableMap.<String, Object>builder()
                 .putAll(config().get(LOCATION_FLAGS))
@@ -591,13 +591,13 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     public void postStart() {
-        ((EntityLocal) getAttribute(DOCKER_CONTAINER_CLUSTER)).setAttribute(SERVICE_UP, Boolean.TRUE);
+        ((EntityLocal) sensors().get(DOCKER_CONTAINER_CLUSTER)).sensors().set(SERVICE_UP, Boolean.TRUE);
 
-        if (Boolean.TRUE.equals(getAttribute(DOCKER_INFRASTRUCTURE).config().get(SdnAttributes.SDN_ENABLE))) {
+        if (Boolean.TRUE.equals(sensors().get(DOCKER_INFRASTRUCTURE).config().get(SdnAttributes.SDN_ENABLE))) {
             LOG.info("Waiting on SDN agent");
             SdnAgent agent = Entities.attributeSupplierWhenReady(this, SdnAgent.SDN_AGENT).get();
             Entities.waitForServiceUp(agent);
-            LOG.info("SDN agent running: " + agent.getAttribute(SERVICE_UP));
+            LOG.info("SDN agent running: " + agent.sensors().get(SERVICE_UP));
         }
 
         String imageId = config().get(DOCKER_IMAGE_ID);
@@ -606,10 +606,10 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             String dockerfileUrl = config().get(DockerInfrastructure.DOCKERFILE_URL);
             String imageName = DockerUtils.imageName(this, dockerfileUrl);
             imageId = buildImage(dockerfileUrl, imageName, config().get(DockerHost.DOCKER_USE_SSH));
-            setAttribute(DOCKER_IMAGE_NAME, imageName);
+            sensors().set(DOCKER_IMAGE_NAME, imageName);
         }
 
-        setAttribute(DOCKER_IMAGE_ID, imageId);
+        sensors().set(DOCKER_IMAGE_ID, imageId);
 
         scan = scanner();
     }
@@ -646,7 +646,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     public void preStop() {
         if (scan != null && scan.isActivated()) scan.stop();
 
-        SdnAgent agent = getAttribute(SdnAgent.SDN_AGENT);
+        SdnAgent agent = sensors().get(SdnAgent.SDN_AGENT);
         if (agent != null) {
             // Avoid DockerHost -> SdnAgent -> DockerHost stop recursion by invoking
             // the effector instead of agent.stop().
@@ -698,7 +698,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                     DockerContainer added = getDockerContainerCluster().addChild(containerSpec);
                     Entities.manage(added);
                     getDockerContainerCluster().addMember(added);
-                    ((EntityLocal) added).setAttribute(DockerContainer.CONTAINER_ID, containerId);
+                    ((EntityLocal) added).sensors().set(DockerContainer.CONTAINER_ID, containerId);
                     added.start(ImmutableList.of(getDynamicLocation().getMachine()));
                 }
             }

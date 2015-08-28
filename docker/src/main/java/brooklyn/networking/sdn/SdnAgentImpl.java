@@ -80,18 +80,18 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
 
     @Override
     public DockerHost getDockerHost() {
-        return getAttribute(DOCKER_HOST);
+        return sensors().get(DOCKER_HOST);
     }
 
     @Override
     public void preStart() {
-        InetAddress address = getAttribute(SDN_PROVIDER).getNextAgentAddress(getId());
-        setAttribute(SDN_AGENT_ADDRESS, address);
+        InetAddress address = sensors().get(SDN_PROVIDER).getNextAgentAddress(getId());
+        sensors().set(SDN_AGENT_ADDRESS, address);
     }
 
     @Override
     public void postStart() {
-        ((EntityLocal) getDockerHost()).setAttribute(SDN_AGENT, this);
+        ((EntityLocal) getDockerHost()).sensors().set(SDN_AGENT, this);
     }
 
     @Override
@@ -102,7 +102,7 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
 
     @Override
     public InetAddress attachNetwork(String containerId, final String networkId) {
-        final SdnProvider provider = getAttribute(SDN_PROVIDER);
+        final SdnProvider provider = sensors().get(SDN_PROVIDER);
         boolean createNetwork = false;
         Cidr subnetCidr = null;
         synchronized (provider.getNetworkMutex()) {
@@ -119,9 +119,9 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
                     .configure(VirtualNetwork.NETWORK_CIDR, subnetCidr);
 
             // Start and then add this virtual network as a child of SDN_NETWORKS
-            VirtualNetwork network = provider.getAttribute(SdnProvider.SDN_NETWORKS).addChild(networkSpec);
+            VirtualNetwork network = provider.sensors().get(SdnProvider.SDN_NETWORKS).addChild(networkSpec);
             Entities.manage(network);
-            Entities.start(network, Collections.singleton(((DockerInfrastructure) provider.getAttribute(SdnProvider.DOCKER_INFRASTRUCTURE)).getDynamicLocation()));
+            Entities.start(network, Collections.singleton(((DockerInfrastructure) provider.sensors().get(SdnProvider.DOCKER_INFRASTRUCTURE)).getDynamicLocation()));
             Entities.waitForServiceUp(network);
         } else {
             Task<Boolean> lookup = TaskBuilder.<Boolean> builder()
@@ -133,7 +133,7 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
                                     .every(Duration.TEN_SECONDS)
                                     .until(new Callable<Boolean>() {
                                         public Boolean call() {
-                                            Optional<Entity> found = Iterables.tryFind(provider.getAttribute(SdnProvider.SDN_NETWORKS).getMembers(),
+                                            Optional<Entity> found = Iterables.tryFind(provider.sensors().get(SdnProvider.SDN_NETWORKS).getMembers(),
                                                     EntityPredicates.attributeEqualTo(VirtualNetwork.NETWORK_ID, networkId));
                                             return found.isPresent();
                                         }
@@ -155,7 +155,7 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
         LOG.info("Attached container ID {} to {}: {}", new Object[] { containerId, networkId,  address.getHostAddress() });
 
         // Rescan SDN network groups for containers
-        DynamicGroup network = (DynamicGroup) Iterables.find(provider.getAttribute(SdnProvider.SDN_APPLICATIONS).getMembers(),
+        DynamicGroup network = (DynamicGroup) Iterables.find(provider.sensors().get(SdnProvider.SDN_APPLICATIONS).getMembers(),
                 EntityPredicates.attributeEqualTo(VirtualNetwork.NETWORK_ID, networkId));
         network.rescanEntities();
 
@@ -164,16 +164,16 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
 
     @Override
     public String provisionNetwork(VirtualNetwork network) {
-        String networkId = network.getAttribute(VirtualNetwork.NETWORK_ID);
+        String networkId = network.sensors().get(VirtualNetwork.NETWORK_ID);
 
         // Record the network CIDR being provisioned, allocating if required
         Cidr subnetCidr = network.config().get(VirtualNetwork.NETWORK_CIDR);
         if (subnetCidr == null) {
-            subnetCidr = getAttribute(SDN_PROVIDER).getNextSubnetCidr(networkId);
+            subnetCidr = sensors().get(SDN_PROVIDER).getNextSubnetCidr(networkId);
         } else {
-            getAttribute(SDN_PROVIDER).recordSubnetCidr(networkId, subnetCidr);
+            sensors().get(SDN_PROVIDER).recordSubnetCidr(networkId, subnetCidr);
         }
-        ((EntityLocal) network).setAttribute(VirtualNetwork.NETWORK_CIDR, subnetCidr);
+        ((EntityLocal) network).sensors().set(VirtualNetwork.NETWORK_CIDR, subnetCidr);
 
         // Create the netwoek using the SDN driver
         getDriver().createSubnet(network.getId(), networkId, subnetCidr);

@@ -116,8 +116,8 @@ public class ContainerHeadroomEnricher extends AbstractEnricher {
         }
 
         // Calculate cluster state
-        Integer containers = entity.getAttribute(DockerInfrastructure.DOCKER_CONTAINER_COUNT);
-        Integer hosts = entity.getAttribute(DockerInfrastructure.DOCKER_HOST_COUNT);
+        Integer containers = entity.sensors().get(DockerInfrastructure.DOCKER_CONTAINER_COUNT);
+        Integer hosts = entity.sensors().get(DockerInfrastructure.DOCKER_HOST_COUNT);
         if (containers == null || hosts == null) return;
         int possible = maxContainers * hosts;
         int available = possible - containers;

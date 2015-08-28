@@ -40,21 +40,21 @@ public class EtcdNodeImpl extends SoftwareProcessImpl implements EtcdNode {
        Entity cluster = getParent();
 
        if (cluster instanceof EtcdCluster) {
-           setAttribute(ETCD_CLUSTER, cluster);
+           sensors().set(ETCD_CLUSTER, cluster);
            String clusterName = cluster.config().get(EtcdCluster.CLUSTER_NAME);
            if (Strings.isBlank(nodeName)) nodeName = clusterName;
-           AtomicInteger nodeId = cluster.getAttribute(EtcdCluster.NODE_ID);
+           AtomicInteger nodeId = cluster.sensors().get(EtcdCluster.NODE_ID);
            nodeName += nodeId.incrementAndGet();
        } else {
-           setAttribute(EtcdNode.ETCD_NODE_HAS_JOINED_CLUSTER, Boolean.TRUE);
+           sensors().set(EtcdNode.ETCD_NODE_HAS_JOINED_CLUSTER, Boolean.TRUE);
        }
 
-       setAttribute(ETCD_NODE_NAME, Strings.isBlank(nodeName) ? getId() : nodeName);
+       sensors().set(ETCD_NODE_NAME, Strings.isBlank(nodeName) ? getId() : nodeName);
        LOG.info("Starting {} node: {}", cluster instanceof EtcdCluster ? "clustered" : "single", getNodeName());
     }
 
     protected String getNodeName() {
-        return getAttribute(EtcdNode.ETCD_NODE_NAME);
+        return sensors().get(EtcdNode.ETCD_NODE_NAME);
     }
 
     @Override
@@ -90,7 +90,7 @@ public class EtcdNodeImpl extends SoftwareProcessImpl implements EtcdNode {
 
     @Override
     public boolean hasJoinedCluster() {
-        return Boolean.TRUE.equals(getAttribute(EtcdNode.ETCD_NODE_HAS_JOINED_CLUSTER));
+        return Boolean.TRUE.equals(sensors().get(EtcdNode.ETCD_NODE_HAS_JOINED_CLUSTER));
     }
 
     static {

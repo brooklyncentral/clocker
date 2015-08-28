@@ -63,9 +63,9 @@ public class EtcdClusterImpl extends DynamicClusterImpl implements EtcdCluster {
     public void init() {
         super.init();
 
-        setAttribute(NODE_ID, new AtomicInteger(0));
+        sensors().set(NODE_ID, new AtomicInteger(0));
         ConfigToAttributes.apply(this, ETCD_NODE_SPEC);
-        config().set(MEMBER_SPEC, getAttribute(ETCD_NODE_SPEC));
+        config().set(MEMBER_SPEC, sensors().get(ETCD_NODE_SPEC));
     }
 
     @Override
@@ -81,7 +81,7 @@ public class EtcdClusterImpl extends DynamicClusterImpl implements EtcdCluster {
                 EntityPredicates.attributeEqualTo(EtcdNode.ETCD_NODE_HAS_JOINED_CLUSTER, true),
                 EntityPredicates.attributeEqualTo(Startable.SERVICE_UP, true)));
         if (config().get(Cluster.INITIAL_SIZE) == 0 || anyNode.isPresent()) {
-            setAttribute(Startable.SERVICE_UP, true);
+            sensors().set(Startable.SERVICE_UP, true);
             ServiceStateLogic.setExpectedState(this, Lifecycle.RUNNING);
         } else {
             log.warn("No Etcd nodes are found on the cluster: {}. Initialization Failed", getId());
@@ -105,7 +105,7 @@ public class EtcdClusterImpl extends DynamicClusterImpl implements EtcdCluster {
         synchronized (mutex) {
             log.debug("For {}, considering membership of {} which is in locations {}", new Object[]{ this, member, member.getLocations() });
 
-            Map<Entity, String> nodes = getAttribute(ETCD_CLUSTER_NODES);
+            Map<Entity, String> nodes = sensors().get(ETCD_CLUSTER_NODES);
             if (belongsInServerPool(member)) {
                 if (nodes == null) {
                     nodes = Maps.newLinkedHashMap();
@@ -118,15 +118,15 @@ public class EtcdClusterImpl extends DynamicClusterImpl implements EtcdCluster {
                         .andWaitForSuccess();
 
                 // Check for first node in the cluster.
-                Entity firstNode = getAttribute(DynamicCluster.FIRST);
+                Entity firstNode = sensors().get(DynamicCluster.FIRST);
                 if (member.equals(firstNode)) {
                     nodes.put(member, name);
                     recalculateClusterAddresses(nodes);
                     log.info("Adding first node {}: {}; {} to cluster", new Object[] { this, member, name });
-                    ((EntityInternal) member).setAttribute(EtcdNode.ETCD_NODE_HAS_JOINED_CLUSTER, Boolean.TRUE);
+                    ((EntityInternal) member).sensors().set(EtcdNode.ETCD_NODE_HAS_JOINED_CLUSTER, Boolean.TRUE);
                 } else {
                     int retry = 3; // TODO use a configurable Repeater instead?
-                    while (retry --> 0 && member.getAttribute(EtcdNode.ETCD_NODE_HAS_JOINED_CLUSTER) == null && !nodes.containsKey(member)) {
+                    while (retry --> 0 && member.sensors().get(EtcdNode.ETCD_NODE_HAS_JOINED_CLUSTER) == null && !nodes.containsKey(member)) {
                         Optional<Entity> anyNodeInCluster = Iterables.tryFind(nodes.keySet(), Predicates.and(
                                 Predicates.instanceOf(EtcdNode.class),
                                 EntityPredicates.attributeEqualTo(EtcdNode.ETCD_NODE_HAS_JOINED_CLUSTER, Boolean.TRUE)));
@@ -138,7 +138,7 @@ public class EtcdClusterImpl extends DynamicClusterImpl implements EtcdCluster {
                             nodes.put(member, name);
                             recalculateClusterAddresses(nodes);
                             log.info("Adding node {}: {}; {} to cluster", new Object[] { this, member, name });
-                            ((EntityInternal) member).setAttribute(EtcdNode.ETCD_NODE_HAS_JOINED_CLUSTER, Boolean.TRUE);
+                            ((EntityInternal) member).sensors().set(EtcdNode.ETCD_NODE_HAS_JOINED_CLUSTER, Boolean.TRUE);
                         } else {
                             log.info("Waiting for first node in cluster {}", this);
                             Time.sleep(Duration.seconds(15));
@@ -157,7 +157,7 @@ public class EtcdClusterImpl extends DynamicClusterImpl implements EtcdCluster {
                     nodes.remove(member);
                     recalculateClusterAddresses(nodes);
                     log.info("Removing node {}: {}; {} from cluster", new Object[] { this, member, getNodeName(member) });
-                    ((EntityInternal) member).setAttribute(EtcdNode.ETCD_NODE_HAS_JOINED_CLUSTER, Boolean.FALSE);
+                    ((EntityInternal) member).sensors().set(EtcdNode.ETCD_NODE_HAS_JOINED_CLUSTER, Boolean.FALSE);
                 }
             }
 
@@ -173,12 +173,12 @@ public class EtcdClusterImpl extends DynamicClusterImpl implements EtcdCluster {
                 addresses.put(getNodeName(entity), getNodeAddress(entity));
             }
         }
-        setAttribute(ETCD_CLUSTER_NODES, nodes);
-        setAttribute(NODE_LIST, Joiner.on(",").withKeyValueSeparator("=").join(addresses));
+        sensors().set(ETCD_CLUSTER_NODES, nodes);
+        sensors().set(NODE_LIST, Joiner.on(",").withKeyValueSeparator("=").join(addresses));
     }
 
     protected boolean belongsInServerPool(Entity member) {
-        if (member.getAttribute(Attributes.HOSTNAME) == null) {
+        if (member.sensors().get(Attributes.HOSTNAME) == null) {
             log.debug("Members of {}, checking {}, eliminating because hostname not yet set", this, member);
             return false;
         }
@@ -191,11 +191,11 @@ public class EtcdClusterImpl extends DynamicClusterImpl implements EtcdCluster {
     }
 
     private String getNodeName(Entity node) {
-        return node.getAttribute(EtcdNode.ETCD_NODE_NAME);
+        return node.sensors().get(EtcdNode.ETCD_NODE_NAME);
     }
 
     private String getNodeAddress(Entity node) {
-        return "http://" + node.getAttribute(Attributes.SUBNET_ADDRESS) + ":" + node.getAttribute(EtcdNode.ETCD_PEER_PORT);
+        return "http://" + node.sensors().get(Attributes.SUBNET_ADDRESS) + ":" + node.sensors().get(EtcdNode.ETCD_PEER_PORT);
     }
 
     public static class MemberTrackingPolicy extends AbstractMembershipTrackingPolicy {

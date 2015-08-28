@@ -84,9 +84,9 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     @Override
     public void customize() {
-        String netstat = getEntity().getAttribute(SdnVeAgent.DOCKER_HOST).execCommand("netstat -rn");
+        String netstat = getEntity().sensors().get(SdnVeAgent.DOCKER_HOST).execCommand("netstat -rn");
         Iterable<String> routes = Iterables.filter(Splitter.on(CharMatcher.anyOf("\r\n")).split(netstat), StringPredicates.containsLiteral("eth0"));
-        String subnetAddress = getEntity().getAttribute(SoftwareProcess.SUBNET_ADDRESS);
+        String subnetAddress = getEntity().sensors().get(SoftwareProcess.SUBNET_ADDRESS);
         String address = Strings.getFirstWord(Iterables.find(routes, Predicates.and(StringPredicates.containsLiteral("255.255.255."),
                 StringPredicates.containsLiteral(subnetAddress.substring(0, subnetAddress.lastIndexOf('.'))))));
         String gateway = Strings.getFirstWordAfter(Iterables.find(routes, StringPredicates.containsLiteral("10.0.0.0")), "10.0.0.0");
@@ -96,7 +96,7 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
 
         // Add the DOVE bridge device and configure it appropriately
         commands.add(sudo("brctl addbr br_mgmt_1"));
-        commands.add(sudo(String.format("ifconfig br_mgmt_1 %s netmask 255.255.255.224", getEntity().getAttribute(SdnAgent.SDN_AGENT_ADDRESS).getHostAddress())));
+        commands.add(sudo(String.format("ifconfig br_mgmt_1 %s netmask 255.255.255.224", getEntity().sensors().get(SdnAgent.SDN_AGENT_ADDRESS).getHostAddress())));
         commands.add(sudo("ifconfig eth0 0.0.0.0"));
         commands.add(sudo(String.format("ifconfig br_mgmt_1:1 %s netmask 255.255.255.192", address)));
         commands.add(sudo("brctl addif br_mgmt_1 eth0"));
@@ -169,7 +169,7 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
         String command = String.format("curl -i -u %s:%s -X POST -H \"Content-Type: application/json\" -d @- http://%s/%s < %s",
                 getEntity().config().get(SdnVeNetwork.DOVE_CONTROLLER_USERNAME), getEntity().config().get(SdnVeNetwork.DOVE_CONTROLLER_PASSWORD),
                 getEntity().config().get(SdnVeNetwork.DOVE_CONTROLLER).getHostAddress(), apiPath, jsonData);
-        String output = getEntity().getAttribute(SdnVeAgent.DOCKER_HOST).execCommand(command);
+        String output = getEntity().sensors().get(SdnVeAgent.DOCKER_HOST).execCommand(command);
         return output;
     }
 
@@ -177,7 +177,7 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
         String command = String.format("curl -s -u %s:%s http://%s/networks",
                 getEntity().config().get(SdnVeNetwork.DOVE_CONTROLLER_USERNAME), getEntity().config().get(SdnVeNetwork.DOVE_CONTROLLER_PASSWORD),
                 getEntity().config().get(SdnVeNetwork.DOVE_CONTROLLER).getHostAddress());
-        String output = getEntity().getAttribute(SdnVeAgent.DOCKER_HOST).execCommand(command);
+        String output = getEntity().sensors().get(SdnVeAgent.DOCKER_HOST).execCommand(command);
         JsonParser parser = new JsonParser();
         JsonElement json = parser.parse(output);
         JsonArray networks = json.getAsJsonObject().get("networks").getAsJsonArray();
@@ -187,8 +187,8 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
             int domainId = network.get("domain_id").getAsInt();
             String name = network.get("name").getAsString();
             if (name.endsWith(networkName)) {
-                getEntity().setAttribute(SdnVeAgent.DOVE_BRIDGE_ID, networkId);
-                getEntity().setAttribute(SdnVeAgent.DOVE_DOMAIN_ID, domainId);
+                getEntity().sensors().set(SdnVeAgent.DOVE_BRIDGE_ID, networkId);
+                getEntity().sensors().set(SdnVeAgent.DOVE_DOMAIN_ID, domainId);
                 return networkId;
             }
         }
@@ -197,14 +197,14 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     private void attachPublicAddress(String containerId, InetAddress privateAddress, InetAddress publicAddress) {
         Map<String, String> createSnatRulesData = ImmutableMap.<String, String>builder()
-                .put("networkId", Integer.toString(getEntity().getAttribute(SdnVeAgent.DOVE_BRIDGE_ID)))
-                .put("domainId", Integer.toString(getEntity().getAttribute(SdnVeAgent.DOVE_DOMAIN_ID)))
+                .put("networkId", Integer.toString(getEntity().sensors().get(SdnVeAgent.DOVE_BRIDGE_ID)))
+                .put("domainId", Integer.toString(getEntity().sensors().get(SdnVeAgent.DOVE_DOMAIN_ID)))
                 .build();
         String createSnatRules = copyJsonTemplate("create_snat_rules.json", createSnatRulesData);
         callRestApi(createSnatRules, "api/dove/dgw/service/ext-gw");
 
         Map<String, String> createForwarduingRuleData = ImmutableMap.<String, String>builder()
-                .put("networkId", Integer.toString(getEntity().getAttribute(SdnVeAgent.DOVE_BRIDGE_ID)))
+                .put("networkId", Integer.toString(getEntity().sensors().get(SdnVeAgent.DOVE_BRIDGE_ID)))
                 .put("sourceIp", privateAddress.getHostAddress())
                 .put("targetIp", publicAddress.getHostAddress())
                 .build();
@@ -222,13 +222,13 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
 
         Map<String, String> createBridgeData = ImmutableMap.<String, String>builder()
                 .put("networkId", Integer.toString(networkId))
-                .put("agentAddress", getEntity().getAttribute(SdnAgent.SDN_AGENT_ADDRESS).getHostAddress())
+                .put("agentAddress", getEntity().sensors().get(SdnAgent.SDN_AGENT_ADDRESS).getHostAddress())
                 .build();
         String createBridge = copyJsonTemplate("create_bridge.json", createBridgeData);
         String createBridgeOutput = callRestApi(createBridge, "api/dove/vrmgr/vnids/vm_mgr");
         Preconditions.checkState(Strings.containsLiteral(createBridgeOutput, "successfully"), "Failed to export network %s", networkId);
 
-        String bridge = getEntity().getAttribute(SdnVeAgent.DOCKER_HOST).execCommand(sudo("brctl show"));
+        String bridge = getEntity().sensors().get(SdnVeAgent.DOCKER_HOST).execCommand(sudo("brctl show"));
         String doveBridge = Strings.getFirstWordAfter(bridge, "dovebr_");
         if (Integer.valueOf(doveBridge) != networkId) {
             throw new IllegalStateException("Incorrect network ID found: " + doveBridge);
@@ -236,7 +236,7 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
         LOG.debug("Added bridge: " + doveBridge);
 
         LOG.info("SDN agent restarting Docker service");
-        String restart = getEntity().getAttribute(SdnVeAgent.DOCKER_HOST).execCommand(sudo("service docker restart"));
+        String restart = getEntity().sensors().get(SdnVeAgent.DOCKER_HOST).execCommand(sudo("service docker restart"));
         Iterable<String> successes = Iterables.filter(Splitter.on(CharMatcher.anyOf("\r\n")).split(restart), StringPredicates.containsLiteral("OK"));
         if (Iterables.size(successes) != 2) {
             throw new IllegalStateException("Failed to restart Docker Engine service: " + restart);
@@ -245,7 +245,7 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     @Override
     public boolean isRunning() {
-        String pingData = getEntity().getAttribute(SdnVeAgent.DOCKER_HOST).execCommand(String.format("ping -c 10 -q %s",
+        String pingData = getEntity().sensors().get(SdnVeAgent.DOCKER_HOST).execCommand(String.format("ping -c 10 -q %s",
                 getEntity().config().get(SdnVeNetwork.DOVE_CONTROLLER).getHostAddress()));
         Double packetLoss = Integer.valueOf(Strings.getFirstWordAfter(pingData, "packets transmitted,")) / 10d;
         // Maybe save as attribute? Check valididty of this reault...
@@ -281,11 +281,11 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
     public InetAddress attachNetwork(String containerId, String subnetId) {
         Tasks.setBlockingDetails(String.format("Attach %s to %s", containerId, subnetId));
         try {
-            InetAddress address = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getNextContainerAddress(subnetId);
+            InetAddress address = getEntity().sensors().get(SdnAgent.SDN_PROVIDER).getNextContainerAddress(subnetId);
 
             String networkScript = Urls.mergePaths(getRunDir(), "network.sh");
-            Integer bridgeId = getEntity().getAttribute(SdnVeAgent.DOVE_BRIDGE_ID);
-            Cidr cidr = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getSubnetCidr(subnetId);
+            Integer bridgeId = getEntity().sensors().get(SdnVeAgent.DOVE_BRIDGE_ID);
+            Cidr cidr = getEntity().sensors().get(SdnAgent.SDN_PROVIDER).getSubnetCidr(subnetId);
 
             /* ./setup_network_v2.sh containerid network_1 12345678 fa:16:50:00:01:e1 50.0.0.2/24 50.0.0.1 8064181 */
             String command = String.format("%s %s %s %s fa:16:%02x:%02x:%02x:%02x %s/%d %s %d %s", networkScript,
@@ -300,7 +300,7 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
             getEntity().config().get(SdnVeAgent.DOCKER_HOST).execCommand(sudo(command));
 
             // Lookup the VirtualNetwork entity and check for special requirements (e.g. public address mapping)
-            Optional<Entity> found = Iterables.tryFind(getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getAttribute(SdnProvider.SDN_NETWORKS).getMembers(),
+            Optional<Entity> found = Iterables.tryFind(getEntity().sensors().get(SdnAgent.SDN_PROVIDER).sensors().get(SdnProvider.SDN_NETWORKS).getMembers(),
                     EntityPredicates.attributeEqualTo(VirtualNetwork.NETWORK_ID, subnetId));
             if (!found.isPresent()) {
                 throw new IllegalStateException(String.format("Cannot find virtual network entity for %s", subnetId));
@@ -308,20 +308,20 @@ public class SdnVeAgentSshDriver extends AbstractSoftwareProcessSshDriver implem
             VirtualNetwork network = (VirtualNetwork) found.get();
             if (Boolean.TRUE.equals(network.config().get(SdnVeAttributes.ENABLE_PUBLIC_ACCESS))) {
                 Cidr publicCidr = network.config().get(SdnVeAttributes.PUBLIC_CIDR);
-                getEntity().getAttribute(SdnVeAgent.SDN_PROVIDER).recordSubnetCidr(subnetId + ".public", publicCidr, -1);
-                InetAddress publicAddress = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getNextContainerAddress(subnetId + ".public");
+                getEntity().sensors().get(SdnVeAgent.SDN_PROVIDER).recordSubnetCidr(subnetId + ".public", publicCidr, -1);
+                InetAddress publicAddress = getEntity().sensors().get(SdnAgent.SDN_PROVIDER).getNextContainerAddress(subnetId + ".public");
                 attachPublicAddress(containerId, address, publicAddress);
-                Collection<Entity> containers = getEntity().getAttribute(SdnAgent.SDN_PROVIDER)
-                        .getAttribute(SdnProvider.DOCKER_INFRASTRUCTURE)
-                        .getAttribute(DockerInfrastructure.DOCKER_CONTAINER_FABRIC)
+                Collection<Entity> containers = getEntity().sensors().get(SdnAgent.SDN_PROVIDER)
+                        .sensors().get(SdnProvider.DOCKER_INFRASTRUCTURE)
+                        .sensors().get(DockerInfrastructure.DOCKER_CONTAINER_FABRIC)
                         .getMembers();
                 Optional<DockerContainer> container = Iterables.tryFind(Iterables.filter(containers, DockerContainer.class),
                         EntityPredicates.attributeEqualTo(DockerContainer.CONTAINER_ID, containerId));
                 if (!container.isPresent()) {
                     throw new IllegalStateException(String.format("Cannot find container entity for %s", containerId));
                 }
-                ((EntityLocal) container.get()).setAttribute(SdnVeAttributes.PUBLIC_CIDR, publicCidr);
-                ((EntityLocal) container.get()).setAttribute(SdnVeAttributes.PUBLIC_ADDRESS, publicAddress);
+                ((EntityLocal) container.get()).sensors().set(SdnVeAttributes.PUBLIC_CIDR, publicCidr);
+                ((EntityLocal) container.get()).sensors().set(SdnVeAttributes.PUBLIC_ADDRESS, publicAddress);
             }
 
             return address;

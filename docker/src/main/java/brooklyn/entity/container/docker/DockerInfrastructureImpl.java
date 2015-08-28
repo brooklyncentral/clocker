@@ -97,8 +97,8 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         registerLocationResolver();
         super.init();
 
-        setAttribute(DOCKER_HOST_COUNTER, new AtomicInteger(0));
-        setAttribute(DOCKER_CONTAINER_COUNTER, new AtomicInteger(0));
+        sensors().set(DOCKER_HOST_COUNTER, new AtomicInteger(0));
+        sensors().set(DOCKER_CONTAINER_COUNTER, new AtomicInteger(0));
         int initialSize = config().get(DOCKER_HOST_CLUSTER_MIN_SIZE);
 
         Map<String, String> runtimeFiles = ImmutableMap.of();
@@ -165,7 +165,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         if (config().get(SDN_ENABLE) && config().get(SDN_PROVIDER_SPEC) != null) {
             Entity sdn = addChild(EntitySpec.create(config().get(SDN_PROVIDER_SPEC))
                     .configure(DockerAttributes.DOCKER_INFRASTRUCTURE, this));
-            setAttribute(SDN_PROVIDER, sdn);
+            sensors().set(SDN_PROVIDER, sdn);
 
             if (Entities.isManaged(this)) {
                 Entities.manage(sdn);
@@ -178,9 +178,9 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
             Entities.manage(buckets);
         }
 
-        setAttribute(DOCKER_HOST_CLUSTER, hosts);
-        setAttribute(DOCKER_CONTAINER_FABRIC, fabric);
-        setAttribute(DOCKER_APPLICATIONS, buckets);
+        sensors().set(DOCKER_HOST_CLUSTER, hosts);
+        sensors().set(DOCKER_CONTAINER_FABRIC, fabric);
+        sensors().set(DOCKER_APPLICATIONS, buckets);
 
         hosts.addEnricher(Enrichers.builder()
                 .aggregating(DockerHost.CPU_USAGE)
@@ -227,7 +227,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                     .configure(AutoScalerPolicy.RESIZE_DOWN_STABILIZATION_DELAY, Duration.FIVE_MINUTES));
         }
 
-        setAttribute(Attributes.MAIN_URI, URI.create("/clocker"));
+        sensors().set(Attributes.MAIN_URI, URI.create("/clocker"));
     }
 
     private void registerLocationResolver() {
@@ -250,7 +250,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
     }
 
     @Override
-    public DynamicCluster getDockerHostCluster() { return getAttribute(DOCKER_HOST_CLUSTER); }
+    public DynamicCluster getDockerHostCluster() { return sensors().get(DOCKER_HOST_CLUSTER); }
 
     @Override
     public List<Entity> getDockerContainerList() {
@@ -262,7 +262,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
     }
 
     @Override
-    public DynamicGroup getContainerFabric() { return getAttribute(DOCKER_CONTAINER_FABRIC); }
+    public DynamicGroup getContainerFabric() { return sensors().get(DOCKER_CONTAINER_FABRIC); }
 
     @Override
     public Integer resize(Integer desiredSize) {
@@ -279,7 +279,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
     @Override
     public DockerLocation getDynamicLocation() {
-        return (DockerLocation) getAttribute(DYNAMIC_LOCATION);
+        return (DockerLocation) sensors().get(DYNAMIC_LOCATION);
     }
 
     @Override
@@ -301,7 +301,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         }
 
         String locationSpec = String.format(DockerResolver.DOCKER_INFRASTRUCTURE_SPEC, getId()) + String.format(":(name=\"%s\")", locationName);
-        setAttribute(LOCATION_SPEC, locationSpec);
+        sensors().set(LOCATION_SPEC, locationSpec);
         LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
         Location location = getManagementContext().getLocationRegistry().resolve(definition);
         getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
@@ -309,11 +309,11 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
         ManagementContext.PropertiesReloadListener listener = DockerUtils.reloadLocationListener(getManagementContext(), definition);
         getManagementContext().addPropertiesReloadListener(listener);
-        setAttribute(Attributes.PROPERTIES_RELOAD_LISTENER, listener);
+        sensors().set(Attributes.PROPERTIES_RELOAD_LISTENER, listener);
 
-        setAttribute(LOCATION_DEFINITION, definition);
-        setAttribute(DYNAMIC_LOCATION, location);
-        setAttribute(LOCATION_NAME, location.getId());
+        sensors().set(LOCATION_DEFINITION, definition);
+        sensors().set(DYNAMIC_LOCATION, location);
+        sensors().set(LOCATION_NAME, location.getId());
 
         LOG.info("New Docker location {} created", location);
         return (DockerLocation) location;
@@ -324,7 +324,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         super.rebind();
 
         // Reload our location definition on rebind
-        ManagementContext.PropertiesReloadListener listener = getAttribute(Attributes.PROPERTIES_RELOAD_LISTENER);
+        ManagementContext.PropertiesReloadListener listener = sensors().get(Attributes.PROPERTIES_RELOAD_LISTENER);
         if (listener != null) {
             listener.reloaded();
         }
@@ -339,25 +339,25 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
             if (mgr.isManaged(location)) {
                 mgr.unmanage(location);
             }
-            final LocationDefinition definition = getAttribute(LOCATION_DEFINITION);
+            final LocationDefinition definition = sensors().get(LOCATION_DEFINITION);
             if (definition != null) {
                 getManagementContext().getLocationRegistry().removeDefinedLocation(definition.getId());
             }
         }
-        ManagementContext.PropertiesReloadListener listener = getAttribute(Attributes.PROPERTIES_RELOAD_LISTENER);
+        ManagementContext.PropertiesReloadListener listener = sensors().get(Attributes.PROPERTIES_RELOAD_LISTENER);
         if (listener != null) {
             getManagementContext().removePropertiesReloadListener(listener);
         }
 
-        setAttribute(LOCATION_DEFINITION, null);
-        setAttribute(DYNAMIC_LOCATION, null);
-        setAttribute(LOCATION_NAME, null);
+        sensors().set(LOCATION_DEFINITION, null);
+        sensors().set(DYNAMIC_LOCATION, null);
+        sensors().set(LOCATION_NAME, null);
     }
 
     @Override
     public void start(Collection<? extends Location> locations) {
         // TODO support multiple locations
-        setAttribute(SERVICE_UP, Boolean.FALSE);
+        sensors().set(SERVICE_UP, Boolean.FALSE);
 
         Location provisioner = Iterables.getOnlyElement(locations);
         LOG.info("Creating new DockerLocation wrapping {}", provisioner);
@@ -371,7 +371,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
         super.start(locations);
 
-        setAttribute(SERVICE_UP, Boolean.TRUE);
+        sensors().set(SERVICE_UP, Boolean.TRUE);
     }
 
     /**
@@ -379,7 +379,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
      */
     @Override
     public void stop() {
-        setAttribute(SERVICE_UP, Boolean.FALSE);
+        sensors().set(SERVICE_UP, Boolean.FALSE);
         Duration timeout = config().get(SHUTDOWN_TIMEOUT);
 
         // Find all applications and stop, blocking for up to five minutes until ended
@@ -398,7 +398,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         // Shutdown SDN if configured
         if (config().get(SDN_ENABLE)) {
             try {
-                Entity sdn = getAttribute(SDN_PROVIDER);
+                Entity sdn = sensors().get(SDN_PROVIDER);
                 LOG.debug("Stopping SDN: {}", sdn);
                 Entities.invokeEffector(this, sdn, Startable.STOP).get(timeout);
             } catch (Exception e) {
@@ -408,7 +408,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
         // Stop all Docker hosts in parallel
         try {
-            DynamicCluster hosts = getAttribute(DOCKER_HOST_CLUSTER);
+            DynamicCluster hosts = sensors().get(DOCKER_HOST_CLUSTER);
             LOG.debug("Stopping hosts: {}", Iterables.toString(hosts.getMembers()));
             Entities.invokeEffectorList(this, hosts.getMembers(), Startable.STOP).get(timeout);
         } catch (Exception e) {
