@@ -60,7 +60,7 @@ public class SdnAttributes {
 
         @Override
         public boolean apply(@Nullable Entity input) {
-            List<String> networks = input.getAttribute(SdnAttributes.ATTACHED_NETWORKS);
+            List<String> networks = input.sensors().get(SdnAttributes.ATTACHED_NETWORKS);
             if (networks != null) {
                 return networks.contains(id);
             } else {

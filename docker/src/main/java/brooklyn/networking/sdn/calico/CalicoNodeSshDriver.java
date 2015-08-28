@@ -88,8 +88,8 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     @Override
     public void launch() {
-        InetAddress address = getEntity().getAttribute(SdnAgent.SDN_AGENT_ADDRESS);
-        Boolean firstMember = getEntity().getAttribute(AbstractGroup.FIRST_MEMBER);
+        InetAddress address = getEntity().sensors().get(SdnAgent.SDN_AGENT_ADDRESS);
+        Boolean firstMember = getEntity().sensors().get(AbstractGroup.FIRST_MEMBER);
         LOG.info("Launching {} calico service at {}", Boolean.TRUE.equals(firstMember) ? "first" : "next", address.getHostAddress());
 
         newScript(MutableMap.of(USE_PID_FILE, false), LAUNCHING)
@@ -123,20 +123,20 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
     /** For Calico we use profiles to group containers in networks and add the required IP address to the eth1 calico interface. */
     @Override
     public InetAddress attachNetwork(String containerId, String subnetId) {
-        InetAddress address = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getNextContainerAddress(subnetId);
+        InetAddress address = getEntity().sensors().get(SdnAgent.SDN_PROVIDER).getNextContainerAddress(subnetId);
 
         // Run some commands to get information about the container network namespace
-        String ipAddrOutput = getEntity().getAttribute(SdnAgent.DOCKER_HOST).execCommand(sudo("ip addr show dev docker0 scope global label docker0"));
+        String ipAddrOutput = getEntity().sensors().get(SdnAgent.DOCKER_HOST).execCommand(sudo("ip addr show dev docker0 scope global label docker0"));
         String dockerIp = Strings.getFirstWordAfter(ipAddrOutput.replace('/', ' '), "inet");
-        String dockerPid = Strings.trimEnd(getEntity().getAttribute(SdnAgent.DOCKER_HOST).runDockerCommand("inspect -f '{{.State.Pid}}' " + containerId));
-        Cidr subnetCidr = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getSubnetCidr(subnetId);
-        InetAddress agentAddress = getEntity().getAttribute(SdnAgent.SDN_AGENT_ADDRESS);
+        String dockerPid = Strings.trimEnd(getEntity().sensors().get(SdnAgent.DOCKER_HOST).runDockerCommand("inspect -f '{{.State.Pid}}' " + containerId));
+        Cidr subnetCidr = getEntity().sensors().get(SdnAgent.SDN_PROVIDER).getSubnetCidr(subnetId);
+        InetAddress agentAddress = getEntity().sensors().get(SdnAgent.SDN_AGENT_ADDRESS);
 
         // Determine whether we are attatching the container to the initial application network
         boolean initial = false;
-        for (Entity container : getEntity().getAttribute(SdnAgent.DOCKER_HOST).getDockerContainerList()) {
-            if (containerId.equals(container.getAttribute(DockerContainer.CONTAINER_ID))) {
-                Entity running = container.getAttribute(DockerContainer.ENTITY);
+        for (Entity container : getEntity().sensors().get(SdnAgent.DOCKER_HOST).getDockerContainerList()) {
+            if (containerId.equals(container.sensors().get(DockerContainer.CONTAINER_ID))) {
+                Entity running = container.sensors().get(DockerContainer.ENTITY);
                 String applicationId = running.getApplicationId();
                 if (subnetId.equals(applicationId)) {
                     initial = true;
@@ -188,7 +188,7 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
     @Override
     public Map<String, String> getShellEnvironment() {
         Entity etcdNode = getEntity().config().get(CalicoNode.ETCD_NODE);
-        HostAndPort etcdAuthority = HostAndPort.fromParts(etcdNode.getAttribute(Attributes.SUBNET_ADDRESS), etcdNode.getAttribute(EtcdNode.ETCD_CLIENT_PORT));
+        HostAndPort etcdAuthority = HostAndPort.fromParts(etcdNode.sensors().get(Attributes.SUBNET_ADDRESS), etcdNode.sensors().get(EtcdNode.ETCD_CLIENT_PORT));
         Map<String, String> environment = MutableMap.copyOf(super.getShellEnvironment());
         environment.put("ETCD_AUTHORITY", etcdAuthority.toString());
         return environment;

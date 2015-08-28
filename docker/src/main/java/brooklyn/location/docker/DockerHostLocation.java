@@ -140,11 +140,11 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             entity.config().set(SubnetTier.PORT_FORWARDING_MANAGER, dockerHost.getSubnetTier().getPortForwardManager());
             entity.config().set(SubnetTier.PORT_FORWARDER, portForwarder);
             if (getOwner().config().get(SdnAttributes.SDN_ENABLE)) {
-                SdnAgent agent = getOwner().getAttribute(SdnAgent.SDN_AGENT);
+                SdnAgent agent = getOwner().sensors().get(SdnAgent.SDN_AGENT);
                 if (agent == null) {
                     throw new IllegalStateException("SDN agent entity on " + getOwner() + " is null");
                 }
-                Map<String, Cidr> networks = agent.getAttribute(SdnAgent.SDN_PROVIDER).getAttribute(SdnProvider.SUBNETS);
+                Map<String, Cidr> networks = agent.sensors().get(SdnAgent.SDN_PROVIDER).sensors().get(SdnProvider.SUBNETS);
                 entity.config().set(SubnetTier.SUBNET_CIDR, networks.get(entity.getApplicationId()));
             } else {
                 entity.config().set(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL);
@@ -195,7 +195,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                     imageId = dockerHost.buildImage(dockerfile, imageName, useSsh);
                 }
                 if (Strings.isBlank(imageId)) {
-                    imageId = getOwner().getAttribute(DockerHost.DOCKER_IMAGE_ID);
+                    imageId = getOwner().sensors().get(DockerHost.DOCKER_IMAGE_ID);
                 }
 
                 // Tag the image name and create its latch
@@ -231,16 +231,16 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             DockerContainer dockerContainer = (DockerContainer) added;
 
             // Save the container attributes
-            ((EntityLocal) dockerContainer).setAttribute(DockerContainer.IMAGE_ID, imageId);
-            ((EntityLocal) dockerContainer).setAttribute(DockerContainer.IMAGE_NAME, imageName);
-            ((EntityLocal) dockerContainer).setAttribute(DockerContainer.HARDWARE_ID, hardwareId);
+            ((EntityLocal) dockerContainer).sensors().set(DockerContainer.IMAGE_ID, imageId);
+            ((EntityLocal) dockerContainer).sensors().set(DockerContainer.IMAGE_NAME, imageName);
+            ((EntityLocal) dockerContainer).sensors().set(DockerContainer.HARDWARE_ID, hardwareId);
 
             // record SDN application network details
             if (getOwner().config().get(SdnAttributes.SDN_ENABLE)) {
-                SdnAgent agent = getOwner().getAttribute(SdnAgent.SDN_AGENT);
-                Cidr applicationCidr =  agent.getAttribute(SdnAgent.SDN_PROVIDER).getSubnetCidr(entity.getApplicationId());
-                ((EntityLocal) entity).setAttribute(SdnProvider.APPLICATION_CIDR, applicationCidr);
-                ((EntityLocal) dockerContainer).setAttribute(SdnProvider.APPLICATION_CIDR, applicationCidr);
+                SdnAgent agent = getOwner().sensors().get(SdnAgent.SDN_AGENT);
+                Cidr applicationCidr =  agent.sensors().get(SdnAgent.SDN_PROVIDER).getSubnetCidr(entity.getApplicationId());
+                ((EntityLocal) entity).sensors().set(SdnProvider.APPLICATION_CIDR, applicationCidr);
+                ((EntityLocal) dockerContainer).sensors().set(SdnProvider.APPLICATION_CIDR, applicationCidr);
             }
 
             return dockerContainer.getDynamicLocation();

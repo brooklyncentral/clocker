@@ -165,7 +165,7 @@ public class DockerUtils {
 
     public static boolean isSdnProvider(Entity dockerHost, String providerName) {
         if (dockerHost.config().get(SdnAttributes.SDN_ENABLE)) {
-            Entity sdn = dockerHost.getAttribute(DockerHost.DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER);
+            Entity sdn = dockerHost.sensors().get(DockerHost.DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.SDN_PROVIDER);
             if (sdn == null) return false;
             return sdn.getEntityType().getSimpleName().equalsIgnoreCase(providerName);
         } else return false;

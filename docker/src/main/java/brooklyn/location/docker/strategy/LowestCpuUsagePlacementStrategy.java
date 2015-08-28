@@ -25,9 +25,9 @@ public class LowestCpuUsagePlacementStrategy extends BasicDockerPlacementStrateg
 
     @Override
     public int compare(DockerHostLocation l1, DockerHostLocation l2) {
-        Double cpu1 = l1.getOwner().getAttribute(DockerHost.CPU_USAGE);
+        Double cpu1 = l1.getOwner().sensors().get(DockerHost.CPU_USAGE);
         if (cpu1 == null) cpu1 = -1d;
-        Double cpu2 = l2.getOwner().getAttribute(DockerHost.CPU_USAGE);
+        Double cpu2 = l2.getOwner().sensors().get(DockerHost.CPU_USAGE);
         if (cpu2 == null) cpu2 = -1d;
         return Double.compare(cpu1, cpu2);
     }

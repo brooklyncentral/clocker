@@ -60,7 +60,7 @@ public class DockerInfrastructureTests {
 
     public static void testDeploysTrivialApplication(TestApplication app, Location location) {
         DockerInfrastructure dockerInfrastructure = deployAndWaitForDockerInfrastructure(app, location);
-        int existingCount = dockerInfrastructure.getAttribute(DockerInfrastructure.DOCKER_CONTAINER_COUNT);
+        int existingCount = dockerInfrastructure.sensors().get(DockerInfrastructure.DOCKER_CONTAINER_COUNT);
 
         TestApplication deployment = ApplicationBuilder.newManagedApp(TestApplication.class, app.getManagementContext());
         deployment.createAndManageChild(EntitySpec.create(EmptySoftwareProcess.class));

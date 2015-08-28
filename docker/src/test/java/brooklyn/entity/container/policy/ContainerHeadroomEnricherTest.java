@@ -75,8 +75,8 @@ public class ContainerHeadroomEnricherTest extends BrooklynAppUnitTestSupport {
         entity.addEnricher(EnricherSpec.create(ContainerHeadroomEnricher.class)
                 .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM, 4));
 
-        entity.setAttribute(DockerInfrastructure.DOCKER_HOST_COUNT, 2);
-        entity.setAttribute(DockerInfrastructure.DOCKER_CONTAINER_COUNT, 8);
+        entity.sensors().set(DockerInfrastructure.DOCKER_HOST_COUNT, 2);
+        entity.sensors().set(DockerInfrastructure.DOCKER_CONTAINER_COUNT, 8);
 
         assertNoEventsContinually();
     }
@@ -94,8 +94,8 @@ public class ContainerHeadroomEnricherTest extends BrooklynAppUnitTestSupport {
         // processed after containerCount attribute has been set, then we'll get a too-hot
         // for that as well; otherwise it will ignore the event). Hence we use
         // clearEventsContinually below.
-        entity.setAttribute(DockerInfrastructure.DOCKER_HOST_COUNT, 2);
-        entity.setAttribute(DockerInfrastructure.DOCKER_CONTAINER_COUNT, 13);
+        entity.sensors().set(DockerInfrastructure.DOCKER_HOST_COUNT, 2);
+        entity.sensors().set(DockerInfrastructure.DOCKER_CONTAINER_COUNT, 13);
         
         assertTooHot(new CurrentStatus()
                 .hostCount(2)
@@ -106,7 +106,7 @@ public class ContainerHeadroomEnricherTest extends BrooklynAppUnitTestSupport {
         
         // Too hot - 28 containers would require 4 hosts (leaving headroom of 4)
         listener.clearEventsContinually();
-        entity.setAttribute(DockerInfrastructure.DOCKER_CONTAINER_COUNT, 28);
+        entity.sensors().set(DockerInfrastructure.DOCKER_CONTAINER_COUNT, 28);
 
         assertTooHot(new CurrentStatus()
                 .hostCount(2)
@@ -117,7 +117,7 @@ public class ContainerHeadroomEnricherTest extends BrooklynAppUnitTestSupport {
         
         // Make everything ok again
         listener.clearEvents();
-        entity.setAttribute(DockerInfrastructure.DOCKER_CONTAINER_COUNT, 8);
+        entity.sensors().set(DockerInfrastructure.DOCKER_CONTAINER_COUNT, 8);
 
         assertOk(new CurrentStatus()
                 .hostCount(2)
@@ -128,7 +128,7 @@ public class ContainerHeadroomEnricherTest extends BrooklynAppUnitTestSupport {
         
         // Expect not to get repeated "ok"
         listener.clearEvents();
-        entity.setAttribute(DockerInfrastructure.DOCKER_CONTAINER_COUNT, 9);
+        entity.sensors().set(DockerInfrastructure.DOCKER_CONTAINER_COUNT, 9);
 
         assertNoEventsContinually();
     }
@@ -141,8 +141,8 @@ public class ContainerHeadroomEnricherTest extends BrooklynAppUnitTestSupport {
                 .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM, 4));
         
         // Too cold - only need one host rather than 10
-        entity.setAttribute(DockerInfrastructure.DOCKER_HOST_COUNT, 10);
-        entity.setAttribute(DockerInfrastructure.DOCKER_CONTAINER_COUNT, 1);
+        entity.sensors().set(DockerInfrastructure.DOCKER_HOST_COUNT, 10);
+        entity.sensors().set(DockerInfrastructure.DOCKER_CONTAINER_COUNT, 1);
         
         assertTooCold(new CurrentStatus()
                 .hostCount(10)
@@ -153,7 +153,7 @@ public class ContainerHeadroomEnricherTest extends BrooklynAppUnitTestSupport {
         
         // Too hot - only need one host rather than 2
         listener.clearEventsContinually();
-        entity.setAttribute(DockerInfrastructure.DOCKER_HOST_COUNT, 2);
+        entity.sensors().set(DockerInfrastructure.DOCKER_HOST_COUNT, 2);
 
         assertTooCold(new CurrentStatus()
                 .hostCount(2)
@@ -164,7 +164,7 @@ public class ContainerHeadroomEnricherTest extends BrooklynAppUnitTestSupport {
         
         // Make everything ok again
         listener.clearEvents();
-        entity.setAttribute(DockerInfrastructure.DOCKER_CONTAINER_COUNT, 8);
+        entity.sensors().set(DockerInfrastructure.DOCKER_CONTAINER_COUNT, 8);
 
         assertOk(new CurrentStatus()
                 .hostCount(2)
@@ -175,7 +175,7 @@ public class ContainerHeadroomEnricherTest extends BrooklynAppUnitTestSupport {
         
         // Expect not to get repeated "ok"
         listener.clearEvents();
-        entity.setAttribute(DockerInfrastructure.DOCKER_CONTAINER_COUNT, 9);
+        entity.sensors().set(DockerInfrastructure.DOCKER_CONTAINER_COUNT, 9);
 
         assertNoEventsContinually();
     }

@@ -35,12 +35,12 @@ public class SdnVeAgentImpl extends SdnAgentImpl implements SdnVeAgent {
 
     @Override
     public String getDmcAddress() {
-        return getAttribute(SDN_PROVIDER).config().get(SdnVeNetwork.DOVE_CONTROLLER).getHostAddress();
+        return sensors().get(SDN_PROVIDER).config().get(SdnVeNetwork.DOVE_CONTROLLER).getHostAddress();
     }
 
     @Override
     public String getAgentAddress() {
-        return getAttribute(SDN_AGENT_ADDRESS).getHostAddress();
+        return sensors().get(SDN_AGENT_ADDRESS).getHostAddress();
     }
 
 }

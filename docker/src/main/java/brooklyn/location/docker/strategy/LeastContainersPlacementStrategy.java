@@ -27,9 +27,9 @@ public class LeastContainersPlacementStrategy extends BasicDockerPlacementStrate
 
     @Override
     public int compare(DockerHostLocation l1, DockerHostLocation l2) {
-        Integer size1 = l1.getOwner().getAttribute(DockerHost.DOCKER_CONTAINER_CLUSTER).getAttribute(BasicGroup.GROUP_SIZE);
+        Integer size1 = l1.getOwner().sensors().get(DockerHost.DOCKER_CONTAINER_CLUSTER).sensors().get(BasicGroup.GROUP_SIZE);
         if (size1 == null) size1 = 0;
-        Integer size2 = l2.getOwner().getAttribute(DockerHost.DOCKER_CONTAINER_CLUSTER).getAttribute(BasicGroup.GROUP_SIZE);
+        Integer size2 = l2.getOwner().sensors().get(DockerHost.DOCKER_CONTAINER_CLUSTER).sensors().get(BasicGroup.GROUP_SIZE);
         if (size2 == null) size2 = 0;
         return size1.compareTo(size2);
     }

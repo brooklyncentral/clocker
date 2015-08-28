@@ -50,7 +50,7 @@ public class VanillaDockerApplicationSshDriver extends AbstractSoftwareProcessSs
 
     @Override
     public boolean isRunning() {
-        return getDockerContainer().getAttribute(DockerContainer.CONTAINER_RUNNING);
+        return getDockerContainer().sensors().get(DockerContainer.CONTAINER_RUNNING);
     }
 
     @Override

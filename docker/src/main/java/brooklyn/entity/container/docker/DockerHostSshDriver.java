@@ -77,7 +77,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     @Override
     public Integer getDockerPort() {
-        return getEntity().getAttribute(DockerHost.DOCKER_SSL_PORT);
+        return getEntity().sensors().get(DockerHost.DOCKER_SSL_PORT);
     }
 
     /** {@inheritDoc} */
@@ -204,14 +204,14 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         String localhost = LocalhostExternalIpLoader.getLocalhostIpWithin(Duration.minutes(1)) + "/32";
         IpPermission dockerPort = IpPermission.builder()
                 .ipProtocol(IpProtocol.TCP)
-                .fromPort(getEntity().getAttribute(DockerHost.DOCKER_PORT))
-                .toPort(getEntity().getAttribute(DockerHost.DOCKER_PORT))
+                .fromPort(getEntity().sensors().get(DockerHost.DOCKER_PORT))
+                .toPort(getEntity().sensors().get(DockerHost.DOCKER_PORT))
                 .cidrBlock(localhost)
                 .build();
         IpPermission dockerSslPort = IpPermission.builder()
                 .ipProtocol(IpProtocol.TCP)
-                .fromPort(getEntity().getAttribute(DockerHost.DOCKER_SSL_PORT))
-                .toPort(getEntity().getAttribute(DockerHost.DOCKER_SSL_PORT))
+                .fromPort(getEntity().sensors().get(DockerHost.DOCKER_SSL_PORT))
+                .toPort(getEntity().sensors().get(DockerHost.DOCKER_SSL_PORT))
                 .cidrBlock(localhost)
                 .build();
         IpPermission dockerPortForwarding = IpPermission.builder()
@@ -223,7 +223,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         List<IpPermission> permissions = MutableList.of(dockerPort, dockerSslPort, dockerPortForwarding);
 
         if (getEntity().config().get(SdnAttributes.SDN_ENABLE)) {
-            SdnProvider provider = (SdnProvider) (entity.getAttribute(DockerHost.DOCKER_INFRASTRUCTURE).getAttribute(DockerInfrastructure.SDN_PROVIDER));
+            SdnProvider provider = (SdnProvider) (entity.sensors().get(DockerHost.DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.SDN_PROVIDER));
             Collection<IpPermission> sdnPermissions = provider.getIpPermissions(localhost);
             permissions.addAll(sdnPermissions);
         }
@@ -412,7 +412,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 }
             }
         }
-        getEntity().setAttribute(DockerHost.DOCKER_HOST_VOLUME_MAPPING, mapping);
+        getEntity().sensors().set(DockerHost.DOCKER_HOST_VOLUME_MAPPING, mapping);
     }
 
     @Override

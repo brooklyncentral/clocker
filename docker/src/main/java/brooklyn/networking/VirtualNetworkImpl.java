@@ -46,21 +46,21 @@ public class VirtualNetworkImpl extends BasicStartableImpl implements VirtualNet
         String networkId = config().get(NETWORK_ID);
         if (Strings.isEmpty(networkId)) networkId = getId();
 
-        setAttribute(NETWORK_ID, networkId);
+        sensors().set(NETWORK_ID, networkId);
         setDisplayName(String.format("Virtual Network (%s)", networkId));
     }
 
     @Override
     public void start(Collection<? extends Location> locations) {
-        setAttribute(SERVICE_UP, Boolean.FALSE);
+        sensors().set(SERVICE_UP, Boolean.FALSE);
 
         super.start(locations);
 
         NetworkProvisioningExtension provisioner = findNetworkProvisioner(locations);
-        setAttribute(NETWORK_PROVISIONER, provisioner);
+        sensors().set(NETWORK_PROVISIONER, provisioner);
         provisioner.provisionNetwork(this);
 
-        setAttribute(SERVICE_UP, Boolean.TRUE);
+        sensors().set(SERVICE_UP, Boolean.TRUE);
     }
 
     public NetworkProvisioningExtension findNetworkProvisioner(Collection<? extends Location> locations) {
@@ -79,9 +79,9 @@ public class VirtualNetworkImpl extends BasicStartableImpl implements VirtualNet
 
     @Override
     public void stop() {
-        setAttribute(SERVICE_UP, Boolean.FALSE);
+        sensors().set(SERVICE_UP, Boolean.FALSE);
 
-        NetworkProvisioningExtension provisioner = getAttribute(NETWORK_PROVISIONER);
+        NetworkProvisioningExtension provisioner = sensors().get(NETWORK_PROVISIONER);
         provisioner.deallocateNetwork(this);
 
         super.stop();

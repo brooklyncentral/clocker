@@ -54,8 +54,8 @@ public class MaxCpuUsagePlacementStrategy extends BasicDockerPlacementStrategy {
         }
         if (maxCpu == null) maxCpu = DEFAULT_MAX_CPU_USAGE;
 
-        Boolean serviceUp = input.getOwner().getAttribute(SoftwareProcess.SERVICE_UP);
-        Double currentCpu = input.getOwner().getAttribute(DockerHost.CPU_USAGE);
+        Boolean serviceUp = input.getOwner().sensors().get(SoftwareProcess.SERVICE_UP);
+        Double currentCpu = input.getOwner().sensors().get(DockerHost.CPU_USAGE);
         if (!Boolean.TRUE.equals(serviceUp) || currentCpu == null) return false; // reject
 
         boolean accept = currentCpu < maxCpu;

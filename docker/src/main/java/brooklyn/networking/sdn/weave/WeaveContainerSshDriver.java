@@ -74,29 +74,29 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
 
     @Override
     public void launch() {
-        InetAddress address = getEntity().getAttribute(WeaveContainer.SDN_AGENT_ADDRESS);
-        Boolean firstMember = getEntity().getAttribute(AbstractGroup.FIRST_MEMBER);
-        Entity first = getEntity().getAttribute(AbstractGroup.FIRST);
+        InetAddress address = getEntity().sensors().get(WeaveContainer.SDN_AGENT_ADDRESS);
+        Boolean firstMember = getEntity().sensors().get(AbstractGroup.FIRST_MEMBER);
+        Entity first = getEntity().sensors().get(AbstractGroup.FIRST);
         LOG.info("Launching {} Weave service at {}", Boolean.TRUE.equals(firstMember) ? "first" : "next", address.getHostAddress());
 
         newScript(MutableMap.of(USE_PID_FILE, false), LAUNCHING)
                 .updateTaskAndFailOnNonZeroResultCode()
                 .body.append(BashCommands.sudo(String.format("%s launch -iprange %s %s", getWeaveCommand(),
                         entity.config().get(SdnProvider.CONTAINER_NETWORK_CIDR),
-                        Boolean.TRUE.equals(firstMember) ? "" : first.getAttribute(Attributes.SUBNET_ADDRESS))))
+                        Boolean.TRUE.equals(firstMember) ? "" : first.sensors().get(Attributes.SUBNET_ADDRESS))))
                 .execute();
     }
 
     @Override
     public boolean isRunning() {
         // Spawns a container for duration of command, so take the host lock
-        getEntity().getAttribute(SdnAgent.DOCKER_HOST).getDynamicLocation().getLock().lock();
+        getEntity().sensors().get(SdnAgent.DOCKER_HOST).getDynamicLocation().getLock().lock();
         try {
             return newScript(MutableMap.of(USE_PID_FILE, false), CHECK_RUNNING)
                     .body.append(BashCommands.sudo(getWeaveCommand() + " status"))
                     .execute() == 0;
         } finally {
-            getEntity().getAttribute(SdnAgent.DOCKER_HOST).getDynamicLocation().getLock().unlock();
+            getEntity().sensors().get(SdnAgent.DOCKER_HOST).getDynamicLocation().getLock().unlock();
         }
     }
 
@@ -116,8 +116,8 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
     public InetAddress attachNetwork(String containerId, String subnetId) {
         Tasks.setBlockingDetails(String.format("Attach %s to %s", containerId, subnetId));
         try {
-            Cidr cidr = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getSubnetCidr(subnetId);
-            InetAddress address = getEntity().getAttribute(SdnAgent.SDN_PROVIDER).getNextContainerAddress(subnetId);
+            Cidr cidr = getEntity().sensors().get(SdnAgent.SDN_PROVIDER).getSubnetCidr(subnetId);
+            InetAddress address = getEntity().sensors().get(SdnAgent.SDN_PROVIDER).getNextContainerAddress(subnetId);
             ((WeaveContainer) getEntity()).getDockerHost().execCommand(BashCommands.sudo(String.format("%s attach %s/%d %s",
                     getWeaveCommand(), address.getHostAddress(), cidr.getLength(), containerId)));
             return address;

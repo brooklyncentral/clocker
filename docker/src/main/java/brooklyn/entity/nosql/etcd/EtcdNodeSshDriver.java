@@ -53,7 +53,7 @@ public class EtcdNodeSshDriver extends AbstractSoftwareProcessSshDriver implemen
     public EtcdNodeSshDriver(final EtcdNodeImpl entity, final SshMachineLocation machine) {
         super(entity, machine);
 
-        entity.setAttribute(Attributes.LOG_FILE_LOCATION, getLogFileLocation());
+        entity.sensors().set(Attributes.LOG_FILE_LOCATION, getLogFileLocation());
     }
 
     @Override
@@ -70,7 +70,7 @@ public class EtcdNodeSshDriver extends AbstractSoftwareProcessSshDriver implemen
     }
 
     protected Map<String, Integer> getPortMap() {
-        return MutableMap.of("clientPort", getEntity().getAttribute(EtcdNode.ETCD_CLIENT_PORT), "peerPort", getEntity().getAttribute(EtcdNode.ETCD_PEER_PORT));
+        return MutableMap.of("clientPort", getEntity().sensors().get(EtcdNode.ETCD_CLIENT_PORT), "peerPort", getEntity().sensors().get(EtcdNode.ETCD_PEER_PORT));
     }
 
     @Override
@@ -107,7 +107,7 @@ public class EtcdNodeSshDriver extends AbstractSoftwareProcessSshDriver implemen
         newScript(CUSTOMIZING).execute();
 
         // Set flag to indicate server has been installed
-        entity.setAttribute(EtcdNode.ETCD_NODE_INSTALLED, Boolean.TRUE);
+        entity.sensors().set(EtcdNode.ETCD_NODE_INSTALLED, Boolean.TRUE);
     }
 
     @Override
@@ -117,13 +117,13 @@ public class EtcdNodeSshDriver extends AbstractSoftwareProcessSshDriver implemen
                 .andWaitForSuccess();
 
         // Set default values for etcd startup command
-        boolean clustered = Optional.fromNullable(entity.getAttribute(DynamicCluster.CLUSTER_MEMBER)).or(false);
-        boolean first = Optional.fromNullable(entity.getAttribute(DynamicCluster.FIRST_MEMBER)).or(false);
+        boolean clustered = Optional.fromNullable(entity.sensors().get(DynamicCluster.CLUSTER_MEMBER)).or(false);
+        boolean first = Optional.fromNullable(entity.sensors().get(DynamicCluster.FIRST_MEMBER)).or(false);
         String state = (first || !clustered) ? "new" : "existing";
         String nodes = getNodeName() + "=" + getPeerUrl();
         if (clustered) {
-            Entity cluster = entity.getAttribute(EtcdCluster.CLUSTER);
-            nodes = cluster.getAttribute(EtcdCluster.NODE_LIST);
+            Entity cluster = entity.sensors().get(EtcdCluster.CLUSTER);
+            nodes = cluster.sensors().get(EtcdCluster.NODE_LIST);
         }
 
         // Build etcd startup command
@@ -135,8 +135,8 @@ public class EtcdNodeSshDriver extends AbstractSoftwareProcessSshDriver implemen
                 + "-initial-cluster %s "
                 + "> %s 2>&1 < /dev/null &",
                         Os.mergePathsUnix(getExpandedInstallDir(), "etcd"),
-                        getEntity().getAttribute(EtcdNode.ETCD_CLIENT_PORT), getClientUrl(),
-                        getEntity().getAttribute(EtcdNode.ETCD_PEER_PORT), getPeerUrl(),
+                        getEntity().sensors().get(EtcdNode.ETCD_CLIENT_PORT), getClientUrl(),
+                        getEntity().sensors().get(EtcdNode.ETCD_PEER_PORT), getPeerUrl(),
                         getClusterToken(), getNodeName(), state, nodes,
                         getLogFileLocation()));
 
@@ -163,11 +163,11 @@ public class EtcdNodeSshDriver extends AbstractSoftwareProcessSshDriver implemen
     }
 
     protected String getClientUrl() {
-        return String.format("http://%s:%d", getSubnetAddress(), getEntity().getAttribute(EtcdNode.ETCD_CLIENT_PORT));
+        return String.format("http://%s:%d", getSubnetAddress(), getEntity().sensors().get(EtcdNode.ETCD_CLIENT_PORT));
     }
 
     protected String getPeerUrl() {
-        return String.format("http://%s:%d", getSubnetAddress(), getEntity().getAttribute(EtcdNode.ETCD_PEER_PORT));
+        return String.format("http://%s:%d", getSubnetAddress(), getEntity().sensors().get(EtcdNode.ETCD_PEER_PORT));
     }
 
     protected String getLogFileLocation() {
@@ -175,7 +175,7 @@ public class EtcdNodeSshDriver extends AbstractSoftwareProcessSshDriver implemen
     }
 
     protected String getNodeName() {
-        return getEntity().getAttribute(EtcdNode.ETCD_NODE_NAME);
+        return getEntity().sensors().get(EtcdNode.ETCD_NODE_NAME);
     }
 
     protected String getClusterToken() {

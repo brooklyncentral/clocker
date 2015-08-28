@@ -81,7 +81,7 @@ public class HAProxySshDriver extends AbstractSoftwareProcessSshDriver implement
 
     @Override
     public void reconfigureService() {
-        Map<Entity, String> targets = getEntity().getAttribute(HAProxyController.SERVER_POOL_TARGETS);
+        Map<Entity, String> targets = getEntity().sensors().get(HAProxyController.SERVER_POOL_TARGETS);
         LOG.info("Reconfiguring {} with: {}", getEntity(), targets.values());
         for (Entity server : targets.keySet()) {
             Maybe<SshMachineLocation> machine = Machines.findUniqueSshMachineLocation(server.getLocations());
@@ -112,7 +112,7 @@ public class HAProxySshDriver extends AbstractSoftwareProcessSshDriver implement
 
     public String getBindAddress() {
         String host = Optional.fromNullable(getEntity().config().get(HAProxyController.BIND_ADDRESS)).or("*");
-        Integer port = getEntity().getAttribute(HAProxyController.PROXY_HTTP_PORT);
+        Integer port = getEntity().sensors().get(HAProxyController.PROXY_HTTP_PORT);
         return host + ":" + port;
     }
 

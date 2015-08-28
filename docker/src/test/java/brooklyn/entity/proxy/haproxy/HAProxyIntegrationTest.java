@@ -89,9 +89,9 @@ public class HAProxyIntegrationTest extends AbstractClockerIntegrationTest {
         EntityTestUtils.assertAttributeEqualsEventually(hap, Attributes.SERVICE_STATE_ACTUAL, Lifecycle.RUNNING);
 
         // URLs reachable
-        assertHttpStatusCodeEventuallyEquals(hap.getAttribute(mappedSensor(HAProxyController.ROOT_URL)), 200);
+        assertHttpStatusCodeEventuallyEquals(hap.sensors().get(mappedSensor(HAProxyController.ROOT_URL)), 200);
         for (Entity member : serverPool.getMembers()) {
-            assertHttpStatusCodeEventuallyEquals(member.getAttribute(mappedSensor(WebAppService.ROOT_URL)), 200);
+            assertHttpStatusCodeEventuallyEquals(member.sensors().get(mappedSensor(WebAppService.ROOT_URL)), 200);
         }
 
         testApp.stop();
