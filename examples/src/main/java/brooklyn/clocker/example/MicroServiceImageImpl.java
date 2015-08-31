@@ -17,13 +17,17 @@ package brooklyn.clocker.example;
 
 import java.util.Collection;
 
+import com.google.common.base.Optional;
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.core.entity.AbstractApplication;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.trait.Startable;
+import org.apache.brooklyn.core.location.LocationPredicates;
 import org.apache.brooklyn.util.collections.MutableMap;
 
 import brooklyn.entity.container.docker.DockerInfrastructure;
@@ -32,19 +36,12 @@ import brooklyn.location.docker.DockerLocation;
 
 public class MicroServiceImageImpl extends AbstractApplication implements MicroServiceImage {
 
-    private static final String MICRO_SERVICE_LOCATION = "my-docker-cloud";
-    DockerInfrastructure dockerInfrastructure = null;
-    VanillaDockerApplication vanillaDockerApplication = null;
+    public static final String DOCKER_LOCATION_PREFIX = "docker-";
+
+    protected VanillaDockerApplication vanillaDockerApplication = null;
 
     @Override
     public void initApp() {
-        if (getManagementContext().getLocationRegistry().getDefinedLocationByName(MICRO_SERVICE_LOCATION) == null) {
-            dockerInfrastructure = addChild(EntitySpec.create(DockerInfrastructure.class)
-                    .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 1)
-                    .configure(DockerInfrastructure.SDN_ENABLE, false)
-                    .configure(DockerInfrastructure.LOCATION_NAME, MICRO_SERVICE_LOCATION)
-                    .displayName("Docker Infrastructure"));
-        }
         vanillaDockerApplication = addChild(EntitySpec.create(VanillaDockerApplication.class)
                 .configure("containerName", config().get(CONTAINER_NAME))
                 .configure("imageName", config().get(IMAGE_NAME))
@@ -55,13 +52,22 @@ public class MicroServiceImageImpl extends AbstractApplication implements MicroS
 
     @Override
     protected void doStart(Collection<? extends Location> locations) {
+        Optional<Location> dockerLocation = Iterables.tryFind(getLocations(), Predicates.instanceOf(DockerLocation.class));
 
-        if (dockerInfrastructure != null) {
+        if (!dockerLocation.isPresent()) {
+            String locationName = DOCKER_LOCATION_PREFIX + getId();
+            DockerInfrastructure dockerInfrastructure = addChild(EntitySpec.create(DockerInfrastructure.class)
+                    .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 1)
+                    .configure(DockerInfrastructure.SDN_ENABLE, false)
+                    .configure(DockerInfrastructure.LOCATION_NAME, locationName)
+                    .displayName("Docker Infrastructure"));
+
             Entities.invokeEffector(this, dockerInfrastructure, Startable.START, MutableMap.of("locations", getLocations())).getUnchecked();
+
+            dockerLocation = Optional.fromNullable(getManagementContext().getLocationRegistry().resolve(locationName));
         }
 
-        DockerLocation dockerLocation = (DockerLocation) getManagementContext().getLocationRegistry().resolve(MICRO_SERVICE_LOCATION);
-        vanillaDockerApplication.start(ImmutableList.of(dockerLocation));
+        vanillaDockerApplication.start(dockerLocation.asSet());
     }
 
 }
