@@ -62,6 +62,9 @@ public interface DockerContainer extends BasicStartable, HasNetworkAddresses, Ha
     @SetFromFlag("containerName")
     AttributeSensorAndConfigKey<String, String> DOCKER_CONTAINER_NAME = DockerAttributes.DOCKER_CONTAINER_NAME;
 
+    @SetFromFlag("privileged")
+    ConfigKey<Boolean> PRIVILEGED = DockerAttributes.PRIVILEGED;
+
     @SetFromFlag("managed")
     ConfigKey<Boolean> MANAGED = DockerAttributes.MANAGED;
 
