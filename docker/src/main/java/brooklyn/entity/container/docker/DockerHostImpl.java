@@ -24,6 +24,32 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.api.client.repackaged.com.google.common.base.Objects;
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Functions;
+import com.google.common.base.Optional;
+import com.google.common.base.Predicates;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+
+import org.jclouds.compute.config.ComputeServiceProperties;
+import org.jclouds.compute.domain.OsFamily;
+import org.jclouds.compute.domain.TemplateBuilder;
+import org.jclouds.compute.domain.Volume;
+import org.jclouds.softlayer.SoftLayerApi;
+import org.jclouds.softlayer.compute.options.SoftLayerTemplateOptions;
+import org.jclouds.softlayer.domain.VirtualGuest;
+import org.jclouds.softlayer.features.VirtualGuestApi;
+import org.jclouds.softlayer.reference.SoftLayerConstants;
+
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.entity.EntitySpec;
@@ -79,28 +105,6 @@ import org.apache.brooklyn.util.text.Identifiers;
 import org.apache.brooklyn.util.text.StringPredicates;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
-import org.jclouds.compute.config.ComputeServiceProperties;
-import org.jclouds.compute.domain.OsFamily;
-import org.jclouds.compute.domain.TemplateBuilder;
-import org.jclouds.compute.domain.Volume;
-import org.jclouds.softlayer.SoftLayerApi;
-import org.jclouds.softlayer.compute.options.SoftLayerTemplateOptions;
-import org.jclouds.softlayer.domain.VirtualGuest;
-import org.jclouds.softlayer.features.VirtualGuestApi;
-import org.jclouds.softlayer.reference.SoftLayerConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.api.client.repackaged.com.google.common.base.Objects;
-import com.google.common.base.CharMatcher;
-import com.google.common.base.Functions;
-import com.google.common.base.Optional;
-import com.google.common.base.Predicates;
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
@@ -372,8 +376,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     /** {@inheritDoc} */
     @Override
-    public String buildImage(String dockerFile, String name, boolean useSsh) {
-        String imageId = getDriver().buildImage(dockerFile, name, useSsh);
+    public String buildImage(String dockerFile, @Nullable String entrypoint, String name, boolean useSsh) {
+        String imageId = getDriver().buildImage(dockerFile, Optional.fromNullable(entrypoint), name, useSsh);
         LOG.debug("Successfully created image {} ({})", new Object[] { imageId, name });
         return imageId;
     }
@@ -591,7 +595,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     public void postStart() {
-        ((EntityLocal) sensors().get(DOCKER_CONTAINER_CLUSTER)).sensors().set(SERVICE_UP, Boolean.TRUE);
+        sensors().get(DOCKER_CONTAINER_CLUSTER).sensors().set(SERVICE_UP, Boolean.TRUE);
 
         if (Boolean.TRUE.equals(sensors().get(DOCKER_INFRASTRUCTURE).config().get(SdnAttributes.SDN_ENABLE))) {
             LOG.info("Waiting on SDN agent");
@@ -605,7 +609,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         if (Strings.isBlank(imageId)) {
             String dockerfileUrl = config().get(DockerInfrastructure.DOCKERFILE_URL);
             String imageName = DockerUtils.imageName(this, dockerfileUrl);
-            imageId = buildImage(dockerfileUrl, imageName, config().get(DockerHost.DOCKER_USE_SSH));
+            imageId = buildImage(dockerfileUrl, null, imageName, config().get(DockerHost.DOCKER_USE_SSH));
             sensors().set(DOCKER_IMAGE_NAME, imageName);
         }
 

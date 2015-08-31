@@ -65,6 +65,7 @@ public class DockerUtils {
      */
 
     public static final String DOCKERFILE = "Dockerfile";
+    public static final String ENTRYPOINT = "entrypoint.sh";
 
     public static final String MAPPED = "mapped";
     public static final String ENDPOINT = "endpoint";

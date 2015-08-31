@@ -42,7 +42,6 @@ import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.machine.MachineEntity;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
-import org.apache.brooklyn.location.jclouds.JcloudsLocationConfig;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
@@ -82,7 +81,7 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
             "Docker port", PortRanges.fromInteger(2376));
 
     @SetFromFlag("openIptables")
-    ConfigKey<Boolean> OPEN_IPTABLES = ConfigKeys.newConfigKeyWithPrefix("docker.host.", JcloudsLocationConfig.OPEN_IPTABLES);
+    ConfigKey<Boolean> OPEN_IPTABLES = ConfigKeys.newConfigKeyWithPrefix("docker.host.", SoftwareProcess.OPEN_IPTABLES);
 
     @SetFromFlag("useSsh")
     ConfigKey<Boolean> DOCKER_USE_SSH = DockerAttributes.DOCKER_USE_SSH;
@@ -182,18 +181,19 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
     MethodEffector<String> RUN_DOCKER_COMMAND_TIMEOUT = new MethodEffector<String>(DockerHost.class, "runDockerCommandTimeout");
     MethodEffector<String> DEPLOY_ARCHIVE = new MethodEffector<String>(DockerHost.class, "deployArchive");
 
-
     /**
-     * Create an image from a Dockerfile and returns the image ID.
+     * Create an image from a Dockerfile and optional entrypoint script and return the image ID.
      *
-     * @param dockerFile URL of Dockerfile to copy
+     * @param dockerfile URL of Dockerfile to copy
+     * @param entrypoint URL of entrypoint script to copy, may be null
      * @param name Repository name
      * @param useSsh Add SSHable layer after building
-     * @see DockerHostDriver#buildImage(String, String)
+     * @see DockerHostDriver#buildImage(String, Optional, String, boolean)
      */
-    @Effector(description="Create an image from a Dockerfile and returns the image ID")
+    @Effector(description="Create an image from a Dockerfile and entrypoint script and return the image ID")
     String buildImage(
-            @EffectorParam(name="dockerFile", description="URL of Dockerfile to copy") String dockerFile,
+            @EffectorParam(name="dockerfile", description="URL of Dockerfile to copy") String dockerfile,
+            @EffectorParam(name="entrypoint", description="URL of entrypoint script to copy") String entrypoint,
             @EffectorParam(name="name", description="Repository name") String name,
             @EffectorParam(name="useSsh", description="Add an SSHable layer after building") boolean useSsh);
 
