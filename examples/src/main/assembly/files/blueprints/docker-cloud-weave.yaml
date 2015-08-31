@@ -17,36 +17,8 @@ name: "Docker Cloud with Weave"
 origin: https://github.com/brooklyncentral/clocker/
 
 services:
-- type: brooklyn.entity.container.docker.DockerInfrastructure
+- type: docker-cloud-weave
   brooklyn.config:
     entity.dynamicLocation.name: "my-docker-cloud"
     docker.version: 1.7.1
     docker.host.cluster.initial.size: 2
-    docker.container.cluster.headroom.count: 4
-    docker.policy.ha.enable: false
-    docker.container.strategies:
-    - $brooklyn:object:
-        type: brooklyn.location.docker.strategy.MaxContainersPlacementStrategy
-        brooklyn.config:
-          maxContainers: 12
-    - $brooklyn:object:
-        type: brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy
-    sdn.enable: true
-    sdn.provider.spec:
-      $brooklyn:entitySpec:
-        type: brooklyn.networking.sdn.weave.WeaveNetwork
-        brooklyn.config:
-          weave.version: 1.0.1
-    docker.host.spec:
-      $brooklyn:entitySpec:
-        type: brooklyn.entity.container.docker.DockerHost
-        brooklyn.config:
-          docker.host.driver.storage: overlay
-          docker.host.flags:
-            minRam: 7g
-            minCores: 2
-            stopIptables: true
-            osFamily: ubuntu
-            osVersionRegex: 15.04
-          start.timeout: 5m
-          docker.host.nameFormat: "docker-%2$d"

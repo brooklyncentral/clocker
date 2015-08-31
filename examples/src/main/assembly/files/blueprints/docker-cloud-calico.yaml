@@ -17,45 +17,8 @@ name: "Docker Cloud with Project Calico"
 origin: https://github.com/brooklyncentral/clocker/
 
 services:
-- type: brooklyn.entity.container.docker.DockerInfrastructure
+- type: docker-cloud-calico
   brooklyn.config:
-    entity.dynamicLocation.name: "calico-docker-cloud"
-    docker.version: 1.6.2
-    docker.host.cluster.initial.size: 3
-    docker.container.cluster.headroom.count: 4
-    docker.policy.ha.enable: false
-    docker.container.strategies:
-    - $brooklyn:object:
-        type: brooklyn.location.docker.strategy.MaxContainersPlacementStrategy
-        brooklyn.config:
-          maxContainers: 12
-    - $brooklyn:object:
-        type: brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy
-    sdn.enable: true
-    sdn.debug: true
-    sdn.provider.spec:
-      $brooklyn:entitySpec:
-        type: brooklyn.networking.sdn.calico.CalicoNetwork
-        brooklyn.config:
-          calico.version: 0.4.8
-          etcd.version: 2.0.11
-          sdn.network.cidr: 50.0.0.0/16
-          sdn.network.size: 24
-    docker.host.spec:
-      $brooklyn:entitySpec:
-        type: brooklyn.entity.container.docker.DockerHost
-        brooklyn.config:
-          docker.host.driver.storage: overlay
-          docker.host.flags:
-            minRam: 7g
-            minCores: 2
-            stopIptables: true
-            osFamily: ubuntu
-            osVersionRegex: 15.04
-          start.timeout: 5m
-          docker.host.nameFormat: "docker-%2$d"
-          docker.container.spec:
-            $brooklyn:entitySpec:
-              type: brooklyn.entity.container.docker.DockerContainer
-              brooklyn.config:
-                docker.container.nameFormat: "calico-%2$02x"
+    entity.dynamicLocation.name: "my-docker-cloud"
+    docker.version: 1.7.1
+    docker.host.cluster.initial.size: 2

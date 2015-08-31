@@ -13,8 +13,326 @@
 # limitations under the License.
 
 brooklyn.catalog:
-  version: 1.1.0
+  version: 1.1.0 # CLOCKER_VERSION
   items:
+
+  # load everything in the classpath with a @Catalog annotation
+  - scanJavaAnnotations: true
+
+  - id: server
+    description: |
+      Provision a server, with customizable provisioning.properties and credentials installed, 
+      but no other special software process or scripts executed.
+    item:
+      type: org.apache.brooklyn.entity.software.base.EmptySoftwareProcess
+      name: Server
+
+  - id: vanilla-bash-server
+    description: |
+      Provision a server, with customizable provisioning.properties and credentials installed, 
+      but no other special software process or scripts executed.
+      The script should be supplied in "launch.command" as per docs on
+      org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess.
+    item:
+      type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+      name: Server with Launch Script (bash)
+
+  - id: load-balancer
+    description: |
+      Create a load balancer which will point at members in the group entity
+      referred to by the config key "serverPool". 
+      The sensor advertising the port can be configured with the "member.sensor.portNumber" config key,
+      defaulting to `http.port`; all member entities which have published "service.up" will then be picked up.
+    item:
+      type: org.apache.brooklyn.entity.proxy.nginx.NginxController
+      name: Load Balancer (nginx)
+
+  - id: cluster
+    description: |
+      Create a cluster of entities, resizable, with starting size "initialSize",
+      and using a spec supplied in the "memberSpec" key.
+    item:
+      type: org.apache.brooklyn.entity.group.DynamicCluster
+
+  - id: 1-container-template
+    itemType: template
+    name: "Template 1: Container"
+    description: |
+      Sample YAML to provision a container
+    item:
+      name: Container (Brooklyn Example)
+
+      # this basic example shows how Brooklyn can provision a single container
+
+      services:
+      - type:           server
+        name:           My Container
+
+      location: my-docker-cloud
+
+  - id: 2-bash-web-server-template
+    itemType: template
+    name: "Template 2: Bash Web Server"
+    description: |
+      Sample YAML building on Template 1, 
+      adding bash commands to launch a Python-based web server
+      on port 8020
+    item:
+      name: Python Web Server (Brooklyn Example)
+
+      # this example builds on the previous one, 
+      # adding some scripts to initialize the VM
+
+      services:
+      - type:           vanilla-bash-server
+        name:           My Bash Web Server VM
+        brooklyn.config:
+          install.command: |
+            # install python if not present
+            which python || \
+              { apt-get update && apt-get install python ; } || \
+              { yum update && yum install python ; } || \
+              { echo WARNING: cannot install python && exit 1 ; }
+
+          customize.command: |
+            # create the web page to serve
+            cat > index.html << EOF
+
+            Hello world.
+            <p>
+            I am ${ENTITY_INFO}, ${MESSAGE:-a Brooklyn sample}.
+            <p>
+            Created at: `date`
+            <p>
+            I am running at ${HOSTNAME}, with on-box IP configuration:
+            <pre>
+            `ifconfig | grep inet`
+            </pre>
+
+            EOF
+
+          launch.command: |
+            # launch in background (ensuring no streams open), and record PID to file
+            nohup python -m SimpleHTTPServer ${PORT:-8020} < /dev/null > output.txt 2>&1 &
+            echo $! > ${PID_FILE:-pid.txt}
+            sleep 5
+            ps -p `cat ${PID_FILE:-pid.txt}`
+            if [ $? -ne 0 ] ; then
+              cat output.txt
+              echo WARNING: python web server not running
+              exit 1
+            fi
+
+          shell.env:
+            HOSTNAME:     $brooklyn:attributeWhenReady("host.subnet.name")
+            PORT:         $brooklyn:config("my.app.port")
+            ENTITY_INFO:  $brooklyn:component("this", "")
+            MESSAGE:      $brooklyn:config("my.message")
+
+          # custom 
+          my.app.port:  8020
+          my.message:   "good to meet you"
+
+        brooklyn.enrichers:
+        # publish the URL as a sensor; the GUI will pick this up (main.uri)
+        - type: org.apache.brooklyn.sensor.enricher.Transformer
+          brooklyn.config:
+            uniqueTag: url-generator
+            enricher.sourceSensor: host.subnet.hostname
+            # use the definition from Attributes class, as it has a RendererHint so GUI makes it a link
+            enricher.targetSensor: $brooklyn:sensor("org.apache.brooklyn.core.entity.Attributes", "main.uri")
+            enricher.targetValue: 
+              $brooklyn:formatString:
+              - "http://%s:%s/" 
+              - $brooklyn:attributeWhenReady("host.subnet.hostname")
+              - $brooklyn:config("my.app.port")
+
+      location: my-docker-cloud
+
+  - id: 3-bash-web-and-riak-template
+    itemType: template
+    name: "Template 3: Bash Web Server and Scaling Riak Cluster"
+    description: |
+      Sample YAML building on Template 2, 
+      composing that blueprint with a Riak cluster and injecting the URL
+    item:
+      name: Bash Web Server and Riak Cluster (Brooklyn Example)
+
+      # this example *references* the previous one, 
+      # combining it with a stock blueprint for a Riak cluster,
+      # and shows how a sensor from the latter can be injected
+
+      services:
+
+      # reference template 2, overriding message to point at riak 
+      - type:           2-bash-web-server-template
+        brooklyn.config:
+          my.message:   $brooklyn:formatString("connected to Riak at %s",
+                            $brooklyn:entity("riak-cluster").attributeWhenReady("main.uri"))
+
+      # use the off-the-shelf Riak cluster
+      - type:           org.apache.brooklyn.entity.nosql.riak.RiakCluster
+        id:             riak-cluster
+        initialSize:    3
+        # and add a policy to scale based on ops per minute
+        brooklyn.policies:
+        - type: org.apache.brooklyn.policy.autoscaling.AutoScalerPolicy
+          brooklyn.config:
+            metric: riak.node.ops.1m.perNode
+            # more than 100 ops per second (6k/min) scales out, less than 50 scales back
+            # up to a max of 8 riak nodes here (can be changed in GUI / REST API afterwards)
+            metricLowerBound: 3000
+            metricUpperBound: 6000
+            minPoolSize: 3
+            maxPoolSize: 8
+            resizeUpStabilizationDelay: 30s
+            resizeDownStabilizationDelay: 5m
+
+      location: my-docker-cloud
+
+  - id: 4-resilient-bash-web-cluster-template
+    itemType: template
+    name: "Template 4: Resilient Load-Balanced Bash Web Cluster with Sensors"
+    description: |
+      Sample YAML to provision a cluster of the bash/python web server nodes,
+      with sensors configured, and a load balancer pointing at them,
+      and resilience policies for node replacement and scaling
+    item:
+      name: Resilient Load-Balanced Bash Web Cluster (Brooklyn Example)
+
+      # this final example shows some of the advanced functionality:
+      # defining custom sensors, and a cluster with a "spec", 
+      # policies for resilience and scaling based on that sensor,
+      # and wiring a load balancer in front of the cluster
+
+      # combining this with the riak cluster in the previous example
+      # is left as a suggested exercise for the user
+
+      services:
+
+      # define a cluster of the web nodes
+      - type:           cluster
+        name:           Cluster of Bash Web Nodes
+        id:             my-web-cluster
+        brooklyn.config:
+          initialSize:  1
+          memberSpec:
+            $brooklyn:entitySpec:
+              # template 2 is used as the spec for items in this cluster
+              # with a new message overwriting the previous,
+              # and a lot of sensors defined
+              type:           2-bash-web-server-template
+              name:           My Bash Web Server VM with Sensors
+
+              brooklyn.config:
+                my.message:   "part of the cluster"
+
+              brooklyn.initializers:
+              # make a simple request-count sensor, by counting the number of 200 responses in output.txt
+              - type: org.apache.brooklyn.sensor.ssh.SshCommandSensor
+                brooklyn.config:
+                  name: reqs.count
+                  targetType: int
+                  period: 5s
+                  command: "cat output.txt | grep HTTP | grep 200 | wc | awk '{print $1}'"
+              # and publish the port as a sensor so the load-balancer can pick it up
+              - type:           org.apache.brooklyn.sensor.core.StaticSensor
+                brooklyn.config:
+                  name:         app.port
+                  targetType:   int
+                  static.value: $brooklyn:config("my.app.port")
+
+              brooklyn.enrichers:
+              # derive reqs.per_sec from reqs.count
+              - type: org.apache.brooklyn.sensor.enricher.YamlTimeWeightedDeltaEnricher
+                brooklyn.config:
+                  enricher.sourceSensor: reqs.count
+                  enricher.targetSensor: reqs.per_sec
+                  enricher.delta.period: 1s
+              # and take an average over 30s for reqs.per_sec into reqs.per_sec.windowed_30s
+              - type: org.apache.brooklyn.sensor.enricher.YamlRollingTimeWindowMeanEnricher
+                brooklyn.config:
+                  enricher.sourceSensor: reqs.per_sec
+                  enricher.targetSensor: reqs.per_sec.windowed_30s
+                  enricher.window.duration: 30s
+
+              # emit failure sensor if a failure connecting to the service is sustained for 30s
+              - type: org.apache.brooklyn.policy.ha.ServiceFailureDetector
+                brooklyn.config:
+                  entityFailed.stabilizationDelay: 30s
+
+              brooklyn.policies:
+              # restart if a failure is detected (with a max of one restart in 2m, sensor will propagate otherwise) 
+              - type: org.apache.brooklyn.policy.ha.ServiceRestarter
+                brooklyn.config:
+                  failOnRecurringFailuresInThisDuration: 2m
+
+        # back at the cluster, create a total per-sec and some per-node average
+        brooklyn.enrichers:
+        - type: org.apache.brooklyn.sensor.enricher.Aggregator
+          brooklyn.config:
+            enricher.sourceSensor: reqs.per_sec
+            enricher.targetSensor: reqs.per_sec
+            transformation: sum
+        - type: org.apache.brooklyn.sensor.enricher.Aggregator
+          brooklyn.config:
+            enricher.sourceSensor: reqs.per_sec
+            enricher.targetSensor: reqs.per_sec.per_node
+            transformation: average
+        - type: org.apache.brooklyn.sensor.enricher.Aggregator
+          brooklyn.config:
+            enricher.sourceSensor: reqs.per_sec.windowed_30s
+            enricher.targetSensor: reqs.per_sec.windowed_30s.per_node
+            transformation: average
+
+        brooklyn.policies:
+        # resilience: if a per-node restart policy fails,
+        # just throw that node away and create a new one
+        - type: org.apache.brooklyn.policy.ha.ServiceReplacer
+
+        # and scale based on reqs/sec
+        - type: org.apache.brooklyn.policy.autoscaling.AutoScalerPolicy
+          brooklyn.config:
+            # scale based on reqs/sec (though in a real-world situation, 
+            # reqs.per_sec.windowed_30s.per_node might be a better choice) 
+            metric: reqs.per_sec.per_node
+
+            # really low numbers, so you can trigger a scale-out just by hitting reload a lot
+            metricUpperBound: 3
+            metricLowerBound: 1
+
+            # sustain 3 reqs/sec for 2s and it will scale out
+            resizeUpStabilizationDelay: 2s
+            # only scale down when sustained for 1m
+            resizeDownStabilizationDelay: 1m
+
+            maxPoolSize: 10
+
+      # and add a load-balancer pointing at the cluster
+      - type:           load-balancer
+        id:             load-bal
+        brooklyn.config:
+          # point this load balancer at the cluster, specifying port to forward to
+          loadbalancer.serverpool:  $brooklyn:entity("my-web-cluster")
+          member.sensor.portNumber: app.port
+
+      brooklyn.enrichers:
+      # publish a few useful info sensors and KPI's to the root of the app
+      - type: org.apache.brooklyn.sensor.enricher.Propagator
+        brooklyn.config:
+          uniqueTag:    propagate-load-balancer-url
+          producer:     $brooklyn:entity("load-bal")
+          propagating:
+          - main.uri
+      - type: org.apache.brooklyn.sensor.enricher.Propagator
+        brooklyn.config:
+          uniqueTag:    propagate-reqs-per-sec
+          producer:     $brooklyn:entity("my-web-cluster")
+          propagating:
+          - reqs.per_sec
+          - reqs.per_sec.windowed_30s.per_node
+
+      location: my-docker-cloud
 
   - id: docker-infrastructure
     name: Docker Infrastructure
@@ -24,6 +342,15 @@ brooklyn.catalog:
       brooklyn.config:
         docker.version: 1.7.1
         entity.dynamicLocation.name: "my-docker-cloud"
+        docker.container.cluster.headroom.count: 4
+        docker.policy.ha.enable: false
+        docker.container.strategies:
+        - $brooklyn:object:
+            type: brooklyn.location.docker.strategy.MaxContainersPlacementStrategy
+            brooklyn.config:
+              maxContainers: 16
+        - $brooklyn:object:
+            type: brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy
         docker.host.spec:
           $brooklyn:entitySpec:
             type: docker-host
@@ -39,6 +366,13 @@ brooklyn.catalog:
         docker.container.spec:
           $brooklyn:entitySpec:
             type: docker-container
+        docker.host.flags:
+          minRam: 7g
+          minCores: 2
+          stopIptables: true
+          osFamily: ubuntu
+          osVersionRegex: 15.04
+        start.timeout: 5m
 
   - id: docker-container
     name: Docker Container
@@ -54,7 +388,7 @@ brooklyn.catalog:
     item:
       type: brooklyn.networking.sdn.calico.CalicoNetwork
       brooklyn.config:
-        calico.version: 0.4.8
+        calico.version: 0.4.9
         sdn.agent.spec:
           $brooklyn:entitySpec:
             type: calico-node
@@ -109,15 +443,6 @@ brooklyn.catalog:
       services:
       - type: docker-infrastructure
         brooklyn.config:
-          docker.container.cluster.headroom.count: 4
-          docker.policy.ha.enable: false
-          docker.container.strategies:
-          - $brooklyn:object:
-              type: brooklyn.location.docker.strategy.MaxContainersPlacementStrategy
-              brooklyn.config:
-                maxContainers: 12
-          - $brooklyn:object:
-              type: brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy
           sdn.enable: true
           sdn.provider.spec:
             $brooklyn:entitySpec:
@@ -129,13 +454,6 @@ brooklyn.catalog:
             $brooklyn:entitySpec:
               type: docker-host
               brooklyn.config:
-                docker.host.flags:
-                  minRam: 7g
-                  minCores: 2
-                  stopIptables: true
-                  osFamily: ubuntu
-                  osVersionRegex: 15.04
-                start.timeout: 5m
                 docker.container.spec:
                   $brooklyn:entitySpec:
                     type: docker-container
@@ -151,15 +469,6 @@ brooklyn.catalog:
       services:
       - type: docker-infrastructure
         brooklyn.config:
-          docker.container.cluster.headroom.count: 4
-          docker.policy.ha.enable: false
-          docker.container.strategies:
-          - $brooklyn:object:
-              type: brooklyn.location.docker.strategy.MaxContainersPlacementStrategy
-              brooklyn.config:
-                maxContainers: 12
-          - $brooklyn:object:
-              type: brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy
           sdn.enable: true
           sdn.provider.spec:
             $brooklyn:entitySpec:
@@ -168,13 +477,6 @@ brooklyn.catalog:
             $brooklyn:entitySpec:
               type: docker-host
               brooklyn.config:
-                docker.host.flags:
-                  minRam: 7g
-                  minCores: 2
-                  stopIptables: true
-                  osFamily: ubuntu
-                  osVersionRegex: 15.04
-                start.timeout: 5m
                 docker.container.spec:
                   $brooklyn:entitySpec:
                     type: docker-container
@@ -217,7 +519,7 @@ brooklyn.catalog:
           id: riak-cluster
           name: "Riak Cluster"
           brooklyn.config:
-            install.version: 2.0.5
+            install.version: 2.1.1
             riak.networking.optimize: false
             network.list:
             - riak
@@ -263,7 +565,7 @@ brooklyn.catalog:
           id: redis
           name: "Redis"
           brooklyn.config:
-            install.version: 3.0.0
+            install.version: 3.0.3
         - type: org.apache.brooklyn.entity.webapp.nodejs.NodeJsWebAppService
           id: nodejs
           name: "Node.js"
@@ -293,3 +595,5 @@ brooklyn.catalog:
                 component("redis").attributeWhenReady("host.subnet.hostname"),
                 component("redis").attributeWhenReady("redis.port"))
             launch.latch: $brooklyn:component("redis").attributeWhenReady("service.isUp")
+            provisioning.properties:
+              installDevUrandom: true

@@ -18,10 +18,9 @@ origin: https://github.com/brooklyncentral/clocker/
 location: localhost
 
 services:
-- type: brooklyn.entity.container.docker.DockerInfrastructure
+- type: docker-infrastructure
   brooklyn.config:
     entity.dynamicLocation.name: "docker-localhost"
-    docker.version: 1.7.1
     docker.host.cluster.initial.size: 1
     docker.container.cluster.headroom.count: 0
     sdn.enable: false
