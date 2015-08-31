@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -82,10 +83,10 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     /** {@inheritDoc} */
     @Override
-    public String buildImage(String dockerFile, String name, boolean useSsh) {
+    public String buildImage(String dockerfile, Optional<String> entrypoint, String name, boolean useSsh) {
         String imageId;
-        if (!ArchiveType.UNKNOWN.equals(ArchiveType.of(dockerFile)) || Urls.isDirectory(dockerFile)) {
-            ArchiveUtils.deploy(dockerFile, getMachine(), Os.mergePaths(getRunDir(), name));
+        if (!ArchiveType.UNKNOWN.equals(ArchiveType.of(dockerfile)) || Urls.isDirectory(dockerfile)) {
+            ArchiveUtils.deploy(dockerfile, getMachine(), Os.mergePaths(getRunDir(), name));
             imageId = buildDockerfileDirectory(name);
             log.info("Created base Dockerfile image with ID {}", imageId);
         } else {
@@ -97,9 +98,11 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
             if (result != 0) throw new IllegalStateException("Error creating image directory: " + name);
 
             // Build an image from the base Dockerfile
-            copyTemplate(dockerFile, Os.mergePaths(name, "Base" + DockerUtils.DOCKERFILE),
-                    false, getExtraTemplateSubstitutions(name));
-            imageId = buildDockerfile("Base" + DockerUtils.DOCKERFILE, name);
+            copyTemplate(dockerfile, Os.mergePaths(name, DockerUtils.DOCKERFILE), false, getExtraTemplateSubstitutions(name));
+            if (entrypoint.isPresent()) {
+                copyResource(entrypoint.get(), Os.mergePaths(name, DockerUtils.ENTRYPOINT));
+            }
+            imageId = buildDockerfileDirectory(name);
             log.info("Created Dockerfile image with ID {}", imageId);
         }
 

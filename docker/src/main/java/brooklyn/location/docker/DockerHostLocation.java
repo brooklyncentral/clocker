@@ -192,7 +192,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                     if (imageId != null) {
                         LOG.warn("Ignoring container imageId {} as dockerfile URL is set: {}", imageId, dockerfile);
                     }
-                    imageId = dockerHost.buildImage(dockerfile, imageName, useSsh);
+                    imageId = dockerHost.buildImage(dockerfile, entrypoint, imageName, useSsh);
                 }
                 if (Strings.isBlank(imageId)) {
                     imageId = getOwner().sensors().get(DockerHost.DOCKER_IMAGE_ID);

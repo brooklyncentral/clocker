@@ -15,6 +15,8 @@
  */
 package brooklyn.entity.container.docker;
 
+import com.google.common.base.Optional;
+
 import org.apache.brooklyn.entity.software.base.SoftwareProcessDriver;
 
 /**
@@ -25,16 +27,16 @@ public interface DockerHostDriver extends SoftwareProcessDriver {
     Integer getDockerPort();
 
     /**
-     * Build a Docker image from the given Dockerfile.
+     * Build a Docker image from the given Dockerfile and optional entrypoint script.
      * <p>
-     * Copies the Dockerfile to the host in the {@code name} folder, and
-     * uses {@code brooklyn/name} for the repository. The returned ID is
-     * required to start a container using the jclouds API.
+     * Copies the Dockerfile and script to the host in the {@code name} folder, and
+     * uses {@code brooklyn/name} for the repository. The returned ID is required to
+     * start a container using the jclouds API.
      *
      * @return the 64 character Image ID
      * @see DockerHost#createSshableImage(String, String)
      */
-    String buildImage(String dockerFile, String name, boolean useSsh);
+    String buildImage(String dockerfile, Optional<String> entrypoint, String name, boolean useSsh);
 
     /**
      * Build an SSHable Docker image that is based from an image with the given name.
