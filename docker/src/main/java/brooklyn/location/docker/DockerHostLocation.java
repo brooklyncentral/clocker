@@ -158,6 +158,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
             Optional<String> baseImage = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_NAME));
             String imageTag = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_TAG)).or("latest");
+
             // TODO incorporate more info
             final String imageName = DockerUtils.imageName(entity, dockerfile);
 

@@ -88,6 +88,9 @@ public class DockerAttributes {
     public static final ConfigKey<Integer> DOCKER_MEMORY = ConfigKeys.newIntegerConfigKey(
             "docker.memory", "Container memory configuration");
 
+    public static final ConfigKey<Boolean> PRIVILEGED = ConfigKeys.newBooleanConfigKey(
+            "docker.container.privileged", "Set to true if the container is to be provileged", Boolean.TRUE);
+
     public static final ConfigKey<Boolean> MANAGED = ConfigKeys.newBooleanConfigKey(
             "docker.container.managed", "Set to false if the container is not managed by Brooklyn and Clocker", Boolean.TRUE);
 
