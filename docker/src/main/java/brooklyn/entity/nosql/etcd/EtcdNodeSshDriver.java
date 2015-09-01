@@ -209,9 +209,10 @@ public class EtcdNodeSshDriver extends AbstractSoftwareProcessSshDriver implemen
             return; // Do not throw exception as may not be possible during shutdown
         }
         String output = listMembersScript.getResultStdout();
-        Optional<String> found = Iterables.tryFind(Splitter.on(CharMatcher.anyOf("\r\n")).split(output), Predicates.containsPattern("name=" + nodeName));
-        if (found.isPresent()) {
-            String nodeId = Strings.getFirstWord(found.get()).replace(":", "");
+        Iterable<String> found = Iterables.filter(Splitter.on(CharMatcher.anyOf("\r\n")).split(output), Predicates.containsPattern("name="));
+        Optional<String> node = Iterables.tryFind(found, Predicates.containsPattern(nodeName));
+        if (Iterables.size(found) > 1 && node.isPresent()) {
+            String nodeId = Strings.getFirstWord(node.get()).replace(":", "");
             log.debug("{}: Removing etcd node {} with id {} from {}", new Object[] { entity, nodeName, nodeId, getClientUrl() });
 
             List<String> removeMemberCommands = Lists.newLinkedList();
@@ -222,7 +223,7 @@ public class EtcdNodeSshDriver extends AbstractSoftwareProcessSshDriver implemen
                     .failOnNonZeroResultCode()
                     .execute();
         } else {
-            log.warn("{}: Did not find {} in list of etcd members", entity, nodeName);
+            log.warn("{}: {} is not part of an etcd cluster", entity, nodeName);
         }
     }
 
