@@ -15,12 +15,15 @@
 FROM gliderlabs/alpine:3.1
 MAINTAINER andrew.kennedy@cloudsoft.io
 
+# CLOCKER_VERSION_BELOW
+LABEL version="1.1.0-SNAPSHOT"
+
 RUN apk-install openjdk7-jre-base
 RUN apk-install bash
 
 # CLOCKER_VERSION_BELOW
-ADD http://ccweb.cloudsoftcorp.com/maven/libs-snapshot-local/io/brooklyn/clocker/brooklyn-clocker-examples/1.1.0-SNAPSHOT/brooklyn-clocker-examples-1.1.0-SNAPSHOT-dist.tar.gz /
-
+ADD http://ccweb.cloudsoftcorp.com/maven/libs-snapshot-local/io/brooklyn/clocker/brooklyn-clocker-examples/1.1.0-SNAPSHOT/brooklyn-clocker-examples-1.1.0-SNAPSHOT-dist.tar.gz /brooklyn-clocker-dist.tar.gz
+RUN tar zxf brooklyn-clocker-dist.tar.gz
 WORKDIR /brooklyn-clocker
 
 VOLUME [ "/root/.brooklyn", "/root/.ssh" ]
