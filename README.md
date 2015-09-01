@@ -4,7 +4,7 @@ Clocker
 Clocker creates and manages a **[Docker](http://docker.io/)** cloud infrastructure. Clocker supports
 single-click deployment and runtime management of multi-node applications that can run on
 containers distributed across multiple hosts. Plugins are included for both
-**[Project Calico](https://github.com/Metaswitch/calico-docker)** and **[Weave](http://github.com/zettio/weave/)**
+**[Project Calico](https://github.com/Metaswitch/calico-docker/)** and **[Weave](https://github.com/weaveworks/weave/)**
 to provide seamless Software-Defined Networking integration. Application blueprints written for
 **[Apache Brooklyn](https://brooklyn.incubator.apache.org/)** can thus be deployed to a distributed
 Docker Cloud infrastructure.
@@ -14,6 +14,7 @@ This repository contains all of the required Brooklyn entities, locations and ex
 [![Build Status](https://api.travis-ci.org/brooklyncentral/clocker.svg?branch=master)](https://travis-ci.org/brooklyncentral/clocker)
 [![Latest Builds](http://img.shields.io/badge/version-1.1.0--SNAPSHOT-blue.svg?style=flat)](http://clocker-latest.s3-website-eu-west-1.amazonaws.com/)
 [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/brooklyncentral/clocker)
+[![Docker Image](https://badge.imagelayers.io/clockercentral/clocker:latest.svg)](https://imagelayers.io/?images=clockercentral/clocker:latest)
 
 ## Getting started
 
