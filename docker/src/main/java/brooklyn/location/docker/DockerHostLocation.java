@@ -194,7 +194,8 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                     if (imageId != null) {
                         LOG.warn("Ignoring container imageId {} as dockerfile URL is set: {}", imageId, dockerfile);
                     }
-                    imageId = dockerHost.buildImage(dockerfile, entrypoint, contextArchive, imageName, useSsh);
+                    Map<String, Object> substitutions = getExtraTemplateSubstitutions(imageName, entity);
+                    imageId = dockerHost.buildImage(dockerfile, entrypoint, contextArchive, imageName, useSsh, substitutions);
                 }
                 if (Strings.isBlank(imageId)) {
                     imageId = getOwner().sensors().get(DockerHost.DOCKER_IMAGE_ID);
@@ -249,6 +250,18 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
         } finally {
             lock.readLock().unlock();
         }
+    }
+
+    private Map<String, Object> getExtraTemplateSubstitutions(String imageName, Entity context) {
+        Map<String, Object> templateSubstitutions = MutableMap.<String, Object>of("fullyQualifiedImageName", imageName);
+        templateSubstitutions.putAll(getOwner().config().get(DockerInfrastructure.DOCKERFILE_SUBSTITUTIONS));
+
+        // Add any extra substitutions on the entity (if present)
+        if (context != null) {
+            templateSubstitutions.putAll(context.config().get(DockerInfrastructure.DOCKERFILE_SUBSTITUTIONS));
+        }
+
+        return templateSubstitutions;
     }
 
     private void insertCallback(Entity entity, ConfigKey<String> commandKey, String callback) {

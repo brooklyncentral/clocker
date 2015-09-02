@@ -15,6 +15,8 @@
  */
 package brooklyn.entity.container.docker;
 
+import java.util.Map;
+
 import com.google.common.base.Optional;
 
 import org.apache.brooklyn.entity.software.base.SoftwareProcessDriver;
@@ -36,7 +38,7 @@ public interface DockerHostDriver extends SoftwareProcessDriver {
      * @return the 64 character Image ID
      * @see DockerHost#createSshableImage(String, String)
      */
-    String buildImage(String dockerfile, Optional<String> entrypoint, Optional<String> contextArchive, String name, boolean useSsh);
+    String buildImage(String dockerfile, Optional<String> entrypoint, Optional<String> contextArchive, String name, boolean useSsh, Map<String, Object> substitutions);
 
     /**
      * Build an SSHable Docker image that is based from an image with the given name.
