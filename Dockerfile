@@ -18,7 +18,7 @@ MAINTAINER andrew.kennedy@cloudsoft.io
 # CLOCKER_VERSION_BELOW
 LABEL version="1.1.0-SNAPSHOT"
 
-RUN apk-install openjdk8-jre-base && \
+RUN apk-install openjdk7-jre-base && \
     apk-install bash && \
     apk-install wget
 
