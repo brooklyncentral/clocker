@@ -132,7 +132,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             Entity entity = (Entity) context;
 
             // Flag to configure adding SSHable layer
-            boolean useSsh = entity.config().get(DockerContainer.DOCKER_USE_SSH) ||
+            boolean useSsh = entity.config().get(DockerContainer.DOCKER_USE_SSH) &&
                     dockerHost.config().get(DockerContainer.DOCKER_USE_SSH);
 
             // Configure the entity
