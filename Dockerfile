@@ -18,16 +18,19 @@ MAINTAINER andrew.kennedy@cloudsoft.io
 # CLOCKER_VERSION_BELOW
 LABEL version="1.1.0-PREVIEW.20150901"
 
-RUN apk-install openjdk7-jre-base
-RUN apk-install bash
+RUN apk-install openjdk8-jre-base && \
+    apk-install bash && \
+    apk-install wget
 
 # CLOCKER_VERSION_BELOW
-ADD http://ccweb.cloudsoftcorp.com/maven/libs-release-local/io/brooklyn/clocker/brooklyn-clocker-examples/1.1.0-PREVIEW.20150901/brooklyn-clocker-examples-1.1.0-PREVIEW.20150901-dist.tar.gz /brooklyn-clocker-dist.tar.gz
-RUN tar zxf brooklyn-clocker-dist.tar.gz
+RUN wget http://ccweb.cloudsoftcorp.com/maven/libs-release-local/io/brooklyn/clocker/brooklyn-clocker-examples/1.1.0-PREVIEW.20150901/brooklyn-clocker-examples-1.1.0-PREVIEW.20150901-dist.tar.gz -O /brooklyn-clocker-dist.tar.gz && \
+    tar zxf brooklyn-clocker-dist.tar.gz && \
+    rm -f brooklyn-clocker-dist.tar.gz
+
 WORKDIR /brooklyn-clocker
 
 VOLUME [ "/root/.brooklyn", "/root/.ssh" ]
 
-EXPOSE 8081 8443
+EXPOSE 80 443 8081 8443
 
 ENTRYPOINT [ "./bin/clocker.sh" ]
