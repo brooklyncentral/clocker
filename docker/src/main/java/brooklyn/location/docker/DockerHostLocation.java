@@ -153,7 +153,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
             // Add the entity Dockerfile if configured
             String dockerfile = entity.config().get(DockerAttributes.DOCKERFILE_URL);
-            String entrypoint = entity.config().get(DockerAttributes.OCKERFILE_ENTRYPOINT_URL);
+            String entrypoint = entity.config().get(DockerAttributes.DOCKERFILE_ENTRYPOINT_URL);
             String contextArchive = entity.config().get(DockerAttributes.DOCKERFILE_CONTEXT_URL);
             String imageId = entity.config().get(DockerAttributes.DOCKER_IMAGE_ID);
 
