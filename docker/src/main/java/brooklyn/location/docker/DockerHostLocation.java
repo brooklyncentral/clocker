@@ -153,7 +153,8 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
             // Add the entity Dockerfile if configured
             String dockerfile = entity.config().get(DockerAttributes.DOCKERFILE_URL);
-            String entrypoint = entity.config().get(DockerAttributes.DOCKERFILE_ENTRYPOINT_URL);
+            String entrypoint = entity.config().get(DockerAttributes.OCKERFILE_ENTRYPOINT_URL);
+            String contextArchive = entity.config().get(DockerAttributes.DOCKERFILE_CONTEXT_URL);
             String imageId = entity.config().get(DockerAttributes.DOCKER_IMAGE_ID);
 
             Optional<String> baseImage = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_NAME));
@@ -193,7 +194,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                     if (imageId != null) {
                         LOG.warn("Ignoring container imageId {} as dockerfile URL is set: {}", imageId, dockerfile);
                     }
-                    imageId = dockerHost.buildImage(dockerfile, entrypoint, imageName, useSsh);
+                    imageId = dockerHost.buildImage(dockerfile, entrypoint, contextArchive, imageName, useSsh);
                 }
                 if (Strings.isBlank(imageId)) {
                     imageId = getOwner().sensors().get(DockerHost.DOCKER_IMAGE_ID);

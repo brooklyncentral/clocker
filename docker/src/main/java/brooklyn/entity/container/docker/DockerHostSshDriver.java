@@ -83,33 +83,37 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     /** {@inheritDoc} */
     @Override
-    public String buildImage(String dockerfile, Optional<String> entrypoint, String name, boolean useSsh) {
+    public String buildImage(String dockerfile, Optional<String> entrypoint, Optional<String> contextArchive, String name, boolean useSsh) {
         String imageId;
+        String imageDir =  Os.mergePaths(getRunDir(), name);
         if (!ArchiveType.UNKNOWN.equals(ArchiveType.of(dockerfile)) || Urls.isDirectory(dockerfile)) {
-            ArchiveUtils.deploy(dockerfile, getMachine(), Os.mergePaths(getRunDir(), name));
+            ArchiveUtils.deploy(dockerfile, getMachine(), imageDir);
             imageId = buildDockerfileDirectory(name);
             log.info("Created base Dockerfile image with ID {}", imageId);
         } else {
-            ProcessTaskWrapper<Integer> task = SshEffectorTasks.ssh(format("mkdir -p %s", Os.mergePaths(getRunDir(), name)))
-                    .machine(getMachine())
-                    .newTask();
-            DynamicTasks.queueIfPossible(task).executionContext(getEntity()).orSubmitAndBlock();
-            int result = task.get();
-            if (result != 0) throw new IllegalStateException("Error creating image directory: " + name);
-
-            // Build an image from the base Dockerfile
+            if (contextArchive.isPresent()) {
+                ArchiveUtils.deploy(contextArchive.get(), getMachine(), imageDir);
+            } else {
+                ProcessTaskWrapper<Integer> task = SshEffectorTasks.ssh(format("mkdir -p %s", imageDir))
+                        .machine(getMachine())
+                        .newTask();
+                DynamicTasks.queueIfPossible(task).executionContext(getEntity()).orSubmitAndBlock();
+                int result = task.get();
+                if (result != 0) throw new IllegalStateException("Error creating image directory: " + name);
+            }
             copyTemplate(dockerfile, Os.mergePaths(name, DockerUtils.DOCKERFILE), false, getExtraTemplateSubstitutions(name));
             if (entrypoint.isPresent()) {
                 copyResource(entrypoint.get(), Os.mergePaths(name, DockerUtils.ENTRYPOINT));
             }
+
+            // Build the image using the files in the image directory
             imageId = buildDockerfileDirectory(name);
             log.info("Created Dockerfile image with ID {}", imageId);
         }
 
         if (useSsh) {
             // Update the image with the Clocker sshd Dockerfile
-            copyTemplate(DockerUtils.SSHD_DOCKERFILE, Os.mergePaths(name, "Sshd" + DockerUtils.DOCKERFILE),
-                    false, getExtraTemplateSubstitutions(name));
+            copyTemplate(DockerUtils.SSHD_DOCKERFILE, Os.mergePaths(name, "Sshd" + DockerUtils.DOCKERFILE), false, getExtraTemplateSubstitutions(name));
             imageId = buildDockerfile("Sshd" + DockerUtils.DOCKERFILE, name);
             log.info("Created SSHable Dockerfile image with ID {}", imageId);
         }
