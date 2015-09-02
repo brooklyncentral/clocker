@@ -36,7 +36,7 @@ public interface DockerHostDriver extends SoftwareProcessDriver {
      * @return the 64 character Image ID
      * @see DockerHost#createSshableImage(String, String)
      */
-    String buildImage(String dockerfile, Optional<String> entrypoint, String name, boolean useSsh);
+    String buildImage(String dockerfile, Optional<String> entrypoint, Optional<String> contextArchive, String name, boolean useSsh);
 
     /**
      * Build an SSHable Docker image that is based from an image with the given name.

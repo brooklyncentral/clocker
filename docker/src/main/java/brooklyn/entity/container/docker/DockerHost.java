@@ -184,16 +184,18 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
     /**
      * Create an image from a Dockerfile and optional entrypoint script and return the image ID.
      *
-     * @param dockerfile URL of Dockerfile to copy
-     * @param entrypoint URL of entrypoint script to copy, may be null
+     * @param dockerfile URL of Dockerfile template, or an archive including Dockerfile and all required context
+     * @param entrypoint URL of entrypoint script for Dockerfile, may be null
+     * @param contextArchive URL of context archive for Dockerfile, may be null
      * @param name Repository name
      * @param useSsh Add SSHable layer after building
      * @see DockerHostDriver#buildImage(String, Optional, String, boolean)
      */
     @Effector(description="Create an image from a Dockerfile and entrypoint script and return the image ID")
     String buildImage(
-            @EffectorParam(name="dockerfile", description="URL of Dockerfile to copy") String dockerfile,
-            @EffectorParam(name="entrypoint", description="URL of entrypoint script to copy") String entrypoint,
+            @EffectorParam(name="dockerfile", description="URL of Dockerfile template") String dockerfile,
+            @EffectorParam(name="entrypoint", description="URL of entrypoint script") String entrypoint,
+            @EffectorParam(name="contextArchive", description="URL of context archive") String contextArchive,
             @EffectorParam(name="name", description="Repository name") String name,
             @EffectorParam(name="useSsh", description="Add an SSHable layer after building") boolean useSsh);
 

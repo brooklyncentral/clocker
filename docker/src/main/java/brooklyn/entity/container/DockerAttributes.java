@@ -53,6 +53,9 @@ public class DockerAttributes {
     public static final ConfigKey<String> DOCKERFILE_ENTRYPOINT_URL = ConfigKeys.newStringConfigKey(
             "docker.entrypoint.url", "URL of the Dockerfile entrypoint script to use. (default is no script)");
 
+    public static final ConfigKey<String> DOCKERFILE_CONTEXT_URL = ConfigKeys.newStringConfigKey(
+            "docker.context.url", "URL of the Dockerfile context archive to use. (default is no context)");
+
     public static final ConfigKey<String> DOCKERFILE_NAME = ConfigKeys.newStringConfigKey(
             "docker.dockerfile.name", "Name for the image created by the Dockerfile being used");
 
