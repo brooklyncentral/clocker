@@ -33,6 +33,7 @@ import org.apache.brooklyn.camp.brooklyn.spi.creation.BrooklynComponentTemplateR
 import org.apache.brooklyn.camp.brooklyn.spi.creation.service.BrooklynServiceTypeResolver;
 import org.apache.brooklyn.camp.brooklyn.spi.creation.service.ServiceTypeResolver;
 import org.apache.brooklyn.camp.spi.PlatformComponentTemplate;
+import org.apache.brooklyn.core.entity.BrooklynConfigKeys;
 import org.apache.brooklyn.util.text.Strings;
 
 import brooklyn.entity.container.DockerAttributes;
@@ -79,6 +80,8 @@ public class DockerServiceTypeResolver extends BrooklynServiceTypeResolver {
             String containerName = (String) resolver.getAttrs().getStringKey("id");
             spec.configure(DockerAttributes.DOCKER_CONTAINER_NAME, containerName);
         }
+        spec.configure(BrooklynConfigKeys.SKIP_ENTITY_START, Boolean.TRUE);
+        spec.configure(BrooklynConfigKeys.SKIP_ON_BOX_BASE_DIR_RESOLUTION, Boolean.TRUE);
         super.decorateSpec(resolver, spec);
     }
 

@@ -195,8 +195,8 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
         if (getOwner().config().get(DockerContainer.DOCKER_USE_SSH)) {
             return super.execCommands(props, summaryForLogging, commands, env);
         } else {
-            SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
             Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
+            SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
             return host.execCommands(nonPortProps, summaryForLogging, getExecCommands(commands, env));
         }
     }
