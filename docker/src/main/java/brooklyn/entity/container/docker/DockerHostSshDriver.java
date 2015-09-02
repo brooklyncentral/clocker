@@ -83,7 +83,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     /** {@inheritDoc} */
     @Override
-    public String buildImage(String dockerfile, Optional<String> entrypoint, Optional<String> contextArchive, String name, boolean useSsh) {
+    public String buildImage(String dockerfile, Optional<String> entrypoint, Optional<String> contextArchive, String name, boolean useSsh, Map<String, Object> substitutions) {
         String imageId;
         String imageDir =  Os.mergePaths(getRunDir(), name);
         if (!ArchiveType.UNKNOWN.equals(ArchiveType.of(dockerfile)) || Urls.isDirectory(dockerfile)) {
@@ -101,7 +101,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 int result = task.get();
                 if (result != 0) throw new IllegalStateException("Error creating image directory: " + name);
             }
-            copyTemplate(dockerfile, Os.mergePaths(name, DockerUtils.DOCKERFILE), false, getExtraTemplateSubstitutions(name));
+            copyTemplate(dockerfile, Os.mergePaths(name, DockerUtils.DOCKERFILE), false, substitutions);
             if (entrypoint.isPresent()) {
                 copyResource(entrypoint.get(), Os.mergePaths(name, DockerUtils.ENTRYPOINT));
             }
@@ -113,7 +113,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
         if (useSsh) {
             // Update the image with the Clocker sshd Dockerfile
-            copyTemplate(DockerUtils.SSHD_DOCKERFILE, Os.mergePaths(name, "Sshd" + DockerUtils.DOCKERFILE), false, getExtraTemplateSubstitutions(name));
+            copyTemplate(DockerUtils.SSHD_DOCKERFILE, Os.mergePaths(name, "Sshd" + DockerUtils.DOCKERFILE), false, substitutions);
             imageId = buildDockerfile("Sshd" + DockerUtils.DOCKERFILE, name);
             log.info("Created SSHable Dockerfile image with ID {}", imageId);
         }
@@ -132,13 +132,6 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         log.info("Created SSH-based image from {} with ID {}", name, sshdImageId);
 
         return sshdImageId;
-    }
-
-    private Map<String, Object> getExtraTemplateSubstitutions(String imageName) {
-        Map<String, Object> templateSubstitutions = MutableMap.<String, Object>of("fullyQualifiedImageName", imageName);
-        DockerHost host = (DockerHost) getEntity();
-        templateSubstitutions.putAll(host.getInfrastructure().config().get(DockerInfrastructure.DOCKERFILE_SUBSTITUTIONS));
-        return templateSubstitutions;
     }
 
     private String buildDockerfileDirectory(String name) {

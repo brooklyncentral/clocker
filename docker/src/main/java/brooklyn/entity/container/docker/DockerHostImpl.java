@@ -376,8 +376,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     /** {@inheritDoc} */
     @Override
-    public String buildImage(String dockerFile, @Nullable String entrypoint, @Nullable String contextArchive, String name, boolean useSsh) {
-        String imageId = getDriver().buildImage(dockerFile, Optional.fromNullable(entrypoint), Optional.fromNullable(contextArchive), name, useSsh);
+    public String buildImage(String dockerFile, @Nullable String entrypoint, @Nullable String contextArchive, String name, boolean useSsh, Map<String, Object> substitutions) {
+        String imageId = getDriver().buildImage(dockerFile, Optional.fromNullable(entrypoint), Optional.fromNullable(contextArchive), name, useSsh, substitutions);
         LOG.debug("Successfully created image {} ({})", new Object[] { imageId, name });
         return imageId;
     }
@@ -609,7 +609,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         if (Strings.isBlank(imageId)) {
             String dockerfileUrl = config().get(DockerInfrastructure.DOCKERFILE_URL);
             String imageName = DockerUtils.imageName(this, dockerfileUrl);
-            imageId = buildImage(dockerfileUrl, null, null, imageName, config().get(DockerHost.DOCKER_USE_SSH));
+            imageId = buildImage(dockerfileUrl, null, null, imageName, config().get(DockerHost.DOCKER_USE_SSH), ImmutableMap.<String, Object>of("fullyQualifiedImageName", imageName));
             sensors().set(DOCKER_IMAGE_NAME, imageName);
         }
 

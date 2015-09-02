@@ -189,6 +189,7 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
      * @param contextArchive URL of context archive for Dockerfile, may be null
      * @param name Repository name
      * @param useSsh Add SSHable layer after building
+     * @param substitutions Extra template substitutions for the Dockerfile
      * @see DockerHostDriver#buildImage(String, Optional, String, boolean)
      */
     @Effector(description="Create an image from a Dockerfile and entrypoint script and return the image ID")
@@ -197,7 +198,8 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
             @EffectorParam(name="entrypoint", description="URL of entrypoint script") String entrypoint,
             @EffectorParam(name="contextArchive", description="URL of context archive") String contextArchive,
             @EffectorParam(name="name", description="Repository name") String name,
-            @EffectorParam(name="useSsh", description="Add an SSHable layer after building") boolean useSsh);
+            @EffectorParam(name="useSsh", description="Add an SSHable layer after building") boolean useSsh,
+            @EffectorParam(name="substitutions", description="Extra template substitutions for the Dockerfile") Map<String, Object> substitutions);
 
     /**
      * Create an SSHable image based on the image with the given name.
