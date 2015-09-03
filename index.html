@@ -131,10 +131,8 @@ in the Brooklyn user guide. You can also paste a YAML blueprint into the <em>YAM
 <pre><code>
 location: my-docker-cloud
 services:
-- type: brooklyn.entity.webapp.jboss.JBoss7Server
-  brooklyn.config:
-    wars.root:
-    - "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/hello-world.war"
+- type: org.apache.brooklyn.entity.webapp.tomcat.Tomcat8Server
+  wars.root: "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/hello-world.war"
 </code></pre>
 
 <p>A blueprint for an application using a Docker image would look like this:</p>
