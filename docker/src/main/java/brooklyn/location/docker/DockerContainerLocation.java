@@ -57,6 +57,7 @@ import org.apache.brooklyn.util.ssh.IptablesCommands;
 import org.apache.brooklyn.util.ssh.IptablesCommands.Chain;
 import org.apache.brooklyn.util.ssh.IptablesCommands.Policy;
 import org.apache.brooklyn.util.text.StringEscapes.BashStringEscapes;
+import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
 
 import brooklyn.entity.container.DockerCallbacks;
@@ -301,10 +302,14 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
 
     @Override
     public String getSubnetIp() {
-        String containerId = checkNotNull(getOwner().getContainerId(), "containerId");
-        String containerAddress = getOwner().getDockerHost().runDockerCommand(
-                "inspect --format={{.NetworkSettings.IPAddress}} " + containerId);
-        return containerAddress.trim();
+        String containerAddress = getOwner().sensors().get(Attributes.SUBNET_ADDRESS);
+        if (Strings.isEmpty(containerAddress)) {
+            String containerId = checkNotNull(getOwner().getContainerId(), "containerId");
+            containerAddress = getOwner().getDockerHost()
+                    .runDockerCommand("inspect --format={{.NetworkSettings.IPAddress}} " + containerId)
+                    .trim();
+        }
+        return containerAddress;
     }
 
 }

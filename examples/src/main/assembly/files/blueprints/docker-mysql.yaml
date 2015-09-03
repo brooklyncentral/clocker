@@ -20,9 +20,7 @@ locations:
 
 services:
 - type: docker:mysql:5.7
-  openPorts:
-  - 3306
   directPorts:
   - 3306
-  docker.container.environment:
+  env:
     MYSQL_ROOT_PASSWORD: "s3cr3t"

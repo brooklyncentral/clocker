@@ -16,6 +16,7 @@
 package brooklyn.entity.container.docker.application;
 
 import java.util.List;
+import java.util.Map;
 
 import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.entity.ImplementedBy;
@@ -59,6 +60,15 @@ public interface VanillaDockerApplication extends VanillaSoftwareProcess {
 
     @SetFromFlag("directPorts")
     ConfigKey<List<Integer>> DOCKER_DIRECT_PORTS = DockerAttributes.DOCKER_DIRECT_PORTS;
+
+    @SetFromFlag("portBindings")
+    ConfigKey<Map<Integer, Integer>> DOCKER_PORT_BINDINGS = DockerAttributes.DOCKER_PORT_BINDINGS.getConfigKey();
+
+    @SetFromFlag("env")
+    ConfigKey<Map<String, Object>> DOCKER_CONTAINER_ENVIRONMENT = DockerContainer.DOCKER_CONTAINER_ENVIRONMENT.getConfigKey();
+
+    @SetFromFlag("volumes")
+    ConfigKey<List<String>> DOCKER_CONTAINER_VOLUME_EXPORT = DockerAttributes.DOCKER_CONTAINER_VOLUME_EXPORT;
 
     DockerContainer getDockerContainer();
 

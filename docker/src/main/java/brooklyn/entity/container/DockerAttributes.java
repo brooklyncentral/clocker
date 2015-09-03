@@ -32,6 +32,7 @@ import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
+import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.core.flags.TypeCoercions;
 import org.apache.brooklyn.util.core.internal.ssh.SshTool;
 import org.apache.brooklyn.util.javalang.Reflections;
@@ -104,6 +105,10 @@ public class DockerAttributes {
     public static final ConfigKey<List<String>> DOCKER_CONTAINER_VOLUME_EXPORT = ConfigKeys.newConfigKey(
             new TypeToken<List<String>>() { },
             "docker.container.volumes", "Container volume export configuration");
+
+    public static final AttributeSensor<Map<String, String>> DOCKER_VOLUME_MAPPING = Sensors.newSensor(
+            new TypeToken<Map<String, String>>() { },
+            "docker.container.volumes", "Container volume mappings");
 
     public static final ConfigKey<List<DockerAwarePlacementStrategy>> PLACEMENT_STRATEGIES = ConfigKeys.newConfigKey(
             new TypeToken<List<DockerAwarePlacementStrategy>>() { },

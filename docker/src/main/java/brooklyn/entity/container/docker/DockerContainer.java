@@ -95,11 +95,11 @@ public interface DockerContainer extends BasicStartable, HasNetworkAddresses, Ha
     @SetFromFlag("memory")
     ConfigKey<Integer> DOCKER_MEMORY = DockerAttributes.DOCKER_MEMORY;
 
-    @SetFromFlag("volumeExports")
+    @SetFromFlag("volumes")
     ConfigKey<List<String>> DOCKER_CONTAINER_VOLUME_EXPORT = DockerAttributes.DOCKER_CONTAINER_VOLUME_EXPORT;
 
-    @SetFromFlag("environment")
-    ConfigKey<Map<String, Object>> DOCKER_CONTAINER_ENVIRONMENT = ConfigKeys.newConfigKey(
+    @SetFromFlag("env")
+    AttributeSensorAndConfigKey<Map<String, Object>, Map<String, Object>> DOCKER_CONTAINER_ENVIRONMENT = ConfigKeys.newSensorAndConfigKey(
             new TypeToken<Map<String, Object>>() { },
             "docker.container.environment", "Environment variables for the Docker container");
 
