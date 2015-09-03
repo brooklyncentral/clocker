@@ -91,9 +91,8 @@ You can also paste a YAML blueprint into the _YAML_ tab of the _Add Application_
 ```JS
 location: my-docker-cloud
 services:
-- type: brooklyn.entity.webapp.jboss.JBoss7Server
-  brooklyn.config:
-    wars.root: "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/hello-world.war"
+- type: org.apache.brooklyn.entity.webapp.tomcat.Tomcat8Server
+  wars.root: "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/hello-world.war"
 ```
 
 A blueprint for an application using a Docker image would look like this:
