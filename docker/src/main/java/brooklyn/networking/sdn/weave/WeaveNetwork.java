@@ -31,7 +31,7 @@ import brooklyn.networking.sdn.SdnProvider;
 public interface WeaveNetwork extends SdnProvider {
 
     @SetFromFlag("version")
-    ConfigKey<String> WEAVE_VERSION = ConfigKeys.newStringConfigKey("weave.version", "The Weave SDN version number", "1.0.1");
+    ConfigKey<String> WEAVE_VERSION = ConfigKeys.newStringConfigKey("weave.version", "The Weave SDN version number", "1.0.3");
 
     @SetFromFlag("weavePort")
     ConfigKey<Integer> WEAVE_PORT = WeaveContainer.WEAVE_PORT;

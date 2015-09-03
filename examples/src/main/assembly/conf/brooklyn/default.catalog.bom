@@ -135,7 +135,7 @@ brooklyn.catalog:
 
         brooklyn.enrichers:
         # publish the URL as a sensor; the GUI will pick this up (main.uri)
-        - type: org.apache.brooklyn.sensor.enricher.Transformer
+        - type: org.apache.brooklyn.enricher.stock.Transformer
           brooklyn.config:
             uniqueTag: url-generator
             enricher.sourceSensor: host.subnet.hostname
@@ -244,13 +244,13 @@ brooklyn.catalog:
 
               brooklyn.enrichers:
               # derive reqs.per_sec from reqs.count
-              - type: org.apache.brooklyn.sensor.enricher.YamlTimeWeightedDeltaEnricher
+              - type: org.apache.brooklyn.enricher.stock.YamlTimeWeightedDeltaEnricher
                 brooklyn.config:
                   enricher.sourceSensor: reqs.count
                   enricher.targetSensor: reqs.per_sec
                   enricher.delta.period: 1s
               # and take an average over 30s for reqs.per_sec into reqs.per_sec.windowed_30s
-              - type: org.apache.brooklyn.sensor.enricher.YamlRollingTimeWindowMeanEnricher
+              - type: org.apache.brooklyn.enricher.stock.YamlRollingTimeWindowMeanEnricher
                 brooklyn.config:
                   enricher.sourceSensor: reqs.per_sec
                   enricher.targetSensor: reqs.per_sec.windowed_30s
@@ -269,17 +269,17 @@ brooklyn.catalog:
 
         # back at the cluster, create a total per-sec and some per-node average
         brooklyn.enrichers:
-        - type: org.apache.brooklyn.sensor.enricher.Aggregator
+        - type: org.apache.brooklyn.enricher.stock.Aggregator
           brooklyn.config:
             enricher.sourceSensor: reqs.per_sec
             enricher.targetSensor: reqs.per_sec
             transformation: sum
-        - type: org.apache.brooklyn.sensor.enricher.Aggregator
+        - type: org.apache.brooklyn.enricher.stock.Aggregator
           brooklyn.config:
             enricher.sourceSensor: reqs.per_sec
             enricher.targetSensor: reqs.per_sec.per_node
             transformation: average
-        - type: org.apache.brooklyn.sensor.enricher.Aggregator
+        - type: org.apache.brooklyn.enricher.stock.Aggregator
           brooklyn.config:
             enricher.sourceSensor: reqs.per_sec.windowed_30s
             enricher.targetSensor: reqs.per_sec.windowed_30s.per_node
@@ -318,13 +318,13 @@ brooklyn.catalog:
 
       brooklyn.enrichers:
       # publish a few useful info sensors and KPI's to the root of the app
-      - type: org.apache.brooklyn.sensor.enricher.Propagator
+      - type: org.apache.brooklyn.enricher.stock.Propagator
         brooklyn.config:
           uniqueTag:    propagate-load-balancer-url
           producer:     $brooklyn:entity("load-bal")
           propagating:
           - main.uri
-      - type: org.apache.brooklyn.sensor.enricher.Propagator
+      - type: org.apache.brooklyn.enricher.stock.Propagator
         brooklyn.config:
           uniqueTag:    propagate-reqs-per-sec
           producer:     $brooklyn:entity("my-web-cluster")
@@ -424,7 +424,7 @@ brooklyn.catalog:
     item:
       type: brooklyn.networking.sdn.weave.WeaveNetwork
       brooklyn.config:
-        weave.version: 1.0.1
+        weave.version: 1.0.3
         sdn.agent.spec:
           $brooklyn:entitySpec:
             type: weave-router
