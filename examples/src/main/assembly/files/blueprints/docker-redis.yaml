@@ -20,7 +20,5 @@ locations:
 
 services:
 - type: docker:redis:2.8.19
-  openPorts:
-  - 6379
   directPorts:
   - 6379

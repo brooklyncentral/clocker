@@ -35,7 +35,9 @@ import com.google.common.base.CaseFormat;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
@@ -47,7 +49,6 @@ import org.jclouds.net.domain.IpPermission;
 import org.jclouds.net.domain.IpProtocol;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.api.location.NoMachinesAvailableException;
@@ -67,7 +68,6 @@ import org.apache.brooklyn.core.location.LocationConfigKeys;
 import org.apache.brooklyn.core.location.PortRanges;
 import org.apache.brooklyn.core.location.cloud.CloudLocationConfig;
 import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
-import org.apache.brooklyn.core.location.geo.LocalhostExternalIpLoader;
 import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
@@ -349,6 +349,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 volumes.put(dir, dir);
             }
         }
+        sensors().set(DockerAttributes.DOCKER_VOLUME_MAPPING, volumes);
+        entity.sensors().set(DockerAttributes.DOCKER_VOLUME_MAPPING, volumes);
         options.volumes(volumes);
 
         // Environment
@@ -361,10 +363,19 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         if (entityEnvironment != null) {
             environment.add(Joiner.on(":").withKeyValueSeparator("=").join(entityEnvironment));
         }
+        Map<String, Object> containerEnvironment = MutableMap.of();
+        for (String entry : environment) {
+            List<String> split = Splitter.on('=').trimResults().splitToList(entry);
+            String key = split.get(0);
+            String value = split.get(1);
+            containerEnvironment.put(key,  value);
+        }
+        sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, containerEnvironment);
+        entity.sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, containerEnvironment);
         options.env(environment);
 
         // Direct port mappings
-        Map<Integer, Integer> bindings = entity.config().get(DockerAttributes.DOCKER_PORT_BINDINGS);
+        Map<Integer, Integer> bindings = MutableMap.copyOf(entity.config().get(DockerAttributes.DOCKER_PORT_BINDINGS));
         if (bindings == null || bindings.isEmpty()) {
             bindings = MutableMap.of();
             List<PortAttributeSensorAndConfigKey> entityPortConfig = entity.config().get(DockerAttributes.DOCKER_DIRECT_PORT_CONFIG);
@@ -386,6 +397,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 }
             }
         }
+        sensors().set(DockerAttributes.DOCKER_PORT_BINDINGS, bindings);
         entity.sensors().set(DockerAttributes.DOCKER_PORT_BINDINGS, bindings);
         if (bindings.size() > 0) {
             options.portBindings(bindings);
@@ -482,10 +494,10 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             Entity entity = getRunningEntity();
 
             // Link the entity to the container
-            ((EntityLocal) entity).sensors().set(DockerContainer.DOCKER_INFRASTRUCTURE, dockerHost.getInfrastructure());
-            ((EntityLocal) entity).sensors().set(DockerContainer.DOCKER_HOST, dockerHost);
-            ((EntityLocal) entity).sensors().set(DockerContainer.CONTAINER, this);
-            ((EntityLocal) entity).sensors().set(DockerContainer.CONTAINER_ID, containerId);
+            entity.sensors().set(DockerContainer.DOCKER_INFRASTRUCTURE, dockerHost.getInfrastructure());
+            entity.sensors().set(DockerContainer.DOCKER_HOST, dockerHost);
+            entity.sensors().set(DockerContainer.CONTAINER, this);
+            entity.sensors().set(DockerContainer.CONTAINER_ID, containerId);
 
             // If SDN is enabled, attach networks
             if (config().get(SdnAttributes.SDN_ENABLE)) {
@@ -496,7 +508,6 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 Collection<String> extra = entity.config().get(SdnAttributes.NETWORK_LIST);
                 if (extra != null) networks.addAll(extra);
                 sensors().set(SdnAttributes.ATTACHED_NETWORKS, networks);
-                ((EntityLocal) entity).sensors().set(SdnAttributes.ATTACHED_NETWORKS, networks);
 
                 // Save container addresses
                 Set<String> addresses = Sets.newHashSet();
@@ -505,10 +516,10 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                     addresses.add(address.getHostAddress().toString());
                     if (networkId.equals(entity.getApplicationId())) {
                         sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
+                        sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostAddress());
                     }
                 }
                 sensors().set(CONTAINER_ADDRESSES, addresses);
-                ((EntityLocal) entity).sensors().set(CONTAINER_ADDRESSES, addresses);
             }
 
             // Create our wrapper location around the container
@@ -561,14 +572,14 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 if (p != null && !p.isEmpty()) ports.add(p.iterator().next());
             }
         }
-        List<Integer> entityOpenPorts = entity.config().get(DockerAttributes.DOCKER_OPEN_PORTS);
-        Map<Integer, Integer> dockerPortBindings = entity.sensors().get(DockerAttributes.DOCKER_PORT_BINDINGS);
-        if (entityOpenPorts != null) {
+        List<Integer> entityOpenPorts = MutableList.copyOf(entity.config().get(DockerAttributes.DOCKER_OPEN_PORTS));
+        entityOpenPorts.addAll(entity.sensors().get(DockerAttributes.DOCKER_PORT_BINDINGS).values());
+        if (entityOpenPorts.size() > 0) {
             // Create config and sensor for these ports
             for (int i = 0; i < entityOpenPorts.size(); i++) {
                 Integer port = entityOpenPorts.get(i);
                 String name = String.format("docker.port.%02d", port);
-                ((EntityInternal) entity).sensors().set(Sensors.newIntegerSensor(name), port);
+                entity.sensors().set(Sensors.newIntegerSensor(name), port);
                 entity.config().set(ConfigKeys.newConfigKey(PortRange.class, name), PortRanges.fromInteger(port));
             }
 
