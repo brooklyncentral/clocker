@@ -43,6 +43,8 @@ import com.google.common.primitives.Ints;
 import org.jclouds.compute.domain.Processor;
 import org.jclouds.compute.domain.TemplateBuilder;
 import org.jclouds.docker.compute.options.DockerTemplateOptions;
+import org.jclouds.net.domain.IpPermission;
+import org.jclouds.net.domain.IpProtocol;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntityLocal;
@@ -65,6 +67,7 @@ import org.apache.brooklyn.core.location.LocationConfigKeys;
 import org.apache.brooklyn.core.location.PortRanges;
 import org.apache.brooklyn.core.location.cloud.CloudLocationConfig;
 import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
+import org.apache.brooklyn.core.location.geo.LocalhostExternalIpLoader;
 import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
@@ -361,25 +364,29 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         options.env(environment);
 
         // Direct port mappings
-        Map<Integer, Integer> bindings = MutableMap.of();
-        List<PortAttributeSensorAndConfigKey> entityPortConfig = entity.config().get(DockerAttributes.DOCKER_DIRECT_PORT_CONFIG);
-        if (entityPortConfig != null) {
-            for (PortAttributeSensorAndConfigKey key : entityPortConfig) {
-                PortRange range = entity.config().get(key);
-                if (range != null && !range.isEmpty()) {
-                    Integer port = range.iterator().next();
-                    if (port != null) {
-                        bindings.put(port,  port);
+        Map<Integer, Integer> bindings = entity.config().get(DockerAttributes.DOCKER_PORT_BINDINGS);
+        if (bindings == null || bindings.isEmpty()) {
+            bindings = MutableMap.of();
+            List<PortAttributeSensorAndConfigKey> entityPortConfig = entity.config().get(DockerAttributes.DOCKER_DIRECT_PORT_CONFIG);
+            if (entityPortConfig != null) {
+                for (PortAttributeSensorAndConfigKey key : entityPortConfig) {
+                    PortRange range = entity.config().get(key);
+                    if (range != null && !range.isEmpty()) {
+                        Integer port = range.iterator().next();
+                        if (port != null) {
+                            bindings.put(port,  port);
+                        }
                     }
                 }
             }
-        }
-        List<Integer> entityPorts = entity.config().get(DockerAttributes.DOCKER_DIRECT_PORTS);
-        if (entityPorts != null) {
-            for (Integer port : entityPorts) {
-                bindings.put(port, port);
+            List<Integer> entityPorts = entity.config().get(DockerAttributes.DOCKER_DIRECT_PORTS);
+            if (entityPorts != null) {
+                for (Integer port : entityPorts) {
+                    bindings.put(port, port);
+                }
             }
         }
+        entity.sensors().set(DockerAttributes.DOCKER_PORT_BINDINGS, bindings);
         if (bindings.size() > 0) {
             options.portBindings(bindings);
         }
@@ -407,6 +414,23 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             return Strings.trim(address);
         } else {
             return null;
+        }
+    }
+
+    public void configurePortBindings(DockerHost host, Entity entity) {
+        Map<Integer, Integer> bindings = entity.sensors().get(DockerAttributes.DOCKER_PORT_BINDINGS);
+        if (bindings.size() > 0) {
+            Collection<IpPermission> permissions = MutableList.of();
+            for (Integer hostPort : bindings.keySet()) {
+                IpPermission portAccess = IpPermission.builder()
+                        .ipProtocol(IpProtocol.TCP)
+                        .fromPort(hostPort)
+                        .toPort(hostPort)
+                        .cidrBlock(Cidr.UNIVERSAL.toString())
+                        .build();
+                permissions.add(portAccess);
+            }
+            host.addIpPermissions(permissions);
         }
     }
 
@@ -538,6 +562,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             }
         }
         List<Integer> entityOpenPorts = entity.config().get(DockerAttributes.DOCKER_OPEN_PORTS);
+        Map<Integer, Integer> dockerPortBindings = entity.sensors().get(DockerAttributes.DOCKER_PORT_BINDINGS);
         if (entityOpenPorts != null) {
             // Create config and sensor for these ports
             for (int i = 0; i < entityOpenPorts.size(); i++) {

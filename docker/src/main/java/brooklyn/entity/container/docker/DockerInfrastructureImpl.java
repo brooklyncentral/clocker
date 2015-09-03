@@ -60,6 +60,7 @@ import org.apache.brooklyn.core.entity.EntityPredicates;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.location.BasicLocationDefinition;
 import org.apache.brooklyn.core.location.BasicLocationRegistry;
+import org.apache.brooklyn.core.location.dynamic.LocationOwner;
 import org.apache.brooklyn.enricher.stock.Enrichers;
 import org.apache.brooklyn.entity.group.BasicGroup;
 import org.apache.brooklyn.entity.group.Cluster;
@@ -311,9 +312,9 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         getManagementContext().addPropertiesReloadListener(listener);
         sensors().set(Attributes.PROPERTIES_RELOAD_LISTENER, listener);
 
-        sensors().set(LOCATION_DEFINITION, definition);
-        sensors().set(DYNAMIC_LOCATION, location);
-        sensors().set(LOCATION_NAME, location.getId());
+        sensors().set(LocationOwner.LOCATION_DEFINITION, definition);
+        sensors().set(LocationOwner.DYNAMIC_LOCATION, location);
+        sensors().set(LocationOwner.LOCATION_NAME, location.getId());
 
         LOG.info("New Docker location {} created", location);
         return (DockerLocation) location;
@@ -339,7 +340,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
             if (mgr.isManaged(location)) {
                 mgr.unmanage(location);
             }
-            final LocationDefinition definition = sensors().get(LOCATION_DEFINITION);
+            final LocationDefinition definition = sensors().get(LocationOwner.LOCATION_DEFINITION);
             if (definition != null) {
                 getManagementContext().getLocationRegistry().removeDefinedLocation(definition.getId());
             }
@@ -349,9 +350,9 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
             getManagementContext().removePropertiesReloadListener(listener);
         }
 
-        sensors().set(LOCATION_DEFINITION, null);
-        sensors().set(DYNAMIC_LOCATION, null);
-        sensors().set(LOCATION_NAME, null);
+        sensors().set(LocationOwner.LOCATION_DEFINITION, null);
+        sensors().set(LocationOwner.DYNAMIC_LOCATION, null);
+        sensors().set(LocationOwner.LOCATION_NAME, null);
     }
 
     @Override

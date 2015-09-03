@@ -50,6 +50,4 @@ public interface DockerHostDriver extends SoftwareProcessDriver {
 
     String deployArchive(String url);
 
-    void configureSecurityGroups();
-
 }

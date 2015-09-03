@@ -15,11 +15,14 @@
  */
 package brooklyn.entity.container.docker;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.base.Optional;
 import com.google.common.reflect.TypeToken;
+
+import org.jclouds.net.domain.IpPermission;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
@@ -175,6 +178,9 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
      * @return an Optional containing the ID of the named and tagged image.
      */
     Optional<String> getImageNamed(String name, String tag);
+
+    void configureSecurityGroups();
+    void addIpPermissions(Collection<IpPermission> permissions);
 
     MethodEffector<String> BUILD_IMAGE = new MethodEffector<String>(DockerHost.class, "buildImage");
     MethodEffector<String> RUN_DOCKER_COMMAND = new MethodEffector<String>(DockerHost.class, "runDockerCommand");
