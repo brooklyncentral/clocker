@@ -44,6 +44,8 @@ import org.jclouds.compute.config.ComputeServiceProperties;
 import org.jclouds.compute.domain.OsFamily;
 import org.jclouds.compute.domain.TemplateBuilder;
 import org.jclouds.compute.domain.Volume;
+import org.jclouds.net.domain.IpPermission;
+import org.jclouds.net.domain.IpProtocol;
 import org.jclouds.softlayer.SoftLayerApi;
 import org.jclouds.softlayer.compute.options.SoftLayerTemplateOptions;
 import org.jclouds.softlayer.domain.VirtualGuest;
@@ -70,6 +72,7 @@ import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.core.location.BasicLocationDefinition;
 import org.apache.brooklyn.core.location.Machines;
+import org.apache.brooklyn.core.location.geo.LocalhostExternalIpLoader;
 import org.apache.brooklyn.core.sensor.DependentConfiguration;
 import org.apache.brooklyn.enricher.stock.Enrichers;
 import org.apache.brooklyn.entity.group.Cluster;
@@ -82,6 +85,7 @@ import org.apache.brooklyn.feed.function.FunctionFeed;
 import org.apache.brooklyn.feed.function.FunctionPollConfig;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsLocationConfig;
+import org.apache.brooklyn.location.jclouds.JcloudsMachineLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import org.apache.brooklyn.location.jclouds.networking.JcloudsLocationSecurityGroupCustomizer;
 import org.apache.brooklyn.location.jclouds.templates.PortableTemplateBuilder;
@@ -89,6 +93,7 @@ import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.policy.ha.ServiceFailureDetector;
 import org.apache.brooklyn.policy.ha.ServiceReplacer;
 import org.apache.brooklyn.policy.ha.ServiceRestarter;
+import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import org.apache.brooklyn.util.core.ResourceUtils;
@@ -514,8 +519,65 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     }
 
     @Override
+    public void configureSecurityGroups() {
+        Collection<IpPermission> permissions = getIpPermissions();
+        addIpPermissions(permissions);
+    }
+
+    @Override
+    public void addIpPermissions(Collection<IpPermission> permissions) {
+        Location location = getDriver().getLocation();
+        String securityGroup = config().get(DockerInfrastructure.SECURITY_GROUP);
+        if (Strings.isBlank(securityGroup)) {
+            if (!(location instanceof JcloudsSshMachineLocation)) {
+                LOG.info("{} not running in a JcloudsSshMachineLocation, not configuring extra security groups", this);
+                return;
+            }
+            // TODO check GCE compatibility?
+            JcloudsMachineLocation machine = (JcloudsMachineLocation) location;
+            JcloudsLocationSecurityGroupCustomizer customizer = JcloudsLocationSecurityGroupCustomizer.getInstance(getApplicationId());
+            LOG.debug("Applying custom security groups to {}: {}", machine, permissions);
+            customizer.addPermissionsToLocation(machine, permissions);
+        }
+    }
+
+    /**
+     * @return Extra IP permissions to be configured on this entity's location.
+     */
+    protected Collection<IpPermission> getIpPermissions() {
+        String localhost = LocalhostExternalIpLoader.getLocalhostIpWithin(Duration.minutes(1)) + "/32";
+        IpPermission dockerPort = IpPermission.builder()
+                .ipProtocol(IpProtocol.TCP)
+                .fromPort(sensors().get(DockerHost.DOCKER_PORT))
+                .toPort(sensors().get(DockerHost.DOCKER_PORT))
+                .cidrBlock(localhost)
+                .build();
+        IpPermission dockerSslPort = IpPermission.builder()
+                .ipProtocol(IpProtocol.TCP)
+                .fromPort(sensors().get(DockerHost.DOCKER_SSL_PORT))
+                .toPort(sensors().get(DockerHost.DOCKER_SSL_PORT))
+                .cidrBlock(localhost)
+                .build();
+        IpPermission dockerPortForwarding = IpPermission.builder()
+                .ipProtocol(IpProtocol.TCP)
+                .fromPort(32768)
+                .toPort(65534)
+                .cidrBlock(Cidr.UNIVERSAL.toString())
+                .build();
+        List<IpPermission> permissions = MutableList.of(dockerPort, dockerSslPort, dockerPortForwarding);
+
+        if (config().get(SdnAttributes.SDN_ENABLE)) {
+            SdnProvider provider = (SdnProvider) (sensors().get(DockerHost.DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.SDN_PROVIDER));
+            Collection<IpPermission> sdnPermissions = provider.getIpPermissions(localhost);
+            permissions.addAll(sdnPermissions);
+        }
+
+        return permissions;
+    }
+
+    @Override
     protected void preStart() {
-        getDriver().configureSecurityGroups();
+        configureSecurityGroups();
 
         // Save the VLAN id for this machine
         MachineProvisioningLocation location = getInfrastructure().getDynamicLocation().getProvisioner();

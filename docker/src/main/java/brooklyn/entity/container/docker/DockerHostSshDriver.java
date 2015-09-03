@@ -181,57 +181,6 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     @Override
-    public void configureSecurityGroups() {
-        String securityGroup = getEntity().config().get(DockerInfrastructure.SECURITY_GROUP);
-        if (Strings.isBlank(securityGroup)) {
-            if (!(getLocation() instanceof JcloudsSshMachineLocation)) {
-                log.info("{} not running in a JcloudsSshMachineLocation, not configuring extra security groups", entity);
-                return;
-            }
-            // TODO check GCE compatibility?
-            JcloudsMachineLocation location = (JcloudsMachineLocation) getLocation();
-            JcloudsLocationSecurityGroupCustomizer customizer = JcloudsLocationSecurityGroupCustomizer.getInstance(getEntity().getApplicationId());
-            Collection<IpPermission> permissions = getIpPermissions();
-            log.debug("Applying custom security groups to {}: {}", location, permissions);
-            customizer.addPermissionsToLocation(location, permissions);
-        }
-    }
-
-    /**
-     * @return Extra IP permissions to be configured on this entity's location.
-     */
-    protected Collection<IpPermission> getIpPermissions() {
-        String localhost = LocalhostExternalIpLoader.getLocalhostIpWithin(Duration.minutes(1)) + "/32";
-        IpPermission dockerPort = IpPermission.builder()
-                .ipProtocol(IpProtocol.TCP)
-                .fromPort(getEntity().sensors().get(DockerHost.DOCKER_PORT))
-                .toPort(getEntity().sensors().get(DockerHost.DOCKER_PORT))
-                .cidrBlock(localhost)
-                .build();
-        IpPermission dockerSslPort = IpPermission.builder()
-                .ipProtocol(IpProtocol.TCP)
-                .fromPort(getEntity().sensors().get(DockerHost.DOCKER_SSL_PORT))
-                .toPort(getEntity().sensors().get(DockerHost.DOCKER_SSL_PORT))
-                .cidrBlock(localhost)
-                .build();
-        IpPermission dockerPortForwarding = IpPermission.builder()
-                .ipProtocol(IpProtocol.TCP)
-                .fromPort(32768)
-                .toPort(65534)
-                .cidrBlock(Cidr.UNIVERSAL.toString())
-                .build();
-        List<IpPermission> permissions = MutableList.of(dockerPort, dockerSslPort, dockerPortForwarding);
-
-        if (getEntity().config().get(SdnAttributes.SDN_ENABLE)) {
-            SdnProvider provider = (SdnProvider) (entity.sensors().get(DockerHost.DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.SDN_PROVIDER));
-            Collection<IpPermission> sdnPermissions = provider.getIpPermissions(localhost);
-            permissions.addAll(sdnPermissions);
-        }
-
-        return permissions;
-    }
-
-    @Override
     public void preInstall() {
         resolver = Entities.newDownloader(this);
         setExpandedInstallDir(Os.mergePaths(getInstallDir(), resolver.getUnpackedDirectoryName(format("docker-%s", getVersion()))));

@@ -134,6 +134,11 @@ public class DockerAttributes {
             .inheritance(ConfigInheritance.NONE)
             .build();
 
+    public static final AttributeSensorAndConfigKey<Map<Integer, Integer>, Map<Integer, Integer>> DOCKER_PORT_BINDINGS = ConfigKeys.newSensorAndConfigKey(
+            new TypeToken<Map<Integer, Integer>>() { },
+            "docker.container.portBindings",
+            "Map of port bindings from the host to the container");
+
     /*
      * Counter attributes.
      */
