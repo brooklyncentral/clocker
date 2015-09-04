@@ -15,7 +15,7 @@
 sudo: false
 language: java
 script: mvn clean install
-before_deploy: "mkdir artifacts && mv examples/target/brooklyn-clocker-dist.tar.gz artifacts/brooklyn-clocker-${TRAVIS_BUILD_NUMBER}-${TRAVIS_COMMIT}-dist.tar.gz"
+before_deploy: "mkdir artifacts && mv dist/target/brooklyn-clocker-dist.tar.gz artifacts/brooklyn-clocker-${TRAVIS_BUILD_NUMBER}-${TRAVIS_COMMIT}-dist.tar.gz"
 deploy:
   - provider: s3
     access_key_id: AKIAJL5SMCB2JZCJ2WAQ
