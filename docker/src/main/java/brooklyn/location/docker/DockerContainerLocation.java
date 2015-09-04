@@ -246,16 +246,12 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
                     format("commit %s %s", containerId, imageName),
                     Duration.minutes(20));
             String imageId = DockerUtils.checkId(output);
-            ((EntityLocal) getOwner().getRunningEntity()).sensors().set(DockerContainer.IMAGE_ID, imageId);
-            ((EntityLocal) getOwner()).sensors().set(DockerContainer.IMAGE_ID, imageId);
+            getOwner().getRunningEntity().sensors().set(DockerContainer.IMAGE_ID, imageId);
+            getOwner().sensors().set(DockerContainer.IMAGE_ID, imageId);
             getOwner().getDockerHost().getDynamicLocation().markImage(imageName);
         } else if (DockerCallbacks.PUSH.equalsIgnoreCase(command)) {
             String imageName = getOwner().sensors().get(DockerContainer.IMAGE_NAME);
             getOwner().getDockerHost().runDockerCommand(format("push %s", imageName));
-        } else if (DockerCallbacks.SUBNET_ADDRESS.equalsIgnoreCase(command)) {
-            String address = getOwner().sensors().get(Attributes.SUBNET_ADDRESS);
-            ((EntityLocal) getOwner().getRunningEntity()).sensors().set(Attributes.SUBNET_ADDRESS, address);
-            ((EntityLocal) getOwner().getRunningEntity()).sensors().set(Attributes.SUBNET_HOSTNAME, address);
         } else {
             LOG.warn("Unknown Docker host command: {}", command);
         }
