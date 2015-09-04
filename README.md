@@ -35,12 +35,12 @@ depending on your choice of SDN provider.
 
 ### Using the latest Clocker release
 
-The latest version of Clocker is [1.1.0-PREVIEW.20150901](https://github.com/brooklyncentral/clocker/releases/tag/v1.1.0-PREVIEW.20150901).
+The latest version of Clocker is [1.1.0-PREVIEW.20150904](https://github.com/brooklyncentral/clocker/releases/tag/v1.1.0-PREVIEW.20150904).
 You can deploy your own **Docker Cloud** with a Weave SDN by running these commands with the _network_ argument
 st to `weave`, to use Project Calico as your SDN provider, change the last argument to `calico` instead:
 ```Bash
 % wget --no-check-certificate --quiet \
-    -O brooklyn-clocker-dist.tar.gz http://git.io/vGKYC
+    -O brooklyn-clocker-dist.tar.gz http://git.io/vGb0Y
 % tar zxf brooklyn-clocker-dist.tar.gz
 % cd brooklyn-clocker
 % ./bin/clocker.sh location network
@@ -48,6 +48,14 @@ st to `weave`, to use Project Calico as your SDN provider, change the last argum
 The _location_ argument specifies the destination to deploy to, and the _network_ argument can be either `calico` or `weave`. If these are omitted then
 Brooklyn will start up without running Clocker, and you can choose the application to deploy using the web UI instead.
 
+A Docker image is also available on [Docker Hub](https://hub.docker.com/r/clockercentral/clocker/). You must provide volume sources for a`.brooklyn`
+directory that is writeable, and your `.ssh` directory, and if you want to use a different port to 8080 or 8443 they must be forwarded on the host.
+A suitable startup command would be:
+```Bash
+% docker run -d -v ~/.brooklyn:/root/.brooklyn -v ~/.ssh:/root/.ssh -P \
+    clockercentral/clocker:1.1.0-PREVIEW.20150901 \
+    location network
+```
 For example, you can specify the jclouds provider for SoftLayer in San Jose by using
 _jclouds:softlayer:sjc01_, a group of machines as _byon:(hosts="10.1.2.3,10.1.2.4")_ or a specific
 location from your `brooklyn.properties` file as _named:alias_.
