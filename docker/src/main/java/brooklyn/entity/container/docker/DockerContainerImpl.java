@@ -38,6 +38,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
@@ -442,6 +443,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                         .build();
                 permissions.add(portAccess);
             }
+            LOG.debug("Adding security group entries for ports on {}: {}", entity, Iterables.toString(bindings.keySet()));
             host.addIpPermissions(permissions);
         }
     }
@@ -493,6 +495,9 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             sensors().set(CONTAINER_ID, containerId);
             Entity entity = getRunningEntity();
 
+            // Configure the host to allow remote access to bound container ports
+            configurePortBindings(dockerHost, entity);
+
             // Link the entity to the container
             entity.sensors().set(DockerContainer.DOCKER_INFRASTRUCTURE, dockerHost.getInfrastructure());
             entity.sensors().set(DockerContainer.DOCKER_HOST, dockerHost);
@@ -508,6 +513,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 Collection<String> extra = entity.config().get(SdnAttributes.NETWORK_LIST);
                 if (extra != null) networks.addAll(extra);
                 sensors().set(SdnAttributes.ATTACHED_NETWORKS, networks);
+                entity.sensors().set(SdnAttributes.ATTACHED_NETWORKS, networks);
 
                 // Save container addresses
                 Set<String> addresses = Sets.newHashSet();
@@ -517,9 +523,12 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                     if (networkId.equals(entity.getApplicationId())) {
                         sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
                         sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostAddress());
+                        entity.sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
+                        entity.sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostAddress());
                     }
                 }
                 sensors().set(CONTAINER_ADDRESSES, addresses);
+                entity.sensors().set(CONTAINER_ADDRESSES, addresses);
             }
 
             // Create our wrapper location around the container
