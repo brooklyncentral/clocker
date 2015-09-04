@@ -23,7 +23,7 @@ RUN apk-install openjdk7-jre-base && \
     apk-install wget
 
 # CLOCKER_VERSION_BELOW
-RUN wget http://ccweb.cloudsoftcorp.com/maven/libs-snapshot-local/io/brooklyn/clocker/brooklyn-clocker-examples/1.1.0-SNAPSHOT/brooklyn-clocker-examples-1.1.0-SNAPSHOT-dist.tar.gz -O /brooklyn-clocker-dist.tar.gz && \
+RUN wget http://ccweb.cloudsoftcorp.com/maven/libs-snapshot-local/io/brooklyn/clocker/brooklyn-clocker-dist/1.1.0-SNAPSHOT/brooklyn-clocker-dist-1.1.0-SNAPSHOT-dist.tar.gz -O /brooklyn-clocker-dist.tar.gz && \
     tar zxf brooklyn-clocker-dist.tar.gz && \
     rm -f brooklyn-clocker-dist.tar.gz
 
