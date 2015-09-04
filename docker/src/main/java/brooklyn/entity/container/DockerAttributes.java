@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
 
 import org.apache.brooklyn.api.entity.Entity;
@@ -32,7 +33,6 @@ import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
-import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.core.flags.TypeCoercions;
 import org.apache.brooklyn.util.core.internal.ssh.SshTool;
 import org.apache.brooklyn.util.javalang.Reflections;
@@ -81,7 +81,7 @@ public class DockerAttributes {
     public static final ConfigKey<String> DOCKER_PASSWORD = ConfigKeys.newConfigKeyWithPrefix("docker.", SshTool.PROP_PASSWORD);
 
     public static final ConfigKey<Boolean> DOCKER_USE_HOST_DNS_NAME = ConfigKeys.newBooleanConfigKey(
-            "docker.useHostDnsName", "Container uses same DNS hostname as Docker host", Boolean.TRUE);
+            "docker.useHostDnsName", "Container uses same DNS hostname as Docker host");
 
     public static final ConfigKey<Boolean> DOCKER_USE_SSH = ConfigKeys.newBooleanConfigKey(
             "docker.useSsh", "Use SSH layer instead of docker exec for container commands", Boolean.TRUE);
@@ -117,11 +117,19 @@ public class DockerAttributes {
     public static final AttributeSensorAndConfigKey<Entity, Entity> DOCKER_INFRASTRUCTURE = ConfigKeys.newSensorAndConfigKey(Entity.class,
             "docker.infrastructure", "The Docker infrastructure");
 
-    // Thes configurations must be set on the specific entity and will not be inherited
+    // These configurations must be set on the specific entity and will not be inherited
+
+    public static final ConfigKey<List<Entity>> DOCKER_LINKS = ConfigKeys.builder(new TypeToken<List<Entity>>() { })
+            .name("docker.container.links")
+            .description("List of linked entities for a container")
+            .defaultValue(ImmutableList.<Entity>of())
+            .inheritance(ConfigInheritance.NONE)
+            .build();
 
     public static final ConfigKey<List<PortAttributeSensorAndConfigKey>> DOCKER_DIRECT_PORT_CONFIG = ConfigKeys.builder(new TypeToken<List<PortAttributeSensorAndConfigKey>>() { })
             .name("docker.container.directPorts.configKeys")
             .description("List of configration keys for ports that are to be mapped directly on the Docker host")
+            .defaultValue(ImmutableList.<PortAttributeSensorAndConfigKey>of())
             .inheritance(ConfigInheritance.NONE)
             .build();
 
@@ -134,15 +142,23 @@ public class DockerAttributes {
 
     public static final ConfigKey<List<Integer>> DOCKER_OPEN_PORTS = ConfigKeys.builder(new TypeToken<List<Integer>>() { })
             .name("docker.container.openPorts")
-            .description("List of extra ports to open on the container for forwarding")
+            .description("List of ports to open on the container for forwarding")
             .defaultValue(ImmutableList.<Integer>of())
             .inheritance(ConfigInheritance.NONE)
             .build();
 
-    public static final AttributeSensorAndConfigKey<Map<Integer, Integer>, Map<Integer, Integer>> DOCKER_PORT_BINDINGS = ConfigKeys.newSensorAndConfigKey(
-            new TypeToken<Map<Integer, Integer>>() { },
-            "docker.container.portBindings",
-            "Map of port bindings from the host to the container");
+    public static final ConfigKey<Map<Integer, Integer>> DOCKER_PORT_BINDINGS = ConfigKeys.builder(new TypeToken<Map<Integer, Integer>>() { })
+            .name("docker.container.portBindings")
+            .description("Map of port bindings from the host to the container")
+            .defaultValue(ImmutableMap.<Integer, Integer>of())
+            .inheritance(ConfigInheritance.NONE)
+            .build();
+
+    public static final AttributeSensor<Map<Integer, Integer>> DOCKER_CONTAINER_PORT_BINDINGS = Sensors.newSensor(new TypeToken<Map<Integer, Integer>>() { },
+            "docker.container.portBindings", "Map of port bindings from the host to the container");
+
+    public static final AttributeSensor<List<Integer>> DOCKER_CONTAINER_OPEN_PORTS = Sensors.newSensor(new TypeToken<List<Integer>>() { },
+            "docker.container.openPorts", "List of ports to open on the container for forwarding");
 
     /*
      * Counter attributes.
