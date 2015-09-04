@@ -206,9 +206,6 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                 dockerHost.runDockerCommand(String.format("tag -f %s %s:latest", imageId, imageName));
             }
 
-            // Set subnet address pre install
-            insertCallback(entity, SoftwareProcess.PRE_INSTALL_COMMAND, DockerCallbacks.subnetAddress());
-
             // Look up hardware ID
             String hardwareId = entity.config().get(DockerAttributes.DOCKER_HARDWARE_ID);
             if (Strings.isEmpty(hardwareId)) {
@@ -234,16 +231,16 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             DockerContainer dockerContainer = (DockerContainer) added;
 
             // Save the container attributes
-            ((EntityLocal) dockerContainer).sensors().set(DockerContainer.IMAGE_ID, imageId);
-            ((EntityLocal) dockerContainer).sensors().set(DockerContainer.IMAGE_NAME, imageName);
-            ((EntityLocal) dockerContainer).sensors().set(DockerContainer.HARDWARE_ID, hardwareId);
+            dockerContainer.sensors().set(DockerContainer.IMAGE_ID, imageId);
+            dockerContainer.sensors().set(DockerContainer.IMAGE_NAME, imageName);
+            dockerContainer.sensors().set(DockerContainer.HARDWARE_ID, hardwareId);
 
             // record SDN application network details
             if (getOwner().config().get(SdnAttributes.SDN_ENABLE)) {
                 SdnAgent agent = getOwner().sensors().get(SdnAgent.SDN_AGENT);
                 Cidr applicationCidr =  agent.sensors().get(SdnAgent.SDN_PROVIDER).getSubnetCidr(entity.getApplicationId());
-                ((EntityLocal) entity).sensors().set(SdnProvider.APPLICATION_CIDR, applicationCidr);
-                ((EntityLocal) dockerContainer).sensors().set(SdnProvider.APPLICATION_CIDR, applicationCidr);
+                entity.sensors().set(SdnProvider.APPLICATION_CIDR, applicationCidr);
+                dockerContainer.sensors().set(SdnProvider.APPLICATION_CIDR, applicationCidr);
             }
 
             return dockerContainer.getDynamicLocation();
