@@ -22,7 +22,7 @@
         <module>patches</module>
         <module>docker</module>
         <module>console</module>
-        <module>examples</module>
+        <module>dist</module>
     </modules>
 
     <parent>

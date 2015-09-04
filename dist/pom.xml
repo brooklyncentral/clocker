@@ -26,10 +26,10 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>brooklyn-clocker-examples</artifactId>
-    <name>Clocker Examples</name>
+    <artifactId>brooklyn-clocker-dist</artifactId>
+    <name>Clocker Distribution</name>
     <description>
-        Clocker example Brooklyn blueprints for Docker.
+        Clocker distribution archive with example Brooklyn blueprints
     </description>
 
     <properties>
