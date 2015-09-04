@@ -53,7 +53,7 @@ directory that is writeable, and your `.ssh` directory, and if you want to use a
 A suitable startup command would be:
 ```Bash
 % docker run -d -v ~/.brooklyn:/root/.brooklyn -v ~/.ssh:/root/.ssh -P \
-    clockercentral/clocker:1.1.0-PREVIEW.20150901 \
+    clockercentral/clocker:1.1.0-PREVIEW.20150904 \
     location network
 ```
 For example, you can specify the jclouds provider for SoftLayer in San Jose by using
