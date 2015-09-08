@@ -80,19 +80,29 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
         Entity first = getEntity().sensors().get(AbstractGroup.FIRST);
         LOG.info("Launching {} Weave service at {}", Boolean.TRUE.equals(firstMember) ? "first" : "next", address.getHostAddress());
 
+        if (entity.config().get(DockerInfrastructure.DOCKER_GENERATE_TLS_CERTIFICATES)) {
+            newScript(ImmutableMap.of(NON_STANDARD_LAYOUT, "true"), CUSTOMIZING)
+                    .body.append(
+                            String.format("cp ca-cert.pem %s/ca.pem", getRunDir()),
+                            String.format("cp server-cert.pem %s/cert.pem", getRunDir()),
+                            String.format("cp server-key.pem %s/key.pem", getRunDir()))
+                    .failOnNonZeroResultCode()
+                    .execute();
+        }
+
+        LOG.info("GMNO3 "+entity.config().get(DockerHost.DOCKER_SSL_PORT).iterator().next());
+
         newScript(MutableMap.of(USE_PID_FILE, false), LAUNCHING)
                 .body.append(
-                chain(  BashCommands.sudo(String.format("%s launch-router -iprange %s %s ",
-                            getWeaveCommand(),
-                            entity.config().get(SdnProvider.CONTAINER_NETWORK_CIDR),
-                            Boolean.TRUE.equals(firstMember) ? "" : first.sensors().get(Attributes.SUBNET_ADDRESS))),
-
-                        BashCommands.sudo(String.format("%s launch-proxy -H tcp://[::]:%d --tlsverify --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem --tlscacert=%<s/ca.pem",
-                                getWeaveCommand(),
-                                entity.sensors().get(DockerHost.DOCKER_SSL_PORT),
-                                getRunDir()
-                                ))))
-
+                        chain(
+                                BashCommands.sudo(String.format("%s launch-router -iprange %s %s",
+                                        getWeaveCommand(),
+                                        entity.config().get(SdnProvider.CONTAINER_NETWORK_CIDR),
+                                        Boolean.TRUE.equals(firstMember) ? "" : first.sensors().get(Attributes.SUBNET_ADDRESS))),
+                                BashCommands.sudo(String.format("%s launch-proxy -H tcp://[::]:%d --tlsverify --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem --tlscacert=%<s/ca.pem",
+                                        getWeaveCommand(),
+                                        entity.config().get(DockerHost.DOCKER_SSL_PORT).iterator().next(),
+                                        getRunDir()))))
                 .failOnNonZeroResultCode()
                 .uniqueSshConnection()
                 .execute();
