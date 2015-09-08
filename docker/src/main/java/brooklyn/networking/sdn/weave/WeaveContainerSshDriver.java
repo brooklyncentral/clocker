@@ -94,6 +94,8 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
                     .execute();
         }
 
+        LOG.info("GMNO3 "+entity.config().get(DockerHost.DOCKER_SSL_PORT).iterator().next());
+
         newScript(MutableMap.of(USE_PID_FILE, false), LAUNCHING)
                 .body.append(
                 chain(  BashCommands.sudo(String.format("%s launch-router -iprange %s %s ",
@@ -103,7 +105,7 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
 
                         BashCommands.sudo(String.format("%s launch-proxy -H tcp://[::]:%d --tlsverify --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem --tlscacert=%<s/ca.pem",
                                 getWeaveCommand(),
-                                entity.sensors().get(DockerHost.DOCKER_SSL_PORT),
+                                entity.config().get(DockerHost.DOCKER_SSL_PORT).iterator().next(),
                                 getRunDir()
                                 ))))
 
