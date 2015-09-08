@@ -18,6 +18,8 @@ package brooklyn.networking.sdn.weave;
 import java.net.InetAddress;
 import java.util.List;
 
+import brooklyn.entity.container.docker.DockerInfrastructure;
+import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +40,8 @@ import org.apache.brooklyn.util.ssh.BashCommands;
 
 import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnProvider;
+
+import static org.apache.brooklyn.util.ssh.BashCommands.*;
 
 public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver implements WeaveContainerDriver {
 
@@ -79,11 +83,30 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
         Entity first = getEntity().sensors().get(AbstractGroup.FIRST);
         LOG.info("Launching {} Weave service at {}", Boolean.TRUE.equals(firstMember) ? "first" : "next", address.getHostAddress());
 
+        if (entity.config().get(DockerInfrastructure.DOCKER_GENERATE_TLS_CERTIFICATES)) {
+            newScript(ImmutableMap.of(NON_STANDARD_LAYOUT, "true"), CUSTOMIZING)
+                    .body.append(
+                    String.format("cp ca-cert.pem %s/ca.pem", getRunDir()),
+                    String.format("cp server-cert.pem %s/cert.pem", getRunDir()),
+                    String.format("cp server-key.pem %s/key.pem", getRunDir()))
+                    .failOnNonZeroResultCode()
+                    .execute();
+        }
+
         newScript(MutableMap.of(USE_PID_FILE, false), LAUNCHING)
-                .updateTaskAndFailOnNonZeroResultCode()
-                .body.append(BashCommands.sudo(String.format("%s launch -iprange %s %s", getWeaveCommand(),
-                        entity.config().get(SdnProvider.CONTAINER_NETWORK_CIDR),
-                        Boolean.TRUE.equals(firstMember) ? "" : first.sensors().get(Attributes.SUBNET_ADDRESS))))
+                .body.append(
+                chain(  BashCommands.sudo(String.format("%s launch-router -iprange %s %s ",
+                            getWeaveCommand(),
+                            entity.config().get(SdnProvider.CONTAINER_NETWORK_CIDR),
+                            Boolean.TRUE.equals(firstMember) ? "" : first.sensors().get(Attributes.SUBNET_ADDRESS))),
+
+                        BashCommands.sudo(String.format("%s launch-proxy -H tcp://[::]:2376 --tlsverify --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem --tlscacert=%<s/ca.pem",
+                                getWeaveCommand(),
+                                getRunDir()
+                                ))))
+
+                .failOnNonZeroResultCode()
+                .uniqueSshConnection()
                 .execute();
     }
 
