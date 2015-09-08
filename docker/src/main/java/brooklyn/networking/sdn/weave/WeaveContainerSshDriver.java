@@ -36,6 +36,7 @@ import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.os.Os;
 import org.apache.brooklyn.util.ssh.BashCommands;
 
+import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnProvider;
 
@@ -80,10 +81,20 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
         LOG.info("Launching {} Weave service at {}", Boolean.TRUE.equals(firstMember) ? "first" : "next", address.getHostAddress());
 
         newScript(MutableMap.of(USE_PID_FILE, false), LAUNCHING)
-                .updateTaskAndFailOnNonZeroResultCode()
-                .body.append(BashCommands.sudo(String.format("%s launch -iprange %s %s", getWeaveCommand(),
-                        entity.config().get(SdnProvider.CONTAINER_NETWORK_CIDR),
-                        Boolean.TRUE.equals(firstMember) ? "" : first.sensors().get(Attributes.SUBNET_ADDRESS))))
+                .body.append(
+                chain(  BashCommands.sudo(String.format("%s launch-router -iprange %s %s ",
+                            getWeaveCommand(),
+                            entity.config().get(SdnProvider.CONTAINER_NETWORK_CIDR),
+                            Boolean.TRUE.equals(firstMember) ? "" : first.sensors().get(Attributes.SUBNET_ADDRESS))),
+
+                        BashCommands.sudo(String.format("%s launch-proxy -H tcp://[::]:%d --tlsverify --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem --tlscacert=%<s/ca.pem",
+                                getWeaveCommand(),
+                                entity.sensors().get(DockerHost.DOCKER_SSL_PORT),
+                                getRunDir()
+                                ))))
+
+                .failOnNonZeroResultCode()
+                .uniqueSshConnection()
                 .execute();
     }
 
