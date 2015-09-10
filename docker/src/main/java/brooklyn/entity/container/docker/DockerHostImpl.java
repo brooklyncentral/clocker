@@ -249,8 +249,10 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 template = new PortableTemplateBuilder();
                 if (isJcloudsLocation(location, "google-compute-engine")) {
                     template.osFamily(OsFamily.CENTOS).osVersionMatches("6");
-                } else {
+                } else if (isJcloudsLocation(location, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME)) {
                     template.osFamily(OsFamily.UBUNTU).osVersionMatches("14.04");
+                } else {
+                    template.osFamily(OsFamily.UBUNTU).osVersionMatches("15.04");
                 }
                 template.os64Bit(true);
                 flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), template);
