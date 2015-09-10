@@ -105,8 +105,6 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
             EntitySpec<?> scopeSpec = EntitySpec.create(WeaveScope.class).configure(WeaveContainer.SDN_PROVIDER, this);;
             WeaveScope scopeEntity = (WeaveScope)getAgents().addChild(scopeSpec);
             Entities.manage(scopeEntity);
-            sensors().get(SDN_APPLICATIONS).addMember(scopeEntity);
-            getAgents().addMember(scopeEntity);
             scopeEntity.start(ImmutableList.of(machine));
         }
 
