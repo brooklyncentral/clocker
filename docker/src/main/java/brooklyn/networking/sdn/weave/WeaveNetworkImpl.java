@@ -17,6 +17,7 @@ package brooklyn.networking.sdn.weave;
 
 import java.util.Collection;
 
+import org.apache.brooklyn.api.entity.Entity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,6 +79,14 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
                 .cidrBlock(Cidr.UNIVERSAL.toString()) // TODO could be tighter restricted?
                 .build();
         permissions.add(weaveUdpPort);
+        Integer weaveScopePort = config().get(WeaveScope.WEAVE_SCOPE_PORT);
+        IpPermission weaveScopeTcpPort = IpPermission.builder()
+                .ipProtocol(IpProtocol.TCP)
+                .fromPort(weaveScopePort)
+                .toPort(weaveScopePort)
+                .cidrBlock(Cidr.UNIVERSAL.toString()) // TODO could be tighter restricted?
+                .build();
+        permissions.add(weaveScopeTcpPort);
         return permissions;
     }
 
@@ -90,6 +99,17 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
         Entities.manage(agent);
         getAgents().addMember(agent);
         agent.start(ImmutableList.of(machine));
+
+        Boolean shouldStartWeaveScope = config().get(START_WEAVE_SCOPE);
+        if(shouldStartWeaveScope){
+            EntitySpec<?> scopeSpec = EntitySpec.create(WeaveScope.class).configure(WeaveContainer.SDN_PROVIDER, this);;
+            WeaveScope scopeEntity = (WeaveScope)getAgents().addChild(scopeSpec);
+            Entities.manage(scopeEntity);
+            sensors().get(SDN_APPLICATIONS).addMember(scopeEntity);
+            getAgents().addMember(scopeEntity);
+            scopeEntity.start(ImmutableList.of(machine));
+        }
+
         LOG.debug("{} added Weave service {}", this, agent);
     }
 

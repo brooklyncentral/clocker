@@ -36,4 +36,9 @@ public interface WeaveNetwork extends SdnProvider {
     @SetFromFlag("weavePort")
     ConfigKey<Integer> WEAVE_PORT = WeaveContainer.WEAVE_PORT;
 
+    @SetFromFlag("shouldStartWeaveScope")
+    ConfigKey<Boolean> START_WEAVE_SCOPE = ConfigKeys.newBooleanConfigKey("weave.shouldStartWeaveScope", "Should WeaveScope be started", Boolean.TRUE);
+
+    @SetFromFlag("weaveScope")
+    ConfigKey<Integer> WEAVE_SCOPE_PORT = WeaveScope.WEAVE_SCOPE_PORT;
 }

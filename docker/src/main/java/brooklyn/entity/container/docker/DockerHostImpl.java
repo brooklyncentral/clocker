@@ -193,6 +193,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             if (DockerUtils.isSdnProvider(this, "WeaveNetwork")) {
                 Integer weavePort = sdn.config().get(WeaveNetwork.WEAVE_PORT);
                 if (weavePort != null) ports.add(weavePort);
+                Integer weaveScopePort = sdn.config().get(WeaveNetwork.WEAVE_SCOPE_PORT);
+                if (weaveScopePort != null) ports.add(weaveScopePort);
             }
             if (DockerUtils.isSdnProvider(this, "CalicoNetwork")) {
                 PortRange etcdPort = sdn.config().get(EtcdNode.ETCD_CLIENT_PORT);

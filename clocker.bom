@@ -92,6 +92,10 @@ brooklyn.catalog:
     iconUrl: classpath://weaveworks-logo.png
     item:
       type: brooklyn.networking.sdn.weave.WeaveContainer
+  - id: weave-scope
+    iconUrl: classpath://weaveworks-logo.png
+    item:
+      type: brooklyn.networking.sdn.weave.WeaveScope
   - id: docker-cloud-calico
     name: Clocker with Calico
     description: Docker Cloud infrastructure with Calico networking

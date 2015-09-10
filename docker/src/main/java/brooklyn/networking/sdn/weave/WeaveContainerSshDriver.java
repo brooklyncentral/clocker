@@ -61,6 +61,7 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
         List<String> commands = Lists.newLinkedList();
         commands.addAll(BashCommands.commandsToDownloadUrlsAs(resolver.getTargets(), getWeaveCommand()));
         commands.add("chmod 755 " + getWeaveCommand());
+        commands.add(BashCommands.sudo("cp "+getWeaveCommand()+" /usr/bin/"));
 
         newScript(INSTALLING)
                 .body.append(commands)
@@ -78,6 +79,17 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
         Boolean firstMember = getEntity().sensors().get(AbstractGroup.FIRST_MEMBER);
         Entity first = getEntity().sensors().get(AbstractGroup.FIRST);
         LOG.info("Launching {} Weave service at {}", Boolean.TRUE.equals(firstMember) ? "first" : "next", address.getHostAddress());
+
+
+        if (entity.config().get(DockerInfrastructure.DOCKER_GENERATE_TLS_CERTIFICATES)) {
+            newScript(ImmutableMap.of(NON_STANDARD_LAYOUT, "true"), CUSTOMIZING)
+                    .body.append(
+                    String.format("cp ca-cert.pem %s/ca.pem", getRunDir()),
+                    String.format("cp server-cert.pem %s/cert.pem", getRunDir()),
+                    String.format("cp server-key.pem %s/key.pem", getRunDir()))
+                    .failOnNonZeroResultCode()
+                    .execute();
+        }
 
         newScript(MutableMap.of(USE_PID_FILE, false), LAUNCHING)
                 .updateTaskAndFailOnNonZeroResultCode()
