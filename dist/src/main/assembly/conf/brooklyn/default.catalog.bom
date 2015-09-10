@@ -124,7 +124,7 @@ brooklyn.catalog:
             fi
 
           shell.env:
-            HOSTNAME:     $brooklyn:attributeWhenReady("host.subnet.name")
+            HOSTNAME:     $brooklyn:attributeWhenReady("host.subnet.hostname")
             PORT:         $brooklyn:config("my.app.port")
             ENTITY_INFO:  $brooklyn:component("this", "")
             MESSAGE:      $brooklyn:config("my.message")
