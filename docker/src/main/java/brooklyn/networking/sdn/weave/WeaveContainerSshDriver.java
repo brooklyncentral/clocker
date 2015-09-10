@@ -18,6 +18,8 @@ package brooklyn.networking.sdn.weave;
 import java.net.InetAddress;
 import java.util.List;
 
+import brooklyn.entity.container.docker.DockerInfrastructure;
+import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
