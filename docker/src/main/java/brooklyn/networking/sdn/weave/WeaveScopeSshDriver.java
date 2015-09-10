@@ -38,6 +38,7 @@ public class WeaveScopeSshDriver extends AbstractSoftwareProcessSshDriver implem
     public boolean isRunning() {
         //Script checks how many docker process called weave scope are running, if there is more than one it exits 0, otherwise exits 1
         return newScript(CHECK_RUNNING)
+                .uniqueSshConnection()
                 .body.append("a=$(docker ps -f=name=weavescope -q | wc -l); if [[ $a -gt 0 ]]; then exit 0; else exit 1; fi;")
                 .execute() == 0;
     }
