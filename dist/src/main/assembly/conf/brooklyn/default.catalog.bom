@@ -370,8 +370,6 @@ brooklyn.catalog:
           minRam: 7g
           minCores: 2
           stopIptables: true
-          osFamily: ubuntu
-          osVersionRegex: 15.04
         start.timeout: 5m
 
   - id: docker-container
@@ -388,7 +386,7 @@ brooklyn.catalog:
     item:
       type: brooklyn.networking.sdn.calico.CalicoNetwork
       brooklyn.config:
-        calico.version: 0.4.9
+        calico.version: 0.6.0
         sdn.agent.spec:
           $brooklyn:entitySpec:
             type: calico-node
