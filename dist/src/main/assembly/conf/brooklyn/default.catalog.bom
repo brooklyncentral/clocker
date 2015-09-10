@@ -229,14 +229,14 @@ brooklyn.catalog:
 
               brooklyn.initializers:
               # make a simple request-count sensor, by counting the number of 200 responses in output.txt
-              - type: org.apache.brooklyn.sensor.ssh.SshCommandSensor
+              - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
                 brooklyn.config:
                   name: reqs.count
                   targetType: int
                   period: 5s
                   command: "cat output.txt | grep HTTP | grep 200 | wc | awk '{print $1}'"
               # and publish the port as a sensor so the load-balancer can pick it up
-              - type:           org.apache.brooklyn.sensor.core.StaticSensor
+              - type:           org.apache.brooklyn.core.sensor.StaticSensor
                 brooklyn.config:
                   name:         app.port
                   targetType:   int
