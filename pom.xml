@@ -81,8 +81,11 @@
 
     <repositories>
         <repository>
-            <id>sonatype-nexus-snapshots</id>
-            <name>Sonatype Nexus Snapshots</name>
+            <id>sonatype-oss-releases</id>
+            <url>https://oss.sonatype.org/content/repositories/releases/</url>
+        </repository>
+        <repository>
+            <id>sonatype-oss-snapshots</id>
             <url>https://oss.sonatype.org/content/repositories/snapshots</url>
             <releases>
                 <enabled>false</enabled>
@@ -101,16 +104,24 @@
                 <enabled>true</enabled>
             </snapshots>
         </repository>
-        <!-- Cloudsoft repo, for early custom releases of jclouds-docker -->
+        <!-- Cloudsoft repo, for early custom releases of jclouds vcloud-director etc -->
         <repository>
-            <id>cloudsoft</id>
+            <id>cloudsoft-releases</id>
             <url>http://ccweb.cloudsoftcorp.com/maven/libs-release-local/</url>
+        </repository>
+        <repository>
+            <id>cloudsoft-snapshots</id>
+            <url>http://ccweb.cloudsoftcorp.com/maven/libs-snapshot-local/</url>
             <releases>
-                <enabled>true</enabled>
+                <enabled>false</enabled>
             </releases>
             <snapshots>
-                <enabled>false</enabled>
+                <enabled>true</enabled>
             </snapshots>
+        </repository>
+        <repository>
+            <id>cloudsoft-developers</id>
+            <url>http://developers.cloudsoftcorp.com/download/maven2/</url>
         </repository>
     </repositories>
 
@@ -372,6 +383,7 @@
                 </plugins>
             </build>
         </profile>
+
         <profile>
             <id>Live</id>
             <properties>
@@ -379,6 +391,7 @@
                 <excludedTestGroups>Integration,WIP</excludedTestGroups>
             </properties>
         </profile>
+
         <profile>
             <id>WIP</id>
             <properties>
@@ -386,26 +399,50 @@
                 <excludedTestGroups>Integration,Live</excludedTestGroups>
             </properties>
         </profile>
+
         <profile>
-          <id>cloudsoft-release</id>
-          <activation>
-            <property>
-              <name>brooklyn.deployTo</name>
-              <value>cloudsoft</value>
-            </property>
-          </activation>
-          <distributionManagement>
-            <repository>
-              <id>cloudsoft-deploy-artifactory-release</id>
-              <name>Cloudsoft Artifactory libs-release-local repo</name>
-              <url>http://ccweb.cloudsoftcorp.com/maven/libs-release-local/</url>
-            </repository>
-            <snapshotRepository>
-              <id>cloudsoft-deploy-artifactory-snapshot</id>
-              <name>Cloudsoft Artifactory libs-snapshot-local repo</name>
-              <url>http://ccweb.cloudsoftcorp.com/maven/libs-snapshot-local/</url>
-            </snapshotRepository>
-          </distributionManagement>
+            <id>cloudsoft-release</id>
+            <activation>
+                <property>
+                    <name>brooklyn.deployTo</name>
+                    <value>cloudsoft</value>
+                </property>
+            </activation>
+            <distributionManagement>
+                <repository>
+                    <id>cloudsoft-deploy-artifactory-release</id>
+                    <name>Cloudsoft Artifactory libs-release-local repo</name>
+                    <url>http://ccweb.cloudsoftcorp.com/maven/libs-release-local/</url>
+                </repository>
+                <snapshotRepository>
+                    <id>cloudsoft-deploy-artifactory-snapshot</id>
+                    <name>Cloudsoft Artifactory libs-snapshot-local repo</name>
+                    <url>http://ccweb.cloudsoftcorp.com/maven/libs-snapshot-local/</url>
+                </snapshotRepository>
+            </distributionManagement>
         </profile>
+
+        <profile>
+            <id>sonatype-release</id>
+            <activation>
+                <property>
+                    <name>brooklyn.deployTo</name>
+                    <value>sonatype</value>
+                </property>
+            </activation>
+            <distributionManagement>
+                <repository>
+                    <id>sonatype-nexus-staging</id>
+                    <name>Nexus Release Repository</name>
+                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+                </repository>
+                <snapshotRepository>
+                    <id>sonatype-nexus-snapshots</id>
+                    <name>Sonatype Nexus Snapshots</name>
+                    <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+                </snapshotRepository>
+            </distributionManagement>
+        </profile>
+
     </profiles>
 </project>
