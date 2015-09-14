@@ -62,4 +62,7 @@ public interface EtcdCluster extends DynamicCluster {
     AttributeSensor<Entity> FIRST_NODE = Sensors.newSensor(Entity.class, "etcd.cluster.firstNode", "The first node in the cluster");
 
     AttributeSensor<String> NODE_LIST = Sensors.newStringSensor("etcd.cluster.nodeList", "List of nodes (including ports), comma separated");
+
+    Object getClusterMutex();
+
 }

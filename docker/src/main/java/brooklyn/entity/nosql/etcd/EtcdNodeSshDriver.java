@@ -184,46 +184,50 @@ public class EtcdNodeSshDriver extends AbstractSoftwareProcessSshDriver implemen
 
     @Override
     public void joinCluster(String nodeName, String nodeAddress) {
-        List<String> commands = Lists.newLinkedList();
-        commands.add("cd " + getRunDir());
-        commands.add(String.format("%s --peers %s member add %s %s", getEtcdCtlCommand(), getClientUrl(), nodeName, nodeAddress));
-        newScript("joinCluster")
-                .body.append(commands)
-                .failOnNonZeroResultCode()
-                .execute();
+        synchronized (getEntity().getClusterMutex()) {
+            List<String> commands = Lists.newLinkedList();
+            commands.add("cd " + getRunDir());
+            commands.add(String.format("%s --peers %s member add %s %s", getEtcdCtlCommand(), getClientUrl(), nodeName, nodeAddress));
+            newScript("joinCluster")
+                    .body.append(commands)
+                    .failOnNonZeroResultCode()
+                    .execute();
+        }
     }
 
     @Override
     public void leaveCluster(String nodeName) {
-        List<String> listMembersCommands = Lists.newLinkedList();
-        listMembersCommands.add("cd " + getRunDir());
-        listMembersCommands.add(String.format("%s --peers %s member list", getEtcdCtlCommand(), getClientUrl()));
-        ScriptHelper listMembersScript = newScript("listMembers")
-                .body.append(listMembersCommands)
-                .gatherOutput();
-        int result = listMembersScript.execute();
-        if (result != 0) {
-            log.warn("{}: The 'member list' command on etcd '{}' failed: {}", new Object[] { entity, getClientUrl(), result });;
-            log.debug("{}: STDOUT: {}", entity, listMembersScript.getResultStdout());
-            log.debug("{}: STDERR: {}", entity, listMembersScript.getResultStderr());
-            return; // Do not throw exception as may not be possible during shutdown
-        }
-        String output = listMembersScript.getResultStdout();
-        Iterable<String> found = Iterables.filter(Splitter.on(CharMatcher.anyOf("\r\n")).split(output), Predicates.containsPattern("name="));
-        Optional<String> node = Iterables.tryFind(found, Predicates.containsPattern(nodeName));
-        if (Iterables.size(found) > 1 && node.isPresent()) {
-            String nodeId = Strings.getFirstWord(node.get()).replace(":", "");
-            log.debug("{}: Removing etcd node {} with id {} from {}", new Object[] { entity, nodeName, nodeId, getClientUrl() });
+        synchronized (getEntity().getClusterMutex()) {
+            List<String> listMembersCommands = Lists.newLinkedList();
+            listMembersCommands.add("cd " + getRunDir());
+            listMembersCommands.add(String.format("%s --peers %s member list", getEtcdCtlCommand(), getClientUrl()));
+            ScriptHelper listMembersScript = newScript("listMembers")
+                    .body.append(listMembersCommands)
+                    .gatherOutput();
+            int result = listMembersScript.execute();
+            if (result != 0) {
+                log.warn("{}: The 'member list' command on etcd '{}' failed: {}", new Object[] { entity, getClientUrl(), result });;
+                log.debug("{}: STDOUT: {}", entity, listMembersScript.getResultStdout());
+                log.debug("{}: STDERR: {}", entity, listMembersScript.getResultStderr());
+                return; // Do not throw exception as may not be possible during shutdown
+            }
+            String output = listMembersScript.getResultStdout();
+            Iterable<String> found = Iterables.filter(Splitter.on(CharMatcher.anyOf("\r\n")).split(output), Predicates.containsPattern("name="));
+            Optional<String> node = Iterables.tryFind(found, Predicates.containsPattern(nodeName));
+            if (Iterables.size(found) > 1 && node.isPresent()) {
+                String nodeId = Strings.getFirstWord(node.get()).replace(":", "");
+                log.debug("{}: Removing etcd node {} with id {} from {}", new Object[] { entity, nodeName, nodeId, getClientUrl() });
 
-            List<String> removeMemberCommands = Lists.newLinkedList();
-            removeMemberCommands.add("cd " + getRunDir());
-            removeMemberCommands.add(String.format("%s --peers %s member remove %s", getEtcdCtlCommand(), getClientUrl(), nodeId));
-            newScript("removeMember")
-                    .body.append(removeMemberCommands)
-                    .failOnNonZeroResultCode()
-                    .execute();
-        } else {
-            log.warn("{}: {} is not part of an etcd cluster", entity, nodeName);
+                List<String> removeMemberCommands = Lists.newLinkedList();
+                removeMemberCommands.add("cd " + getRunDir());
+                removeMemberCommands.add(String.format("%s --peers %s member remove %s", getEtcdCtlCommand(), getClientUrl(), nodeId));
+                newScript("removeMember")
+                        .body.append(removeMemberCommands)
+                        .failOnNonZeroResultCode()
+                        .execute();
+            } else {
+                log.warn("{}: {} is not part of an etcd cluster", entity, nodeName);
+            }
         }
     }
 

@@ -66,11 +66,13 @@ public interface EtcdNode extends SoftwareProcess {
     MethodEffector<Void> LEAVE_ETCD_CLUSTER = new MethodEffector<Void>(EtcdNode.class, "leaveCluster");
 
     @Effector(description = "Add this etcd node to the etcd cluster")
-    public void joinCluster(@EffectorParam(name = "nodeName") String nodeName, @EffectorParam(name = "nodeAddress") String nodeAddress);
+    void joinCluster(@EffectorParam(name = "nodeName") String nodeName, @EffectorParam(name = "nodeAddress") String nodeAddress);
 
     @Effector(description = "Remove this etcd node from the cluster")
-    public void leaveCluster(@EffectorParam(name = "nodeName") String nodeName);
+    void leaveCluster(@EffectorParam(name = "nodeName") String nodeName);
 
-    public boolean hasJoinedCluster();
+    boolean hasJoinedCluster();
+
+    Object getClusterMutex();
 
 }

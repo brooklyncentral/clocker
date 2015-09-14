@@ -58,7 +58,11 @@ public class EtcdClusterImpl extends DynamicClusterImpl implements EtcdCluster {
 
     private static final Logger log = LoggerFactory.getLogger(EtcdClusterImpl.class);
 
-    private transient Object mutex = new Object[0];
+    private transient Object memberMutex = new Object[0]; // For cluster membership management
+    private transient Object clusterMutex = new Object[0]; // For cluster join/leave operations
+
+    @Override
+    public Object getClusterMutex() { return clusterMutex; }
 
     public void init() {
         super.init();
@@ -102,7 +106,7 @@ public class EtcdClusterImpl extends DynamicClusterImpl implements EtcdCluster {
     }
 
     protected void onServerPoolMemberChanged(Entity member) {
-        synchronized (mutex) {
+        synchronized (memberMutex) {
             log.debug("For {}, considering membership of {} which is in locations {}", new Object[]{ this, member, member.getLocations() });
 
             Map<Entity, String> nodes = sensors().get(ETCD_CLUSTER_NODES);

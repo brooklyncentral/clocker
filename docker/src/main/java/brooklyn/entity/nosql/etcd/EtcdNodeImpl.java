@@ -68,11 +68,22 @@ public class EtcdNodeImpl extends SoftwareProcessImpl implements EtcdNode {
     }
 
     @Override
+    public Object getClusterMutex() {
+        Entity cluster = sensors().get(ETCD_CLUSTER);
+        if (cluster instanceof EtcdCluster) {
+            return ((EtcdCluster) cluster).getClusterMutex();
+        } else {
+            throw new IllegalStateException("Cannot get mutex because cluster does not exist");
+        }
+    }
+
+    @Override
     public void connectSensors() {
         super.connectSensors();
         connectServiceUpIsRunning();
     }
 
+    @Override
     public void disconnectSensors() {
         disconnectServiceUpIsRunning();
         super.disconnectSensors();
