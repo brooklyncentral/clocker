@@ -35,12 +35,12 @@ depending on your choice of SDN provider.
 
 ### Using the latest Clocker release
 
-The latest version of Clocker is [1.1.0-PREVIEW.20150904](https://github.com/brooklyncentral/clocker/releases/tag/v1.1.0-PREVIEW.20150904).
+The latest version of Clocker is [1.1.0-PREVIEW.20150914](https://github.com/brooklyncentral/clocker/releases/tag/v1.1.0-PREVIEW.20150914).
 You can deploy your own **Docker Cloud** with a Weave SDN by running these commands with the _network_ argument
 st to `weave`, to use Project Calico as your SDN provider, change the last argument to `calico` instead:
 ```Bash
 % wget --no-check-certificate --quiet \
-    -O brooklyn-clocker-dist.tar.gz http://git.io/vGb0Y
+    -O brooklyn-clocker-dist.tar.gz http://git.io/vZyM5
 % tar zxf brooklyn-clocker-dist.tar.gz
 % cd brooklyn-clocker
 % ./bin/clocker.sh location network
@@ -53,7 +53,7 @@ directory that is writeable, and your `.ssh` directory, and if you want to use a
 A suitable startup command would be:
 ```Bash
 % docker run -d -v ~/.brooklyn:/root/.brooklyn -v ~/.ssh:/root/.ssh -P \
-    clockercentral/clocker:1.1.0-PREVIEW.20150904 \
+    clockercentral/clocker:1.1.0-PREVIEW.20150914 \
     location network
 ```
 For example, you can specify the jclouds provider for SoftLayer in San Jose by using
