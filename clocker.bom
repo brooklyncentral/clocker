@@ -13,8 +13,22 @@
 # limitations under the License.
 
 brooklyn.catalog:
-  version: 1.1.0-SNAPSHOT # CLOCKER_VERSION
+  version: "1.1.0-SNAPSHOT" # CLOCKER_VERSION
+
+  brooklyn.libraries:
+
+  - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=brooklyn-clocker-patches&v=1.1.0-SNAPSHOT" # CLOCKER_VERSION
+  - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=brooklyn-clocker-docker&v=1.1.0-SNAPSHOT" # CLOCKER_VERSION
+  - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=brooklyn-clocker-dist&v=1.1.0-SNAPSHOT" # CLOCKER_VERSION
+  - "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/patch-softlayer-clocker-137.jar"
+  - "https://oss.sonatype.org/content/repositories/releases/io/brooklyn/networking/brooklyn-networking-portforwarding/0.8.0-incubating/brooklyn-networking-portforwarding-0.8.0-incubating.jar" # ADVANCED_NETWORKING_VERSION
+  - "https://oss.sonatype.org/content/repositories/releases/io/brooklyn/networking/brooklyn-networking-common/0.8.0-incubating/brooklyn-networking-common-0.8.0-incubating.jar" # ADVANCED_NETWORKING_VERSION
+  - "https://oss.sonatype.org/content/repositories/releases/io/brooklyn/networking/brooklyn-networking-cloudstack/0.8.0-incubating/brooklyn-networking-cloudstack-0.8.0-incubating.jar" # ADVANCED_NETWORKING_VERSION
+  - "https://repository.apache.org/service/local/repositories/releases/content/org/apache/jclouds/labs/docker/1.9.1/docker-1.9.1.jar"
+  - "https://repository.apache.org/service/local/repositories/releases/content/org/apache/jclouds/api/cloudstack/1.9.1/cloudstack-1.9.1.jar"
+
   items:
+
   - id: docker-infrastructure
     name: Docker Infrastructure
     iconUrl: classpath://docker-logo.png
@@ -161,3 +175,5 @@ brooklyn.catalog:
                     type: docker-container
                     brooklyn.config:
                       docker.container.nameFormat: "weave-%2$02x"
+
+# vim:ts=2:sw=2:ft=yaml:
