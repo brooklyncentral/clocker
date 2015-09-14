@@ -94,8 +94,6 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
                     .execute();
         }
 
-        LOG.info("GMNO3 "+entity.config().get(DockerHost.DOCKER_SSL_PORT).iterator().next());
-
         newScript(MutableMap.of(USE_PID_FILE, false), LAUNCHING)
                 .body.append(
                         chain(
