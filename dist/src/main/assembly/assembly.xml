@@ -68,6 +68,8 @@
                 <include>LICENSE</include>
                 <include>NOTICE</include>
                 <include>DISCLAIMER*</include>
+                <include>*.bom</include>
+                <include>Vagrantfile</include>
             </includes>
         </fileSet>
         <fileSet>
