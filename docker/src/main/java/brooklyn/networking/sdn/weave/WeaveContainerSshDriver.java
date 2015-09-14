@@ -15,15 +15,15 @@
  */
 package brooklyn.networking.sdn.weave;
 
+import static org.apache.brooklyn.util.ssh.BashCommands.chain;
+
 import java.net.InetAddress;
 import java.util.List;
 
-import brooklyn.entity.container.docker.DockerHost;
-import brooklyn.entity.container.docker.DockerInfrastructure;
-import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
 import org.apache.brooklyn.api.entity.Entity;
@@ -39,10 +39,10 @@ import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.os.Os;
 import org.apache.brooklyn.util.ssh.BashCommands;
 
+import brooklyn.entity.container.docker.DockerHost;
+import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnProvider;
-
-import static org.apache.brooklyn.util.ssh.BashCommands.*;
 
 public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver implements WeaveContainerDriver {
 
