@@ -28,7 +28,7 @@
     <parent>
         <groupId>org.apache.brooklyn</groupId>
         <artifactId>brooklyn-downstream-parent</artifactId>
-        <version>0.8.0-SNAPSHOT</version> <!-- BROOKLYN_VERSION -->
+        <version>0.9.0-SNAPSHOT</version> <!-- BROOKLYN_VERSION -->
     </parent>
 
     <groupId>io.brooklyn.clocker</groupId>
@@ -52,7 +52,7 @@
 
         <!-- Testing -->
         <testng.version>6.8</testng.version>
-        <brooklyn.version>0.8.0-SNAPSHOT</brooklyn.version> <!-- BROOKLYN_VERSION -->
+        <brooklyn.version>0.9.0-SNAPSHOT</brooklyn.version> <!-- BROOKLYN_VERSION -->
         <includedTestGroups/>
         <excludedTestGroups>Integration,Live,WIP</excludedTestGroups>
 
