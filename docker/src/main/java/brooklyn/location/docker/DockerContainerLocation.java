@@ -38,7 +38,6 @@ import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.core.entity.Attributes;

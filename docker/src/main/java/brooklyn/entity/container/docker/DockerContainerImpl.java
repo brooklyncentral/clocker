@@ -264,6 +264,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
     private DockerTemplateOptions getDockerTemplateOptions() {
         Entity entity = getRunningEntity();
+        Map<String,Object> entityFlags = MutableMap.copyOf(entity.config().get(SoftwareProcess.PROVISIONING_PROPERTIES));
         DockerTemplateOptions options = new DockerTemplateOptions();
 
         // Use DockerHost hostname for the container
@@ -287,12 +288,11 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             // TODO set based on number of cores available in host divided by cores requested in flags
             Integer hostCores = getDockerHost().getDynamicLocation().getMachine().getMachineDetails().getHardwareDetails().getCpuCount();
             Integer minCores = entity.config().get(JcloudsLocationConfig.MIN_CORES);
-            Map flags = entity.config().get(SoftwareProcess.PROVISIONING_PROPERTIES);
-            if (minCores == null && flags != null) {
-                minCores = (Integer) flags.get(JcloudsLocationConfig.MIN_CORES.getName());
+            if (minCores == null) {
+                minCores = (Integer) entityFlags.get(JcloudsLocationConfig.MIN_CORES.getName());
             }
-            if (minCores == null && flags != null) {
-                TemplateBuilder template = (TemplateBuilder) flags.get(JcloudsLocationConfig.TEMPLATE_BUILDER.getName());
+            if (minCores == null) {
+                TemplateBuilder template = (TemplateBuilder) entityFlags.get(JcloudsLocationConfig.TEMPLATE_BUILDER.getName());
                 if (template != null) {
                     minCores = 0;
                     for (Processor cpu : template.build().getHardware().getProcessors()) {
@@ -314,12 +314,11 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             // TODO set based on memory available in host divided by memory requested in flags
             Integer hostRam = getDockerHost().getDynamicLocation().getMachine().getMachineDetails().getHardwareDetails().getRam();
             Integer minRam = (Integer) entity.config().get(JcloudsLocationConfig.MIN_RAM);
-            Map flags = entity.config().get(SoftwareProcess.PROVISIONING_PROPERTIES);
-            if (minRam == null && flags != null) {
-                minRam = (Integer) flags.get(JcloudsLocationConfig.MIN_RAM.getName());
+            if (minRam == null) {
+                minRam = (Integer) entityFlags.get(JcloudsLocationConfig.MIN_RAM.getName());
             }
-            if (minRam == null && flags != null) {
-                TemplateBuilder template = (TemplateBuilder) flags.get(JcloudsLocationConfig.TEMPLATE_BUILDER.getName());
+            if (minRam == null) {
+                TemplateBuilder template = (TemplateBuilder) entityFlags.get(JcloudsLocationConfig.TEMPLATE_BUILDER.getName());
                 if (template != null) {
                     minRam = template.build().getHardware().getRam();
                 }
@@ -456,12 +455,13 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         DockerHost dockerHost = getDockerHost();
         DockerHostLocation host = dockerHost.getDynamicLocation();
         SubnetTier subnetTier = dockerHost.getSubnetTier();
+        Entity entity = getRunningEntity();
 
         // Configure the container options based on the host and the running entity
         DockerTemplateOptions options = getDockerTemplateOptions();
 
         // Check the running entity for alternative container name
-        String containerName = getRunningEntity().config().get(DOCKER_CONTAINER_NAME);
+        String containerName = entity.config().get(DOCKER_CONTAINER_NAME);
         if (Strings.isBlank(containerName)) {
             containerName = sensors().get(DOCKER_CONTAINER_NAME);
         }
@@ -480,7 +480,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 .put(LocationConfigKeys.PRIVATE_KEY_DATA, null)
                 .put(LocationConfigKeys.PRIVATE_KEY_FILE, null)
                 .put(CloudLocationConfig.WAIT_FOR_SSHABLE, false)
-                .put(JcloudsLocationConfig.INBOUND_PORTS, getRequiredOpenPorts(getRunningEntity()))
+                .put(JcloudsLocationConfig.INBOUND_PORTS, getRequiredOpenPorts(entity))
                 .put(JcloudsLocation.USE_PORT_FORWARDING, true)
                 .put(JcloudsLocation.PORT_FORWARDER, subnetTier.getPortForwarderExtension())
                 .put(JcloudsLocation.PORT_FORWARDING_MANAGER, subnetTier.getPortForwardManager())
@@ -493,7 +493,6 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             JcloudsSshMachineLocation container = (JcloudsSshMachineLocation) host.getJcloudsLocation().obtain(dockerFlags);
             String containerId = container.getNode().getId();
             sensors().set(CONTAINER_ID, containerId);
-            Entity entity = getRunningEntity();
 
             // Configure the host to allow remote access to bound container ports
             configurePortBindings(dockerHost, entity);

@@ -212,6 +212,10 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                 hardwareId = getOwner().config().get(DockerAttributes.DOCKER_HARDWARE_ID);
             }
 
+            // Fix missing device link for urandom on some containers
+            insertCallback(entity, SoftwareProcess.PRE_INSTALL_COMMAND,
+                    "if [ ! -e /dev/random ] ; then ln -s /dev/urandom /dev/random ; fi");
+
             // Create new Docker container in the host cluster
             LOG.info("Starting container with imageId {} and hardwareId {} at {}", new Object[] { imageId, hardwareId, machine });
             Map<Object, Object> containerFlags = MutableMap.builder()
