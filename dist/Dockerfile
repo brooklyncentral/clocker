@@ -18,13 +18,13 @@ MAINTAINER andrew.kennedy@cloudsoft.io
 # CLOCKER_VERSION_BELOW
 LABEL version="1.1.0-PREVIEW.20150914"
 
-RUN apk-install openjdk7-jre-base && \
-    apk-install bash && \
+RUN apk-install openjdk7-jre-base ; \
+    apk-install bash ; \
     apk-install wget
 
 # CLOCKER_VERSION_BELOW
-RUN wget http://ccweb.cloudsoftcorp.com/maven/libs-release-local/io/brooklyn/clocker/brooklyn-clocker-dist/1.1.0-PREVIEW.20150914/brooklyn-clocker-dist-1.1.0-PREVIEW.20150914-dist.tar.gz -O /brooklyn-clocker-dist.tar.gz && \
-    tar zxf brooklyn-clocker-dist.tar.gz && \
+RUN wget http://ccweb.cloudsoftcorp.com/maven/libs-release-local/io/brooklyn/clocker/brooklyn-clocker-dist/1.1.0-PREVIEW.20150914/brooklyn-clocker-dist-1.1.0-PREVIEW.20150914-dist.tar.gz -O /brooklyn-clocker-dist.tar.gz ; \
+    tar zxf brooklyn-clocker-dist.tar.gz ; \
     rm -f brooklyn-clocker-dist.tar.gz
 
 WORKDIR /brooklyn-clocker
