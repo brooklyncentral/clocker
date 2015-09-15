@@ -422,7 +422,7 @@ brooklyn.catalog:
     item:
       type: brooklyn.networking.sdn.weave.WeaveNetwork
       brooklyn.config:
-        weave.version: 1.0.3
+        weave.version: 1.1.0
         sdn.agent.spec:
           $brooklyn:entitySpec:
             type: weave-router

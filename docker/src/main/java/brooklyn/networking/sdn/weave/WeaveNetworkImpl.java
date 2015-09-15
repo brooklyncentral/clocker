@@ -78,6 +78,14 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
                 .cidrBlock(Cidr.UNIVERSAL.toString()) // TODO could be tighter restricted?
                 .build();
         permissions.add(weaveUdpPort);
+        Integer proxyPort = config().get(WeaveContainer.WEAVE_PROXY_PORT);
+        IpPermission proxyTcpPort = IpPermission.builder()
+                .ipProtocol(IpProtocol.TCP)
+                .fromPort(proxyPort)
+                .toPort(proxyPort)
+                .cidrBlock(source)
+                .build();
+        permissions.add(proxyTcpPort);
         return permissions;
     }
 

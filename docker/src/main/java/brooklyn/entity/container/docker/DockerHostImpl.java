@@ -122,6 +122,7 @@ import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.networking.sdn.calico.CalicoNode;
+import brooklyn.networking.sdn.weave.WeaveContainer;
 import brooklyn.networking.sdn.weave.WeaveNetwork;
 import brooklyn.networking.subnet.SubnetTier;
 import brooklyn.networking.subnet.SubnetTierImpl;
@@ -193,6 +194,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             if (DockerUtils.isSdnProvider(this, "WeaveNetwork")) {
                 Integer weavePort = sdn.config().get(WeaveNetwork.WEAVE_PORT);
                 if (weavePort != null) ports.add(weavePort);
+                Integer proxyPort = sdn.config().get(WeaveContainer.WEAVE_PROXY_PORT);
+                if (proxyPort != null) ports.add(proxyPort);
             }
             if (DockerUtils.isSdnProvider(this, "CalicoNetwork")) {
                 PortRange etcdPort = sdn.config().get(EtcdNode.ETCD_CLIENT_PORT);
@@ -610,6 +613,12 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                     .sensors().get(DockerInfrastructure.SDN_PROVIDER)
                     .config().get(CalicoNode.POWERSTRIP_PORT);
             tlsEnabled = false;
+        }
+        if (DockerUtils.isSdnProvider(this, "WeaveNetwork")) {
+            dockerPort = sensors().get(DockerHost.DOCKER_INFRASTRUCTURE)
+                    .sensors().get(DockerInfrastructure.SDN_PROVIDER)
+                    .config().get(WeaveContainer.WEAVE_PROXY_PORT);
+            tlsEnabled = true;
         }
         Maybe<SshMachineLocation> found = Machines.findUniqueSshMachineLocation(getLocations());
         String dockerLocationSpec = String.format("jclouds:docker:%s://%s:%s",

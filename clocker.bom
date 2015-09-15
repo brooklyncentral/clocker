@@ -81,7 +81,7 @@ brooklyn.catalog:
     item:
       type: brooklyn.networking.sdn.calico.CalicoNetwork
       brooklyn.config:
-        calico.version: 0.6.0
+        calico.version: 0.4.9
         sdn.agent.spec:
           $brooklyn:entitySpec:
             type: calico-node
@@ -117,7 +117,7 @@ brooklyn.catalog:
     item:
       type: brooklyn.networking.sdn.weave.WeaveNetwork
       brooklyn.config:
-        weave.version: 1.0.3
+        weave.version: 1.1.0
         sdn.agent.spec:
           $brooklyn:entitySpec:
             type: weave-router
