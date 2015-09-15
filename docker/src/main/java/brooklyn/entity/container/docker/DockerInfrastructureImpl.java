@@ -92,6 +92,11 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
     private static final Logger LOG = LoggerFactory.getLogger(DockerInfrastructure.class);
 
+    private transient Object mutex = new Object[0];
+
+    @Override
+    public Object getInfrastructureMutex() { return mutex; }
+
     @Override
     public void init() {
         LOG.info("Starting Docker infrastructure id {}", getId());

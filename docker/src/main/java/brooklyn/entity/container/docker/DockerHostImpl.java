@@ -541,8 +541,12 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             // TODO check GCE compatibility?
             JcloudsMachineLocation machine = (JcloudsMachineLocation) location;
             JcloudsLocationSecurityGroupCustomizer customizer = JcloudsLocationSecurityGroupCustomizer.getInstance(getApplicationId());
-            LOG.debug("Applying custom security groups to {}: {}", machine, permissions);
-            customizer.addPermissionsToLocation(machine, permissions);
+
+            // Serialize access across the whole infrastructure as the security groups are a shared resource
+            synchronized (getInfrastructure().getInfrastructureMutex()) {
+                LOG.debug("Applying custom security groups to {}: {}", machine, permissions);
+                customizer.addPermissionsToLocation(machine, permissions);
+            }
         }
     }
 
