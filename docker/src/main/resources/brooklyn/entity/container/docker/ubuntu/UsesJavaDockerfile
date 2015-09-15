@@ -13,22 +13,24 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-#
-# base ubuntu 14.04 with java
-#
-# VERSION 0.0.7
 
 FROM ubuntu:14.04
 MAINTAINER Cloudsoft "brooklyn@cloudsoftcorp.com"
 
+# CLOCKER_VERSION_BELOW
+LABEL version="1.1.0-SNAPSHOT"
+
 # make sure the package repository is up to date
 RUN ( echo "deb http://archive.ubuntu.com/ubuntu trusty main universe" ; echo "deb http://archive.ubuntu.com/ubuntu trusty-updates main universe" ) > /etc/apt/sources.list
-RUN apt-get update
+RUN apt-get update ; \
+    apt-get clean
 
 # install openjdk 1.7.1
-RUN apt-get -y --force-yes install tzdata=2015a-0ubuntu0.14.04
-RUN apt-get -y --force-yes install python2.7-minimal=2.7.3-0ubuntu3
-RUN apt-get -y --force-yes install python-minimal=2.7.3-0ubuntu2
-RUN apt-get -y install openjdk-7-jdk && apt-get clean
-RUN update-alternatives --display java
+RUN apt-get -y --force-yes install tzdata=2015a-0ubuntu0.14.04 ; \
+    apt-get -y --force-yes install python2.7-minimal=2.7.3-0ubuntu3 ; \
+    apt-get -y --force-yes install python-minimal=2.7.3-0ubuntu2 ; \
+    apt-get -y install openjdk-7-jdk ; \
+    apt-get clean ; \
+    update-alternatives --display java
+
 ENV JAVA_HOME /usr/lib/jvm/java-7-openjdk-amd64

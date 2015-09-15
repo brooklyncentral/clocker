@@ -13,39 +13,27 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-#
-# sshd and coreos etcd
-#
-# VERSION 0.0.1
 
 FROM ubuntu:12.04
 MAINTAINER Cloudsoft "brooklyn@cloudsoftcorp.com"
 
+# CLOCKER_VERSION_BELOW
+LABEL version="1.1.0-SNAPSHOT"
+
 # make sure the package repository is up to date
-RUN echo "deb http://archive.ubuntu.com/ubuntu precise main universe" > /etc/apt/sources.list
-RUN apt-get update
-RUN apt-get update
-
-# setup root account
-RUN echo 'root:${entity.password}' | chpasswd
-
-# install sshd
-RUN apt-get install -y openssh-server
-RUN mkdir /var/run/sshd
-RUN chmod 600 /var/run/sshd
-RUN /usr/sbin/sshd
-
-EXPOSE 22
-
-RUN [ "/usr/sbin/sshd", "-D" ]
+RUN ( echo "deb http://archive.ubuntu.com/ubuntu precise main universe" ; echo "deb http://archive.ubuntu.com/ubuntu precise-updates main universe" ) > /etc/apt/sources.list
+RUN apt-get update ; \
+    apt-get clean
 
 # install go from source
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -qy build-essential curl git
-RUN curl -s https://go.googlecode.com/files/go1.2.1.src.tar.gz | tar -v -C /usr/local -xz
-RUN cd /usr/local/go/src && ./make.bash --no-clean 2>&1
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -qy build-essential curl git ; \
+    curl -s https://go.googlecode.com/files/go1.2.1.src.tar.gz | tar -v -C /usr/local -xz ; \
+    cd /usr/local/go/src ; \
+    ./make.bash --no-clean 2>&1
 ENV PATH /usr/local/go/bin:[#noparse]$PATH[/#noparse]
 ADD . /opt/etcd
-RUN cd /opt/etcd && ./build
+RUN cd /opt/etcd ; \
+    ./build
 
 EXPOSE 4001 7001
 

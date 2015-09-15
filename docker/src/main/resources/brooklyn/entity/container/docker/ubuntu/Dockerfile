@@ -13,14 +13,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-#
-# base ubuntu 14.04
-#
-# VERSION 0.0.6
 
 FROM ubuntu:14.04
 MAINTAINER Cloudsoft "brooklyn@cloudsoftcorp.com"
 
-# make sure the package repository is up to date
+# CLOCKER_VERSION_BELOW
+LABEL version="1.1.0-SNAPSHOT"
+
+# Make sure the package repository is up to date
 RUN ( echo "deb http://archive.ubuntu.com/ubuntu trusty main universe" ; echo "deb http://archive.ubuntu.com/ubuntu trusty-updates main universe" ) > /etc/apt/sources.list
-RUN apt-get update
+RUN apt-get update ; \
+    apt-get clean
