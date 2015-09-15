@@ -97,13 +97,13 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
         newScript(MutableMap.of(USE_PID_FILE, false), LAUNCHING)
                 .body.append(
                         chain(
-                                BashCommands.sudo(String.format("%s launch-router -iprange %s %s",
+                                BashCommands.sudo(String.format("%s launch-router --ipalloc-range %s %s",
                                         getWeaveCommand(),
                                         entity.config().get(SdnProvider.CONTAINER_NETWORK_CIDR),
                                         Boolean.TRUE.equals(firstMember) ? "" : first.sensors().get(Attributes.SUBNET_ADDRESS))),
                                 BashCommands.sudo(String.format("%s launch-proxy -H tcp://[::]:%d --tlsverify --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem --tlscacert=%<s/ca.pem",
                                         getWeaveCommand(),
-                                        entity.config().get(DockerHost.DOCKER_SSL_PORT).iterator().next(),
+                                        entity.config().get(WeaveContainer.WEAVE_PROXY_PORT),
                                         getRunDir()))))
                 .failOnNonZeroResultCode()
                 .uniqueSshConnection()
