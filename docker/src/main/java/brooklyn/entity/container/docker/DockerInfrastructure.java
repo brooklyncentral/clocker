@@ -151,4 +151,7 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
     List<Entity> getDockerContainerList();
 
     DynamicGroup getContainerFabric();
+
+    Object getInfrastructureMutex();
+
 }
