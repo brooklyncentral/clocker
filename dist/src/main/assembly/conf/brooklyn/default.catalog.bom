@@ -386,7 +386,7 @@ brooklyn.catalog:
     item:
       type: brooklyn.networking.sdn.calico.CalicoNetwork
       brooklyn.config:
-        calico.version: 0.6.0
+        calico.version: 0.4.9
         sdn.agent.spec:
           $brooklyn:entitySpec:
             type: calico-node
