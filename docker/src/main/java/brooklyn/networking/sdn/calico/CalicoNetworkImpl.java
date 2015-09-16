@@ -128,7 +128,7 @@ public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork 
     @Override
     public InetAddress getNextAgentAddress(String agentId) {
         Entity agent = getManagementContext().getEntityManager().getEntity(agentId);
-        String address = agent.sensors().get(CalicoNode.DOCKER_HOST).sensors().get(Attributes.ADDRESS);
+        String address = agent.sensors().get(CalicoNode.DOCKER_HOST).sensors().get(Attributes.SUBNET_ADDRESS);
         try {
             return InetAddress.getByName(address);
         } catch (UnknownHostException uhe) {
