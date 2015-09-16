@@ -205,8 +205,9 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
     public Group getAgents() { return sensors().get(SDN_AGENTS); }
 
     public static class MemberTrackingPolicy extends AbstractMembershipTrackingPolicy {
-        @Override protected void onEntityEvent(EventType type, Entity member) {
-            ((SdnProviderImpl) super.entity).onHostChanged(member);
+        @Override
+        protected void onEntityEvent(EventType type, Entity member) {
+            ((SdnProviderImpl) entity).onHostChanged(member);
         }
     }
 
