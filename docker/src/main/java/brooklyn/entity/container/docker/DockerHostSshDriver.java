@@ -254,7 +254,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         Time.sleep(Duration.seconds(30));
 
         Task<Boolean> sshable = TaskBuilder.<Boolean> builder()
-                .name("Waiting until host is SSHable")
+                .displayName("Waiting until host is SSHable")
                 .body(new Callable<Boolean>() {
                     @Override
                     public Boolean call() throws Exception {

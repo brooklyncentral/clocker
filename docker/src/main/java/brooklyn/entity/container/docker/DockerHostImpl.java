@@ -728,7 +728,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         if (scan != null && scan.isActivated()) scan.stop();
 
         SdnAgent agent = sensors().get(SdnAgent.SDN_AGENT);
-        if (agent != null) {
+        if (agent != null && Entities.isManaged(agent)) {
             // Avoid DockerHost -> SdnAgent -> DockerHost stop recursion by invoking
             // the effector instead of agent.stop().
             boolean agentStopped = Entities.invokeEffector(this, agent, Startable.STOP)
@@ -779,7 +779,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                     DockerContainer added = getDockerContainerCluster().addChild(containerSpec);
                     Entities.manage(added);
                     getDockerContainerCluster().addMember(added);
-                    ((EntityLocal) added).sensors().set(DockerContainer.CONTAINER_ID, containerId);
+                    added.sensors().set(DockerContainer.CONTAINER_ID, containerId);
                     added.start(ImmutableList.of(getDynamicLocation().getMachine()));
                 }
             }
