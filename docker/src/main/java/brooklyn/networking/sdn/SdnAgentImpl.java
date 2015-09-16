@@ -26,7 +26,6 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.mgmt.Task;
 import org.apache.brooklyn.core.config.render.RendererHints;
@@ -91,7 +90,7 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
 
     @Override
     public void postStart() {
-        ((EntityLocal) getDockerHost()).sensors().set(SDN_AGENT, this);
+        getDockerHost().sensors().set(SDN_AGENT, this);
     }
 
     @Override
@@ -125,7 +124,7 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
             Entities.waitForServiceUp(network);
         } else {
             Task<Boolean> lookup = TaskBuilder.<Boolean> builder()
-                    .name("Waiting until virtual network is available")
+                    .displayName("Waiting until virtual network is available")
                     .body(new Callable<Boolean>() {
                         @Override
                         public Boolean call() throws Exception {
@@ -173,7 +172,7 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
         } else {
             sensors().get(SDN_PROVIDER).recordSubnetCidr(networkId, subnetCidr);
         }
-        ((EntityLocal) network).sensors().set(VirtualNetwork.NETWORK_CIDR, subnetCidr);
+        network.sensors().set(VirtualNetwork.NETWORK_CIDR, subnetCidr);
 
         // Create the netwoek using the SDN driver
         getDriver().createSubnet(network.getId(), networkId, subnetCidr);

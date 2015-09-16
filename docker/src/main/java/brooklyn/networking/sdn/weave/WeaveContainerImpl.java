@@ -39,7 +39,7 @@ public class WeaveContainerImpl extends SdnAgentImpl implements WeaveContainer {
 
     @Override
     protected Set<Integer> getRequiredOpenPorts() {
-        return MutableSet.of(config().get(WeaveContainer.WEAVE_PORT));
+        return MutableSet.of(config().get(WEAVE_PORT));
     }
 
 }

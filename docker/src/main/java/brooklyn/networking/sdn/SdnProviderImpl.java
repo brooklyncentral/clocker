@@ -30,7 +30,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.entity.Group;
 import org.apache.brooklyn.api.location.Location;
@@ -298,8 +297,8 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements SdnP
                 .displayName(network.getDisplayName());
         DynamicGroup subnet = sensors().get(SDN_APPLICATIONS).addMemberChild(networkSpec);
         Entities.manage(subnet);
-        ((EntityLocal) subnet).sensors().set(VirtualNetwork.NETWORK_ID, networkId);
-        ((EntityLocal) network).sensors().set(VirtualNetwork.NETWORKED_APPLICATIONS, subnet);
+        subnet.sensors().set(VirtualNetwork.NETWORK_ID, networkId);
+        network.sensors().set(VirtualNetwork.NETWORKED_APPLICATIONS, subnet);
 
         sensors().get(SDN_NETWORKS).addMember(network);
     }
