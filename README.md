@@ -48,6 +48,8 @@ st to `weave`, to use Project Calico as your SDN provider, change the last argum
 The _location_ argument specifies the destination to deploy to, and the _network_ argument can be either `calico` or `weave`. If these are omitted then
 Brooklyn will start up without running Clocker, and you can choose the application to deploy using the web UI instead.
 
+*Please note that the Calico version does not currently work with AWS. Please use Weave with AWS*
+
 A Docker image is also available on [Docker Hub](https://hub.docker.com/r/clockercentral/clocker/). You must provide volume sources for a`.brooklyn`
 directory that is writeable, and your `.ssh` directory, and if you want to use a different port to 8080 or 8443 they must be forwarded on the host.
 A suitable startup command would be:
