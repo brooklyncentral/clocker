@@ -31,11 +31,12 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.api.client.repackaged.com.google.common.base.Objects;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
-import com.google.common.base.Splitter;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -56,12 +57,12 @@ import org.apache.brooklyn.api.location.NoMachinesAvailableException;
 import org.apache.brooklyn.api.location.OsDetails;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.api.mgmt.LocationManager;
+import org.apache.brooklyn.camp.brooklyn.BrooklynCampConstants;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
-import org.apache.brooklyn.core.entity.EntityInternal;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
@@ -267,19 +268,17 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         Map<String,Object> entityFlags = MutableMap.copyOf(entity.config().get(SoftwareProcess.PROVISIONING_PROPERTIES));
         DockerTemplateOptions options = new DockerTemplateOptions();
 
-        // Use DockerHost hostname for the container
-        Boolean useHostDns = entity.config().get(DOCKER_USE_HOST_DNS_NAME);
-        if (useHostDns == null) useHostDns = config().get(DOCKER_USE_HOST_DNS_NAME);
-        if (useHostDns != null && useHostDns) {
-            // FIXME does not seem to work on Softlayer, should set HOSTNAME or SUBNET_HOSTNAME
-            String hostname = getDockerHost().sensors().get(Attributes.HOSTNAME);
-            String address = getDockerHost().sensors().get(Attributes.ADDRESS);
-            if (hostname.equalsIgnoreCase(address)) {
-                options.hostname(getDockerContainerName());
-            } else {
-                options.hostname(hostname);
-            }
-        }
+        // Determine the container name to use
+        Boolean useHostDns = Objects.firstNonNull(entity.config().get(DOCKER_USE_HOST_DNS_NAME), Boolean.FALSE);
+        String hostname = getDockerHost().sensors().get(Attributes.HOSTNAME);
+        String address = getDockerHost().sensors().get(Attributes.ADDRESS);
+        String container = getContainerName(entity).or(getDockerContainerName());
+        String name = (!useHostDns || hostname.equalsIgnoreCase(address)) ? container : hostname;
+        options.hostname(name);
+        options.nodeNames(ImmutableList.of(name));
+        sensors().set(DOCKER_CONTAINER_NAME, name);
+        entity.sensors().set(DOCKER_CONTAINER_NAME, name);
+        LOG.debug("Container name set to {} for {}", name, entity);
 
         // CPU shares
         Integer cpuShares = entity.config().get(DOCKER_CPU_SHARES);
@@ -302,7 +301,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             }
             if (minCores != null) {
                 double ratio = (double) minCores / (double) (hostCores != null ? hostCores : 1);
-                LOG.info("Cores: host {}, min {}, ratio {}", new Object[] { hostCores, minCores, ratio });
+                LOG.debug("Cores: host {}, min {}, ratio {}", new Object[] { hostCores, minCores, ratio });
             }
         }
         if (cpuShares != null) options.cpuShares(cpuShares);
@@ -325,7 +324,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             }
             if (minRam != null) {
                 double ratio = (double) minRam / (double) hostRam;
-                LOG.info("Memory: host {}, min {}, ratio {}", new Object[] { hostRam, minRam, ratio });
+                LOG.debug("Memory: host {}, min {}, ratio {}", new Object[] { hostRam, minRam, ratio });
             }
         }
         if (memory != null) options.memory(memory);
@@ -353,27 +352,6 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         entity.sensors().set(DockerAttributes.DOCKER_VOLUME_MAPPING, volumes);
         options.volumes(volumes);
 
-        // Environment
-        List<String> environment = MutableList.of();
-        Map<String,Object> dockerEnvironment = config().get(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT);
-        if (dockerEnvironment != null) {
-            environment.add(Joiner.on(":").withKeyValueSeparator("=").join(dockerEnvironment));
-        }
-        Map<String,Object> entityEnvironment = entity.config().get(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT);
-        if (entityEnvironment != null) {
-            environment.add(Joiner.on(":").withKeyValueSeparator("=").join(entityEnvironment));
-        }
-        Map<String, Object> containerEnvironment = MutableMap.of();
-        for (String entry : environment) {
-            List<String> split = Splitter.on('=').trimResults().splitToList(entry);
-            String key = split.get(0);
-            String value = split.get(1);
-            containerEnvironment.put(key,  value);
-        }
-        sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, containerEnvironment);
-        entity.sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, containerEnvironment);
-        options.env(environment);
-
         // Direct port mappings
         Map<Integer, Integer> bindings = MutableMap.copyOf(entity.config().get(DockerAttributes.DOCKER_PORT_BINDINGS));
         if (bindings == null || bindings.isEmpty()) {
@@ -397,23 +375,89 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 }
             }
         }
-        sensors().set(DockerAttributes.DOCKER_PORT_BINDINGS, bindings);
-        entity.sensors().set(DockerAttributes.DOCKER_PORT_BINDINGS, bindings);
+        sensors().set(DockerAttributes.DOCKER_CONTAINER_PORT_BINDINGS, bindings);
+        entity.sensors().set(DockerAttributes.DOCKER_CONTAINER_PORT_BINDINGS, bindings);
         if (bindings.size() > 0) {
             options.portBindings(bindings);
         }
 
         // Inbound ports
-        Collection<Integer> entityOpenPorts = getRequiredOpenPorts(entity);
+        List<Integer> entityOpenPorts = getRequiredOpenPorts(entity);
         options.inboundPorts(Ints.toArray(entityOpenPorts));
+        sensors().set(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS, entityOpenPorts);
+        entity.sensors().set(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS, entityOpenPorts);
+
+        // Environment and links
+        MutableMap<String, Object> environment = MutableMap.of();
+        environment.add(config().get(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT));
+        environment.add(entity.config().get(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT));
+        List<Entity> links = entity.config().get(DockerAttributes.DOCKER_LINKS);
+        if (links != null && links.size() > 0) {
+            LOG.debug("Found links: {}", links);
+            Map<String, String> extraHosts = MutableMap.of();
+            for (Entity linked : links) {
+                Map<String, Object> linkVars = generateLinks(linked);
+                environment.add(linkVars);
+                Optional<String> alias = getContainerName(linked);
+                if (alias.isPresent()) {
+                    String targetAddress = getTargetAddress(linked);
+                    extraHosts.put(alias.get(), targetAddress);
+                }
+            }
+            options.extraHosts(extraHosts);
+        }
+        sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, environment);
+        entity.sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, environment);
+        List<String> env = ImmutableList.of(Joiner.on(":").withKeyValueSeparator("=").join(environment));
+        options.env(env);
 
         // Log for debugging without password
-        LOG.debug("Docker options for {}: {}", getDockerHost(), options);
+        LOG.debug("Docker options for {}: {}", entity, options);
 
         // Set login password from the Docker host
         options.overrideLoginPassword(getDockerHost().getPassword());
 
         return options;
+    }
+
+    /* Generate the address to use for a target entity. */
+    private String getTargetAddress(Entity target) {
+        if (target.sensors().get(DockerContainer.CONTAINER_ID) != null) {
+            return target.sensors().get(Attributes.SUBNET_ADDRESS);
+        } else {
+            return target.sensors().get(Attributes.ADDRESS);
+        }
+    }
+
+    /* Generate the list of link environment variables. */
+    private Map<String, Object> generateLinks(Entity target) {
+        Entities.waitForServiceUp(target);
+        Optional<String> name = getContainerName(target);
+        if (name.isPresent()) {
+            String address = getTargetAddress(target);
+            List<Integer> openPorts = target.sensors().get(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS);
+            Map<String, Object> env = MutableMap.of();
+            for (Integer port : openPorts) {
+                env.put(String.format("%S_NAME", name.get()), String.format("/%s/%s", getDockerContainerName(), name.get()));
+                env.put(String.format("%S_PORT", name.get()), String.format("tcp://%s:%d", address, port));
+                env.put(String.format("%S_PORT_%d_TCP", name.get(), port), String.format("tcp://%s:%d", address, port));
+                env.put(String.format("%S_PORT_%d_TCP_ADDR", name.get(), port), address);
+                env.put(String.format("%S_PORT_%d_TCP_PORT", name.get(), port), port);
+                env.put(String.format("%S_PORT_%d_TCP_PROTO", name.get(), port), "tcp");
+            }
+            LOG.debug("Links for {}: {}", name, Joiner.on(" ").withKeyValueSeparator("=").join(env));
+            return env;
+        } else {
+            LOG.warn("Cannot generate links for {}: no name specified", target);
+            return ImmutableMap.<String, Object>of();
+        }
+    }
+
+    private Optional<String> getContainerName(Entity target) {
+        return Optional.fromNullable(target.sensors().get(DOCKER_CONTAINER_NAME))
+                .or(Optional.fromNullable(target.config().get(DOCKER_CONTAINER_NAME)))
+                .or(Optional.fromNullable(target.config().get(BrooklynCampConstants.PLAN_ID)))
+                .transform(DockerUtils.ALLOWED);
     }
 
     @Nullable
@@ -430,7 +474,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     }
 
     public void configurePortBindings(DockerHost host, Entity entity) {
-        Map<Integer, Integer> bindings = entity.sensors().get(DockerAttributes.DOCKER_PORT_BINDINGS);
+        Map<Integer, Integer> bindings = entity.sensors().get(DockerAttributes.DOCKER_CONTAINER_PORT_BINDINGS);
         if (bindings.size() > 0) {
             Collection<IpPermission> permissions = MutableList.of();
             for (Integer hostPort : bindings.keySet()) {
@@ -442,7 +486,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                         .build();
                 permissions.add(portAccess);
             }
-            LOG.debug("Adding security group entries for ports on {}: {}", entity, Iterables.toString(bindings.keySet()));
+            LOG.debug("Adding security group entries for forwarded ports on {}: {}", entity, Iterables.toString(bindings.keySet()));
             host.addIpPermissions(permissions);
         }
     }
@@ -459,15 +503,6 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
         // Configure the container options based on the host and the running entity
         DockerTemplateOptions options = getDockerTemplateOptions();
-
-        // Check the running entity for alternative container name
-        String containerName = entity.config().get(DOCKER_CONTAINER_NAME);
-        if (Strings.isBlank(containerName)) {
-            containerName = sensors().get(DOCKER_CONTAINER_NAME);
-        }
-        if (Strings.isNonBlank(containerName)) {
-            options.nodeNames(ImmutableList.of(DockerUtils.allowed(containerName)));
-        }
 
         // put these fields on the location so it has the info it needs to create the subnet
         Map<?, ?> dockerFlags = MutableMap.<Object, Object>builder()
@@ -571,8 +606,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         sensors().set(LOCATION_NAME, null);
     }
 
-    /** @return the ports required for a specific entity */
-    protected Collection<Integer> getRequiredOpenPorts(Entity entity) {
+    protected List<Integer> getRequiredOpenPorts(Entity entity) {
         Set<Integer> ports = MutableSet.of(22);
         for (ConfigKey<?> k: entity.getEntityType().getConfigKeys()) {
             if (PortRange.class.isAssignableFrom(k.getType())) {
@@ -581,7 +615,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             }
         }
         List<Integer> entityOpenPorts = MutableList.copyOf(entity.config().get(DockerAttributes.DOCKER_OPEN_PORTS));
-        entityOpenPorts.addAll(entity.sensors().get(DockerAttributes.DOCKER_PORT_BINDINGS).values());
+        Map<Integer, Integer> portBindings = entity.sensors().get(DockerAttributes.DOCKER_CONTAINER_PORT_BINDINGS);
+        if (portBindings != null) entityOpenPorts.addAll(portBindings.values());
         if (entityOpenPorts.size() > 0) {
             // Create config and sensor for these ports
             for (int i = 0; i < entityOpenPorts.size(); i++) {
@@ -597,7 +632,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             ports.addAll(getRequiredOpenPorts(child));
         }
         LOG.debug("getRequiredOpenPorts detected default {} for {}", ports, entity);
-        return ports;
+        return ImmutableList.copyOf(ports);
     }
 
     @Override
