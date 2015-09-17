@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jclouds.docker.compute.domain;
+package org.jclouds.docker.domain;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.jclouds.docker.internal.NullSafeCopies.copyOf;
@@ -47,20 +47,25 @@ public abstract class HostConfig {
 
    public abstract List<String> links();
 
+   public abstract List<String> extraHosts();
+
    public abstract boolean publishAllPorts();
 
    public abstract List<String> volumesFrom();
+
+   @Nullable
+   public abstract String networkMode();
 
    HostConfig() {
    }
 
    @SerializedNames({ "ContainerIDFile", "Binds", "LxcConf", "Privileged", "Dns", "DnsSearch", "PortBindings",
-           "Links", "PublishAllPorts", "VolumesFrom" })
+         "Links", "ExtraHosts", "PublishAllPorts", "VolumesFrom", "NetworkMode" })
    public static HostConfig create(String containerIDFile, List<String> binds, List<Map<String, String>> lxcConf,
          boolean privileged, List<String> dns, String dnsSearch, Map<String, List<Map<String, String>>> portBindings,
-         List<String> links, boolean publishAllPorts, List<String> volumesFrom) {
+         List<String> links, List<String> extraHosts, boolean publishAllPorts, List<String> volumesFrom, String networkMode) {
       return new AutoValue_HostConfig(containerIDFile, copyOf(binds), copyOf(lxcConf), privileged, copyOf(dns), dnsSearch,
-            copyOf(portBindings), copyOf(links), publishAllPorts, copyOf(volumesFrom));
+            copyOf(portBindings), copyOf(links), copyOf(extraHosts), publishAllPorts, copyOf(volumesFrom), networkMode);
    }
 
    public static Builder builder() {
@@ -81,8 +86,10 @@ public abstract class HostConfig {
       private String dnsSearch;
       private Map<String, List<Map<String, String>>> portBindings = Maps.newLinkedHashMap();
       private List<String> links = Lists.newArrayList();
+      private List<String> extraHosts = Lists.newArrayList();
       private boolean publishAllPorts;
       private List<String> volumesFrom = Lists.newArrayList();
+      private String networkMode;
 
       public Builder containerIDFile(String containerIDFile) {
          this.containerIDFile = containerIDFile;
@@ -119,6 +126,11 @@ public abstract class HostConfig {
          return this;
       }
 
+      public Builder extraHosts(List<String> extraHosts) {
+         this.extraHosts.addAll(checkNotNull(extraHosts, "extraHosts"));
+         return this;
+      }
+
       public Builder portBindings(Map<String, List<Map<String, String>>> portBindings) {
          this.portBindings.putAll(portBindings);
          return this;
@@ -134,15 +146,21 @@ public abstract class HostConfig {
          return this;
       }
 
+      public Builder networkMode(String networkMode) {
+         this.networkMode = networkMode;
+         return this;
+      }
+
       public HostConfig build() {
          return HostConfig.create(containerIDFile, binds, lxcConf, privileged, dns, dnsSearch, portBindings, links,
-               publishAllPorts, volumesFrom);
+               extraHosts, publishAllPorts, volumesFrom, networkMode);
       }
 
       public Builder fromHostConfig(HostConfig in) {
          return this.containerIDFile(in.containerIDFile()).binds(in.binds()).lxcConf(in.lxcConf())
                .privileged(in.privileged()).dns(in.dns()).dnsSearch(in.dnsSearch()).links(in.links())
-               .portBindings(in.portBindings()).publishAllPorts(in.publishAllPorts()).volumesFrom(in.volumesFrom());
+               .extraHosts(in.extraHosts()).portBindings(in.portBindings()).publishAllPorts(in.publishAllPorts())
+               .volumesFrom(in.volumesFrom()).networkMode(in.networkMode());
       }
    }
 }

@@ -34,6 +34,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.brooklyn.clocker</groupId>
+            <artifactId>brooklyn-clocker-patches</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.brooklyn</groupId>
             <artifactId>brooklyn-all</artifactId>
             <version>${brooklyn.version}</version>
@@ -53,11 +58,6 @@
             <groupId>io.brooklyn.networking</groupId>
             <artifactId>brooklyn-networking-cloudstack</artifactId>
             <version>${brooklyn.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.brooklyn.clocker</groupId>
-            <artifactId>brooklyn-clocker-patches</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
