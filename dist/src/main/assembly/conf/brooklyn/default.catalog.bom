@@ -336,7 +336,6 @@ brooklyn.catalog:
 
   - id: docker-infrastructure
     name: Docker Infrastructure
-    iconUrl: classpath://docker-logo.png
     item:
       type: brooklyn.entity.container.docker.DockerInfrastructure
       brooklyn.config:
@@ -357,7 +356,6 @@ brooklyn.catalog:
 
   - id: docker-host
     name: Docker Host
-    iconUrl: classpath://docker-logo.png
     item:
       type: brooklyn.entity.container.docker.DockerHost
       brooklyn.config:
@@ -374,7 +372,6 @@ brooklyn.catalog:
 
   - id: docker-container
     name: Docker Container
-    iconUrl: classpath://docker-logo.png
     item:
       type: brooklyn.entity.container.docker.DockerContainer
       brooklyn.config:
@@ -382,7 +379,6 @@ brooklyn.catalog:
 
   - id: calico-network
     name: Calico Network
-    iconUrl: classpath://calico-logo.png
     item:
       type: brooklyn.networking.sdn.calico.CalicoNetwork
       brooklyn.config:
@@ -393,7 +389,6 @@ brooklyn.catalog:
 
   - id: calico-node
     name: Calico Node
-    iconUrl: classpath://calico-logo.png
     item:
       type: brooklyn.networking.sdn.calico.CalicoNode
 
@@ -418,7 +413,7 @@ brooklyn.catalog:
       type: brooklyn.entity.nosql.etcd.EtcdProxy
 
   - id: weave-network
-    iconUrl: classpath://weaveworks-logo.png
+    name: Weave Network
     item:
       type: brooklyn.networking.sdn.weave.WeaveNetwork
       brooklyn.config:
@@ -428,9 +423,21 @@ brooklyn.catalog:
             type: weave-router
 
   - id: weave-router
-    iconUrl: classpath://weaveworks-logo.png
+    name: Weave Router
     item:
       type: brooklyn.networking.sdn.weave.WeaveContainer
+
+  - id: mesos-cluster
+    name: Mesos Cluster
+    item:
+      type: brooklyn.entity.mesos.MesosCluster
+      brooklyn.config:
+        entity.dynamicLocation.name: "my-mesos-cluster"
+
+  - id: marathon-framework
+    name: Marathon Framework
+    item:
+      type: brooklyn.entity.mesos.framework.marathon.MarathonFramework
 
   - id: docker-cloud-calico
     name: Clocker with Calico
@@ -480,6 +487,17 @@ brooklyn.catalog:
                     type: docker-container
                     brooklyn.config:
                       docker.container.nameFormat: "weave-%2$02x"
+
+  - id: external-mesos-cluster
+    name: External Mesos Cluster
+    description: Access a running Mesos cluster
+    iconUrl: classpath://mesos-logo.png
+    itemType: template
+    item:
+      services:
+      - type: mesos-cluster
+        brooklyn.config:
+          mesos.url: "http://localhost:5050/"
 
   - id: riak-cluster-demo-application
     name: "Riak Cluster Demo Application"
