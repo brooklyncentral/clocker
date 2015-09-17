@@ -387,16 +387,24 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         sensors().set(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS, entityOpenPorts);
         entity.sensors().set(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS, entityOpenPorts);
 
-        // Environment
+        // Environment and links
         MutableMap<String, Object> environment = MutableMap.of();
         environment.add(config().get(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT));
         environment.add(entity.config().get(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT));
         List<Entity> links = entity.config().get(DockerAttributes.DOCKER_LINKS);
         if (links != null && links.size() > 0) {
             LOG.debug("Found links: {}", links);
+            Map<String, String> extraHosts = MutableMap.of();
             for (Entity linked : links) {
-                environment.add(generateLinks(linked));
+                Map<String, Object> linkVars = generateLinks(linked);
+                environment.add(linkVars);
+                Optional<String> alias = getContainerName(linked);
+                if (alias.isPresent()) {
+                    String targetAddress = getTargetAddress(linked);
+                    extraHosts.put(alias.get(), targetAddress);
+                }
             }
+            options.extraHosts(extraHosts);
         }
         sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, environment);
         entity.sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, environment);
@@ -412,12 +420,21 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         return options;
     }
 
-    /* Generate the list of link environment variables */
+    /* Generate the address to use for a target entity. */
+    private String getTargetAddress(Entity target) {
+        if (target.sensors().get(DockerContainer.CONTAINER_ID) != null) {
+            return target.sensors().get(Attributes.SUBNET_ADDRESS);
+        } else {
+            return target.sensors().get(Attributes.ADDRESS);
+        }
+    }
+
+    /* Generate the list of link environment variables. */
     private Map<String, Object> generateLinks(Entity target) {
         Entities.waitForServiceUp(target);
         Optional<String> name = getContainerName(target);
         if (name.isPresent()) {
-            String address = target.sensors().get(Attributes.SUBNET_ADDRESS);
+            String address = getTargetAddress(target);
             List<Integer> openPorts = target.sensors().get(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS);
             Map<String, Object> env = MutableMap.of();
             for (Integer port : openPorts) {
