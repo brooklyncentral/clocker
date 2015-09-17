@@ -148,7 +148,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.3</version>
+                    <version>3.1</version><!-- for autovalue -->
                     <configuration>
                         <source>${java.version}</source>
                         <target>${java.version}</target>
