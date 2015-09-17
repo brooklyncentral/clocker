@@ -148,6 +148,23 @@ brooklyn.catalog:
                     type: docker-container
                     brooklyn.config:
                       docker.container.nameFormat: "docker-%2$02x"
+=======
+    name: Weave Router
+    item:
+      type: brooklyn.networking.sdn.weave.WeaveContainer
+
+  - id: mesos-cluster
+    name: Mesos Cluster
+    item:
+      type: brooklyn.entity.mesos.MesosCluster
+      brooklyn.config:
+        entity.dynamicLocation.name: "my-mesos-cluster"
+
+  - id: marathon-framework
+    name: Marathon Framework
+    item:
+      type: brooklyn.entity.mesos.framework.marathon.MarathonFramework
+>>>>>>> Create initial set of Mesos and Marathon entities
 
   - id: docker-cloud-calico
     name: "Clocker with Calico"
@@ -199,6 +216,18 @@ brooklyn.catalog:
                     type: docker-container
                     brooklyn.config:
                       docker.container.nameFormat: "weave-%2$02x"
+
+  - id: external-mesos-cluster
+    name: "External Mesos Cluster"
+    description: |
+      Access a running Mesos cluster
+    iconUrl: classpath://mesos-logo.png
+    itemType: template
+    item:
+      services:
+      - type: mesos-cluster
+        brooklyn.config:
+          mesos.url: "http://localhost:5050/"
 
   - id: riak-cluster-demo-application
     name: "Riak Cluster Demo Application"

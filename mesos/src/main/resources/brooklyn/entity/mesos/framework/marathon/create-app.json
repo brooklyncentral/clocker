@@ -1,0 +1,38 @@
+[#ftl]
+{
+    "cmd": "${command}",
+    "constraints": [
+        [
+            "hostname",
+            "UNIQUE"
+        ]
+    ],
+    "container": {
+        "docker": {
+            "image": "${imageName}:${imageVersion}"
+        },
+        "type": "DOCKER"
+    },
+    "cpus": 0.25,
+    "healthChecks": [
+        {
+            "gracePeriodSeconds": 3,
+            "intervalSeconds": 10,
+            "maxConsecutiveFailures": 3,
+            "path": "/",
+            "portIndex": 0,
+            "protocol": "HTTP",
+            "timeoutSeconds": 5
+        }
+    ],
+    "id": "${applicationId}",
+    "instances": 1,
+    "mem": 50,
+    "ports": [
+        0
+    ],
+    "upgradeStrategy": {
+        "minimumHealthCapacity": 0.5,
+        "maximumOverCapacity": 0.5
+    }
+}
