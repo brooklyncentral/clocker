@@ -39,6 +39,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -382,10 +383,11 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         }
 
         // Inbound ports
-        List<Integer> entityOpenPorts = getRequiredOpenPorts(entity);
+        Set<Integer> entityOpenPorts = MutableSet.copyOf(getContainerPorts(entity));
+        entityOpenPorts.addAll(getOpenPorts(entity));
         options.inboundPorts(Ints.toArray(entityOpenPorts));
-        sensors().set(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS, entityOpenPorts);
-        entity.sensors().set(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS, entityOpenPorts);
+        sensors().set(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS, ImmutableList.copyOf(entityOpenPorts));
+        entity.sensors().set(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS, ImmutableList.copyOf(entityOpenPorts));
 
         // Environment and links
         MutableMap<String, Object> environment = MutableMap.of();
@@ -422,7 +424,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
     /* Generate the address to use for a target entity. */
     private String getTargetAddress(Entity target) {
-        if (target.sensors().get(DockerContainer.CONTAINER_ID) != null) {
+        if (target.sensors().get(DockerContainer.CONTAINER) != null) {
             return target.sensors().get(Attributes.SUBNET_ADDRESS);
         } else {
             return target.sensors().get(Attributes.ADDRESS);
@@ -435,7 +437,12 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         Optional<String> name = getContainerName(target);
         if (name.isPresent()) {
             String address = getTargetAddress(target);
-            List<Integer> openPorts = target.sensors().get(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS);
+            List<Integer> openPorts = MutableList.of();
+            if (target.sensors().get(DockerContainer.CONTAINER) != null) {
+                openPorts.addAll(MutableSet.copyOf(target.sensors().get(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS)));
+            } else {
+                openPorts.addAll(getOpenPorts(target));
+            }
             Map<String, Object> env = MutableMap.of();
             for (Integer port : openPorts) {
                 env.put(String.format("%S_NAME", name.get()), String.format("/%s/%s", getDockerContainerName(), name.get()));
@@ -515,7 +522,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 .put(LocationConfigKeys.PRIVATE_KEY_DATA, null)
                 .put(LocationConfigKeys.PRIVATE_KEY_FILE, null)
                 .put(CloudLocationConfig.WAIT_FOR_SSHABLE, false)
-                .put(JcloudsLocationConfig.INBOUND_PORTS, getRequiredOpenPorts(entity))
+                .put(JcloudsLocationConfig.INBOUND_PORTS, getOpenPorts(entity))
                 .put(JcloudsLocation.USE_PORT_FORWARDING, true)
                 .put(JcloudsLocation.PORT_FORWARDER, subnetTier.getPortForwarderExtension())
                 .put(JcloudsLocation.PORT_FORWARDING_MANAGER, subnetTier.getPortForwardManager())
@@ -606,15 +613,30 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         sensors().set(LOCATION_NAME, null);
     }
 
-    protected List<Integer> getRequiredOpenPorts(Entity entity) {
-        Set<Integer> ports = MutableSet.of(22);
+    /** Returns the set of configured ports an entity is listening on. */
+    protected Set<Integer> getOpenPorts(Entity entity) {
+        Set<Integer> ports = MutableSet.of();
         for (ConfigKey<?> k: entity.getEntityType().getConfigKeys()) {
             if (PortRange.class.isAssignableFrom(k.getType())) {
                 PortRange p = (PortRange) entity.config().get(k);
                 if (p != null && !p.isEmpty()) ports.add(p.iterator().next());
             }
         }
-        List<Integer> entityOpenPorts = MutableList.copyOf(entity.config().get(DockerAttributes.DOCKER_OPEN_PORTS));
+        for (Entity child : entity.getChildren()) {
+            ports.addAll(getOpenPorts(child));
+        }
+        LOG.debug("getOpenPorts for {}: {}", entity, Iterables.toString(ports));
+        return ImmutableSet.copyOf(ports);
+    }
+
+    /*
+     * Returns the set of ports configured for the container the entity is running in
+     * and also sets a configuration key and sensor for each.
+     */
+    protected Set<Integer> getContainerPorts(Entity entity) {
+        List<Integer> entityOpenPorts = MutableList.of();
+        List<Integer> openPorts = entity.config().get(DockerAttributes.DOCKER_OPEN_PORTS);
+        if (openPorts != null) entityOpenPorts.addAll(openPorts);
         Map<Integer, Integer> portBindings = entity.sensors().get(DockerAttributes.DOCKER_CONTAINER_PORT_BINDINGS);
         if (portBindings != null) entityOpenPorts.addAll(portBindings.values());
         if (entityOpenPorts.size() > 0) {
@@ -625,14 +647,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 entity.sensors().set(Sensors.newIntegerSensor(name), port);
                 entity.config().set(ConfigKeys.newConfigKey(PortRange.class, name), PortRanges.fromInteger(port));
             }
-
-            ports.addAll(entityOpenPorts);
         }
-        for (Entity child : entity.getChildren()) {
-            ports.addAll(getRequiredOpenPorts(child));
-        }
-        LOG.debug("getRequiredOpenPorts detected default {} for {}", ports, entity);
-        return ImmutableList.copyOf(ports);
+        return ImmutableSet.copyOf(entityOpenPorts);
     }
 
     @Override
