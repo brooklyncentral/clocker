@@ -522,7 +522,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 .put(LocationConfigKeys.PRIVATE_KEY_DATA, null)
                 .put(LocationConfigKeys.PRIVATE_KEY_FILE, null)
                 .put(CloudLocationConfig.WAIT_FOR_SSHABLE, false)
-                .put(JcloudsLocationConfig.INBOUND_PORTS, getOpenPorts(entity))
+                .put(JcloudsLocationConfig.INBOUND_PORTS, options.getInboundPorts())
                 .put(JcloudsLocation.USE_PORT_FORWARDING, true)
                 .put(JcloudsLocation.PORT_FORWARDER, subnetTier.getPortForwarderExtension())
                 .put(JcloudsLocation.PORT_FORWARDING_MANAGER, subnetTier.getPortForwardManager())
@@ -615,7 +615,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
     /** Returns the set of configured ports an entity is listening on. */
     protected Set<Integer> getOpenPorts(Entity entity) {
-        Set<Integer> ports = MutableSet.of();
+        Set<Integer> ports = MutableSet.of(22);
         for (ConfigKey<?> k: entity.getEntityType().getConfigKeys()) {
             if (PortRange.class.isAssignableFrom(k.getType())) {
                 PortRange p = (PortRange) entity.config().get(k);
