@@ -9,8 +9,7 @@ You must provide volume sources for a `.brooklyn` directory that is writeable, a
 
 ```Bash
 % docker run -d -v ~/.brooklyn:/root/.brooklyn -v ~/.ssh:/root/.ssh -P \
-    clockercentral/clocker:1.1.0-PREVIEW.20150914 \
-    jclouds:aws-ec2:eu-west-1 calico
+    clockercentral/clocker jclouds:softlayer:lon02 calico
 ```
 
 ### Documentation
