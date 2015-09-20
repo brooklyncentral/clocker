@@ -17,7 +17,6 @@ package brooklyn.entity.mesos.framework.marathon;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -29,16 +28,17 @@ import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.gson.JsonElement;
 
-import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.feed.http.HttpFeed;
 import org.apache.brooklyn.feed.http.HttpPollConfig;
 import org.apache.brooklyn.feed.http.HttpValueFunctions;
 import org.apache.brooklyn.feed.http.JsonFunctions;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.guava.Functionals;
+import org.apache.brooklyn.util.net.Urls;
 
 import brooklyn.entity.mesos.MesosUtils;
 import brooklyn.entity.mesos.framework.MesosFrameworkImpl;
+import brooklyn.entity.mesos.task.marathon.MarathonTask;
 
 /**
  * The Marathon framework implementation.
@@ -51,31 +51,12 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
 
     @Override
     public void init() {
-        String marathonUrl = config().get(MARATHON_URL);
-        config().set(FRAMEWORK_URL, marathonUrl);
-
         super.init();
     }
 
-    @Override
-    public void start(Collection<? extends Location> locations) {
-        sensors().set(SERVICE_UP, Boolean.FALSE);
-
-        super.start(locations);
-
-        connectSensors();
-    }
-
-    @Override
-    public void stop() {
-        disconnectSensors();
-
-        // Stop applications and tasks
-
-        sensors().set(SERVICE_UP, Boolean.FALSE);
-    }
-
     public void connectSensors() {
+        super.connectSensors();
+
         HttpFeed.Builder httpFeedBuilder = HttpFeed.builder()
                 .entity(this)
                 .period(500, TimeUnit.MILLISECONDS)
@@ -84,10 +65,6 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
                         .suburl("/v2/apps/")
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(), JsonFunctions.walk("apps"), JsonFunctions.forEach(JsonFunctions.<String>getPath("id"))))
                         .onFailureOrException(Functions.constant(Arrays.asList(new String[0]))))
-                .poll(new HttpPollConfig<String>(MARATHON_FRAMEWORK_ID)
-                        .suburl("/v2/info/")
-                        .onSuccess(HttpValueFunctions.jsonContents("frameworkId", String.class))
-                        .onFailureOrException(Functions.constant("")))
                 .poll(new HttpPollConfig<String>(MARATHON_VERSION)
                         .suburl("/v2/info/")
                         .onSuccess(HttpValueFunctions.jsonContents("version", String.class))
@@ -96,14 +73,12 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
                         .suburl("/ping")
                         .onSuccess(HttpValueFunctions.responseCodeEquals(200))
                         .onFailureOrException(Functions.constant(Boolean.FALSE)));
-
         httpFeed = httpFeedBuilder.build();
     }
 
     public void disconnectSensors() {
-        if (httpFeed != null) {
-            httpFeed.stop();
-        }
+        if (httpFeed != null && httpFeed.isRunning()) httpFeed.stop();
+        super.disconnectSensors();
     }
 
     @Override
@@ -114,13 +89,15 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
                 .put("imageName", imageName)
                 .put("imageVersion", imageVersion)
                 .build();
-        Optional<String> result = MesosUtils.postJson(sensors().get(FRAMEWORK_URL) + "/v2/apps", "classpath:///brooklyn/entity/mesos/framework/marathon/create-app.json", substitutions);
+        // TODO support 'args'as well as 'command'
+        // TODO configure cpu, memory and port requirements
+        Optional<String> result = MesosUtils.postJson(Urls.mergePaths(sensors().get(FRAMEWORK_URL), "v2/apps"), "classpath:///brooklyn/entity/mesos/framework/marathon/create-app.json", substitutions);
         if (!result.isPresent()) {
             return false;
         } else {
             LOG.debug("Success creating Marathon task");
             JsonElement json = JsonFunctions.asJson().apply(result.get());
-            // set task id and so on
+            // TODO set task id and so on
             return true;
         }
     }

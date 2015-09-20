@@ -16,7 +16,9 @@
 package brooklyn.entity.mesos;
 
 import java.util.List;
+import java.util.Map;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
 
 import org.apache.brooklyn.api.catalog.Catalog;
@@ -34,6 +36,8 @@ import org.apache.brooklyn.entity.stock.BasicStartable;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.time.Duration;
 
+import brooklyn.entity.mesos.framework.MesosFramework;
+import brooklyn.entity.mesos.framework.marathon.MarathonFramework;
 import brooklyn.location.mesos.MesosLocation;
 
 /**
@@ -53,10 +57,6 @@ public interface MesosCluster extends BasicStartable, LocationOwner<MesosLocatio
     @SetFromFlag("mesosUrl")
     ConfigKey<String> MESOS_URL = ConfigKeys.newStringConfigKey("mesos.url", "Mesos URL", "http://localhost:5050/");
 
-    @SetFromFlag("frameworkSpecs")
-    ConfigKey<List<EntitySpec<?>>> FRAMEWORK_SPEC_LIST = ConfigKeys.newConfigKey(new TypeToken<List<EntitySpec<?>>>() { },
-            "mesos.framework.specs", "List of entity specifications for Mesos frameworks");
-
     @SetFromFlag("shutdownTimeout")
     ConfigKey<Duration> SHUTDOWN_TIMEOUT = ConfigKeys.newDurationConfigKey("mesos.timeout.shutdown", "Timeout to wait for children when shutting down", Duration.FIVE_MINUTES);
 
@@ -67,12 +67,24 @@ public interface MesosCluster extends BasicStartable, LocationOwner<MesosLocatio
     AttributeSensor<String> CLUSTER_NAME = Sensors.newStringSensor("mesos.cluster.name", "Mesos cluster name");
     AttributeSensor<String> CLUSTER_ID = Sensors.newStringSensor("mesos.cluster.id", "Mesos cluster ID");
     AttributeSensor<String> MESOS_VERSION = Sensors.newStringSensor("mesos.version", "Mesos version");
+    AttributeSensor<Integer> CPUS_TOTAL = Sensors.newIntegerSensor("mesos.cpus.total", "Total number of available CPUs");
+    AttributeSensor<Long> MEMORY_FREE_BYTES = Sensors.newLongSensor("mesos.memory.free", "Free system memory in bytes");
+    AttributeSensor<Long> MEMORY_TOTAL_BYTES = Sensors.newLongSensor("mesos.memory.total", "Total system memory in bytes");
+    AttributeSensor<Double> LOAD_1MIN = Sensors.newDoubleSensor("mesos.load.1min", "Average system load for last minute in uptime(1) style");
+    AttributeSensor<Double> LOAD_5MIN = Sensors.newDoubleSensor("mesos.load.5min", "Average system load for last 5 minutes in uptime(1) style");
+    AttributeSensor<Double> LOAD_15MIN = Sensors.newDoubleSensor("mesos.load.15min", "Average system load for last 15 minutes in uptime(1) style");
 
     @SetFromFlag("scanInterval")
     ConfigKey<Duration> SCAN_INTERVAL = ConfigKeys.newConfigKey(Duration.class,
-            "mesos.tasks.scanInterval", "Interval between scans of Mesos tasks", Duration.TEN_SECONDS);
-    AttributeSensor<Void> MESOS_TASK_SCAN = Sensors.newSensor(Void.class, "mesos.tasks.scan", "Notification of task scan");
+            "mesos.scanInterval", "Interval between scans of Mesos tasks and frameworks", Duration.TEN_SECONDS);
 
-    AttributeSensor<List<String>> MESOS_TASK_LIST = Sensors.newSensor(new TypeToken<List<String>>() { }, "mesos.tasks.list", "List of Mesos tasks");
+    AttributeSensor<Void> MESOS_FRAMEWORK_SCAN = Sensors.newSensor(Void.class, "mesos.frameworks.scan", "Notification of framework scan");
+    AttributeSensor<List<String>> MESOS_FRAMEWORK_LIST = Sensors.newSensor(new TypeToken<List<String>>() { }, "mesos.frameworks.list", "List of Mesos frameworks");
+
+    Map<String, EntitySpec<? extends MesosFramework>> FRAMEWORKS = ImmutableMap.<String, EntitySpec<? extends MesosFramework>>builder()
+            .put("marathon", EntitySpec.create(MarathonFramework.class))
+            .put("aurora", EntitySpec.create(MarathonFramework.class))
+//            .put("elasticsearch", EntitySpec.create(ElasticSearchFramework.class))
+            .build();
 
 }

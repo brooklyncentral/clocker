@@ -14,6 +14,7 @@
 
 brooklyn.catalog:
   version: 1.1.0 # CLOCKER_VERSION
+
   items:
 
   # load everything in the classpath with a @Catalog annotation
@@ -439,6 +440,35 @@ brooklyn.catalog:
     item:
       type: brooklyn.entity.mesos.framework.marathon.MarathonFramework
 
+  - id: docker-cloud
+    name: Clocker
+    description: Docker Cloud infrastructure
+    iconUrl: classpath://docker-logo.png
+    itemType: template
+    item:
+      services:
+      - type: docker-infrastructure
+        brooklyn.config:
+          docker.host.cluster.initial.size: 1
+          docker.container.cluster.headroom.count: 0
+          docker.container.strategies:
+          - $brooklyn:object:
+              type: brooklyn.location.docker.strategy.MaxContainersPlacementStrategy
+              brooklyn.config:
+                maxContainers: 32
+          - $brooklyn:object:
+              type: brooklyn.location.docker.strategy.DepthFirstPlacementStrategy
+          sdn.enable: false
+          docker.host.spec:
+            $brooklyn:entitySpec:
+              type: docker-host
+              brooklyn.config:
+                docker.container.spec:
+                  $brooklyn:entitySpec:
+                    type: docker-container
+                    brooklyn.config:
+                      docker.container.nameFormat: "docker-%2$02x"
+
   - id: docker-cloud-calico
     name: Clocker with Calico
     description: Docker Cloud infrastructure with Calico networking
@@ -595,3 +625,5 @@ brooklyn.catalog:
             launch.latch: $brooklyn:component("redis").attributeWhenReady("service.isUp")
             provisioning.properties:
               installDevUrandom: true
+
+# vim:ts=2:sw=2:ft=yaml:

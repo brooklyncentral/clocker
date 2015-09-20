@@ -22,8 +22,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.entity.stock.BasicStartableImpl;
+import org.apache.brooklyn.entity.stock.DelegateEntity;
 
 import brooklyn.location.mesos.MesosLocation;
 
@@ -41,6 +43,7 @@ public class MesosTaskImpl extends BasicStartableImpl implements MesosTask {
         // These can be set as configuration values
         ConfigToAttributes.apply(this, TASK_NAME);
         ConfigToAttributes.apply(this, FRAMEWORK);
+        ConfigToAttributes.apply(this, MESOS_CLUSTER);
     }
 
     @Override
@@ -54,16 +57,18 @@ public class MesosTaskImpl extends BasicStartableImpl implements MesosTask {
 
         super.start(locations);
 
-        MesosLocation mesos = null;
-        for (Location location : locations) {
-            if (location instanceof MesosLocation) {
-                mesos = (MesosLocation) location;
+        if (config().get(MESOS_CLUSTER) == null || locations.size() != 0) {
+            MesosLocation mesos = null;
+            for (Location location : locations) {
+                if (location instanceof MesosLocation) {
+                    mesos = (MesosLocation) location;
+                }
             }
+            if (mesos == null) throw new IllegalStateException("Cannot start in a non-Mesos location");
+            sensors().set(MESOS_CLUSTER, mesos.getOwner());
+            sensors().set(MANAGED, true);
         }
-        if (mesos == null) throw new IllegalStateException("Cannot start in a non-Mesos location");
-        LOG.info("task started with name {} and id {}: {}");
 
-        sensors().set(MESOS_CLUSTER, mesos.getOwner());
         sensors().set(SERVICE_UP, Boolean.TRUE); // TODO generate this from task status
     }
 
@@ -74,6 +79,11 @@ public class MesosTaskImpl extends BasicStartableImpl implements MesosTask {
     public void stop() {
         // TODO call stop
         sensors().set(SERVICE_UP, Boolean.FALSE);
+    }
+
+    static {
+        RendererHints.register(FRAMEWORK, RendererHints.namedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(MESOS_CLUSTER, RendererHints.namedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }

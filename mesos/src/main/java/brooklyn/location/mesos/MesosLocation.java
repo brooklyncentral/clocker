@@ -25,13 +25,19 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.collect.Maps;
 
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.location.AbstractLocation;
 import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
+import brooklyn.entity.mesos.MesosAttributes;
 import brooklyn.entity.mesos.MesosCluster;
 
-public class MesosLocation extends AbstractLocation implements MesosVirtualLocation, DynamicLocation<MesosCluster, MesosLocation>, Closeable {
+public class MesosLocation extends AbstractLocation implements DynamicLocation<MesosCluster, MesosLocation>, Closeable {
+
+    public static final ConfigKey<Entity> MESOS_CLUSTER = MesosAttributes.MESOS_CLUSTER.getConfigKey();
+    public static final String PREFIX = "mesos-";
 
     private static final Logger LOG = LoggerFactory.getLogger(MesosLocation.class);
 
@@ -50,7 +56,6 @@ public class MesosLocation extends AbstractLocation implements MesosVirtualLocat
         }
     }
 
-    @Override
     public MesosCluster getMesosCluster() { return cluster; }
 
     @Override

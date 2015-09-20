@@ -27,6 +27,7 @@ import org.apache.brooklyn.camp.brooklyn.BrooklynCampConstants;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 
 import brooklyn.entity.mesos.MesosCluster;
+import brooklyn.entity.mesos.framework.MesosFramework;
 import brooklyn.entity.mesos.framework.marathon.MarathonFramework;
 import brooklyn.entity.mesos.task.MesosTask;
 import brooklyn.entity.mesos.task.MesosTaskImpl;
@@ -40,8 +41,14 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
 
     @Override
     public void init() {
-        LOG.info("Starting Marathon task id {}", getId());
         super.init();
+
+        String name = Optional.fromNullable(config().get(BrooklynCampConstants.PLAN_ID))
+                .or(Optional.fromNullable(config().get(MarathonTask.APPLICATION_ID)))
+                .or(Optional.fromNullable(config().get(MesosTask.TASK_NAME)))
+                .or(getId());
+        sensors().set(MesosTask.TASK_NAME, name);
+        LOG.info("Marathon task {}: {}", name, getId());
     }
 
     @Override
@@ -59,13 +66,14 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         }
         if (marathon == null) throw new IllegalStateException("Cannot start without a Marathon framework");
         sensors().set(FRAMEWORK, marathon);
+        marathon.sensors().get(MesosFramework.FRAMEWORK_TASKS).addMember(this);
 
-        String applicationId = Optional.fromNullable(config().get(BrooklynCampConstants.PLAN_ID)).or(Optional.fromNullable(config().get(MarathonTask.APPLICATION_ID))).or(getId());
+        String name = sensors().get(MesosTask.TASK_NAME);
         String command = config().get(COMMAND);
         String imageName = config().get(DOCKER_IMAGE_NAME);
         String imageVersion = config().get(DOCKER_IMAGE_TAG);
         try {
-            marathon.startApplication(applicationId, command, imageName, imageVersion);
+            marathon.startApplication(name, command, imageName, imageVersion);
         } catch (Exception e) {
             Exceptions.propagate(e);
         }

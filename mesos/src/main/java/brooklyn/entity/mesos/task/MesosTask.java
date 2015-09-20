@@ -25,7 +25,7 @@ import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.stock.BasicStartable;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
-import brooklyn.entity.mesos.framework.MesosFramework;
+import brooklyn.entity.mesos.MesosAttributes;
 
 /**
  * A Mesos task.
@@ -39,10 +39,13 @@ public interface MesosTask extends BasicStartable, HasShortName {
     @SetFromFlag("framework")
     AttributeSensorAndConfigKey<Entity, Entity> FRAMEWORK = ConfigKeys.newSensorAndConfigKey(Entity.class, "mesos.task.framework", "Mesos task framework");
 
-    AttributeSensor<Entity> MESOS_CLUSTER = MesosFramework.MESOS_CLUSTER;
+    @SetFromFlag("cluster")
+    AttributeSensorAndConfigKey<Entity, Entity> MESOS_CLUSTER = MesosAttributes.MESOS_CLUSTER;
+
     AttributeSensor<String> TASK_ID = Sensors.newStringSensor("mesos.task.id", "Mesos task ID");
     AttributeSensor<String> TASK_STATE = Sensors.newStringSensor("mesos.task.state", "Mesos task state");
     AttributeSensor<String> FRAMEWORK_ID = Sensors.newStringSensor("mesos.task.framework.id", "Mesos task framework ID");
+    AttributeSensor<Boolean> MANAGED = Sensors.newBooleanSensor("mesos.task.managed", "Task is managed by Clocker");
 
-    enum TaskState { TASK_FINISHED, TASK_RUNNING, TASK_FAILED }
+    enum TaskState { TASK_FINISHED, TASK_RUNNING, TASK_FAILED, TASK_ERROR, TASK_KILLED, TASK_LOST, TASK_STAGING, TASK_STARTING }
 }
