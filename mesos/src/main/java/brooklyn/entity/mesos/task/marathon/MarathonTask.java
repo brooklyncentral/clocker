@@ -49,4 +49,8 @@ public interface MarathonTask extends MesosTask {
     @SetFromFlag("imageVersion")
     ConfigKey<String> DOCKER_IMAGE_TAG = ConfigKeys.newStringConfigKey("marathon.task.imageVersion", "Marathon task Docker image version");
 
+    // TODO environment and port specification
+    // TODO cpu and memory constraints
+    // TODO labels
+
 }

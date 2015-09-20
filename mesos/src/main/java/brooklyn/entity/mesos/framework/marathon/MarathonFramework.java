@@ -21,16 +21,12 @@ import java.util.List;
 import com.google.common.reflect.TypeToken;
 
 import org.apache.brooklyn.api.catalog.Catalog;
-import org.apache.brooklyn.api.catalog.CatalogConfig;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
-import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.annotation.Effector;
 import org.apache.brooklyn.core.annotation.EffectorParam;
-import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.effector.MethodEffector;
 import org.apache.brooklyn.core.sensor.Sensors;
-import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
 import brooklyn.entity.mesos.framework.MesosFramework;
 
@@ -38,22 +34,17 @@ import brooklyn.entity.mesos.framework.MesosFramework;
  * The Marathon framework for Mesos.
  */
 @Catalog(name = "Marathon Framework",
-        description = "Marathon is an open-source PaaS framework for Mesos.",
-        iconUrl = "classpath:///marathon-logo.jpg")
+        description = "Marathon is an open-source PaaS framework for Mesos.")
 @ImplementedBy(MarathonFrameworkImpl.class)
 public interface MarathonFramework extends MesosFramework {
 
-    @CatalogConfig(label = "Marathon URL", priority = 50)
-    @SetFromFlag("marathonUrl")
-    ConfigKey<String> MARATHON_URL = ConfigKeys.newConfigKeyWithDefault(ConfigKeys.newConfigKeyWithPrefix("marathon.", MesosFramework.FRAMEWORK_URL.getConfigKey()), "http://localhost:8080/");
-
     AttributeSensor<List<String>> MARATHON_APPLICATIONS = Sensors.newSensor(new TypeToken<List<String>>() { }, "marathon.applications", "List of Marathon applications");
-
-    AttributeSensor<String> MARATHON_FRAMEWORK_ID = Sensors.newStringSensor("marathon.framework.id", "Marathon framework ID");
 
     AttributeSensor<String> MARATHON_VERSION = Sensors.newStringSensor("marathon.version", "Marathon version");
 
-    AttributeSensor<String> MARATHON_LEADER_URI = Sensors.newStringSensor("marathon.leader.uri", "Marathon version");
+    AttributeSensor<String> MARATHON_LEADER_URI = Sensors.newStringSensor("marathon.leader.uri", "Marathon leader URI");
+
+    // Effectors
 
     MethodEffector<Void> START_APPLICATION = new MethodEffector<Void>(MarathonFramework.class, "startApplication");
 

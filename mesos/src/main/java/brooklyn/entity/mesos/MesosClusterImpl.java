@@ -53,6 +53,7 @@ import org.apache.brooklyn.api.location.LocationDefinition;
 import org.apache.brooklyn.api.location.LocationRegistry;
 import org.apache.brooklyn.api.mgmt.LocationManager;
 import org.apache.brooklyn.api.mgmt.ManagementContext;
+import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityFunctions;
@@ -66,6 +67,7 @@ import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.group.DynamicGroup;
 import org.apache.brooklyn.entity.group.DynamicMultiGroup;
 import org.apache.brooklyn.entity.stock.BasicStartableImpl;
+import org.apache.brooklyn.entity.stock.DelegateEntity;
 import org.apache.brooklyn.feed.function.FunctionFeed;
 import org.apache.brooklyn.feed.function.FunctionPollConfig;
 import org.apache.brooklyn.feed.http.HttpFeed;
@@ -76,7 +78,9 @@ import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.math.MathFunctions;
 import org.apache.brooklyn.util.net.Urls;
+import org.apache.brooklyn.util.text.ByteSizeStrings;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
 
@@ -94,7 +98,7 @@ public class MesosClusterImpl extends BasicStartableImpl implements MesosCluster
     private static final Logger LOG = LoggerFactory.getLogger(MesosCluster.class);
 
     private transient HttpFeed httpFeed;
-    private transient FunctionFeed taskScan;
+    private transient FunctionFeed frameworkScan;
 
     @Override
     public void init() {
@@ -103,13 +107,10 @@ public class MesosClusterImpl extends BasicStartableImpl implements MesosCluster
         super.init();
 
         DynamicGroup frameworks = addChild(EntitySpec.create(DynamicGroup.class)
-                .configure(DynamicCluster.QUARANTINE_FAILED_ENTITIES, true)
-                .configure(DynamicCluster.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
-                .configure(DynamicCluster.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .displayName("Mesos Frameworks"));
 
         DynamicGroup tasks = addChild(EntitySpec.create(DynamicGroup.class)
-                .configure(DynamicGroup.ENTITY_FILTER, Predicates.and(Predicates.instanceOf(MesosTask.class), EntityPredicates.attributeEqualTo(MesosTask.MESOS_CLUSTER, this)))
+                .configure(DynamicGroup.ENTITY_FILTER, Predicates.and(Predicates.instanceOf(MesosTask.class), EntityPredicates.attributeEqualTo(MesosAttributes.MESOS_CLUSTER, this)))
                 .configure(DynamicGroup.MEMBER_DELEGATE_CHILDREN, true)
                 .displayName("Mesos Tasks"));
 
@@ -135,15 +136,6 @@ public class MesosClusterImpl extends BasicStartableImpl implements MesosCluster
         sensors().set(MESOS_FRAMEWORKS, frameworks);
         sensors().set(MESOS_TASKS, tasks);
         sensors().set(MESOS_APPLICATIONS, applications);
-
-        List<EntitySpec<?>> frameworkSpecs = config().get(FRAMEWORK_SPEC_LIST);
-        for (EntitySpec<?> frameworkSpec : frameworkSpecs) {
-            Entity framework = frameworks.addMemberChild(EntitySpec.create(frameworkSpec)
-                    .configure(MesosFramework.MESOS_CLUSTER, this));
-            if (Entities.isManaged(this)) {
-                Entities.manage(framework);
-            }
-        }
 
         sensors().set(Attributes.MAIN_URI, URI.create(config().get(MESOS_URL)));
     }
@@ -314,61 +306,97 @@ public class MesosClusterImpl extends BasicStartableImpl implements MesosCluster
                 .poll(new HttpPollConfig<String>(MESOS_VERSION)
                         .suburl("/master/state.json")
                         .onSuccess(HttpValueFunctions.jsonContents("version", String.class))
-                        .onFailureOrException(Functions.constant("")));
-
+                        .onFailureOrException(Functions.constant("")))
+                .poll(new HttpPollConfig<Integer>(CPUS_TOTAL)
+                        .suburl("/system/stats.json")
+                        .onSuccess(HttpValueFunctions.jsonContents("cpus_total", Integer.class))
+                        .onFailureOrException(Functions.constant(-1)))
+                .poll(new HttpPollConfig<Double>(LOAD_1MIN)
+                        .suburl("/system/stats.json")
+                        .onSuccess(HttpValueFunctions.jsonContents("avg_load_1min", Double.class))
+                        .onFailureOrException(Functions.constant(-1.0d)))
+                .poll(new HttpPollConfig<Double>(LOAD_5MIN)
+                        .suburl("/system/stats.json")
+                        .onSuccess(HttpValueFunctions.jsonContents("avg_load_5min", Double.class))
+                        .onFailureOrException(Functions.constant(-1.0d)))
+                .poll(new HttpPollConfig<Double>(LOAD_15MIN)
+                        .suburl("/system/stats.json")
+                        .onSuccess(HttpValueFunctions.jsonContents("avg_load_15min", Double.class))
+                        .onFailureOrException(Functions.constant(-1.0d)))
+                .poll(new HttpPollConfig<Long>(MEMORY_FREE_BYTES)
+                        .suburl("/system/stats.json")
+                        .onSuccess(HttpValueFunctions.jsonContents("mem_free_bytes", Long.class))
+                        .onFailureOrException(Functions.constant(-1L)))
+                .poll(new HttpPollConfig<Long>(MEMORY_TOTAL_BYTES)
+                        .suburl("/system/stats.json")
+                        .onSuccess(HttpValueFunctions.jsonContents("mem_total_bytes", Long.class))
+                        .onFailureOrException(Functions.constant(-1L)));
         httpFeed = httpFeedBuilder.build();
 
-        Duration interval = config().get(SCAN_INTERVAL);
-        taskScan = FunctionFeed.builder()
+        Duration scanInterval = config().get(SCAN_INTERVAL);
+        FunctionFeed.Builder frameworkScanBuilder = FunctionFeed.builder()
                 .entity(this)
-                .poll(new FunctionPollConfig<Object, Void>(MESOS_TASK_SCAN)
-                        .period(interval)
-                        .description("Scan Tasks")
+                .poll(new FunctionPollConfig<Object, Void>(MESOS_FRAMEWORK_SCAN)
+                        .period(scanInterval)
+                        .description("Scan Frameworks")
                         .callable(new Callable<Void>() {
                                 @Override
                                 public Void call() throws Exception {
-                                    scanTasks();
+                                    scanFrameworks();
                                     return null;
                                 }
                             })
-                        .onFailureOrException(Functions.<Void>constant(null)))
-                .build();
+                        .onFailureOrException(Functions.<Void>constant(null)));
+        frameworkScan = frameworkScanBuilder.build();
     }
 
-    public void scanTasks() throws IOException {
-        URL uri = Urls.toUrl(config().get(MESOS_URL) + "/master/tasks.json");
+    public void scanFrameworks() throws IOException {
+        URL uri = Urls.toUrl(Urls.mergePaths(config().get(MESOS_URL), "master/state.json"));
         String data = Resources.toString(uri, Charsets.UTF_8);
-        JsonElement json = JsonFunctions.asJson().apply(data);
-        JsonArray tasks = json.getAsJsonObject().getAsJsonArray("tasks");
+        JsonArray frameworks = JsonFunctions.asJson().apply(data).getAsJsonObject().getAsJsonArray("frameworks");
 
-        List<String> running = MutableList.<String>of();
-        for (int i = 0; i < tasks.size(); i++) {
-            JsonObject task = tasks.get(i).getAsJsonObject();
+        List<String> frameworkNames = MutableList.<String>of();
+        for (int i = 0; i < frameworks.size(); i++) {
+            JsonObject task = frameworks.get(i).getAsJsonObject();
             String id = task.get("id").getAsString();
+            String pid = task.get("pid").getAsString();
             String name = task.get("name").getAsString();
-            String state = task.get("state").getAsString();
-            String framework = task.get("framework_id").getAsString();
+            String url = task.get("webui_url").getAsString();
+            frameworkNames.add(name);
 
-            if (state.equals(MesosTask.TaskState.TASK_RUNNING.name())) {
-                running.add(name);
-                Optional<Entity> entity = Iterables.tryFind(sensors().get(MESOS_TASKS).getMembers(),
-                          Predicates.compose(Predicates.equalTo(name), EntityFunctions.attribute(MesosTask.TASK_NAME)));
-                if (entity.isPresent()) continue;
-                Optional<Entity> found = Iterables.tryFind(sensors().get(MESOS_FRAMEWORKS).getMembers(), EntityPredicates.attributeEqualTo(MesosFramework.FRAMEWORK_ID, framework));
-                EntitySpec<MesosTask> taskSpec = EntitySpec.create(MesosTask.class)
-                        .configure(MesosTask.TASK_NAME, name)
-                        .configure(MesosTask.FRAMEWORK, found.orNull());
-                MesosTask added = sensors().get(MESOS_TASKS).addMemberChild(taskSpec);
-                Entities.manage(added);
-                added.start(ImmutableList.of(getDynamicLocation()));
-            }
+            Optional<Entity> entity = Iterables.tryFind(sensors().get(MESOS_FRAMEWORKS).getMembers(),
+                      Predicates.compose(Predicates.equalTo(id), EntityFunctions.attribute(MesosFramework.FRAMEWORK_ID)));
+            if (entity.isPresent()) continue;
+
+            EntitySpec<? extends MesosFramework> frameworkSpec = EntitySpec.create(FRAMEWORKS.containsKey(name) ? FRAMEWORKS.get(name) : EntitySpec.create(MesosFramework.class))
+                    .configure(MesosFramework.FRAMEWORK_ID, id)
+                    .configure(MesosFramework.FRAMEWORK_PID, pid)
+                    .configure(MesosFramework.FRAMEWORK_NAME, name)
+                    .configure(MesosFramework.FRAMEWORK_URL, url)
+                    .configure(MesosFramework.MESOS_CLUSTER, this);
+            MesosFramework added = sensors().get(MESOS_FRAMEWORKS).addMemberChild(frameworkSpec);
+            Entities.manage(added);
+            added.start(ImmutableList.<Location>of());
         }
+        sensors().set(MESOS_FRAMEWORK_LIST, frameworkNames);
     }
 
     public void disconnectSensors() {
-        if (httpFeed != null) {
-            httpFeed.stop();
-        }
+        if (httpFeed != null && httpFeed.isRunning()) httpFeed.stop();
+        if (frameworkScan != null && frameworkScan.isRunning()) frameworkScan.stop();
+    }
+
+    static {
+        RendererHints.register(MESOS_FRAMEWORKS, RendererHints.namedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(MESOS_TASKS, RendererHints.namedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(MESOS_APPLICATIONS, RendererHints.namedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+
+        RendererHints.register(LOAD_1MIN, RendererHints.displayValue(MathFunctions.percent(2)));
+        RendererHints.register(LOAD_5MIN, RendererHints.displayValue(MathFunctions.percent(2)));
+        RendererHints.register(LOAD_15MIN, RendererHints.displayValue(MathFunctions.percent(2)));
+
+        RendererHints.register(MEMORY_FREE_BYTES, RendererHints.displayValue(ByteSizeStrings.metric()));
+        RendererHints.register(MEMORY_TOTAL_BYTES, RendererHints.displayValue(ByteSizeStrings.metric()));
     }
 
 }

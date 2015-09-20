@@ -13,21 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.location.mesos;
+package brooklyn.entity.mesos.framework.aurora;
 
-import org.apache.brooklyn.api.location.Location;
-import org.apache.brooklyn.config.ConfigKey;
-import org.apache.brooklyn.core.config.ConfigKeys;
+import brooklyn.entity.mesos.framework.MesosFrameworkImpl;
 
-import brooklyn.entity.mesos.MesosCluster;
+/**
+ * The Aurora framework implementation.
+ */
+public class AuroraFrameworkImpl extends MesosFrameworkImpl implements AuroraFramework {
 
-public interface MesosVirtualLocation extends Location {
-
-    ConfigKey<MesosCluster> MESOS_CLUSTER =
-            ConfigKeys.newConfigKey(MesosCluster.class, "mesos.cluster", "The Mesos cluster entity");
-
-    String PREFIX = "mesos-";
-
-    MesosCluster getMesosCluster();
+    // TODO placeholder class
 
 }

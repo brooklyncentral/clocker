@@ -46,11 +46,13 @@ import org.apache.brooklyn.util.text.Strings;
 import brooklyn.entity.mesos.MesosCluster;
 
 /**
+ * A {@link Location} backed by a {@link MesosCluster}.
+ * <p>
  * Examples of valid specs:
- *   <ul>
- *     <li>mesos:mesosClusterId
- *     <li>mesos:mesosClusterId:(name=mesos-cluster)
- *   </ul>
+ * <ul>
+ *   <li>{@code mesos:mesosClusterId}
+ *   <li>{@code mesos:mesosClusterId:(name=mesos-cluster)}
+ * </ul>
  */
 public class MesosResolver implements EnableableLocationResolver {
 
