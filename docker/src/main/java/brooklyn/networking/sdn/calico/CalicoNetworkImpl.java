@@ -27,6 +27,7 @@ import com.google.common.collect.Maps;
 
 import org.jclouds.net.domain.IpPermission;
 import org.jclouds.net.domain.IpProtocol;
+import org.jclouds.net.util.IpPermissions;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
@@ -122,6 +123,7 @@ public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork 
                 .cidrBlock(source)
                 .build();
         permissions.add(powerstripTcpPort);
+        permissions.add(IpPermissions.permitAnyProtocol());
         return permissions;
     }
 
