@@ -80,8 +80,7 @@ public class DockerServiceTypeResolver extends BrooklynServiceTypeResolver {
             String containerName = (String) resolver.getAttrs().getStringKey("id");
             spec.configure(DockerAttributes.DOCKER_CONTAINER_NAME, containerName);
         }
-        spec.configure(BrooklynConfigKeys.SKIP_ENTITY_START, Boolean.TRUE);
-        spec.configure(BrooklynConfigKeys.SKIP_ON_BOX_BASE_DIR_RESOLUTION, Boolean.TRUE);
+
         super.decorateSpec(resolver, spec);
     }
 
