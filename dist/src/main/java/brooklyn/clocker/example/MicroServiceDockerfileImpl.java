@@ -40,7 +40,7 @@ public class MicroServiceDockerfileImpl extends AbstractApplication implements M
 
     @Override
     public void initApp() {
-        addChild(EntitySpec.create(VanillaDockerApplication.class)
+        vanillaDockerApplication = addChild(EntitySpec.create(VanillaDockerApplication.class)
                 .configure("containerName", config().get(CONTAINER_NAME))
                 .configure("dockerfileUrl", config().get(DOCKERFILE_URL))
                 .configure("openPorts", config().get(OPEN_PORTS))
