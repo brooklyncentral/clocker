@@ -138,6 +138,21 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
             "docker.jclouds.location", "The location used for provisioning Docker containers");
     AttributeSensor<SubnetTier> DOCKER_HOST_SUBNET_TIER = Sensors.newSensor(SubnetTier.class,
             "docker.subnetTier", "The SubnetTier for Docker port mapping");
+    
+    ConfigKey<List<String>> DOCKER_INSECURE_REGISTRIES = ConfigKeys.newConfigKey(
+            new TypeToken<List<String>>() {
+            }, "docker.registry.insecure", "A list of Docker Registries to be marked as insecure");
+
+    ConfigKey<Map<String, String>> DOCKER_EXTERNAL_REGISTRY_LOGIN_DETAILS = ConfigKeys.newConfigKey(
+            new TypeToken<Map<String, String>>() { }, "docker.registry.externalLoginDetails", "A map of username to passwords, to be used to login to docker registries. See associated config docker.registry.external");
+
+    ConfigKey<Map<String, String>> DOCKER_EXTERNAL_REGISTRIES = ConfigKeys.newConfigKey(
+            new TypeToken<Map<String, String>>() { }, "docker.registry.external", "A map of external registries to use, to the username needed for login. See associated config docker.registry.externalLoginDetails");
+
+    //This is here, as it is used when host is set-up
+    @SetFromFlag("dockerRegistryPort")
+    AttributeSensorAndConfigKey<Integer, Integer> DOCKER_REGISTRY_PORT = ConfigKeys.newSensorAndConfigKey(new TypeToken<Integer>() {
+    }, "docker.registry.port", "The docker registry port to expose", 5000);
 
     String getPassword();
 
@@ -193,7 +208,7 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
      * @param dockerfile URL of Dockerfile template, or an archive including Dockerfile and all required context
      * @param entrypoint URL of entrypoint script for Dockerfile, may be null
      * @param contextArchive URL of context archive for Dockerfile, may be null
-     * @param name Repository name
+     * @param name Registry name
      * @param useSsh Add SSHable layer after building
      * @param substitutions Extra template substitutions for the Dockerfile
      * @see DockerHostDriver#buildImage(String, Optional, String, boolean)
@@ -203,9 +218,20 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
             @EffectorParam(name="dockerfile", description="URL of Dockerfile template") String dockerfile,
             @EffectorParam(name="entrypoint", description="URL of entrypoint script") String entrypoint,
             @EffectorParam(name="contextArchive", description="URL of context archive") String contextArchive,
-            @EffectorParam(name="name", description="Repository name") String name,
+            @EffectorParam(name="name", description="Registry name") String name,
             @EffectorParam(name="useSsh", description="Add an SSHable layer after building") boolean useSsh,
             @EffectorParam(name="substitutions", description="Extra template substitutions for the Dockerfile") Map<String, Object> substitutions);
+
+
+    /**
+     * Create an SSHable image based on the fullyQualifiedName provided
+     *
+     * @param fullyQualifiedName The fully qualified name to base the new image on. E.g. quay.io/graemem/myrepo/redis:2
+     * @return the new image's ID
+     */
+    @Effector(description="Create an SSHable image based on the fullyQualifiedName provided")
+    String layerSshableImageOnFullyQualified(
+            @EffectorParam(name="fullyQualifiedName", description="The fully qualified name to layer on") String fullyQualifiedName);
 
     /**
      * Create an SSHable image based on the image with the given name.

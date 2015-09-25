@@ -17,6 +17,8 @@ package brooklyn.entity.container.docker;
 
 import static java.lang.String.format;
 
+import javax.annotation.Nullable;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Collection;
@@ -25,8 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -410,7 +410,14 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         }
         sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, environment);
         entity.sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, environment);
-        List<String> env = ImmutableList.of(Joiner.on(":").withKeyValueSeparator("=").join(environment));
+
+        List<String> env = MutableList.of();
+        if (environment != null && !environment.isEmpty()) {
+            for (Map.Entry<String, Object> entry : environment.entrySet()) {
+                env.add(entry.getKey() + "=" + entry.getValue());
+            }
+        }
+
         options.env(env);
 
         // Log for debugging without password
