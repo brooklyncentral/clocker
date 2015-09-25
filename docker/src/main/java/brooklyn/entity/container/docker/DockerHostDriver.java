@@ -43,10 +43,10 @@ public interface DockerHostDriver extends SoftwareProcessDriver {
     /**
      * Build an SSHable Docker image that is based from an image with the given name.
      *
-     * @param name e.g. tomcat:8.0
+     * @param fullyQualifiedImageName e.g. quay.io/graemem/repo/tomcat:8.0
      * @return the new image's ID
      */
-    String layerSshableImageOn(String name, String tag);
+    String layerSshableImageOn(String fullyQualifiedImageName);
 
     String deployArchive(String url);
 

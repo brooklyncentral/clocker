@@ -392,11 +392,19 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     }
 
     @Override
+    public String layerSshableImageOnFullyQualified(String fullyQualifiedName) {
+        String imageId = getDriver().layerSshableImageOn(fullyQualifiedName);
+        LOG.debug("Successfully added SSHable layer as {}", fullyQualifiedName);
+        return imageId;
+    }
+
+    @Override
     public String layerSshableImageOn(String baseImage, String tag) {
-        String imageId = getDriver().layerSshableImageOn(baseImage, tag);
+        String imageId = getDriver().layerSshableImageOn(baseImage+ ":" +tag);
         LOG.debug("Successfully added SSHable layer as {} from {}", imageId, baseImage);
         return imageId;
     }
+
 
     /** {@inheritDoc} */
     @Override

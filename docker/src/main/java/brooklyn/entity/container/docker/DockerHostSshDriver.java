@@ -115,13 +115,12 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     /** {@inheritDoc} */
     @Override
-    public String layerSshableImageOn(String name, String tag) {
-        checkNotNull(name, "name");
-        checkNotNull(tag, "tag");
-        copyTemplate(DockerUtils.SSHD_DOCKERFILE, Os.mergePaths(name, "Sshd" + DockerUtils.DOCKERFILE),
-                true, ImmutableMap.<String, Object>of("fullyQualifiedImageName", name + ":" + tag));
-        String sshdImageId = buildDockerfile("Sshd" + DockerUtils.DOCKERFILE, name);
-        log.info("Created SSH-based image from {} with ID {}", name, sshdImageId);
+    public String layerSshableImageOn(String fullyQualifiedImageName) {
+        checkNotNull(fullyQualifiedImageName, "fullyQualifiedImageName");
+        copyTemplate(DockerUtils.SSHD_DOCKERFILE, Os.mergePaths(fullyQualifiedImageName, "Sshd" + DockerUtils.DOCKERFILE),
+                true, ImmutableMap.<String, Object>of("fullyQualifiedImageName", fullyQualifiedImageName));
+        String sshdImageId = buildDockerfile("Sshd" + DockerUtils.DOCKERFILE, fullyQualifiedImageName);
+        log.info("Created SSH-based image from {} with ID {}", fullyQualifiedImageName, sshdImageId);
 
         return sshdImageId;
     }
