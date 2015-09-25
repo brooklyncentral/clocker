@@ -39,7 +39,9 @@ import com.google.common.collect.Lists;
 import org.apache.brooklyn.api.location.OsDetails;
 import org.apache.brooklyn.api.mgmt.Task;
 import org.apache.brooklyn.core.effector.ssh.SshEffectorTasks;
+import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
+import org.apache.brooklyn.entity.group.AbstractGroup;
 import org.apache.brooklyn.entity.software.base.AbstractSoftwareProcessSshDriver;
 import org.apache.brooklyn.entity.software.base.lifecycle.ScriptHelper;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
@@ -322,7 +324,18 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .execute();
         }
 
-        //Create config for upstart
+        //Add the CA cert as an authorised docker CA for the first host.
+        //This will be used for docker registrt etc.
+        String hostnameOfFirstEntity = entity.sensors().get(AbstractGroup.FIRST).sensors().get(Attributes.HOSTNAME);
+        String repoCAPath = "/etc/docker/certs.d/" + hostnameOfFirstEntity + ":5000";
+
+        newScript(CUSTOMIZING)
+                .body.append(
+                chainGroup(sudo("mkdir -p " + repoCAPath),
+                        sudo("cp ca.pem " + repoCAPath + "/ca.crt")))
+                .failOnNonZeroResultCode()
+                .execute();
+
         newScript(CUSTOMIZING + "-upstart")
                 .body.append(
                         chain(
