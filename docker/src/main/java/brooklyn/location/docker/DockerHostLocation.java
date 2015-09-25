@@ -179,10 +179,14 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                 entity.config().set(SoftwareProcess.SKIP_INSTALLATION, true);
             } else if (baseImage.isPresent()) {
                 String fullyQualifiedName = "";
+                String repoAndName = "";
+
                 if(imageRepo.isPresent()){
-                    fullyQualifiedName += imageRepo.get()+"/";
+                    fullyQualifiedName = imageRepo.get()+"/";
+                    repoAndName = imageRepo.get()+"/";
                 }
                 fullyQualifiedName += baseImage.get() + ":" +imageTag;
+                repoAndName +=  baseImage.get();
 
                 if (useSsh) {
                     // Create an SSHable image from the one configured
@@ -190,7 +194,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                     LOG.info("Created SSHable image from {}: {}", fullyQualifiedName, imageId);
                 } else {
                     dockerHost.runDockerCommand(String.format("pull %s", fullyQualifiedName));
-                    imageId = dockerHost.getImageNamed(baseImage.get(), imageTag).get();
+                    imageId = dockerHost.getImageNamed(repoAndName, imageTag).get();
                 }
                 entity.config().set(SoftwareProcess.SKIP_INSTALLATION, true);
             } else {
