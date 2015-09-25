@@ -207,6 +207,17 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
             @EffectorParam(name="useSsh", description="Add an SSHable layer after building") boolean useSsh,
             @EffectorParam(name="substitutions", description="Extra template substitutions for the Dockerfile") Map<String, Object> substitutions);
 
+
+    /**
+     * Create an SSHable image based on the fullyQualifiedName provided
+     *
+     * @param fullyQualifiedName The fully qualified name to base the new image on. E.g. quay.io/graemem/myrepo/redis:2
+     * @return the new image's ID
+     */
+    @Effector(description="Create an SSHable image based on the fullyQualifiedName provided")
+    String layerSshableImageOnFullyQualified(
+            @EffectorParam(name="fullyQualifiedName", description="The fully qualified name to layer on") String fullyQualifiedName);
+
     /**
      * Create an SSHable image based on the image with the given name.
      *
