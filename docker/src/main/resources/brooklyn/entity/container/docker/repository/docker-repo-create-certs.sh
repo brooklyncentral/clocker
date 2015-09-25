@@ -15,9 +15,10 @@
 # limitations under the License.
 
 echo "01" > ca-cert.srl
+echo "subjectAltName = IP:$1" > repo.cnf
 
 mkdir certs
 
 openssl genrsa -out certs/repo-key.pem 2048
 openssl req -subj "/CN=$1" -new -key certs/repo-key.pem -out certs/repo.csr
-openssl x509 -req -days 365 -in certs/repo.csr -CA ca-cert.pem -CAkey ca-key.pem -out certs/repo-cert.pem
+openssl x509 -req -days 365 -in certs/repo.csr -CA ca-cert.pem -CAkey ca-key.pem -out certs/repo-cert.pem -extfile repo.cnf
