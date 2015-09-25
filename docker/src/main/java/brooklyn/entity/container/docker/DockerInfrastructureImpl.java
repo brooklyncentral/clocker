@@ -32,6 +32,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 import javax.net.ssl.X509TrustManager;
 
+import brooklyn.entity.container.docker.repository.DockerRepository;
+import org.apache.brooklyn.core.entity.AbstractApplication;
+import org.apache.brooklyn.entity.group.*;
+import org.apache.brooklyn.entity.stock.BasicApplication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,11 +66,6 @@ import org.apache.brooklyn.core.location.BasicLocationDefinition;
 import org.apache.brooklyn.core.location.BasicLocationRegistry;
 import org.apache.brooklyn.core.location.dynamic.LocationOwner;
 import org.apache.brooklyn.enricher.stock.Enrichers;
-import org.apache.brooklyn.entity.group.BasicGroup;
-import org.apache.brooklyn.entity.group.Cluster;
-import org.apache.brooklyn.entity.group.DynamicCluster;
-import org.apache.brooklyn.entity.group.DynamicGroup;
-import org.apache.brooklyn.entity.group.DynamicMultiGroup;
 import org.apache.brooklyn.entity.machine.MachineAttributes;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess.ChildStartableMode;
@@ -88,7 +87,7 @@ import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.DockerResolver;
 import brooklyn.networking.sdn.SdnAttributes;
 
-public class DockerInfrastructureImpl extends BasicStartableImpl implements DockerInfrastructure {
+public class DockerInfrastructureImpl extends AbstractApplication implements DockerInfrastructure {
 
     private static final Logger LOG = LoggerFactory.getLogger(DockerInfrastructure.class);
 
@@ -361,7 +360,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
     }
 
     @Override
-    public void start(Collection<? extends Location> locations) {
+    public void doStart(Collection<? extends Location> locations) {
         // TODO support multiple locations
         sensors().set(SERVICE_UP, Boolean.FALSE);
 
@@ -375,7 +374,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 .build();
         createLocation(flags);
 
-        super.start(locations);
+        super.doStart(locations);
 
         sensors().set(SERVICE_UP, Boolean.TRUE);
     }
@@ -425,6 +424,27 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         super.stop();
 
         deleteLocation();
+    }
+
+    @Override
+    public void postStart(Collection<? extends Location> locations) {
+        super.postStart(locations);
+
+        EntitySpec<DockerRepository> spec = EntitySpec.create(DockerRepository.class);
+
+        DockerRepository dockerRegistry = addChild(spec);
+        Entities.manage(dockerRegistry);
+
+
+        //There must be a better way of doing this
+        DockerHost firstEntity = (DockerHost)sensors().get(DOCKER_HOST_CLUSTER).getMembers().iterator().next().sensors().get(AbstractGroup.FIRST);
+
+        LOG.debug("Starting a new Docker Registry with spec {}", spec);
+        dockerRegistry.start(ImmutableList.of(firstEntity.getDynamicLocation().getMachine()));
+
+//        String dockerRegistryUrl = String.format("%s:%d", dockerRegistry.sensors().get(Attributes.HOSTNAME), dockerRegistry.config().get(DockerAttributes.DOCKER_REGISTRY_PORT));
+//        LOG.debug("Started new docker registry. Setting registry URL config {} to {}", DOCKER_REGISTRY_URL, dockerRegistryUrl);
+//        sensors().set(DOCKER_REGISTRY_URL, dockerRegistryUrl);
     }
 
     static {

@@ -23,6 +23,7 @@ import com.google.common.reflect.TypeToken;
 
 import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.catalog.CatalogConfig;
+import org.apache.brooklyn.api.entity.Application;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.entity.ImplementedBy;
@@ -57,7 +58,7 @@ import brooklyn.networking.sdn.SdnAttributes;
         description = "Docker is an open-source engine to easily create lightweight, portable, self-sufficient containers from any application.",
         iconUrl = "classpath:///docker-logo.png")
 @ImplementedBy(DockerInfrastructureImpl.class)
-public interface DockerInfrastructure extends BasicStartable, Resizable, LocationOwner<DockerLocation, DockerInfrastructure> {
+public interface DockerInfrastructure extends Application, Resizable, LocationOwner<DockerLocation, DockerInfrastructure> {
 
     @CatalogConfig(label = "Location Name", priority = 90)
     @SetFromFlag("locationName")
