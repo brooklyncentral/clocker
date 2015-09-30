@@ -23,10 +23,7 @@ import java.security.KeyStoreException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nullable;
@@ -35,7 +32,6 @@ import javax.net.ssl.X509TrustManager;
 import brooklyn.entity.container.docker.repository.DockerRepository;
 import org.apache.brooklyn.core.entity.AbstractApplication;
 import org.apache.brooklyn.entity.group.*;
-import org.apache.brooklyn.entity.stock.BasicApplication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,7 +65,6 @@ import org.apache.brooklyn.enricher.stock.Enrichers;
 import org.apache.brooklyn.entity.machine.MachineAttributes;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess.ChildStartableMode;
-import org.apache.brooklyn.entity.stock.BasicStartableImpl;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
 import org.apache.brooklyn.policy.autoscaling.AutoScalerPolicy;
 import org.apache.brooklyn.util.collections.MutableMap;
@@ -430,21 +425,26 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
     public void postStart(Collection<? extends Location> locations) {
         super.postStart(locations);
 
-        EntitySpec<DockerRepository> spec = EntitySpec.create(DockerRepository.class);
 
-        DockerRepository dockerRegistry = addChild(spec);
-        Entities.manage(dockerRegistry);
+        if(config().get(DOCKER_SHOULD_START_REGISTRY)){
+            DockerHost firstEntity = (DockerHost) sensors().get(DOCKER_HOST_CLUSTER).sensors().get(DynamicCluster.FIRST);
 
 
-        //There must be a better way of doing this
-        DockerHost firstEntity = (DockerHost)sensors().get(DOCKER_HOST_CLUSTER).getMembers().iterator().next().sensors().get(AbstractGroup.FIRST);
+            EntitySpec<DockerRepository> spec = EntitySpec.create(DockerRepository.class)
+                    .configure(DockerRepository.DOCKER_HOST, firstEntity);
 
-        LOG.debug("Starting a new Docker Registry with spec {}", spec);
-        dockerRegistry.start(ImmutableList.of(firstEntity.getDynamicLocation().getMachine()));
+            //mount volume with images stored on it
+            DockerRepository dockerRegistry = addChild(spec);
+            Entities.manage(dockerRegistry);
 
-//        String dockerRegistryUrl = String.format("%s:%d", dockerRegistry.sensors().get(Attributes.HOSTNAME), dockerRegistry.config().get(DockerAttributes.DOCKER_REGISTRY_PORT));
-//        LOG.debug("Started new docker registry. Setting registry URL config {} to {}", DOCKER_REGISTRY_URL, dockerRegistryUrl);
-//        sensors().set(DOCKER_REGISTRY_URL, dockerRegistryUrl);
+            LOG.debug("Starting a new Docker Registry with spec {}", spec);
+            dockerRegistry.start(ImmutableList.of(firstEntity.getDynamicLocation()));
+
+
+            String dockerRegistryUrl = String.format("%s:%d", dockerRegistry.sensors().get(Attributes.HOSTNAME), dockerRegistry.config().get(DockerRepository.DOCKER_REGISTRY_PORT));
+            LOG.debug("Started new docker registry. Setting registry URL config {} to {}", DOCKER_IMAGE_REPOSITORY, dockerRegistryUrl);
+            sensors().set(DOCKER_IMAGE_REPOSITORY, dockerRegistryUrl);
+        }
     }
 
     static {

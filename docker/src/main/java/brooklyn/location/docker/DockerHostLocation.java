@@ -116,6 +116,8 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
         }
     }
 
+
+
     public DockerContainerLocation obtain() throws NoMachinesAvailableException {
         return obtain(Maps.<String,Object>newLinkedHashMap());
     }
@@ -159,9 +161,11 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
             Optional<String> baseImage = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_NAME));
             String imageTag = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_TAG)).or("latest");
-            Optional<String> imageRepo = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_REPOSITORY));
+            Optional<String> imageRepo = Optional
+                    .fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_REPOSITORY))
+                    .or(Optional.fromNullable(getDockerInfrastructure().config().get(DockerAttributes.DOCKER_IMAGE_REPOSITORY)));
 
-            // TODO incorporate more info
+            // TODO incorporate more info (incl registry?)
             final String imageName = DockerUtils.imageName(entity, dockerfile);
 
             // Lookup image ID or build new image from Dockerfile

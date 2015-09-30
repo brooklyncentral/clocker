@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+cd $2
 echo "01" > ca-cert.srl
 echo "subjectAltName = IP:$1" > repo.cnf
 
