@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nullable;
 
+import com.google.common.collect.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,12 +38,6 @@ import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
 
 import org.jclouds.compute.domain.Processor;
@@ -273,7 +268,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         Boolean useHostDns = Objects.firstNonNull(entity.config().get(DOCKER_USE_HOST_DNS_NAME), Boolean.FALSE);
         String hostname = getDockerHost().sensors().get(Attributes.HOSTNAME);
         String address = getDockerHost().sensors().get(Attributes.ADDRESS);
-        String container = getContainerName(entity).or(getDockerContainerName());
+        String container = getContainerName(entity).or(Optional.fromNullable(getDockerContainerName())).orNull();
         String name = (!useHostDns || hostname.equalsIgnoreCase(address)) ? container : hostname;
         options.hostname(name);
         options.nodeNames(ImmutableList.of(name));
