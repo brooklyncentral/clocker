@@ -29,3 +29,6 @@ obj
 
 .vagrant
 brooklyn-clocker/
+
+.checkstyle
+
