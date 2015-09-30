@@ -385,7 +385,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         entity.sensors().set(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS, ImmutableList.copyOf(entityOpenPorts));
 
         // Environment and links
-        MutableMap<String, Object> environment = MutableMap.of();
+        MutableMap<String, String> environment = MutableMap.of();
         environment.add(config().get(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT));
         environment.add(entity.config().get(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT));
         List<Entity> links = entity.config().get(DockerAttributes.DOCKER_LINKS);
@@ -393,7 +393,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             LOG.debug("Found links: {}", links);
             Map<String, String> extraHosts = MutableMap.of();
             for (Entity linked : links) {
-                Map<String, Object> linkVars = generateLinks(linked);
+                Map<String, String> linkVars = generateLinks(linked);
                 environment.add(linkVars);
                 Optional<String> alias = getContainerName(linked);
                 if (alias.isPresent()) {
@@ -405,7 +405,14 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         }
         sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, environment);
         entity.sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, environment);
-        List<String> env = ImmutableList.of(Joiner.on(":").withKeyValueSeparator("=").join(environment));
+
+        ImmutableList.Builder<String> envBuilder = ImmutableList.builder();
+        if(environment != null && !environment.isEmpty()){
+            for (Map.Entry<String, String> entry : environment.entrySet()) {
+                envBuilder.add(entry.getKey() + "=" + entry.getValue());
+            }
+        }
+        List<String> env = envBuilder.build();
         options.env(env);
 
         // Log for debugging without password
@@ -427,7 +434,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     }
 
     /* Generate the list of link environment variables. */
-    private Map<String, Object> generateLinks(Entity target) {
+    private Map<String, String> generateLinks(Entity target) {
         Entities.waitForServiceUp(target);
         Optional<String> name = getContainerName(target);
         if (name.isPresent()) {
@@ -438,20 +445,20 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             } else {
                 openPorts.addAll(getOpenPorts(target));
             }
-            Map<String, Object> env = MutableMap.of();
+            Map<String, String> env = MutableMap.of();
             for (Integer port : openPorts) {
                 env.put(String.format("%S_NAME", name.get()), String.format("/%s/%s", getDockerContainerName(), name.get()));
                 env.put(String.format("%S_PORT", name.get()), String.format("tcp://%s:%d", address, port));
                 env.put(String.format("%S_PORT_%d_TCP", name.get(), port), String.format("tcp://%s:%d", address, port));
                 env.put(String.format("%S_PORT_%d_TCP_ADDR", name.get(), port), address);
-                env.put(String.format("%S_PORT_%d_TCP_PORT", name.get(), port), port);
+                env.put(String.format("%S_PORT_%d_TCP_PORT", name.get(), port), port.toString());
                 env.put(String.format("%S_PORT_%d_TCP_PROTO", name.get(), port), "tcp");
             }
             LOG.debug("Links for {}: {}", name, Joiner.on(" ").withKeyValueSeparator("=").join(env));
             return env;
         } else {
             LOG.warn("Cannot generate links for {}: no name specified", target);
-            return ImmutableMap.<String, Object>of();
+            return ImmutableMap.<String, String>of();
         }
     }
 
