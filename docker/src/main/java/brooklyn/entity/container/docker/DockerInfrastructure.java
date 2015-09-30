@@ -135,6 +135,11 @@ public interface DockerInfrastructure extends Application, Resizable, LocationOw
             },
             "docker.dockerfile.substitutions", "Dockerfile template substitutions", MutableMap.<String, Object>of());
 
+    @SetFromFlag("shouldStartRegistry")
+    ConfigKey<Boolean> DOCKER_SHOULD_START_REGISTRY = ConfigKeys.newBooleanConfigKey("docker.registry.shouldStartRegistry", "When set to true, clocker with setup a docker registry and use it for pulls", false);
+
+    AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_REPOSITORY = DockerAttributes.DOCKER_IMAGE_REPOSITORY;
+
     AttributeSensor<DynamicCluster> DOCKER_HOST_CLUSTER = Sensors.newSensor(DynamicCluster.class, "docker.hosts", "Docker host cluster");
     AttributeSensor<DynamicGroup> DOCKER_CONTAINER_FABRIC = Sensors.newSensor(DynamicGroup.class, "docker.fabric", "Docker container fabric");
     AttributeSensor<DynamicMultiGroup> DOCKER_APPLICATIONS = Sensors.newSensor(DynamicMultiGroup.class, "docker.buckets", "Docker applications");

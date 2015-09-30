@@ -1,9 +1,6 @@
 package brooklyn.entity.container.docker.repository;
 
-import org.apache.brooklyn.entity.software.base.SoftwareProcessDriver;
+import brooklyn.entity.container.docker.application.VanillaDockerApplicationDriver;
 
-/**
- * Created by graememiller on 24/09/2015.
- */
-public interface DockerRepositoryDriver extends SoftwareProcessDriver {
+public interface DockerRepositoryDriver extends VanillaDockerApplicationDriver {
 }
