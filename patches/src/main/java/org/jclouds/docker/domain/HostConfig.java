@@ -41,7 +41,7 @@ public abstract class HostConfig {
 
    public abstract List<String> dns();
 
-   @Nullable public abstract String dnsSearch();
+   @Nullable public abstract List<String> dnsSearch();
 
    public abstract Map<String, List<Map<String, String>>> portBindings();
 
@@ -62,9 +62,9 @@ public abstract class HostConfig {
    @SerializedNames({ "ContainerIDFile", "Binds", "LxcConf", "Privileged", "Dns", "DnsSearch", "PortBindings",
          "Links", "ExtraHosts", "PublishAllPorts", "VolumesFrom", "NetworkMode" })
    public static HostConfig create(String containerIDFile, List<String> binds, List<Map<String, String>> lxcConf,
-         boolean privileged, List<String> dns, String dnsSearch, Map<String, List<Map<String, String>>> portBindings,
+         boolean privileged, List<String> dns, List<String> dnsSearch, Map<String, List<Map<String, String>>> portBindings,
          List<String> links, List<String> extraHosts, boolean publishAllPorts, List<String> volumesFrom, String networkMode) {
-      return new AutoValue_HostConfig(containerIDFile, copyOf(binds), copyOf(lxcConf), privileged, copyOf(dns), dnsSearch,
+      return new AutoValue_HostConfig(containerIDFile, copyOf(binds), copyOf(lxcConf), privileged, copyOf(dns), copyOf(dnsSearch),
             copyOf(portBindings), copyOf(links), copyOf(extraHosts), publishAllPorts, copyOf(volumesFrom), networkMode);
    }
 
@@ -83,7 +83,7 @@ public abstract class HostConfig {
       private List<Map<String, String>> lxcConf = Lists.newArrayList();
       private boolean privileged;
       private List<String> dns = Lists.newArrayList();
-      private String dnsSearch;
+      private List<String> dnsSearch = Lists.newArrayList();
       private Map<String, List<Map<String, String>>> portBindings = Maps.newLinkedHashMap();
       private List<String> links = Lists.newArrayList();
       private List<String> extraHosts = Lists.newArrayList();
@@ -116,8 +116,8 @@ public abstract class HostConfig {
          return this;
       }
 
-      public Builder dnsSearch(String dnsSearch) {
-         this.dnsSearch = dnsSearch;
+      public Builder dnsSearch(List<String> dnsSearch) {
+         this.dnsSearch.addAll(checkNotNull(dnsSearch, "dnsSearch"));
          return this;
       }
 
