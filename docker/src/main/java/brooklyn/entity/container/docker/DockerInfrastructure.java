@@ -131,7 +131,8 @@ public interface DockerInfrastructure extends Application, Resizable, LocationOw
 
     @SetFromFlag("substitutions")
     ConfigKey<Map<String, Object>> DOCKERFILE_SUBSTITUTIONS = ConfigKeys.newConfigKey(
-            new TypeToken<Map<String, Object>>() { },
+            new TypeToken<Map<String, Object>>() {
+            },
             "docker.dockerfile.substitutions", "Dockerfile template substitutions", MutableMap.<String, Object>of());
 
     AttributeSensor<DynamicCluster> DOCKER_HOST_CLUSTER = Sensors.newSensor(DynamicCluster.class, "docker.hosts", "Docker host cluster");
