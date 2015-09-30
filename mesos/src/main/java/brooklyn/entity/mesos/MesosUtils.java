@@ -73,7 +73,7 @@ public class MesosUtils {
         }
     };
 
-    public static final Optional<String> postJson(String targetUrl, String dataUrl, Map<String, String> substitutions) {
+    public static final Optional<String> postJson(String targetUrl, String dataUrl, Map<String, Object> substitutions) {
         String templateContents = ResourceUtils.create().getResourceAsString(dataUrl);
         String processedJson = TemplateProcessor.processTemplateContents(templateContents, substitutions);
         LOG.debug("Posting JSON to {}: {}", targetUrl, processedJson);

@@ -15,6 +15,13 @@
  */
 package brooklyn.entity.mesos.task.marathon;
 
+import java.util.List;
+import java.util.Map;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.reflect.TypeToken;
+
 import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.catalog.CatalogConfig;
 import org.apache.brooklyn.api.entity.ImplementedBy;
@@ -49,8 +56,18 @@ public interface MarathonTask extends MesosTask {
     @SetFromFlag("imageVersion")
     ConfigKey<String> DOCKER_IMAGE_TAG = ConfigKeys.newStringConfigKey("marathon.task.imageVersion", "Marathon task Docker image version");
 
-    // TODO environment and port specification
-    // TODO cpu and memory constraints
-    // TODO labels
+    @SetFromFlag("cpus")
+    ConfigKey<Double> CPU_RESOURCES = ConfigKeys.newDoubleConfigKey("marathon.task.cpus", "Marathon task CPU resources (fractions of a core)", 0.25d);
+
+    @SetFromFlag("memory")
+    ConfigKey<Integer> MEMORY_RESOURCES = ConfigKeys.newIntegerConfigKey("marathon.task.mem", "Marathon task memory resources (number of MiB)", 128);
+
+    @SetFromFlag("openPorts")
+    ConfigKey<List<Integer>> MARATHON_OPEN_PORTS = ConfigKeys.newConfigKey(new TypeToken<List<Integer>>() { },
+            "docker.container.openPorts", "List of ports to open for the task", ImmutableList.<Integer>of());
+
+    @SetFromFlag("env")
+    ConfigKey<Map<String, Object>> MARATHON_ENVIRONMENT = ConfigKeys.newConfigKey(new TypeToken<Map<String, Object>>() { },
+            "marathon.environment", "Environment variables for the task", ImmutableMap.<String, Object>of());
 
 }
