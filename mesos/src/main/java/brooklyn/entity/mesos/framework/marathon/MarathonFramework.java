@@ -17,6 +17,7 @@ package brooklyn.entity.mesos.framework.marathon;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import com.google.common.reflect.TypeToken;
 
@@ -54,8 +55,6 @@ public interface MarathonFramework extends MesosFramework {
     @Effector(description="Start a Marathon application")
     boolean startApplication(
             @EffectorParam(name="id", description="Application ID") String id,
-            @EffectorParam(name="command", description="Docker command") String command,
-            @EffectorParam(name="imageName", description="Docker image name") String imageName,
-            @EffectorParam(name="imageVersion", description="Docker image version") String imageVersion) throws IOException;
+            @EffectorParam(name="flags", description="Task flags") Map<String, Object> flags) throws IOException;
 
 }

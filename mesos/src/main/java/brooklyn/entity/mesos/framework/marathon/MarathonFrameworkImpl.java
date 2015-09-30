@@ -82,15 +82,10 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
     }
 
     @Override
-    public boolean startApplication(String id, String command, String imageName, String imageVersion) throws IOException {
-        Map<String, String> substitutions = MutableMap.<String, String>builder()
-                .put("applicationId", id)
-                .put("command", command)
-                .put("imageName", imageName)
-                .put("imageVersion", imageVersion)
-                .build();
-        // TODO support 'args'as well as 'command'
-        // TODO configure cpu, memory and port requirements
+    public boolean startApplication(String id, Map<String, Object> flags) {
+        Map<String, Object> substitutions = MutableMap.copyOf(flags);
+        substitutions.put("id", id);
+
         Optional<String> result = MesosUtils.postJson(Urls.mergePaths(sensors().get(FRAMEWORK_URL), "v2/apps"), "classpath:///brooklyn/entity/mesos/framework/marathon/create-app.json", substitutions);
         if (!result.isPresent()) {
             return false;
