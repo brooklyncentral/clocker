@@ -313,9 +313,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 if (vlanId == null) {
                     // If a previous host has been configured, look up the VLAN id
                     int count = sensors().get(DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.DOCKER_HOST_COUNT);
-                    if (count > 1 && !sensors().get(DynamicCluster.FIRST_MEMBER)) {
-                        Task<Integer> lookup = DependentConfiguration.attributeWhenReady(sensors().get(DOCKER_INFRASTRUCTURE)
-                                .sensors().get(DockerInfrastructure.SDN_PROVIDER), SdnProvider.VLAN_ID);
+                    if (count > 1 && !sensors().get(DynamicCluster.FIRST_MEMBER) && sdnProviderAttribute != null) {
+                        Task<Integer> lookup = DependentConfiguration.attributeWhenReady(sdnProviderAttribute, SdnProvider.VLAN_ID);
                         vlanId = DynamicTasks.submit(lookup, this).getUnchecked();
                     }
                 }
