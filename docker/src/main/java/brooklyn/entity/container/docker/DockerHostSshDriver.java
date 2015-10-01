@@ -19,6 +19,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.format;
 import static org.apache.brooklyn.util.ssh.BashCommands.INSTALL_CURL;
 import static org.apache.brooklyn.util.ssh.BashCommands.alternatives;
+import static org.apache.brooklyn.util.ssh.BashCommands.chain;
 import static org.apache.brooklyn.util.ssh.BashCommands.chainGroup;
 import static org.apache.brooklyn.util.ssh.BashCommands.fail;
 import static org.apache.brooklyn.util.ssh.BashCommands.ifExecutableElse0;
@@ -263,7 +264,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .orSubmitAndBlock()
                 .andWaitForSuccess();
         if (!result) {
-            throw new IllegalStateException(String.format("The entity %s is not sshable after reboot (waited %s)", 
+            throw new IllegalStateException(String.format("The entity %s is not sshable after reboot (waited %s)",
                     entity, Time.makeTimeStringRounded(stopwatchForReboot)));
         }
     }
@@ -317,23 +318,52 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                             String.format("cp ca-cert.pem %s/ca.pem", getRunDir()),
                             String.format("cp server-cert.pem %s/cert.pem", getRunDir()),
                             String.format("cp server-key.pem %s/key.pem", getRunDir()))
-                    .failOnNonZeroResultCode()
-                    .execute();
+                .failOnNonZeroResultCode()
+                .execute();
         }
 
-        newScript(CUSTOMIZING)
+        //Create config for upstart
+        newScript(CUSTOMIZING + "-upstart")
                 .body.append(
-                        ifExecutableElse0("apt-get", chainGroup(
+                        chain(
+                                sudo("mkdir -p /etc/default"),
                                 format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock %s --tlsverify --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem --tlscacert=%<s/ca.pem\"' | ",
-                                                getDockerPort(), getStorageOpts(), getRunDir()) +
-                                        sudo("tee -a /etc/default/docker"),
+                                        getDockerPort(), getStorageOpts(), getRunDir()) + sudo("tee -a /etc/default/docker"),
                                 sudo("groupadd -f docker"),
                                 sudo(format("gpasswd -a %s docker", getMachine().getUser())),
-                                sudo("newgrp docker"))),
-                        ifExecutableElse0("yum",
+                                sudo("newgrp docker")
+                        ))
+                .failOnNonZeroResultCode()
+                .execute();
+
+        //CentOS config
+        newScript(CUSTOMIZING + "-centos")
+                .body.append(
+                        chain(
+                                sudo("mkdir -p /etc/sysconfig"),
                                 format("echo 'other_args=\"--selinux-enabled -H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock -e lxc %s --tlsverify --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem --tlscacert=%<s/ca.pem\"' | ",
-                                                getDockerPort(), getStorageOpts(), getRunDir()) +
-                                        sudo("tee -a /etc/sysconfig/docker")))
+                                        getDockerPort(), getStorageOpts(), getRunDir()) + sudo("tee -a /etc/sysconfig/docker")
+                        ))
+                .failOnNonZeroResultCode()
+                .execute();
+
+        //SystemD
+        String systemDConfigInstallPath = Os.mergePaths(getInstallDir(), "docker.service");
+
+        copyTemplate("classpath://brooklyn/entity/container/docker/SystemDTemplate",
+                systemDConfigInstallPath,
+                true,
+                ImmutableMap.of("args",
+                        format("-H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock %s --tlsverify --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem --tlscacert=%<s/ca.pem",
+                                getDockerPort(), getStorageOpts(), getRunDir())));
+
+        newScript(CUSTOMIZING + "-systemd")
+                .body.append(
+                        chain(
+                                sudo("mkdir -p /etc/systemd/system"),
+                                sudo(String.format("cp %s %s", systemDConfigInstallPath, "/etc/systemd/system/docker.service")),
+                                ifExecutableElse0("systemctl", sudo("systemctl daemon-reload"))
+                        ))
                 .failOnNonZeroResultCode()
                 .execute();
 
