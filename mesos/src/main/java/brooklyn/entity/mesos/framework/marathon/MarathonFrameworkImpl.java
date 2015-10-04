@@ -15,7 +15,6 @@
  */
 package brooklyn.entity.mesos.framework.marathon;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +37,6 @@ import org.apache.brooklyn.util.net.Urls;
 
 import brooklyn.entity.mesos.MesosUtils;
 import brooklyn.entity.mesos.framework.MesosFrameworkImpl;
-import brooklyn.entity.mesos.task.marathon.MarathonTask;
 
 /**
  * The Marathon framework implementation.

@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.python.google.common.base.Optional;
+import org.python.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -122,11 +123,12 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         flags.put("openPorts", openPorts);
 
         // Environment variables
-        Map<String, Object> environment = ImmutableMap.copyOf(config().get(MARATHON_ENVIRONMENT));
+        Map<String, Object> environment = Maps.newHashMap(config().get(MARATHON_ENVIRONMENT));
         flags.put("environment", environment);
 
         // Docker command and image
-        flags.put("command", config().get(COMMAND));
+        String command = config().get(COMMAND);
+        if (command != null) flags.put("command", command);
         flags.put("imageName", config().get(DOCKER_IMAGE_NAME));
         flags.put("imageVersion", config().get(DOCKER_IMAGE_TAG));
 
