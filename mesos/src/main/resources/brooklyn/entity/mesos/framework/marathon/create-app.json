@@ -36,8 +36,8 @@
         ${port?c}[#if port_has_next],[/#if]
     [/#list] ],
     [#if environment?has_content]
-    "env": { [#list environment.entrySet() as entry]
-        "${entry.key}": "${entry.value?c}"[#if entry_has_next],[/#if]
+    "env": { [#list environment?keys as key]
+        "${key}": "${environment.get(key)?c}"[#if key_has_next],[/#if]
     [/#list] },
     [/#if]
     "upgradeStrategy": {

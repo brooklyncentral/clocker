@@ -64,10 +64,10 @@ public interface MarathonTask extends MesosTask {
 
     @SetFromFlag("openPorts")
     ConfigKey<List<Integer>> MARATHON_OPEN_PORTS = ConfigKeys.newConfigKey(new TypeToken<List<Integer>>() { },
-            "docker.container.openPorts", "List of ports to open for the task", ImmutableList.<Integer>of());
+            "marathon.task.openPorts", "List of ports to open for the task", ImmutableList.<Integer>of());
 
     @SetFromFlag("env")
     ConfigKey<Map<String, Object>> MARATHON_ENVIRONMENT = ConfigKeys.newConfigKey(new TypeToken<Map<String, Object>>() { },
-            "marathon.environment", "Environment variables for the task", ImmutableMap.<String, Object>of());
+            "marathon.task.environment", "Environment variables for the task", ImmutableMap.<String, Object>of());
 
 }
