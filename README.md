@@ -35,7 +35,7 @@ depending on your choice of SDN provider.
 
 ### Using the latest Clocker release
 
-The latest version of Clocker is [1.1.0-PREVIEW.20150917](https://github.com/brooklyncentral/clocker/releases/tag/v1.1.0-PREVIEW.20150917).
+The latest version of Clocker is [1.1.0-PREVIEW.20151005](https://github.com/brooklyncentral/clocker/releases/tag/v1.1.0-PREVIEW.20151005).<!-- CLOCKER_VERSION -->
 You can deploy your own **Docker Cloud** with a Weave SDN by running these commands with the _network_ argument
 st to `weave`, to use Project Calico as your SDN provider, change the last argument to `calico` instead:
 ```Bash

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 brooklyn.catalog:
-  version: 1.1.0-PREVIEW.20150917 # CLOCKER_VERSION
+  version: 1.1.0-PREVIEW.20151005 # CLOCKER_VERSION
   items:
 
   # load everything in the classpath with a @Catalog annotation
