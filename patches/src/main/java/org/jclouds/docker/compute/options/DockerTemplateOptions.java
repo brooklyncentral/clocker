@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.jclouds.compute.ComputeService;
 import org.jclouds.compute.options.TemplateOptions;
+import org.jclouds.docker.internal.NullSafeCopies;
 import org.jclouds.domain.LoginCredentials;
 import org.jclouds.javax.annotation.Nullable;
 import org.jclouds.scriptbuilder.domain.Statement;
@@ -54,9 +55,10 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
    protected String hostname;
    protected Integer memory;
    protected Integer cpuShares;
-   protected List<String> commands = ImmutableList.of();
+   protected List<String> entrypoint;
+   protected List<String> commands;
    protected Map<String, String> volumes = ImmutableMap.of();
-   protected List<String> env = ImmutableList.of();
+   protected List<String> env;
    protected Map<Integer, Integer> portBindings = ImmutableMap.of();
    protected String networkMode;
    protected Map<String, String> extraHosts = ImmutableMap.of();
@@ -82,12 +84,9 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
          }
          eTo.memory(memory);
          eTo.cpuShares(cpuShares);
-         if (!commands.isEmpty()) {
-            eTo.commands(commands);
-         }
-         if (!env.isEmpty()) {
-            eTo.env(env);
-         }
+         eTo.entrypoint(entrypoint);
+         eTo.commands(commands);
+         eTo.env(env);
          if (!portBindings.isEmpty()) {
             eTo.portBindings(portBindings);
          }
@@ -109,6 +108,7 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
               equal(this.hostname, that.hostname) &&
               equal(this.dns, that.dns) &&
               equal(this.memory, that.memory) &&
+              equal(this.entrypoint, that.entrypoint) &&
               equal(this.commands, that.commands) &&
               equal(this.cpuShares, that.cpuShares) &&
               equal(this.env, that.env) &&
@@ -118,7 +118,7 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
 
    @Override
    public int hashCode() {
-      return Objects.hashCode(super.hashCode(), volumes, hostname, dns, memory, commands, cpuShares, env, portBindings, extraHosts);
+      return Objects.hashCode(super.hashCode(), volumes, hostname, dns, memory, entrypoint, commands, cpuShares, env, portBindings, extraHosts);
    }
 
    @Override
@@ -128,6 +128,7 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
               .add("hostname", hostname)
               .add("memory", memory)
               .add("cpuShares", cpuShares)
+              .add("entrypoint", entrypoint)
               .add("commands", commands)
               .add("volumes", volumes)
               .add("env", env)
@@ -160,13 +161,24 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
       return this;
    }
 
+   public DockerTemplateOptions entrypoint(Iterable<String> entrypoint) {
+      this.entrypoint = NullSafeCopies.copyWithNullOf(entrypoint);
+      return this;
+   }
+
+   public DockerTemplateOptions entrypoint(String... entrypoint) {
+      this.entrypoint = NullSafeCopies.copyWithNullOf(entrypoint);
+      return this;
+   }
+
    public DockerTemplateOptions commands(Iterable<String> commands) {
-      this.commands = ImmutableList.copyOf(checkNotNull(commands, "commands"));
+      this.commands = NullSafeCopies.copyWithNullOf(commands);
       return this;
    }
 
    public DockerTemplateOptions commands(String...commands) {
-      return commands(ImmutableList.copyOf(checkNotNull(commands, "commands")));
+      this.commands = NullSafeCopies.copyWithNullOf(commands);
+      return this;
    }
 
    public DockerTemplateOptions cpuShares(@Nullable Integer cpuShares) {
@@ -175,12 +187,13 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
    }
 
    public DockerTemplateOptions env(Iterable<String> env) {
-      this.env = ImmutableList.copyOf(checkNotNull(env, "env"));
+      this.env = NullSafeCopies.copyWithNullOf(env);
       return this;
    }
 
    public DockerTemplateOptions env(String...env) {
-      return env(ImmutableList.copyOf(checkNotNull(env, "env")));
+      this.env = NullSafeCopies.copyWithNullOf(env);
+      return this;
    }
 
    /**
@@ -229,6 +242,8 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
    public String getHostname() { return hostname; }
 
    public Integer getMemory() { return memory; }
+
+   public List<String> getEntrypoint() { return entrypoint; }
 
    public List<String> getCommands() { return commands; }
 
@@ -282,6 +297,22 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
       public static DockerTemplateOptions memory(@Nullable Integer memory) {
          DockerTemplateOptions options = new DockerTemplateOptions();
          return options.memory(memory);
+      }
+
+      /**
+       * @see DockerTemplateOptions#entrypoint(String...)
+       */
+      public static DockerTemplateOptions entrypoint(String...entrypoint) {
+         DockerTemplateOptions options = new DockerTemplateOptions();
+         return options.entrypoint(entrypoint);
+      }
+
+      /**
+       * @see DockerTemplateOptions#entrypoint(Iterable)
+       */
+      public static DockerTemplateOptions entrypoint(Iterable<String> entrypoint) {
+         DockerTemplateOptions options = new DockerTemplateOptions();
+         return options.entrypoint(entrypoint);
       }
 
       /**
