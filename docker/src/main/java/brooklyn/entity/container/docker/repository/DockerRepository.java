@@ -21,7 +21,7 @@ public interface DockerRepository extends VanillaDockerApplication {
     ConfigKey<String> IMAGE_NAME = ConfigKeys.newConfigKeyWithDefault(DockerAttributes.DOCKER_IMAGE_NAME.getConfigKey(), "registry");
 
     @SetFromFlag("imageTag")
-    ConfigKey<String> IMAGE_TAG = ConfigKeys.newConfigKeyWithDefault(DockerAttributes.DOCKER_IMAGE_TAG.getConfigKey(), "latest");
+    ConfigKey<String> IMAGE_TAG = ConfigKeys.newConfigKeyWithDefault(DockerAttributes.DOCKER_IMAGE_TAG.getConfigKey(), "2");
 
     @SetFromFlag("dockerRegistryPort")
     ConfigKey<Integer> DOCKER_REGISTRY_PORT = ConfigKeys.newIntegerConfigKey(

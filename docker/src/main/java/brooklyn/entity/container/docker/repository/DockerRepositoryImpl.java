@@ -59,9 +59,4 @@ public class DockerRepositoryImpl extends VanillaDockerApplicationImpl implement
             throw new IllegalStateException("Could not create certificates for docker registry");
         }
     }
-
-    @Override
-    public Class getDriverInterface() {
-        return DockerRepositoryDriver.class;
-    }
 }
