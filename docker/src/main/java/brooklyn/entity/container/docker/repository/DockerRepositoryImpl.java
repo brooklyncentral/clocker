@@ -27,6 +27,13 @@ public class DockerRepositoryImpl extends VanillaDockerApplicationImpl implement
     public void init() {
         super.init();
 
+        // TODO create sensor for registy port as well as config, and set sensor appropriately
+        // TODO set Attributes.MAIN_URI to http://<brooklyn-accessible-host-and-port>/v2/
+        // TODO see BrooklynAccessUtils usage in other classes
+        // TODO implement connectSensors() and disconnectSensors()
+        // TODO set SERVICE_UP based on HttpFeed returning 200 from MAIN_URI
+        // TODO create sensor that gets /v2/_catalog and parses JSON for list of repositories/images
+
         DockerHost host = (DockerHost) config().get(DOCKER_HOST);
 
         config().set(DockerAttributes.DOCKER_PORT_BINDINGS, MutableMap.of(config().get(DOCKER_REGISTRY_PORT), 5000));
