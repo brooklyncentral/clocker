@@ -18,20 +18,9 @@ origin: https://github.com/brooklyncentral/clocker/
 location: jclouds:softlayer:ams01
 
 services:
-- type: brooklyn.entity.container.docker.DockerInfrastructure
+- type: docker-cloud
   brooklyn.config:
     entity.dynamicLocation.name: "my-docker-cloud"
     docker.version: 1.7.1
     docker.host.cluster.initial.size: 1
-    docker.container.cluster.headroom.count: 8
-    sdn.enable: false
-    docker.policy.ha.enable: false
-    docker.container.strategies:
-    - $brooklyn:object:
-        type: brooklyn.location.docker.strategy.MaxContainersPlacementStrategy
-        brooklyn.config:
-          maxContainers: 32
-    - $brooklyn:object:
-        type: brooklyn.location.docker.strategy.DepthFirstPlacementStrategy
-    docker.host.nameFormat: "docker-%2$d"
-    docker.container.nameFormat: "container-%2$02x"
+    

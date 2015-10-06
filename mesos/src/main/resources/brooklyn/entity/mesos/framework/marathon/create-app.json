@@ -1,0 +1,47 @@
+[#ftl]
+{
+    [#if command??]
+    "cmd": "${command}",
+    [#else]
+    "args": [ ],
+    [/#if]
+    "constraints": [
+        [
+            "hostname",
+            "UNIQUE"
+        ]
+    ],
+    "container": {
+        "docker": {
+            "image": "${imageName}:${imageVersion}"
+        },
+        "type": "DOCKER"
+    },
+    "cpus": ${cpus?c},
+    "mem": ${memory?c},
+    "healthChecks": [
+        {
+            "gracePeriodSeconds": 3,
+            "intervalSeconds": 10,
+            "maxConsecutiveFailures": 3,
+            "path": "/",
+            "portIndex": 0,
+            "protocol": "HTTP",
+            "timeoutSeconds": 5
+        }
+    ],
+    "id": "${id}",
+    "instances": 1,
+    "ports": [ [#list openPorts as port]
+        ${port?c}[#if port_has_next],[/#if]
+    [/#list] ],
+    [#if environment?has_content]
+    "env": { [#list environment?keys as key]
+        "${key}": "${environment.get(key)?c}"[#if key_has_next],[/#if]
+    [/#list] },
+    [/#if]
+    "upgradeStrategy": {
+        "minimumHealthCapacity": 0.5,
+        "maximumOverCapacity": 0.5
+    }
+}
