@@ -273,7 +273,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         Boolean useHostDns = Objects.firstNonNull(entity.config().get(DOCKER_USE_HOST_DNS_NAME), Boolean.FALSE);
         String hostname = getDockerHost().sensors().get(Attributes.HOSTNAME);
         String address = getDockerHost().sensors().get(Attributes.ADDRESS);
-        String container = getContainerName(entity).or(getDockerContainerName());
+        String container = DockerUtils.getContainerName(entity).or(getDockerContainerName());
         String name = (!useHostDns || hostname.equalsIgnoreCase(address)) ? container : hostname;
         options.hostname(name);
         options.nodeNames(ImmutableList.of(name));
@@ -400,7 +400,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             for (Entity linked : links) {
                 Map<String, Object> linkVars = generateLinks(linked);
                 environment.add(linkVars);
-                Optional<String> alias = getContainerName(linked);
+                Optional<String> alias = DockerUtils.getContainerName(linked);
                 if (alias.isPresent()) {
                     String targetAddress = getTargetAddress(linked);
                     extraHosts.put(alias.get(), targetAddress);
@@ -434,7 +434,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     /* Generate the list of link environment variables. */
     private Map<String, Object> generateLinks(Entity target) {
         Entities.waitForServiceUp(target);
-        Optional<String> name = getContainerName(target);
+        Optional<String> name = DockerUtils.getContainerName(target);
         if (name.isPresent()) {
             String address = getTargetAddress(target);
             List<Integer> openPorts = MutableList.of();
@@ -458,13 +458,6 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             LOG.warn("Cannot generate links for {}: no name specified", target);
             return ImmutableMap.<String, Object>of();
         }
-    }
-
-    private Optional<String> getContainerName(Entity target) {
-        return Optional.fromNullable(target.sensors().get(DOCKER_CONTAINER_NAME))
-                .or(Optional.fromNullable(target.config().get(DOCKER_CONTAINER_NAME)))
-                .or(Optional.fromNullable(target.config().get(BrooklynCampConstants.PLAN_ID)))
-                .transform(DockerUtils.ALLOWED);
     }
 
     @Nullable

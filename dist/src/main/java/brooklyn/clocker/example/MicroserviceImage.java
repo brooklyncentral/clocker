@@ -17,35 +17,27 @@ package brooklyn.clocker.example;
 
 import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.catalog.CatalogConfig;
-import org.apache.brooklyn.api.entity.Application;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
 import brooklyn.entity.container.docker.application.VanillaDockerApplication;
 
 /**
- * Brooklyn managed {@link VanillaDockerApplication}.
+ * Docker Image Microservice.
  */
-@Catalog(name = "Image Micro-Service",
-        description = "A container micro-service defined by a Docker image",
-        iconUrl = "classpath://container.png")
-@ImplementedBy(MicroServiceImageImpl.class)
-public interface MicroServiceImage extends Application {
-
-    @CatalogConfig(label = "Container Name", priority = 90)
-    ConfigKey<String> CONTAINER_NAME = ConfigKeys.newStringConfigKey("docker.containerName", "Container name", "service");
+@Catalog(name = "Docker Image Microservice",
+        description = "A container microservice defined by a Docker image")
+@ImplementedBy(MicroserviceImpl.MicroserviceImageImpl.class)
+public interface MicroserviceImage extends Microservice {
 
     @CatalogConfig(label = "Image Name", priority = 80)
+    @SetFromFlag("imageName")
     ConfigKey<String> IMAGE_NAME = VanillaDockerApplication.IMAGE_NAME;
 
     @CatalogConfig(label = "Image Tag", priority = 80)
-    ConfigKey<String> IMAGE_TAG = VanillaDockerApplication.IMAGE_TAG;
-
-    @CatalogConfig(label = "Open Ports", priority = 70)
-    ConfigKey<String> OPEN_PORTS = ConfigKeys.newStringConfigKey("docker.openPorts", "Comma separated list of ports the application uses");
-
-    @CatalogConfig(label = "Direct Ports", priority = 70)
-    ConfigKey<String> DIRECT_PORTS = ConfigKeys.newStringConfigKey("docker.directPorts", "Comma separated list of ports to open directly on the host");
+    @SetFromFlag("imageTag")
+    ConfigKey<String> IMAGE_TAG = ConfigKeys.newConfigKeyWithDefault(VanillaDockerApplication.IMAGE_TAG, "latest");
 
 }

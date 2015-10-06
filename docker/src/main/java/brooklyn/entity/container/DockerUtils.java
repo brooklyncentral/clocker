@@ -39,6 +39,7 @@ import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationDefinition;
 import org.apache.brooklyn.api.mgmt.ManagementContext;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
+import org.apache.brooklyn.camp.brooklyn.BrooklynCampConstants;
 import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.database.DatastoreMixins;
@@ -50,6 +51,7 @@ import org.apache.brooklyn.entity.webapp.WebAppServiceConstants;
 import org.apache.brooklyn.util.text.Identifiers;
 import org.apache.brooklyn.util.text.Strings;
 
+import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.location.docker.DockerContainerLocation;
@@ -162,6 +164,13 @@ public class DockerUtils {
 
         String label = Joiner.on(":").skipNulls().join(simpleName, version, dockerfile);
         return Identifiers.makeIdFromHash(Hashing.md5().hashString(label, Charsets.UTF_8).asLong()).toLowerCase(Locale.ENGLISH);
+    }
+
+    public static Optional<String> getContainerName(Entity target) {
+        return Optional.fromNullable(target.sensors().get(DockerContainer.DOCKER_CONTAINER_NAME))
+                .or(Optional.fromNullable(target.config().get(DockerContainer.DOCKER_CONTAINER_NAME)))
+                .or(Optional.fromNullable(target.config().get(BrooklynCampConstants.PLAN_ID)))
+                .transform(DockerUtils.ALLOWED);
     }
 
     public static boolean isSdnProvider(Entity dockerHost, String providerName) {

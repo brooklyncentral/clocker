@@ -15,34 +15,39 @@
  */
 package brooklyn.clocker.example;
 
-import org.apache.brooklyn.api.catalog.Catalog;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.brooklyn.api.catalog.CatalogConfig;
-import org.apache.brooklyn.api.entity.Application;
-import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.core.entity.BrooklynConfigKeys;
+import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
 import brooklyn.entity.container.docker.application.VanillaDockerApplication;
 
 /**
  * Brooklyn managed {@link VanillaDockerApplication}.
  */
-@Catalog(name = "Dockerfile Micro-Service",
-        description = "A container micro-service defined by a Dockerfile",
-        iconUrl = "classpath://container.png")
-@ImplementedBy(MicroServiceDockerfileImpl.class)
-public interface MicroServiceDockerfile extends Application {
+public interface Microservice extends VanillaDockerApplication {
 
     @CatalogConfig(label = "Container Name", priority = 90)
-    ConfigKey<String> CONTAINER_NAME = ConfigKeys.newStringConfigKey("docker.containerName", "Container name", "service");
-
-    @CatalogConfig(label = "Dockerfile URL", priority = 80)
-    ConfigKey<String> DOCKERFILE_URL = VanillaDockerApplication.DOCKERFILE_URL;
+    @SetFromFlag("containerName")
+    ConfigKey<String> CONTAINER_NAME = VanillaDockerApplication.CONTAINER_NAME;
 
     @CatalogConfig(label = "Open Ports", priority = 70)
-    ConfigKey<String> OPEN_PORTS = ConfigKeys.newStringConfigKey("docker.openPorts", "Comma separated list of ports the application uses");
+    @SetFromFlag("openPorts")
+    ConfigKey<List<Integer>> OPEN_PORTS = VanillaDockerApplication.DOCKER_OPEN_PORTS;
 
     @CatalogConfig(label = "Direct Ports", priority = 70)
-    ConfigKey<String> DIRECT_PORTS = ConfigKeys.newStringConfigKey("docker.directPorts", "Comma separated list of ports to open directly on the host");
+    @SetFromFlag("directPorts")
+    ConfigKey<List<Integer>> DIRECT_PORTS = VanillaDockerApplication.DOCKER_DIRECT_PORTS;
+
+    @CatalogConfig(label = "Port Bindings", priority = 70)
+    @SetFromFlag("portBindings")
+    ConfigKey<Map<Integer, Integer>> PORT_BINDINGS = VanillaDockerApplication.DOCKER_PORT_BINDINGS;
+
+    ConfigKey<String> ONBOX_BASE_DIR = ConfigKeys.newConfigKeyWithDefault(BrooklynConfigKeys.ONBOX_BASE_DIR, "/tmp/brooklyn");
+    ConfigKey<Boolean> SKIP_ON_BOX_BASE_DIR_RESOLUTION = ConfigKeys.newConfigKeyWithDefault(BrooklynConfigKeys.SKIP_ON_BOX_BASE_DIR_RESOLUTION, Boolean.TRUE);
 
 }

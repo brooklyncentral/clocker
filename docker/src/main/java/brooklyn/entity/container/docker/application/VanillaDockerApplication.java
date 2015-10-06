@@ -33,8 +33,7 @@ import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 
 @Catalog(name = "Docker Container",
-        description = "A micro-service running in a Docker container.",
-        iconUrl = "classpath:///container.png")
+        description = "A micro-service running in a Docker container.")
 @ImplementedBy(VanillaDockerApplicationImpl.class)
 public interface VanillaDockerApplication extends VanillaSoftwareProcess {
 
@@ -75,7 +74,7 @@ public interface VanillaDockerApplication extends VanillaSoftwareProcess {
     ConfigKey<List<Entity>> DOCKER_LINKS = DockerAttributes.DOCKER_LINKS;
 
     ConfigKey<Boolean> SKIP_ENTITY_START = ConfigKeys.newConfigKeyWithDefault(BrooklynConfigKeys.SKIP_ENTITY_START, Boolean.TRUE);
-    
+
     ConfigKey<Boolean> SKIP_ON_BOX_BASE_DIR_RESOLUTION = ConfigKeys.newConfigKeyWithDefault(BrooklynConfigKeys.SKIP_ON_BOX_BASE_DIR_RESOLUTION, Boolean.TRUE);
 
     DockerContainer getDockerContainer();
