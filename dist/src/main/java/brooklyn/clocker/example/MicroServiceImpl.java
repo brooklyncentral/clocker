@@ -15,42 +15,28 @@
  */
 package brooklyn.clocker.example;
 
-import java.util.Collection;
-
 import com.google.common.base.Optional;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
-import org.apache.brooklyn.core.entity.AbstractApplication;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.util.collections.MutableMap;
 
 import brooklyn.entity.container.docker.DockerInfrastructure;
-import brooklyn.entity.container.docker.application.VanillaDockerApplication;
+import brooklyn.entity.container.docker.application.VanillaDockerApplicationImpl;
 import brooklyn.location.docker.DockerLocation;
 
-public class MicroServiceDockerfileImpl extends AbstractApplication implements MicroServiceDockerfile {
+public abstract class MicroServiceImpl extends VanillaDockerApplicationImpl {
 
     public static final String DOCKER_LOCATION_PREFIX = "docker-";
 
-    protected VanillaDockerApplication vanillaDockerApplication = null;
-
+    /** Start a DockerInfrastructure with a single host. */
     @Override
-    public void initApp() {
-        vanillaDockerApplication = addChild(EntitySpec.create(VanillaDockerApplication.class)
-                .configure("containerName", config().get(CONTAINER_NAME))
-                .configure("dockerfileUrl", config().get(DOCKERFILE_URL))
-                .configure("openPorts", config().get(OPEN_PORTS))
-                .configure("directPorts", config().get(DIRECT_PORTS)));
-    }
-
-    @Override
-    protected void doStart(Collection<? extends Location> locations) {
+    public void preStart() {
         Optional<Location> dockerLocation = Iterables.tryFind(getLocations(), Predicates.instanceOf(DockerLocation.class));
-
         if (!dockerLocation.isPresent()) {
             String locationName = DOCKER_LOCATION_PREFIX + getId();
             DockerInfrastructure dockerInfrastructure = addChild(EntitySpec.create(DockerInfrastructure.class)
@@ -58,13 +44,20 @@ public class MicroServiceDockerfileImpl extends AbstractApplication implements M
                     .configure(DockerInfrastructure.SDN_ENABLE, false)
                     .configure(DockerInfrastructure.LOCATION_NAME, locationName)
                     .displayName("Docker Infrastructure"));
-
             Entities.invokeEffector(this, dockerInfrastructure, Startable.START, MutableMap.of("locations", getLocations())).getUnchecked();
 
             dockerLocation = Optional.fromNullable(getManagementContext().getLocationRegistry().resolve(locationName));
+            clearLocations();
+            addLocations(dockerLocation.asSet());
         }
+    }
 
-        vanillaDockerApplication.start(dockerLocation.asSet());
+    public static class MicroServiceImageImpl extends MicroServiceImpl implements MicroServiceImage {
+        // Required for EntitySpec creation
+    }
+
+    public static class MicroServiceDockerfileImpl extends MicroServiceImpl implements MicroServiceDockerfile {
+        // Required for EntitySpec creation
     }
 
 }

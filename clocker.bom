@@ -30,8 +30,7 @@ brooklyn.catalog:
   items:
 
   - id: docker-infrastructure
-    name: Docker Infrastructure
-    iconUrl: classpath://docker-logo.png
+    name: "Docker Infrastructure"
     item:
       type: brooklyn.entity.container.docker.DockerInfrastructure
       brooklyn.config:
@@ -51,8 +50,7 @@ brooklyn.catalog:
             type: docker-host
 
   - id: docker-host
-    name: Docker Host
-    iconUrl: classpath://docker-logo.png
+    name: "Docker Host"
     item:
       type: brooklyn.entity.container.docker.DockerHost
       brooklyn.config:
@@ -68,16 +66,14 @@ brooklyn.catalog:
         start.timeout: 5m
 
   - id: docker-container
-    name: Docker Container
-    iconUrl: classpath://docker-logo.png
+    name: "Docker Container"
     item:
       type: brooklyn.entity.container.docker.DockerContainer
       brooklyn.config:
         docker.container.nameFormat: "container-%2$02x"
 
   - id: calico-network
-    name: Calico Network
-    iconUrl: classpath://calico-logo.png
+    name: "Calico Network"
     item:
       type: brooklyn.networking.sdn.calico.CalicoNetwork
       brooklyn.config:
@@ -87,13 +83,12 @@ brooklyn.catalog:
             type: calico-node
 
   - id: calico-node
-    name: Calico Node
-    iconUrl: classpath://calico-logo.png
+    name: "Calico Node"
     item:
       type: brooklyn.networking.sdn.calico.CalicoNode
 
   - id: etcd-cluster
-    name: Etcd Cluster
+    name: "Etcd Cluster"
     item:
       type: brooklyn.entity.nosql.etcd.EtcdCluster
       brooklyn.config:
@@ -103,17 +98,17 @@ brooklyn.catalog:
             type: etcd-node
 
   - id: etcd-node
-    name: Etcd Node
+    name: "Etcd Node"
     item:
       type: brooklyn.entity.nosql.etcd.EtcdNode
 
   - id: etcd-proxy
-    name: Etcd Proxy
+    name: "Etcd Proxy"
     item:
       type: brooklyn.entity.nosql.etcd.EtcdProxy
 
   - id: weave-network
-    iconUrl: classpath://weaveworks-logo.png
+    name: "Weave Network"
     item:
       type: brooklyn.networking.sdn.weave.WeaveNetwork
       brooklyn.config:
@@ -123,13 +118,44 @@ brooklyn.catalog:
             type: weave-router
 
   - id: weave-router
-    iconUrl: classpath://weaveworks-logo.png
+    name: "Weave Router"
     item:
       type: brooklyn.networking.sdn.weave.WeaveContainer
 
+  - id: docker-cloud
+    name: "Clocker"
+    description: |
+      Docker Cloud infrastructure
+    iconUrl: classpath://docker-logo.png
+    itemType: template
+    item:
+      services:
+      - type: docker-infrastructure
+        brooklyn.config:
+          docker.host.cluster.initial.size: 1
+          docker.container.cluster.headroom.count: 0
+          docker.container.strategies:
+          - $brooklyn:object:
+              type: brooklyn.location.docker.strategy.MaxContainersPlacementStrategy
+              brooklyn.config:
+                maxContainers: 32
+          - $brooklyn:object:
+              type: brooklyn.location.docker.strategy.DepthFirstPlacementStrategy
+          sdn.enable: false
+          docker.host.spec:
+            $brooklyn:entitySpec:
+              type: docker-host
+              brooklyn.config:
+                docker.container.spec:
+                  $brooklyn:entitySpec:
+                    type: docker-container
+                    brooklyn.config:
+                      docker.container.nameFormat: "docker-%2$02x"
+
   - id: docker-cloud-calico
-    name: Clocker with Calico
-    description: Docker Cloud infrastructure with Calico networking
+    name: "Clocker with Calico"
+    description: |
+      Docker Cloud infrastructure with Calico networking
     iconUrl: classpath://calico-logo.png
     itemType: template
     item:
@@ -154,8 +180,9 @@ brooklyn.catalog:
                       docker.container.nameFormat: "calico-%2$02x"
 
   - id: docker-cloud-weave
-    name: Clocker with Weave
-    description: Docker Cloud infrastructure with Weave networking
+    name: "Clocker with Weave"
+    description: |
+      Docker Cloud infrastructure with Weave networking
     iconUrl: classpath://weaveworks-logo.png
     itemType: template
     item:
@@ -175,5 +202,25 @@ brooklyn.catalog:
                     type: docker-container
                     brooklyn.config:
                       docker.container.nameFormat: "weave-%2$02x"
+
+  - id: image-microservice
+    name: "Image Micro-Service"
+    description: |
+      A container micro-service defined by a Docker image
+    iconUrl: classpath://container.png
+    itemType: template
+    item:
+      services:
+      - type: brooklyn.clocker.example.MicroServiceImage
+
+  - id: dockerfile-microservice
+    name: "Dockerfile Micro-Service"
+    description: |
+      A container micro-service defined by a Dockerfile
+    iconUrl: classpath://container.png
+    itemType: template
+    item:
+      services:
+      - type: brooklyn.clocker.example.MicroServiceDockerfile
 
 # vim:ts=2:sw=2:ft=yaml:
