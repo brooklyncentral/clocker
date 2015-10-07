@@ -1,11 +1,10 @@
 package brooklyn.entity.container.docker.repository;
 
 
-import brooklyn.entity.container.DockerAttributes;
-import brooklyn.entity.container.docker.DockerHost;
-import brooklyn.entity.container.docker.DockerInfrastructure;
-import brooklyn.entity.container.docker.application.VanillaDockerApplicationImpl;
+import static org.apache.brooklyn.util.ssh.BashCommands.chain;
+
 import com.google.common.collect.ImmutableList;
+
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
@@ -13,7 +12,10 @@ import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.os.Os;
 import org.apache.brooklyn.util.ssh.BashCommands;
 
-import static org.apache.brooklyn.util.ssh.BashCommands.chain;
+import brooklyn.entity.container.DockerAttributes;
+import brooklyn.entity.container.docker.DockerHost;
+import brooklyn.entity.container.docker.DockerInfrastructure;
+import brooklyn.entity.container.docker.application.VanillaDockerApplicationImpl;
 
 public class DockerRepositoryImpl extends VanillaDockerApplicationImpl implements DockerRepository {
 

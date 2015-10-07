@@ -1,10 +1,9 @@
 package brooklyn.entity.container.docker.repository;
 
-import brooklyn.entity.container.DockerAttributes;
-import brooklyn.entity.container.docker.DockerContainer;
-import brooklyn.entity.container.docker.application.VanillaDockerApplication;
+import java.util.Map;
+
 import com.google.common.collect.ImmutableMap;
-import jdk.nashorn.internal.ir.annotations.Immutable;
+
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.config.ConfigKey;
@@ -12,7 +11,9 @@ import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
-import java.util.Map;
+import brooklyn.entity.container.DockerAttributes;
+import brooklyn.entity.container.docker.DockerContainer;
+import brooklyn.entity.container.docker.application.VanillaDockerApplication;
 
 @ImplementedBy(DockerRepositoryImpl.class)
 public interface DockerRepository extends VanillaDockerApplication {
