@@ -484,7 +484,7 @@ brooklyn.catalog:
   - id: riak-cluster-demo-application
     name: "Riak Cluster Demo Application"
     description: "Riak cluster with load-balanced chatroom webapp"
-    iconUrl: https://clusterhq.com/assets/images/home/services/riak@2x.jpg
+    iconUrl: classpath://riak-icon.png
     itemType: template
     item:
       services:
@@ -535,7 +535,7 @@ brooklyn.catalog:
   - id: nodejs-demo-application
     name: "Node.js Demo Application"
     description: "Node.js todo list application with redis database"
-    iconUrl: http://craftworkz.co/wp-content/uploads/2015/04/node-js.png
+    iconUrl: classpath://node-js-icon.png
     itemType: template
     item:
       services:
