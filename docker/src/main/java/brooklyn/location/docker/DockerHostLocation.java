@@ -116,6 +116,8 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
         }
     }
 
+
+
     public DockerContainerLocation obtain() throws NoMachinesAvailableException {
         return obtain(Maps.<String,Object>newLinkedHashMap());
     }
@@ -159,8 +161,11 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
             Optional<String> baseImage = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_NAME));
             String imageTag = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_TAG)).or("latest");
+            Optional<String> imageRepo = Optional
+                    .fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_REPOSITORY))
+                    .or(Optional.fromNullable(getDockerInfrastructure().config().get(DockerAttributes.DOCKER_IMAGE_REPOSITORY)));
 
-            // TODO incorporate more info
+            // TODO incorporate more info (incl registry?)
             final String imageName = DockerUtils.imageName(entity, dockerfile);
 
             // Lookup image ID or build new image from Dockerfile
@@ -177,13 +182,23 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                 // Skip install phase
                 entity.config().set(SoftwareProcess.SKIP_INSTALLATION, true);
             } else if (baseImage.isPresent()) {
+                String fullyQualifiedName = "";
+                String repoAndName = "";
+
+                if(imageRepo.isPresent()){
+                    fullyQualifiedName = imageRepo.get()+"/";
+                    repoAndName = imageRepo.get()+"/";
+                }
+                fullyQualifiedName += baseImage.get() + ":" +imageTag;
+                repoAndName +=  baseImage.get();
+
                 if (useSsh) {
                     // Create an SSHable image from the one configured
-                    imageId = dockerHost.layerSshableImageOn(baseImage.get(), imageTag);
-                    LOG.info("Created SSHable image from {}: {}", baseImage.get(), imageId);
+                    imageId = dockerHost.layerSshableImageOnFullyQualified(fullyQualifiedName);
+                    LOG.info("Created SSHable image from {}: {}", fullyQualifiedName, imageId);
                 } else {
-                    dockerHost.runDockerCommand(String.format("pull %s:%s", baseImage.get(), imageTag));
-                    imageId = dockerHost.getImageNamed(baseImage.get(), imageTag).get();
+                    dockerHost.runDockerCommand(String.format("pull %s", fullyQualifiedName));
+                    imageId = dockerHost.getImageNamed(repoAndName, imageTag).get();
                 }
                 entity.config().set(SoftwareProcess.SKIP_INSTALLATION, true);
             } else {

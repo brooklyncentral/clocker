@@ -23,6 +23,7 @@ import com.google.common.reflect.TypeToken;
 
 import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.catalog.CatalogConfig;
+import org.apache.brooklyn.api.entity.Application;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.entity.ImplementedBy;
@@ -57,7 +58,7 @@ import brooklyn.networking.sdn.SdnAttributes;
         description = "Docker is an open-source engine to easily create lightweight, portable, self-sufficient containers from any application.",
         iconUrl = "classpath:///docker-logo.png")
 @ImplementedBy(DockerInfrastructureImpl.class)
-public interface DockerInfrastructure extends BasicStartable, Resizable, LocationOwner<DockerLocation, DockerInfrastructure> {
+public interface DockerInfrastructure extends Application, Resizable, LocationOwner<DockerLocation, DockerInfrastructure> {
 
     @CatalogConfig(label = "Location Name", priority = 90)
     @SetFromFlag("locationName")
@@ -130,8 +131,14 @@ public interface DockerInfrastructure extends BasicStartable, Resizable, Locatio
 
     @SetFromFlag("substitutions")
     ConfigKey<Map<String, Object>> DOCKERFILE_SUBSTITUTIONS = ConfigKeys.newConfigKey(
-            new TypeToken<Map<String, Object>>() { },
+            new TypeToken<Map<String, Object>>() {
+            },
             "docker.dockerfile.substitutions", "Dockerfile template substitutions", MutableMap.<String, Object>of());
+
+    @SetFromFlag("shouldStartRegistry")
+    ConfigKey<Boolean> DOCKER_SHOULD_START_REGISTRY = ConfigKeys.newBooleanConfigKey("docker.registry.shouldStartRegistry", "When set to true, clocker with setup a docker registry and use it for pulls", false);
+
+    AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_REPOSITORY = DockerAttributes.DOCKER_IMAGE_REPOSITORY;
 
     AttributeSensor<DynamicCluster> DOCKER_HOST_CLUSTER = Sensors.newSensor(DynamicCluster.class, "docker.hosts", "Docker host cluster");
     AttributeSensor<DynamicGroup> DOCKER_CONTAINER_FABRIC = Sensors.newSensor(DynamicGroup.class, "docker.fabric", "Docker container fabric");
