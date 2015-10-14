@@ -35,12 +35,12 @@ depending on your choice of SDN provider.
 
 ### Using the latest Clocker release
 
-The latest version of Clocker is [1.1.0-PREVIEW.20150917](https://github.com/brooklyncentral/clocker/releases/tag/v1.1.0-PREVIEW.20150917).
+The latest version of Clocker is [1.1.0-PREVIEW.20151014](https://github.com/brooklyncentral/clocker/releases/tag/v1.1.0-PREVIEW.20151014).
 You can deploy your own **Docker Cloud** with a Weave SDN by running these commands with the _network_ argument
 st to `weave`, to use Project Calico as your SDN provider, change the last argument to `calico` instead:
 ```Bash
 % wget --no-check-certificate --quiet \
-    -O brooklyn-clocker-dist.tar.gz http://git.io/vnJYQ
+    -O brooklyn-clocker-dist.tar.gz http://git.io/vCrU7
 % tar zxf brooklyn-clocker-dist.tar.gz
 % cd brooklyn-clocker
 % ./bin/clocker.sh location network
@@ -104,13 +104,11 @@ services:
   wars.root: "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/hello-world.war"
 ```
 
-A blueprint for an application using a Docker image would look like this:
+A blueprint for a simple application using a Docker image would look like this:
 ```JS
 location: my-docker-cloud
 services:
-- type: docker:redis:2.8.19
-  openPorts:
-  - 6379
+- type: docker:redis:3
   directPorts:
   - 6379
 ```
