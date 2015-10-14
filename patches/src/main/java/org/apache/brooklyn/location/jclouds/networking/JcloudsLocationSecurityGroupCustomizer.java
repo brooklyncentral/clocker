@@ -179,6 +179,31 @@ public class JcloudsLocationSecurityGroupCustomizer extends BasicJcloudsLocation
         return this;
     }
 
+    private SecurityGroup getSecurityGroup(final String nodeId, final SecurityGroupExtension securityApi, final String locationId) {
+        // Expect to have two security groups on the node: one shared between all nodes in the location,
+        // that is cached in sharedGroupCache, and one created by Jclouds that is unique to the node.
+        // Relies on customize having been called before. This should be safe because the arguments
+        // needed to call this method are not available until post-instance creation.
+        SecurityGroup machineUniqueSecurityGroup;
+        Tasks.setBlockingDetails("Loading unique security group for node: " + nodeId);
+        try {
+            machineUniqueSecurityGroup = uniqueGroupCache.get(nodeId, new Callable<SecurityGroup>() {
+                @Override public SecurityGroup call() throws Exception {
+                    SecurityGroup sg = getUniqueSecurityGroupForNodeCachingSharedGroupIfPreviouslyUnknown(nodeId, locationId, securityApi);
+                    if (sg == null) {
+                        throw new IllegalStateException("Failed to find machine-unique group on node: " + nodeId);
+                    }
+                    return sg;
+                }
+            });
+        } catch (ExecutionException e) {
+            throw Throwables.propagate(new Exception(e.getCause()));
+        } finally {
+            Tasks.resetBlockingDetails();
+        }
+        return machineUniqueSecurityGroup;
+    }
+
     /**
      * Applies the given security group permissions to the given location.
      * <p>
@@ -192,6 +217,45 @@ public class JcloudsLocationSecurityGroupCustomizer extends BasicJcloudsLocation
         addPermissionsToLocation(permissions, nodeId, computeService);
         return this;
     }
+    /**
+     * Removes the given security group permissions from the given node with the given compute service.
+     * <p>
+     * Takes no action if the compute service does not have a security group extension.
+     * @param permissions The set of permissions to be removed from the location
+     * @param location Location to remove permissions from
+     */
+    public void removePermissionsFromLocation(final JcloudsMachineLocation location, final Iterable<IpPermission> permissions) {
+        ComputeService computeService = location.getParent().getComputeService();
+        String nodeId = location.getNode().getId();
+        removePermissionsFromLocation(permissions, nodeId, computeService);
+    }
+
+    /**
+     * Removes the given security group permissions from the given node with the given compute service.
+     * <p>
+     * Takes no action if the compute service does not have a security group extension.
+     * @param permissions The set of permissions to be removed from the node
+     * @param nodeId The id of the node to update
+     * @param computeService The compute service to use to apply the changes
+     */
+    @VisibleForTesting
+    void removePermissionsFromLocation(Iterable<IpPermission> permissions, final String nodeId, ComputeService computeService) {
+        if (!computeService.getSecurityGroupExtension().isPresent()) {
+            LOG.warn("Security group extension for {} absent; cannot update node {} with {}",
+                    new Object[] {computeService, nodeId, permissions});
+            return;
+        }
+        final SecurityGroupExtension securityApi = computeService.getSecurityGroupExtension().get();
+        final String locationId = computeService.getContext().unwrap().getId();
+        SecurityGroup machineUniqueSecurityGroup = getSecurityGroup(nodeId, securityApi, locationId);
+
+
+        for (IpPermission permission : permissions) {
+            removePermission(permission, machineUniqueSecurityGroup, securityApi);
+        }
+    }
+
+
 
     /**
      * Applies the given security group permissions to the given node with the given compute service.
@@ -215,23 +279,7 @@ public class JcloudsLocationSecurityGroupCustomizer extends BasicJcloudsLocation
         // that is cached in sharedGroupCache, and one created by Jclouds that is unique to the node.
         // Relies on customize having been called before. This should be safe because the arguments
         // needed to call this method are not available until post-instance creation.
-        SecurityGroup machineUniqueSecurityGroup;
-        Tasks.setBlockingDetails("Loading unique security group for node: " + nodeId);
-        try {
-            machineUniqueSecurityGroup = uniqueGroupCache.get(nodeId, new Callable<SecurityGroup>() {
-                @Override public SecurityGroup call() throws Exception {
-                    SecurityGroup sg = getUniqueSecurityGroupForNodeCachingSharedGroupIfPreviouslyUnknown(nodeId, locationId, securityApi);
-                    if (sg == null) {
-                        throw new IllegalStateException("Failed to find machine-unique group on node: " + nodeId);
-                    }
-                    return sg;
-                }
-            });
-        } catch (ExecutionException e) {
-            throw Throwables.propagate(new Exception(e.getCause()));
-        } finally {
-            Tasks.resetBlockingDetails();
-        }
+        SecurityGroup machineUniqueSecurityGroup = getSecurityGroup(nodeId, securityApi, locationId);
         MutableList<IpPermission> newPermissions = MutableList.copyOf(permissions);
         Iterables.removeAll(newPermissions, machineUniqueSecurityGroup.getIpPermissions());
         for (IpPermission permission : newPermissions) {
@@ -455,6 +503,17 @@ public class JcloudsLocationSecurityGroupCustomizer extends BasicJcloudsLocation
             @Override
             public SecurityGroup call() throws Exception {
                 return securityApi.addIpPermission(permission, group);
+            }
+        };
+        return runOperationWithRetry(callable);
+    }
+
+    protected SecurityGroup removePermission(final IpPermission permission, final SecurityGroup group, final SecurityGroupExtension securityApi) {
+        LOG.debug("Removing permission from security group {}: {}", group.getName(), permission);
+        Callable<SecurityGroup> callable = new Callable<SecurityGroup>() {
+            @Override
+            public SecurityGroup call() throws Exception {
+                return securityApi.removeIpPermission(permission, group);
             }
         };
         return runOperationWithRetry(callable);
