@@ -19,22 +19,17 @@
 package brooklyn.entity.container.docker.application;
 
 import java.util.List;
+import java.util.Set;
 
+import org.apache.brooklyn.api.entity.EntitySpec;
+import org.apache.brooklyn.camp.spi.PlatformComponentTemplate;
+import org.apache.brooklyn.core.mgmt.classloading.BrooklynClassLoadingContext;
+import org.apache.brooklyn.core.resolve.entity.AbstractEntitySpecResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
-
-import org.apache.brooklyn.api.catalog.CatalogItem;
-import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.EntitySpec;
-import org.apache.brooklyn.camp.brooklyn.spi.creation.BrooklynComponentTemplateResolver;
-import org.apache.brooklyn.camp.brooklyn.spi.creation.service.BrooklynServiceTypeResolver;
-import org.apache.brooklyn.camp.brooklyn.spi.creation.service.ServiceTypeResolver;
-import org.apache.brooklyn.camp.spi.PlatformComponentTemplate;
-import org.apache.brooklyn.core.entity.BrooklynConfigKeys;
-import org.apache.brooklyn.util.text.Strings;
 
 import brooklyn.entity.container.DockerAttributes;
 
@@ -42,29 +37,19 @@ import brooklyn.entity.container.DockerAttributes;
  * This converts {@link PlatformComponentTemplate} instances whose type is prefixed {@code docker:}
  * to Brooklyn {@link EntitySpec} instances.
  */
-public class DockerServiceTypeResolver extends BrooklynServiceTypeResolver {
+public class DockerEntitySpecResolver extends AbstractEntitySpecResolver {
 
-    private static final Logger log = LoggerFactory.getLogger(ServiceTypeResolver.class);
+    private static final Logger log = LoggerFactory.getLogger(DockerEntitySpecResolver.class);
 
     public static final String PREFIX = "docker";
 
-    @Override
-    public String getTypePrefix() { return PREFIX; }
-
-    @Override
-    public String getBrooklynType(String serviceType) {
-        return VanillaDockerApplication.class.getName();
-    }
-
-    /** Docker items are not in catalog. */
-    @Override
-    public CatalogItem<Entity, EntitySpec<?>> getCatalogItem(BrooklynComponentTemplateResolver resolver, String serviceType) {
-        return null;
+    public DockerEntitySpecResolver() {
+        super(PREFIX);
     }
 
     @Override
-    public <T extends Entity> void decorateSpec(BrooklynComponentTemplateResolver resolver, EntitySpec<T> spec) {
-        String dockerServiceType = Strings.removeFromStart(resolver.getDeclaredType(), PREFIX + ":");
+    public EntitySpec<?> resolve(String type, BrooklynClassLoadingContext loader, Set<String> encounteredTypes) {
+        String dockerServiceType = getLocalType(type);
         List<String> parts = Splitter.on(":").splitToList(dockerServiceType);
         if (parts.isEmpty() || parts.size() > 2) {
             throw new IllegalArgumentException("Docker serviceType cannot be parsed: " + dockerServiceType);
@@ -72,16 +57,13 @@ public class DockerServiceTypeResolver extends BrooklynServiceTypeResolver {
         String imageName = Iterables.get(parts, 0);
         String imageTag = Iterables.get(parts, 1, "latest");
         log.debug("Creating Docker service entity with image {} and tag {}", imageName, imageTag);
+
+        EntitySpec<VanillaDockerApplication> spec = EntitySpec.create(VanillaDockerApplication.class);
         spec.configure(DockerAttributes.DOCKER_IMAGE_NAME, imageName);
         if (parts.size() == 2) {
             spec.configure(DockerAttributes.DOCKER_IMAGE_TAG, imageTag);
         }
-        if (resolver.getAttrs().containsKey("id")) {
-            String containerName = (String) resolver.getAttrs().getStringKey("id");
-            spec.configure(DockerAttributes.DOCKER_CONTAINER_NAME, containerName);
-        }
-
-        super.decorateSpec(resolver, spec);
+        return spec;
     }
 
 }
