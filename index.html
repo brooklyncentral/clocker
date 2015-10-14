@@ -141,17 +141,39 @@ services:
   wars.root: "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/hello-world.war"
 </code></pre>
 
-<p>A blueprint for an application using a Docker image would look like this:</p>
+<p>A blueprint for a simple application using a single Docker image would look like this:</p>
 
 <pre><code>
 location: my-docker-cloud
 services:
-- type: docker:redis:2.8.19
-  openPorts:
-  - 6379
+- type: docker:redis:3
   directPorts:
   - 6379
 </code></pre>
+
+<p>More complex applications using multiple images can link them with the <code>links</code> configuration key, for example like this:</p>
+
+<pre><code>
+location: my-docker-cloud
+services:
+- type: docker:redis:3
+  id: redis
+  openPorts:
+  - 6379
+- type: docker:amouat/dnmonster:1.0
+  id: dnmonster
+  openPorts:
+  - 8080
+- type: docker:amouat/identidock:1.0
+  id: identidock
+  portBindings:
+    80: 9090
+  links:
+  - $brooklyn:component("redis")
+  - $brooklyn:component("dnmonster")
+</code></pre>
+
+More information on designing application blueprints can be found in the Clocker wiki pages.
 
 <h3><a name="building-from-source" class="anchor" href="#building-from-source"><span class="octicon octicon-link"></span></a>Building from source</h3>
 
