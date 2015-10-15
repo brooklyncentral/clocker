@@ -43,10 +43,6 @@ public interface Microservice extends VanillaDockerApplication {
     @SetFromFlag("directPorts")
     ConfigKey<List<Integer>> DIRECT_PORTS = VanillaDockerApplication.DOCKER_DIRECT_PORTS;
 
-    @CatalogConfig(label = "Port Bindings", priority = 70)
-    @SetFromFlag("portBindings")
-    ConfigKey<Map<Integer, Integer>> PORT_BINDINGS = VanillaDockerApplication.DOCKER_PORT_BINDINGS;
-
     ConfigKey<String> ONBOX_BASE_DIR = ConfigKeys.newConfigKeyWithDefault(BrooklynConfigKeys.ONBOX_BASE_DIR, "/tmp/brooklyn");
     ConfigKey<Boolean> SKIP_ON_BOX_BASE_DIR_RESOLUTION = ConfigKeys.newConfigKeyWithDefault(BrooklynConfigKeys.SKIP_ON_BOX_BASE_DIR_RESOLUTION, Boolean.TRUE);
 

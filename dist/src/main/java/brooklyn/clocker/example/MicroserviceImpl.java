@@ -27,12 +27,12 @@ import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationSpec;
+import org.apache.brooklyn.api.location.MachineLocation;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.location.byon.FixedListMachineProvisioningLocation;
 import org.apache.brooklyn.util.collections.MutableMap;
 
-import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.container.docker.application.VanillaDockerApplicationImpl;
@@ -75,6 +75,8 @@ public abstract class MicroserviceImpl extends VanillaDockerApplicationImpl impl
             LOG.info("Starting container for microservice ({}) {}: {}",
                     new Object[] { this, containerName, dockerLocation.get() });
             // No action required if we found a DockerLocation
+            MachineLocation machine = getMachineOrNull();
+            initDriver(machine);
         }
     }
 
