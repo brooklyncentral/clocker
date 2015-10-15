@@ -16,6 +16,7 @@
 package brooklyn.entity.mesos;
 
 import java.net.URI;
+import java.util.Iterator;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -23,12 +24,18 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.jayway.jsonpath.JsonPath;
+
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.google.common.net.HttpHeaders;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
@@ -37,6 +44,7 @@ import org.apache.brooklyn.util.core.ResourceUtils;
 import org.apache.brooklyn.util.core.http.HttpTool;
 import org.apache.brooklyn.util.core.http.HttpToolResponse;
 import org.apache.brooklyn.util.core.text.TemplateProcessor;
+import org.apache.brooklyn.util.guava.Maybe;
 
 import brooklyn.location.mesos.MesosLocation;
 
@@ -85,13 +93,50 @@ public class MesosUtils {
                         HttpHeaders.CONTENT_TYPE, "application/json",
                         HttpHeaders.ACCEPT, "application/json"),
                 processedJson.getBytes());
+        LOG.debug("Response: " + response.getContentAsString());
         if (!HttpTool.isStatusCodeHealthy(response.getResponseCode())) {
-            LOG.warn("Invalid response code: "+response);
+            LOG.warn("Invalid response code {}: {}", response.getResponseCode(), response.getReasonPhrase());
             return Optional.absent();
         } else {
-            LOG.debug("Success full call to {}: {}", targetUrl, response.getContentAsString());
+            LOG.debug("Successfull call to {}: {}", targetUrl);
             return Optional.of(response.getContentAsString());
         }
+    }
+
+    public static Function<JsonElement, Maybe<JsonElement>> select(final Predicate<JsonElement> predicate) {
+        return new Select(predicate);
+    }
+
+    protected static class Select implements Function<JsonElement, Maybe<JsonElement>> {
+        private final Predicate<JsonElement> predicate;
+
+        public Select(Predicate<JsonElement> predicate) {
+            this.predicate = predicate;
+        }
+
+        @Override public Maybe<JsonElement> apply(JsonElement input) {
+            JsonArray array = input.getAsJsonArray();
+            Iterator<JsonElement> filtered = Iterators.filter(array.iterator(), predicate);
+            return Maybe.next(filtered);
+        }
+    }
+
+
+    /**
+     * returns an element from a single json primitive value given a full path {@link com.jayway.jsonpath.JsonPath}
+     */
+    public static <T> Function<Maybe<JsonElement>,T> getPathM(final String path) {
+        return new Function<Maybe<JsonElement>, T>() {
+            @SuppressWarnings("unchecked")
+            @Override public T apply(Maybe<JsonElement> input) {
+                if (input.isAbsentOrNull()) {
+                    return (T) null;
+                }
+                String jsonString = input.get().toString();
+                Object rawElement = JsonPath.read(jsonString, path);
+                return (T) rawElement;
+            }
+        };
     }
 
 }

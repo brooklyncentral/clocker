@@ -15,59 +15,81 @@
  */
 package brooklyn.entity.mesos.task.marathon;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
 
-import org.apache.brooklyn.api.catalog.Catalog;
-import org.apache.brooklyn.api.catalog.CatalogConfig;
+import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.ImplementedBy;
+import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.core.location.dynamic.LocationOwner;
+import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
+import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
+import org.apache.brooklyn.util.net.HasNetworkAddresses;
 
+import brooklyn.entity.container.DockerAttributes;
+import brooklyn.entity.container.docker.DockerContainer;
+import brooklyn.entity.mesos.framework.marathon.MarathonFramework;
 import brooklyn.entity.mesos.task.MesosTask;
+import brooklyn.location.mesos.framework.marathon.MarathonTaskLocation;
 
 /**
  * A Marathon task.
  */
-@Catalog(name = "Marathon Task",
-        description = "A Marathon application task running a Docker image.",
-        iconUrl = "classpath:///marathon-logo.jpg")
 @ImplementedBy(MarathonTaskImpl.class)
-public interface MarathonTask extends MesosTask {
+public interface MarathonTask extends MesosTask, HasNetworkAddresses, LocationOwner<MarathonTaskLocation, MarathonTask>  {
 
-    @CatalogConfig(label = "Application ID", priority = 50)
     @SetFromFlag("id")
     ConfigKey<String> APPLICATION_ID = ConfigKeys.newStringConfigKey("marathon.task.id", "Marathon task application id");
 
-    @CatalogConfig(label = "Command", priority = 50)
     @SetFromFlag("command")
     ConfigKey<String> COMMAND = ConfigKeys.newStringConfigKey("marathon.task.command", "Marathon task command string");
 
-    @CatalogConfig(label = "Docker Image", priority = 50)
-    @SetFromFlag("imageName")
-    ConfigKey<String> DOCKER_IMAGE_NAME = ConfigKeys.newStringConfigKey("marathon.task.imageName", "Marathon task Docker image");
+    @SetFromFlag("args")
+    ConfigKey<List<String>> ARGS = ConfigKeys.newConfigKey(new TypeToken<List<String>>() { },
+            "marathon.task.args", "Marathon task command args", ImmutableList.<String>of());
 
-    @CatalogConfig(label = "Docker Image Version", priority = 50)
+    @SetFromFlag("imageName")
+    ConfigKey<String> DOCKER_IMAGE_NAME = DockerAttributes.DOCKER_IMAGE_NAME.getConfigKey();
+
     @SetFromFlag("imageVersion")
-    ConfigKey<String> DOCKER_IMAGE_TAG = ConfigKeys.newStringConfigKey("marathon.task.imageVersion", "Marathon task Docker image version");
+    ConfigKey<String> DOCKER_IMAGE_TAG = DockerAttributes.DOCKER_IMAGE_TAG.getConfigKey();
 
     @SetFromFlag("cpus")
-    ConfigKey<Double> CPU_RESOURCES = ConfigKeys.newDoubleConfigKey("marathon.task.cpus", "Marathon task CPU resources (fractions of a core)", 0.25d);
+    ConfigKey<Double> CPU_RESOURCES = ConfigKeys.newDoubleConfigKey("marathon.task.cpus", "Marathon task CPU resources (fractions of a core)");
 
     @SetFromFlag("memory")
-    ConfigKey<Integer> MEMORY_RESOURCES = ConfigKeys.newIntegerConfigKey("marathon.task.mem", "Marathon task memory resources (number of MiB)", 128);
+    ConfigKey<Integer> MEMORY_RESOURCES = ConfigKeys.newIntegerConfigKey("marathon.task.mem", "Marathon task memory resources (number of MiB)");
 
     @SetFromFlag("openPorts")
-    ConfigKey<List<Integer>> MARATHON_OPEN_PORTS = ConfigKeys.newConfigKey(new TypeToken<List<Integer>>() { },
-            "marathon.task.openPorts", "List of ports to open for the task", ImmutableList.<Integer>of());
+    ConfigKey<List<Integer>> DOCKER_OPEN_PORTS = DockerAttributes.DOCKER_OPEN_PORTS;
+
+    @SetFromFlag("directPorts")
+    ConfigKey<List<Integer>> DOCKER_DIRECT_PORTS = DockerAttributes.DOCKER_DIRECT_PORTS;
+
+    @SetFromFlag("portBindings")
+    ConfigKey<Map<Integer, Integer>> DOCKER_PORT_BINDINGS = DockerAttributes.DOCKER_PORT_BINDINGS;
 
     @SetFromFlag("env")
-    ConfigKey<Map<String, Object>> MARATHON_ENVIRONMENT = ConfigKeys.newConfigKey(new TypeToken<Map<String, Object>>() { },
-            "marathon.task.environment", "Environment variables for the task", ImmutableMap.<String, Object>of());
+    ConfigKey<Map<String, Object>> DOCKER_CONTAINER_ENVIRONMENT = DockerContainer.DOCKER_CONTAINER_ENVIRONMENT.getConfigKey();
+
+    AttributeSensor<Date> TASK_STARTED_AT = Sensors.newSensor(Date.class, "marathon.task.startedAt", "Time task started");
+    AttributeSensor<Date> TASK_STAGED_AT = Sensors.newSensor(Date.class, "marathon.task.stagedAt", "Time task was staged");
+
+    @SetFromFlag("entity")
+    AttributeSensorAndConfigKey<Entity, Entity> ENTITY = ConfigKeys.newSensorAndConfigKey(Entity.class,
+            "docker.container.entity", "The entity running in this Docker container");
+
+    MarathonFramework getMarathonFramework();
+
+    Entity getRunningEntity();
+
+    void setRunningEntity(Entity entity);
 
 }

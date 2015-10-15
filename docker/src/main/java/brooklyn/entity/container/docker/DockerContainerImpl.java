@@ -193,6 +193,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         return sensors().get(ENTITY);
     }
 
+    @Override
     public void setRunningEntity(Entity entity) {
         sensors().set(ENTITY, entity);
     }

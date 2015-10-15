@@ -37,6 +37,7 @@ import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.time.Duration;
 
 import brooklyn.entity.mesos.framework.MesosFramework;
+import brooklyn.entity.mesos.framework.aurora.AuroraFramework;
 import brooklyn.entity.mesos.framework.marathon.MarathonFramework;
 import brooklyn.location.mesos.MesosLocation;
 
@@ -83,7 +84,7 @@ public interface MesosCluster extends BasicStartable, LocationOwner<MesosLocatio
 
     Map<String, EntitySpec<? extends MesosFramework>> FRAMEWORKS = ImmutableMap.<String, EntitySpec<? extends MesosFramework>>builder()
             .put("marathon", EntitySpec.create(MarathonFramework.class))
-            .put("aurora", EntitySpec.create(MarathonFramework.class))
+            .put("aurora", EntitySpec.create(AuroraFramework.class))
 //            .put("elasticsearch", EntitySpec.create(ElasticSearchFramework.class))
             .build();
 

@@ -28,6 +28,6 @@ import brooklyn.entity.mesos.framework.MesosFramework;
 @ImplementedBy(AuroraFrameworkImpl.class)
 public interface AuroraFramework extends MesosFramework {
 
-    // TODO placeholder interface]
+    // TODO placeholder interface
 
 }

@@ -31,6 +31,7 @@ import org.apache.brooklyn.entity.group.DynamicGroup;
 import org.apache.brooklyn.entity.stock.BasicStartable;
 
 import brooklyn.entity.mesos.MesosAttributes;
+import brooklyn.entity.mesos.MesosCluster;
 import brooklyn.entity.mesos.task.MesosTask;
 
 /**
@@ -69,5 +70,11 @@ public interface MesosFramework extends BasicStartable {
     MethodEffector<Void> START_TASK = new MethodEffector<Void>(MesosFramework.class, "startTask");
 
     MesosTask startTask(Map<String, Object> taskFlags);
+
+    // Methods
+ 
+    List<Class<? extends Entity>> getSupported();
+
+    MesosCluster getMesosCluster();
 
 }

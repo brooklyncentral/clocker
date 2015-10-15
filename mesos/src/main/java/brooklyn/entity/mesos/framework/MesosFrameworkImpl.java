@@ -56,7 +56,6 @@ import org.apache.brooklyn.util.time.Duration;
 
 import brooklyn.entity.mesos.MesosCluster;
 import brooklyn.entity.mesos.task.MesosTask;
-import brooklyn.entity.mesos.task.marathon.MarathonTask;
 
 /**
  * Mesos frameworks shared implementation.
@@ -149,6 +148,7 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
                         task = (MesosTask) entity.get();
                     } else if (state.equals(MesosTask.TaskState.TASK_RUNNING.name())) {
                         EntitySpec<MesosTask> taskSpec = EntitySpec.create(MesosTask.class)
+                                .configure(MesosTask.MANAGED, Boolean.FALSE)
                                 .configure(MesosTask.MESOS_CLUSTER, mesosCluster)
                                 .configure(MesosTask.TASK_NAME, name)
                                 .configure(MesosTask.FRAMEWORK, this);
@@ -174,8 +174,18 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
     }
 
     @Override
-    public MarathonTask startTask(Map<String, Object> taskFlags) {
+    public MesosTask startTask(Map<String, Object> taskFlags) {
         throw new UnsupportedOperationException("Not implemented on this framework");
+    }
+
+    @Override
+    public List<Class<? extends Entity>> getSupported() {
+        return ImmutableList.of();
+    }
+
+    @Override
+    public MesosCluster getMesosCluster() {
+        return (MesosCluster) sensors().get(MESOS_CLUSTER);
     }
 
     static {

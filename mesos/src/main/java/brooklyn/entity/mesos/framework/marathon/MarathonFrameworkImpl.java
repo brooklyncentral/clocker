@@ -15,7 +15,9 @@
  */
 package brooklyn.entity.mesos.framework.marathon;
 
+import java.net.URI;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -25,18 +27,34 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Functions;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonElement;
 
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.EntitySpec;
+import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.location.LocationDefinition;
+import org.apache.brooklyn.api.mgmt.LocationManager;
+import org.apache.brooklyn.core.entity.Entities;
+import org.apache.brooklyn.core.location.BasicLocationDefinition;
+import org.apache.brooklyn.entity.group.Cluster;
+import org.apache.brooklyn.entity.group.DynamicCluster;
+import org.apache.brooklyn.entity.software.base.EmptySoftwareProcess;
 import org.apache.brooklyn.feed.http.HttpFeed;
 import org.apache.brooklyn.feed.http.HttpPollConfig;
 import org.apache.brooklyn.feed.http.HttpValueFunctions;
 import org.apache.brooklyn.feed.http.JsonFunctions;
 import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import org.apache.brooklyn.util.guava.Functionals;
 import org.apache.brooklyn.util.net.Urls;
 
+import brooklyn.entity.container.docker.application.VanillaDockerApplication;
 import brooklyn.entity.mesos.MesosUtils;
 import brooklyn.entity.mesos.framework.MesosFrameworkImpl;
+import brooklyn.entity.mesos.task.marathon.MarathonTask;
+import brooklyn.location.mesos.framework.marathon.MarathonLocation;
+import brooklyn.location.mesos.framework.marathon.MarathonResolver;
 
 /**
  * The Marathon framework implementation.
@@ -50,8 +68,28 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
     @Override
     public void init() {
         super.init();
+
+        DynamicCluster tasks = addChild(EntitySpec.create(DynamicCluster.class)
+                .configure(Cluster.INITIAL_SIZE, 0)
+                .configure(DynamicCluster.MEMBER_SPEC, EntitySpec.create(MarathonTask.class))
+                .configure(DynamicCluster.QUARANTINE_FAILED_ENTITIES, true)
+                .configure(DynamicCluster.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
+                .configure(DynamicCluster.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
+                .displayName("Marathon Tasks"));
+
+        if (Entities.isManaged(this)) {
+            Entities.manage(tasks);
+        }
+
+        sensors().set(MARATHON_TASK_CLUSTER, tasks);
     }
 
+    @Override
+    public DynamicCluster getTaskCluster() {
+        return sensors().get(MARATHON_TASK_CLUSTER);
+    }
+
+    @Override
     public void connectSensors() {
         super.connectSensors();
 
@@ -74,6 +112,7 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
         httpFeed = httpFeedBuilder.build();
     }
 
+    @Override
     public void disconnectSensors() {
         if (httpFeed != null && httpFeed.isRunning()) httpFeed.stop();
         super.disconnectSensors();
@@ -93,6 +132,102 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
             // TODO set task id and so on
             return true;
         }
+    }
+ 
+    @Override
+    public void start(Collection<? extends Location> locations) {
+        // Setup port forwarding
+        MarathonPortForwarder portForwarder = new MarathonPortForwarder();
+        portForwarder.injectManagementContext(getManagementContext());
+        portForwarder.init(URI.create(sensors().get(FRAMEWORK_URL)));
+
+        // Create Marathon location
+        Map<String, ?> flags = MutableMap.<String, Object>builder()
+                .put("portForwarder", portForwarder)
+                .putAll(config().get(LOCATION_FLAGS))
+                .build();
+        MarathonLocation marathon = createLocation(flags);
+
+        // Setup subnet tier
+//        SubnetTier subnetTier = addChild(EntitySpec.create(SubnetTier.class, SubnetTierImpl.class)
+//                .configure(SubnetTier.PORT_FORWARDER, portForwarder)
+//                .configure(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL));
+//        Entities.manage(subnetTier);
+//        subnetTier.start(ImmutableList.of(marathon));
+//        sensors().set(MARATHON_SUBNET_TIER, subnetTier);
+
+        // Add task cluster
+        DynamicCluster tasks = getTaskCluster();
+        Entities.start(tasks, ImmutableList.of(marathon));
+        tasks.sensors().set(SERVICE_UP, Boolean.TRUE);
+
+        super.start(locations);
+    }
+
+    /**
+     * Create a new {@link MarathonLocation} for this framework.
+     */
+    @Override
+    public MarathonLocation createLocation(Map<String, ?> flags) {
+        String locationName = sensors().get(FRAMEWORK_NAME) + "-" + getId();
+        String locationSpec = String.format(MarathonResolver.MARATHON_FRAMEWORK_SPEC, getId()) + String.format(":(name=\"%s\")", locationName);
+        sensors().set(LOCATION_SPEC, locationSpec);
+
+        LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
+        Location location = getManagementContext().getLocationRegistry().resolve(definition);
+        sensors().set(DYNAMIC_LOCATION, location);
+        sensors().set(LOCATION_NAME, location.getId());
+        getManagementContext().getLocationManager().manage(location);
+
+        LOG.info("New Marathon framework location {} created", location);
+        return (MarathonLocation) location;
+    }
+
+    @Override
+    public void deleteLocation() {
+        MarathonLocation location = getDynamicLocation();
+
+        if (location != null) {
+            LocationManager mgr = getManagementContext().getLocationManager();
+            if (mgr.isManaged(location)) {
+                mgr.unmanage(location);
+            }
+        }
+
+        sensors().set(DYNAMIC_LOCATION, null);
+        sensors().set(LOCATION_NAME, null);
+    }
+
+    @Override
+    public void stop() {
+        super.stop();
+
+        // Stop all of our managed Marathon tasks
+        Collection<Entity> tasks = getTaskCluster().getMembers();
+        for (Entity task : tasks) {
+            ((MarathonTask) task).stop();
+        }
+
+        deleteLocation();
+    }
+
+    @Override
+    public MarathonLocation getDynamicLocation() {
+        return (MarathonLocation) sensors().get(DYNAMIC_LOCATION);
+    }
+
+    @Override
+    public boolean isLocationAvailable() {
+        return true;
+    }
+ 
+    @Override
+    public List<Class<? extends Entity>> getSupported() {
+        return ImmutableList.<Class<? extends Entity>>builder()
+                .addAll(super.getSupported())
+                .add(VanillaDockerApplication.class)
+                .add(EmptySoftwareProcess.class)
+                .build();
     }
 
 }

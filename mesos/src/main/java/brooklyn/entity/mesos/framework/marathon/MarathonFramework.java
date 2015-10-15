@@ -27,9 +27,13 @@ import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.core.annotation.Effector;
 import org.apache.brooklyn.core.annotation.EffectorParam;
 import org.apache.brooklyn.core.effector.MethodEffector;
+import org.apache.brooklyn.core.location.dynamic.LocationOwner;
 import org.apache.brooklyn.core.sensor.Sensors;
+import org.apache.brooklyn.entity.group.DynamicCluster;
 
 import brooklyn.entity.mesos.framework.MesosFramework;
+import brooklyn.location.mesos.framework.marathon.MarathonLocation;
+import brooklyn.networking.subnet.SubnetTier;
 
 /**
  * The Marathon framework for Mesos.
@@ -37,13 +41,19 @@ import brooklyn.entity.mesos.framework.MesosFramework;
 @Catalog(name = "Marathon Framework",
         description = "Marathon is an open-source PaaS framework for Mesos.")
 @ImplementedBy(MarathonFrameworkImpl.class)
-public interface MarathonFramework extends MesosFramework {
+public interface MarathonFramework extends MesosFramework, LocationOwner<MarathonLocation, MarathonFramework> {
+
+    AttributeSensor<DynamicCluster> MARATHON_TASK_CLUSTER = Sensors.newSensor(DynamicCluster.class,
+            "marathon.task.cluster", "The Marathon tasks started by Clocker");
 
     AttributeSensor<List<String>> MARATHON_APPLICATIONS = Sensors.newSensor(new TypeToken<List<String>>() { }, "marathon.applications", "List of Marathon applications");
 
     AttributeSensor<String> MARATHON_VERSION = Sensors.newStringSensor("marathon.version", "Marathon version");
 
     AttributeSensor<String> MARATHON_LEADER_URI = Sensors.newStringSensor("marathon.leader.uri", "Marathon leader URI");
+
+//    AttributeSensor<SubnetTier> MARATHON_SUBNET_TIER = Sensors.newSensor(SubnetTier.class,
+//            "marathon.subnetTier", "The SubnetTier for Marathon port mapping");
 
     // Effectors
 
@@ -56,5 +66,9 @@ public interface MarathonFramework extends MesosFramework {
     boolean startApplication(
             @EffectorParam(name="id", description="Application ID") String id,
             @EffectorParam(name="flags", description="Task flags") Map<String, Object> flags) throws IOException;
+
+    // Methods
+
+    DynamicCluster getTaskCluster();
 
 }

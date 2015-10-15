@@ -27,7 +27,7 @@ import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.entity.stock.BasicStartableImpl;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
 
-import brooklyn.location.mesos.MesosLocation;
+import brooklyn.entity.mesos.framework.MesosFramework;
 
 /**
  * A single Mesos task.
@@ -44,6 +44,7 @@ public class MesosTaskImpl extends BasicStartableImpl implements MesosTask {
         ConfigToAttributes.apply(this, TASK_NAME);
         ConfigToAttributes.apply(this, FRAMEWORK);
         ConfigToAttributes.apply(this, MESOS_CLUSTER);
+        ConfigToAttributes.apply(this, MANAGED);
     }
 
     @Override
@@ -52,33 +53,33 @@ public class MesosTaskImpl extends BasicStartableImpl implements MesosTask {
     }
 
     @Override
+    public MesosFramework getFramework() {
+        return (MesosFramework) sensors().get(FRAMEWORK);
+    }
+
+    @Override
     public void start(Collection<? extends Location> locations) {
         sensors().set(SERVICE_UP, Boolean.FALSE);
 
         super.start(locations);
 
-        if (config().get(MESOS_CLUSTER) == null || locations.size() != 0) {
-            MesosLocation mesos = null;
-            for (Location location : locations) {
-                if (location instanceof MesosLocation) {
-                    mesos = (MesosLocation) location;
-                }
-            }
-            if (mesos == null) throw new IllegalStateException("Cannot start in a non-Mesos location");
-            sensors().set(MESOS_CLUSTER, mesos.getOwner());
-            sensors().set(MANAGED, true);
-        }
-
-        sensors().set(SERVICE_UP, Boolean.TRUE); // TODO generate this from task status
+        connectSensors();
     }
 
-    /**
-     * Stop this task.
-     */
+    /** Override in framework task implementations */
+    public void connectSensors() {
+        sensors().set(SERVICE_UP, Boolean.TRUE);
+    }
+
+    /** Override in framework task implementations */
+    public void disconnectSensors() {
+        sensors().set(SERVICE_UP, Boolean.FALSE);
+    }
+
     @Override
     public void stop() {
         // TODO call stop
-        sensors().set(SERVICE_UP, Boolean.FALSE);
+        disconnectSensors();
     }
 
     static {

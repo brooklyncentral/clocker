@@ -3,45 +3,31 @@
     [#if command??]
     "cmd": "${command}",
     [#else]
-    "args": [ ],
+    "args": [ [#list args as arg]
+        "${arg}"[#if arg_has_next],[/#if]
+    [/#list] ],
     [/#if]
-    "constraints": [
-        [
-            "hostname",
-            "UNIQUE"
-        ]
-    ],
     "container": {
         "docker": {
-            "image": "${imageName}:${imageVersion}"
+            "image": "${imageName}:${imageVersion}",
+            "network": "HOST",
+            "privileged": true,
+            "portMappings": [ [#list portBindings as port]
+                { "containerPort": ${port.getValue()?c}, "hostPort": ${port.getKey()?c} }[#if port_has_next],[/#if]
+            [/#list] ]
         },
         "type": "DOCKER"
     },
     "cpus": ${cpus?c},
     "mem": ${memory?c},
-    "healthChecks": [
-        {
-            "gracePeriodSeconds": 3,
-            "intervalSeconds": 10,
-            "maxConsecutiveFailures": 3,
-            "path": "/",
-            "portIndex": 0,
-            "protocol": "HTTP",
-            "timeoutSeconds": 5
-        }
-    ],
-    "id": "${id}",
     "instances": 1,
     "ports": [ [#list openPorts as port]
         ${port?c}[#if port_has_next],[/#if]
     [/#list] ],
     [#if environment?has_content]
-    "env": { [#list environment?keys as key]
-        "${key}": "${environment.get(key)?c}"[#if key_has_next],[/#if]
+    "env": { [#list environment as env]
+        "${env.getKey()}": "${env.getValue()?c}"[#if env_has_next],[/#if]
     [/#list] },
     [/#if]
-    "upgradeStrategy": {
-        "minimumHealthCapacity": 0.5,
-        "maximumOverCapacity": 0.5
-    }
+    "id": "${id}"
 }
