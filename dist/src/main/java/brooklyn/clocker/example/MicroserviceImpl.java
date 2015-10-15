@@ -81,13 +81,14 @@ public abstract class MicroserviceImpl extends VanillaDockerApplicationImpl impl
     }
 
     @Override
-    public void postStop() {
+    public void preStop() {
         // Stop the DockerInfrastructure if it exists as a child
         Optional<Entity> dockerInfrastructure = Iterables.tryFind(getChildren(), Predicates.instanceOf(DockerInfrastructure.class));
         if (dockerInfrastructure.isPresent()) {
+            removeChild(dockerInfrastructure.get());
             Entities.invokeEffector(this, dockerInfrastructure.get(), Startable.STOP, MutableMap.<String, Object>of()).getUnchecked();
         }
-        super.postStop();
+        super.preStop();
     }
 
     @Override
