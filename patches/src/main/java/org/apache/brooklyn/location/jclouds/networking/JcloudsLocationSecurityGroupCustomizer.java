@@ -208,14 +208,23 @@ public class JcloudsLocationSecurityGroupCustomizer extends BasicJcloudsLocation
      * Applies the given security group permissions to the given location.
      * <p>
      * Takes no action if the location's compute service does not have a security group extension.
-     * @param permissions The set of permissions to be applied to the location
+     * <p>
+     * The {@code synchronized} block is to serialize the permission changes, preventing race
+     * conditions in some clouds. If multiple customizations of the same group are done in parallel
+     * the changes may not be picked up by later customizations, meaning the same rule could possibly be
+     * added twice, which would fail. A finer grained mechanism would be preferable here, but
+     * we have no access to the information required, so this brute force serializing is required.
+     *
      * @param location Location to gain permissions
+     * @param permissions The set of permissions to be applied to the location
      */
     public JcloudsLocationSecurityGroupCustomizer addPermissionsToLocation(final JcloudsMachineLocation location, final Iterable<IpPermission> permissions) {
-        ComputeService computeService = location.getParent().getComputeService();
-        String nodeId = location.getNode().getId();
-        addPermissionsToLocation(permissions, nodeId, computeService);
-        return this;
+        synchronized (JcloudsLocationSecurityGroupCustomizer.class) {
+            ComputeService computeService = location.getParent().getComputeService();
+            String nodeId = location.getNode().getId();
+            addPermissionsToLocation(permissions, nodeId, computeService);
+            return this;
+        }
     }
     /**
      * Removes the given security group permissions from the given node with the given compute service.
@@ -305,33 +314,33 @@ public class JcloudsLocationSecurityGroupCustomizer extends BasicJcloudsLocation
         Set<SecurityGroup> groupsOnNode = securityApi.listSecurityGroupsForNode(nodeId);
         SecurityGroup unique;
         if (locationId.equals("aws-ec2")) {
-            if (groupsOnNode.size() != 2) {
-                LOG.warn("Expected to find two security groups on node {} in app {} (one shared, one unique). Found {}: {}",
-                        new Object[]{nodeId, applicationId, groupsOnNode.size(), groupsOnNode});
-                return null;
-            }
-            String expectedSharedName = getNameForSharedSecurityGroup();
-            Iterator<SecurityGroup> it = groupsOnNode.iterator();
-            SecurityGroup shared = it.next();
-            if (shared.getName().endsWith(expectedSharedName)) {
-                unique = it.next();
+            if (groupsOnNode.size() == 2) {
+                String expectedSharedName = getNameForSharedSecurityGroup();
+                Iterator<SecurityGroup> it = groupsOnNode.iterator();
+                SecurityGroup shared = it.next();
+                if (shared.getName().endsWith(expectedSharedName)) {
+                    unique = it.next();
+                } else {
+                    unique = shared;
+                    shared = it.next();
+                }
+                if (!shared.getName().endsWith(expectedSharedName)) {
+                    LOG.warn("Couldn't determine which security group is shared between instances in app {}. Expected={}, found={}",
+                            new Object[]{ applicationId, expectedSharedName, groupsOnNode });
+                    return null;
+                }
+                // Shared entry might be missing if Brooklyn has rebound to an application
+                SecurityGroup old = sharedGroupCache.asMap().putIfAbsent(shared.getLocation(), shared);
+                LOG.info("Loaded unique security group for node {} (in {}): {}",
+                        new Object[]{nodeId, applicationId, unique});
+                if (old == null) {
+                    LOG.info("Proactively set shared group for app {} to: {}", applicationId, shared);
+                }
+                return unique;
             } else {
-                unique = shared;
-                shared = it.next();
+                LOG.warn("Expected to find two security groups on node {} in app {} (one shared, one unique). Found {}: {}",
+                        new Object[]{ nodeId, applicationId, groupsOnNode.size(), groupsOnNode });
             }
-            if (!shared.getName().endsWith(expectedSharedName)) {
-                LOG.warn("Couldn't determine which security group is shared between instances in app {}. Expected={}, found={}",
-                        new Object[]{applicationId, expectedSharedName, groupsOnNode});
-                return null;
-            }
-            // Shared entry might be missing if Brooklyn has rebound to an application
-            SecurityGroup old = sharedGroupCache.asMap().putIfAbsent(shared.getLocation(), shared);
-            LOG.info("Loaded unique security group for node {} (in {}): {}",
-                    new Object[]{nodeId, applicationId, unique});
-            if (old == null) {
-                LOG.info("Proactively set shared group for app {} to: {}", applicationId, shared);
-            }
-            return unique;
         }
         return Iterables.getOnlyElement(groupsOnNode);
     }
