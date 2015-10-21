@@ -527,13 +527,35 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         addIpPermissions(permissions);
     }
 
+
+    @Override
+    public void removeIpPermissions(Collection<IpPermission> permissions) {
+        Location location = getDriver().getLocation();
+        String securityGroup = config().get(DockerInfrastructure.SECURITY_GROUP);
+        if (Strings.isBlank(securityGroup)) {
+            if (!(location instanceof JcloudsSshMachineLocation)) {
+                LOG.info("{} not running in a JcloudsSshMachineLocation, not removing ip permissions", this);
+                return;
+            }
+            // TODO check GCE compatibility?
+            JcloudsMachineLocation machine = (JcloudsMachineLocation) location;
+            JcloudsLocationSecurityGroupCustomizer customizer = JcloudsLocationSecurityGroupCustomizer.getInstance(getApplicationId());
+
+            // Serialize access across the whole infrastructure as the security groups are a shared resource
+            synchronized (getInfrastructure().getInfrastructureMutex()) {
+                LOG.debug("Removing permissions from security groups {}: {}", machine, permissions);
+                customizer.removePermissionsFromLocation(machine, permissions);
+            }
+        }
+    }
+
     @Override
     public void addIpPermissions(Collection<IpPermission> permissions) {
         Location location = getDriver().getLocation();
         String securityGroup = config().get(DockerInfrastructure.SECURITY_GROUP);
         if (Strings.isBlank(securityGroup)) {
             if (!(location instanceof JcloudsSshMachineLocation)) {
-                LOG.info("{} not running in a JcloudsSshMachineLocation, not configuring extra security groups", this);
+                LOG.info("{} not running in a JcloudsSshMachineLocation, not adding ip permissions", this);
                 return;
             }
             // TODO check GCE compatibility?

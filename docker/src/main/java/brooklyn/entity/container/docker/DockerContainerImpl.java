@@ -474,22 +474,40 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     }
 
     public void configurePortBindings(DockerHost host, Entity entity) {
-        Map<Integer, Integer> bindings = entity.sensors().get(DockerAttributes.DOCKER_CONTAINER_PORT_BINDINGS);
-        if (bindings.size() > 0) {
-            Collection<IpPermission> permissions = MutableList.of();
-            for (Integer hostPort : bindings.keySet()) {
-                IpPermission portAccess = IpPermission.builder()
-                        .ipProtocol(IpProtocol.TCP)
-                        .fromPort(hostPort)
-                        .toPort(hostPort)
-                        .cidrBlock(Cidr.UNIVERSAL.toString())
-                        .build();
-                permissions.add(portAccess);
-            }
-            LOG.debug("Adding security group entries for forwarded ports on {}: {}", entity, Iterables.toString(bindings.keySet()));
-            host.addIpPermissions(permissions);
+        Collection<IpPermission> ipPermissions = getIpPermissions(entity);
+        if (ipPermissions.size() > 0) {
+            LOG.debug("Adding security group entries for forwarded ports on {}: {}", entity, Iterables.toString(ipPermissions));
+            host.addIpPermissions(ipPermissions);
         }
     }
+
+    public void removePortBindings(DockerHost host, Entity entity) {
+        Collection<IpPermission> ipPermissions = getIpPermissions(entity);
+        if (ipPermissions.size() > 0) {
+            LOG.debug("Removing security group entries for forwarded ports on {}: {}", entity, Iterables.toString(ipPermissions));
+            host.removeIpPermissions(ipPermissions);
+        }
+    }
+
+    public Collection<IpPermission> getIpPermissions(Entity entity) {
+        Map<Integer, Integer> bindings = entity.sensors().get(DockerAttributes.DOCKER_CONTAINER_PORT_BINDINGS);
+        if (bindings.size() == 0) {
+            return ImmutableList.<IpPermission>of();
+        }
+
+        Collection<IpPermission> permissions = MutableList.of();
+        for (Integer hostPort : bindings.keySet()) {
+            IpPermission portAccess = IpPermission.builder()
+                    .ipProtocol(IpProtocol.TCP)
+                    .fromPort(hostPort)
+                    .toPort(hostPort)
+                    .cidrBlock(Cidr.UNIVERSAL.toString())
+                    .build();
+            permissions.add(portAccess);
+        }
+        return permissions;
+    }
+
 
     /**
      * Create a new {@link DockerContainerLocation} wrapping a machine from the host's {@link JcloudsLocation}.
@@ -689,6 +707,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         ServiceStateLogic.setExpectedState(this, Lifecycle.STOPPING);
 
         disconnectSensors();
+
+        removePortBindings(getDockerHost(), getRunningEntity());
 
         // Stop and remove the Docker container running on the host
         shutDown();

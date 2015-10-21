@@ -181,6 +181,7 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
 
     void configureSecurityGroups();
     void addIpPermissions(Collection<IpPermission> permissions);
+    void removeIpPermissions(Collection<IpPermission> permissions);
 
     MethodEffector<String> BUILD_IMAGE = new MethodEffector<String>(DockerHost.class, "buildImage");
     MethodEffector<String> RUN_DOCKER_COMMAND = new MethodEffector<String>(DockerHost.class, "runDockerCommand");
