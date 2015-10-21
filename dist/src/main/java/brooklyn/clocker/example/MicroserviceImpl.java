@@ -59,7 +59,7 @@ public abstract class MicroserviceImpl extends VanillaDockerApplicationImpl impl
                     .displayName("Docker Machine")
                     .configure("machines", getLocations()));
             String locationName = DOCKER_LOCATION_PREFIX + containerName;
-            DockerInfrastructure dockerInfrastructure = addChild(EntitySpec.create(DockerInfrastructure.class)
+            DockerInfrastructure dockerInfrastructure = getParent().addChild(EntitySpec.create(DockerInfrastructure.class)
                     .configure(DockerInfrastructure.DOCKER_HOST_CLUSTER_MIN_SIZE, 1)
                     .configure(DockerInfrastructure.SDN_ENABLE, false)
                     .configure(DockerInfrastructure.LOCATION_NAME, locationName)
@@ -78,16 +78,6 @@ public abstract class MicroserviceImpl extends VanillaDockerApplicationImpl impl
             MachineLocation machine = getMachineOrNull();
             initDriver(machine);
         }
-    }
-
-    @Override
-    public void postStop() {
-        // Stop the DockerInfrastructure if it exists as a child
-        Optional<Entity> dockerInfrastructure = Iterables.tryFind(getChildren(), Predicates.instanceOf(DockerInfrastructure.class));
-        if (dockerInfrastructure.isPresent()) {
-            Entities.invokeEffector(this, dockerInfrastructure.get(), Startable.STOP, MutableMap.<String, Object>of()).getUnchecked();
-        }
-        super.postStop();
     }
 
     @Override

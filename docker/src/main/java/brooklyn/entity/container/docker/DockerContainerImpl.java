@@ -116,17 +116,13 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         LOG.info("Starting Docker container id {}", getId());
         super.init();
 
+        // Determine the name of the container to use
         AtomicInteger counter = config().get(DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.DOCKER_CONTAINER_COUNTER);
-        String dockerContainerName = config().get(DOCKER_CONTAINER_NAME);
+        Optional<String> configuredName = DockerUtils.getContainerName(this);
         String dockerContainerNameFormat = config().get(DOCKER_CONTAINER_NAME_FORMAT);
-        if (Strings.isBlank(dockerContainerName) && Strings.isNonBlank(dockerContainerNameFormat)) {
-            dockerContainerName = format(dockerContainerNameFormat, getId(), counter.incrementAndGet());
-        }
-        if (Strings.isNonBlank(dockerContainerName)) {
-            dockerContainerName = CharMatcher.BREAKING_WHITESPACE.trimAndCollapseFrom(dockerContainerName, '-');
-            setDisplayName(CaseFormat.LOWER_HYPHEN.to(CaseFormat.UPPER_CAMEL, dockerContainerName));
-            sensors().set(DOCKER_CONTAINER_NAME, dockerContainerName);
-        }
+        Optional<String> formattedName = Strings.isNonBlank(dockerContainerNameFormat) ? Optional.of(format(dockerContainerNameFormat, getId(), counter.incrementAndGet())) : Optional.<String>absent();
+        String dockerContainerName = CharMatcher.BREAKING_WHITESPACE.trimAndCollapseFrom(configuredName.or(formattedName).or(getId()), '-');
+        sensors().set(DOCKER_CONTAINER_NAME, dockerContainerName);
 
         ConfigToAttributes.apply(this, DOCKER_INFRASTRUCTURE);
         ConfigToAttributes.apply(this, DOCKER_HOST);
