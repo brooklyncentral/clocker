@@ -53,6 +53,7 @@ import org.jclouds.softlayer.features.VirtualGuestApi;
 import org.jclouds.softlayer.reference.SoftLayerConstants;
 
 import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationDefinition;

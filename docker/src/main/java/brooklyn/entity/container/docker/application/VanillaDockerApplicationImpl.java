@@ -26,23 +26,13 @@ import com.google.common.collect.Iterables;
 import org.apache.brooklyn.entity.software.base.SoftwareProcessImpl;
 
 import brooklyn.entity.container.DockerAttributes;
-import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.location.docker.DockerContainerLocation;
 
 public class VanillaDockerApplicationImpl extends SoftwareProcessImpl implements VanillaDockerApplication {
 
-    private static final Logger LOG = LoggerFactory.getLogger(VanillaDockerApplication.class);
-
-    @Override
-    public void init() {
-        super.init();
-
-        String containerName = DockerUtils.getContainerName(this).or(getId());
-        config().set(DockerAttributes.DOCKER_CONTAINER_NAME, containerName);
-        sensors().set(DockerAttributes.DOCKER_CONTAINER_NAME, containerName);
-    }
+    private static final Logger LOG = LoggerFactory.getLogger(VanillaDockerApplicationImpl.class);
 
     @Override
     protected void connectSensors() {
@@ -72,7 +62,6 @@ public class VanillaDockerApplicationImpl extends SoftwareProcessImpl implements
     @Override
     public DockerContainer getDockerContainer() {
         DockerContainerLocation location = (DockerContainerLocation) Iterables.find(getLocations(), Predicates.instanceOf(DockerContainerLocation.class));
-        LOG.debug("Docker location for {}: {}", this, location);
         return location.getOwner();
     }
 
@@ -88,7 +77,6 @@ public class VanillaDockerApplicationImpl extends SoftwareProcessImpl implements
 
     @Override
     public List<Integer> getContainerPorts() {
-        // TODO improve on this cf. DockerTemplateOptions setup
         return config().get(DockerAttributes.DOCKER_OPEN_PORTS);
     }
 

@@ -19,25 +19,22 @@ import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.catalog.CatalogConfig;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.config.ConfigKey;
-import org.apache.brooklyn.core.config.ConfigKeys;
-import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
 import brooklyn.entity.container.docker.application.VanillaDockerApplication;
 
 /**
- * Docker Image Microservice.
+ * Brooklyn managed {@link VanillaDockerApplication}.
  */
-@Catalog(name = "Docker Image Microservice",
-        description = "A container microservice defined by a Docker image")
-@ImplementedBy(MicroserviceImpl.MicroserviceImageImpl.class)
+@Catalog(name = "Image Microservice",
+        description = "A container microservice defined by a Docker image",
+        iconUrl = "classpath://container.png")
+@ImplementedBy(MicroserviceImageImpl.class)
 public interface MicroserviceImage extends Microservice {
 
     @CatalogConfig(label = "Image Name", priority = 80)
-    @SetFromFlag("imageName")
     ConfigKey<String> IMAGE_NAME = VanillaDockerApplication.IMAGE_NAME;
 
     @CatalogConfig(label = "Image Tag", priority = 80)
-    @SetFromFlag("imageTag")
-    ConfigKey<String> IMAGE_TAG = ConfigKeys.newConfigKeyWithDefault(VanillaDockerApplication.IMAGE_TAG, "latest");
+    ConfigKey<String> IMAGE_TAG = VanillaDockerApplication.IMAGE_TAG;
 
 }

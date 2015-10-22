@@ -193,26 +193,6 @@ brooklyn.catalog:
                     brooklyn.config:
                       docker.container.nameFormat: "weave-%2$02x"
 
-  - id: image-microservice
-    name: "Docker Image Microservice"
-    description: |
-      A container microservice defined by a Docker image
-    iconUrl: classpath://container.png
-    itemType: template
-    item:
-      services:
-      - type: brooklyn.clocker.example.MicroserviceImage
-
-  - id: dockerfile-microservice
-    name: "Dockerfile Microservice"
-    description: |
-      A container microservice defined by a Dockerfile
-    iconUrl: classpath://container.png
-    itemType: template
-    item:
-      services:
-      - type: brooklyn.clocker.example.MicroserviceDockerfile
-
   - id: riak-cluster-demo-application
     name: "Riak Cluster Demo Application"
     description: |
