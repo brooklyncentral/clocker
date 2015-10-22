@@ -25,8 +25,6 @@ import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.core.entity.AbstractApplication;
 import org.apache.brooklyn.core.entity.Entities;
-import org.apache.brooklyn.core.entity.trait.Startable;
-import org.apache.brooklyn.util.collections.MutableMap;
 
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.container.docker.application.VanillaDockerApplication;
