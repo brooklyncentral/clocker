@@ -137,6 +137,9 @@ public class MesosClusterImpl extends BasicStartableImpl implements MesosCluster
         sensors().set(Attributes.MAIN_URI, URI.create(config().get(MESOS_URL)));
     }
 
+    @Override
+    public String getIconUrl() { return "classpath://mesos-logo.png"; }
+
     private void registerLocationResolver() {
         // Doesn't matter if the resolver is already registered through ServiceLoader.
         // It just overwrite the existing registration (if any).

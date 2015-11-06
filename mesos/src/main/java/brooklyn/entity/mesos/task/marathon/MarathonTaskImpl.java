@@ -62,6 +62,7 @@ import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.core.sensor.DependentConfiguration;
 import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
+import org.apache.brooklyn.entity.stock.DelegateEntity;
 import org.apache.brooklyn.feed.http.HttpFeed;
 import org.apache.brooklyn.feed.http.HttpPollConfig;
 import org.apache.brooklyn.feed.http.HttpValueFunctions;
@@ -114,6 +115,9 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
 
         LOG.info("Marathon task {} for: {}", id, sensors().get(ENTITY));
     }
+
+    @Override
+    public String getIconUrl() { return "classpath://container.png"; }
 
     private String getMarathonApplicationId() {
         String id = Optional.fromNullable(getRunningEntity().config().get(BrooklynCampConstants.PLAN_ID))
@@ -453,6 +457,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
     }
 
     static {
+        RendererHints.register(ENTITY, RendererHints.namedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(TASK_STARTED_AT, RendererHints.displayValue(Time.toDateString()));
         RendererHints.register(TASK_STAGED_AT, RendererHints.displayValue(Time.toDateString()));
     }

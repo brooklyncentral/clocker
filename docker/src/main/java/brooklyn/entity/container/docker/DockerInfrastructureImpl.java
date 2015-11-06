@@ -245,6 +245,9 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
         sensors().set(Attributes.MAIN_URI, URI.create("/clocker"));
     }
 
+    @Override
+    public String getIconUrl() { return "classpath://docker-logo.png"; }
+
     private void registerLocationResolver() {
         // Doesn't matter if the resolver is already registered through ServiceLoader.
         // It just overwrite the existing registration (if any).

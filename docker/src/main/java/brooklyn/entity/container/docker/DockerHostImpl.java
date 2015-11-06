@@ -186,6 +186,9 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     }
 
     @Override
+    public String getIconUrl() { return "classpath://docker-logo.png"; }
+
+    @Override
     protected Collection<Integer> getRequiredOpenPorts() {
         Collection<Integer> ports = super.getRequiredOpenPorts();
         if (config().get(DockerInfrastructure.SDN_ENABLE)) {

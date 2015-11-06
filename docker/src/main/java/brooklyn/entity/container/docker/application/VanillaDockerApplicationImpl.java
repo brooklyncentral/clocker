@@ -35,6 +35,9 @@ public class VanillaDockerApplicationImpl extends SoftwareProcessImpl implements
     private static final Logger LOG = LoggerFactory.getLogger(VanillaDockerApplicationImpl.class);
 
     @Override
+    public String getIconUrl() { return "classpath://container.png"; }
+
+    @Override
     protected void connectSensors() {
         connectServiceUpIsRunning();
         super.connectSensors();

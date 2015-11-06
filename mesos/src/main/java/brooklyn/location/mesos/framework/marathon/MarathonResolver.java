@@ -17,9 +17,7 @@ package brooklyn.location.mesos.framework.marathon;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,8 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationRegistry;
@@ -40,7 +36,6 @@ import org.apache.brooklyn.core.location.LocationPropertiesFromBrooklynPropertie
 import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.core.location.internal.LocationInternal;
 import org.apache.brooklyn.util.collections.MutableMap;
-import org.apache.brooklyn.util.text.KeyValueParser;
 import org.apache.brooklyn.util.text.Strings;
 
 import brooklyn.entity.mesos.framework.marathon.MarathonFramework;
@@ -49,17 +44,13 @@ import brooklyn.entity.mesos.framework.marathon.MarathonFramework;
  * Examples of valid specs:
  *   <ul>
  *     <li>marathon:frameworkId
- *     <li>marathon:(name=marathon-framework)
- *     <li>marathon:frameworkId:(name=framework-brooklyn-1234,displayName='Marathon')
  */
 public class MarathonResolver implements EnableableLocationResolver {
 
     private static final Logger LOG = LoggerFactory.getLogger(MarathonResolver.class);
 
     public static final String MARATHON = "marathon";
-    public static final Pattern PATTERN = Pattern.compile("("+MARATHON+"|"+MARATHON.toUpperCase()+")" + ":([a-zA-Z0-9]+)" + "(:\\((.*)\\))?$");
-    public static final Set<String> ACCEPTABLE_ARGS = ImmutableSet.of("name", "displayName");
-
+    public static final Pattern PATTERN = Pattern.compile("("+MARATHON+"|"+MARATHON.toUpperCase()+")" + ":([a-zA-Z0-9]+)");
     public static final String MARATHON_FRAMEWORK_SPEC = MARATHON + ":%s";
 
     private ManagementContext managementContext;
@@ -87,23 +78,7 @@ public class MarathonResolver implements EnableableLocationResolver {
 
         Matcher matcher = PATTERN.matcher(spec);
         if (!matcher.matches()) {
-            throw new IllegalArgumentException("Invalid location '"+spec+"'; must specify something like marathon:entityId or marathon:entityId:(name=abc)");
-        }
-
-        String argsPart = matcher.group(4);
-        Map<String, String> argsMap = (argsPart != null) ? KeyValueParser.parseMap(argsPart) : Collections.<String,String>emptyMap();
-        String displayNamePart = argsMap.get("displayName");
-        String namePart = argsMap.get("name");
-
-        if (!ACCEPTABLE_ARGS.containsAll(argsMap.keySet())) {
-            Set<String> illegalArgs = Sets.difference(argsMap.keySet(), ACCEPTABLE_ARGS);
-            throw new IllegalArgumentException("Invalid location '"+spec+"'; illegal args "+illegalArgs+"; acceptable args are "+ACCEPTABLE_ARGS);
-        }
-        if (argsMap.containsKey("displayName") && Strings.isEmpty(displayNamePart)) {
-            throw new IllegalArgumentException("Invalid location '"+spec+"'; if displayName supplied then value must be non-empty");
-        }
-        if (argsMap.containsKey("name") && Strings.isEmpty(namePart)) {
-            throw new IllegalArgumentException("Invalid location '"+spec+"'; if name supplied then value must be non-empty");
+            throw new IllegalArgumentException("Invalid location '"+spec+"'; must specify something like marathon:entityId");
         }
 
         Map<String, Object> filteredProperties = new LocationPropertiesFromBrooklynProperties().getLocationProperties(MARATHON, namedLocation, properties);
@@ -114,24 +89,8 @@ public class MarathonResolver implements EnableableLocationResolver {
             throw new IllegalArgumentException("Invalid location '"+spec+"'; Marathon framework entity id must be non-empty");
         }
 
-        // Build the display name
-        StringBuilder name = new StringBuilder();
-        if (displayNamePart != null) {
-            name.append(displayNamePart);
-        } else {
-            name.append("Marathon Framework");
-        }
-        final String displayName =  name.toString();
-
-        // Build the location name
-        name = new StringBuilder();
-        if (namePart != null) {
-            name.append(namePart);
-        } else {
-            name.append("marathon-");
-            name.append(frameworkId);
-        }
-        final String locationName =  name.toString();
+        final String displayName = "Marathon Framework";
+        final String locationName = "marathon-" + frameworkId;
         MarathonFramework framework = (MarathonFramework) managementContext.getEntityManager().getEntity(frameworkId);
         Iterable<Location> managedLocations = managementContext.getLocationManager().getLocations();
 

@@ -35,8 +35,11 @@ import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationDefinition;
 import org.apache.brooklyn.api.mgmt.LocationManager;
+import org.apache.brooklyn.api.mgmt.ManagementContext;
+import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.location.BasicLocationDefinition;
+import org.apache.brooklyn.core.location.dynamic.LocationOwner;
 import org.apache.brooklyn.entity.group.Cluster;
 import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
@@ -49,6 +52,7 @@ import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import org.apache.brooklyn.util.guava.Functionals;
 import org.apache.brooklyn.util.net.Urls;
 
+import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.application.VanillaDockerApplication;
 import brooklyn.entity.mesos.MesosUtils;
 import brooklyn.entity.mesos.framework.MesosFrameworkImpl;
@@ -83,6 +87,9 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
 
         sensors().set(MARATHON_TASK_CLUSTER, tasks);
     }
+
+    @Override
+    public String getIconUrl() { return "classpath://marathon-logo.png"; }
 
     @Override
     public DynamicCluster getTaskCluster() {
@@ -182,18 +189,36 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
      */
     @Override
     public MarathonLocation createLocation(Map<String, ?> flags) {
-        String locationName = sensors().get(FRAMEWORK_NAME) + "-" + getId();
-        String locationSpec = String.format(MarathonResolver.MARATHON_FRAMEWORK_SPEC, getId()) + String.format(":(name=\"%s\")", locationName);
+        String locationName = MarathonResolver.MARATHON + "-" + getId();
+        String locationSpec = String.format(MarathonResolver.MARATHON_FRAMEWORK_SPEC, getId());
         sensors().set(LOCATION_SPEC, locationSpec);
 
         LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
         Location location = getManagementContext().getLocationRegistry().resolve(definition);
-        sensors().set(DYNAMIC_LOCATION, location);
-        sensors().set(LOCATION_NAME, location.getId());
+        getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
         getManagementContext().getLocationManager().manage(location);
+
+        ManagementContext.PropertiesReloadListener listener = DockerUtils.reloadLocationListener(getManagementContext(), definition);
+        getManagementContext().addPropertiesReloadListener(listener);
+        sensors().set(Attributes.PROPERTIES_RELOAD_LISTENER, listener);
+
+        sensors().set(LocationOwner.LOCATION_DEFINITION, definition);
+        sensors().set(LocationOwner.DYNAMIC_LOCATION, location);
+        sensors().set(LocationOwner.LOCATION_NAME, location.getId());
 
         LOG.info("New Marathon framework location {} created", location);
         return (MarathonLocation) location;
+    }
+
+    @Override
+    public void rebind() {
+        super.rebind();
+
+        // Reload our location definition on rebind
+        ManagementContext.PropertiesReloadListener listener = sensors().get(Attributes.PROPERTIES_RELOAD_LISTENER);
+        if (listener != null) {
+            listener.reloaded();
+        }
     }
 
     @Override
@@ -205,10 +230,19 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
             if (mgr.isManaged(location)) {
                 mgr.unmanage(location);
             }
+            final LocationDefinition definition = sensors().get(LocationOwner.LOCATION_DEFINITION);
+            if (definition != null) {
+                getManagementContext().getLocationRegistry().removeDefinedLocation(definition.getId());
+            }
+        }
+        ManagementContext.PropertiesReloadListener listener = sensors().get(Attributes.PROPERTIES_RELOAD_LISTENER);
+        if (listener != null) {
+            getManagementContext().removePropertiesReloadListener(listener);
         }
 
-        sensors().set(DYNAMIC_LOCATION, null);
-        sensors().set(LOCATION_NAME, null);
+        sensors().set(LocationOwner.LOCATION_DEFINITION, null);
+        sensors().set(LocationOwner.DYNAMIC_LOCATION, null);
+        sensors().set(LocationOwner.LOCATION_NAME, null);
     }
 
     @Override
