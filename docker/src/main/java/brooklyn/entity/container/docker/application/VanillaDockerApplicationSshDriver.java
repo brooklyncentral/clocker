@@ -18,12 +18,12 @@ package brooklyn.entity.container.docker.application;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.core.entity.Entities;
+import org.apache.brooklyn.core.entity.trait.Startable;
+import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.entity.software.base.AbstractSoftwareProcessSshDriver;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
-
-import brooklyn.entity.container.docker.DockerContainer;
-import brooklyn.entity.container.docker.DockerHost;
-import brooklyn.location.docker.DockerContainerLocation;
 
 /**
  * The SSH implementation of the {@link VanillaDockerApplicationDriver}.
@@ -36,31 +36,23 @@ public class VanillaDockerApplicationSshDriver extends AbstractSoftwareProcessSs
         super(entity, machine);
     }
 
-    public DockerHost getDockerHost() {
-        return getDockerContainer().getDockerHost();
-    }
-
-    public DockerContainer getDockerContainer() {
-        return ((DockerContainerLocation) getMachine()).getOwner();
-    }
-
-    public String getDockerfile() {
-        return getEntity().config().get(VanillaDockerApplication.DOCKERFILE_URL);
+    public Entity getOwnerEntity() {
+        return (Entity) ((DynamicLocation) getMachine()).getOwner();
     }
 
     @Override
     public boolean isRunning() {
-        return getDockerContainer().sensors().get(DockerContainer.CONTAINER_RUNNING);
+        return getOwnerEntity().sensors().get(Startable.SERVICE_UP);
     }
 
     @Override
     public void stop() {
-        getDockerContainer().shutDown();
+        Entities.invokeEffector(getEntity(), getOwnerEntity(), Startable.STOP);
     }
 
     @Override
     public void install() {
-        LOG.info("Container installed on {}", getDockerContainer().getDockerContainerName());
+        LOG.info("Container installed on {}", getOwnerEntity());
     }
 
     @Override

@@ -17,6 +17,7 @@ package brooklyn.entity.container;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -37,8 +38,12 @@ import com.google.common.hash.Hashing;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationDefinition;
+import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.api.mgmt.ManagementContext;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
+import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.core.location.PortRanges;
 import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.database.DatastoreMixins;
@@ -47,6 +52,8 @@ import org.apache.brooklyn.entity.nosql.couchbase.CouchbaseCluster;
 import org.apache.brooklyn.entity.nosql.couchbase.CouchbaseNode;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.webapp.WebAppServiceConstants;
+import org.apache.brooklyn.util.collections.MutableList;
+import org.apache.brooklyn.util.collections.MutableSet;
 import org.apache.brooklyn.util.text.Identifiers;
 import org.apache.brooklyn.util.text.Strings;
 
@@ -162,6 +169,43 @@ public class DockerUtils {
 
         String label = Joiner.on(":").skipNulls().join(simpleName, version, dockerfile);
         return Identifiers.makeIdFromHash(Hashing.md5().hashString(label, Charsets.UTF_8).asLong()).toLowerCase(Locale.ENGLISH);
+    }
+
+    /** Returns the set of configured ports an entity is listening on. */
+    public static Set<Integer> getOpenPorts(Entity entity) {
+        Set<Integer> ports = MutableSet.of(22);
+        for (ConfigKey<?> k: entity.getEntityType().getConfigKeys()) {
+            if (PortRange.class.isAssignableFrom(k.getType())) {
+                PortRange p = (PortRange) entity.config().get(k);
+                if (p != null && !p.isEmpty()) ports.add(p.iterator().next());
+            }
+        }
+        for (Entity child : entity.getChildren()) {
+            ports.addAll(getOpenPorts(child));
+        }
+        return ImmutableSet.copyOf(ports);
+    }
+
+    /*
+     * Returns the set of ports configured for the container the entity is running in
+     * and also sets a configuration key and sensor for each.
+     */
+    public static Set<Integer> getContainerPorts(Entity entity) {
+        List<Integer> entityOpenPorts = MutableList.of();
+        List<Integer> openPorts = entity.config().get(DockerAttributes.DOCKER_OPEN_PORTS);
+        if (openPorts != null) entityOpenPorts.addAll(openPorts);
+        Map<Integer, Integer> portBindings = entity.sensors().get(DockerAttributes.DOCKER_CONTAINER_PORT_BINDINGS);
+        if (portBindings != null) entityOpenPorts.addAll(portBindings.values());
+        if (entityOpenPorts.size() > 0) {
+            // Create config and sensor for these ports
+            for (int i = 0; i < entityOpenPorts.size(); i++) {
+                Integer port = entityOpenPorts.get(i);
+                String name = String.format("docker.port.%02d", port);
+                entity.sensors().set(Sensors.newIntegerSensor(name), port);
+                entity.config().set(ConfigKeys.newConfigKey(PortRange.class, name), PortRanges.fromInteger(port));
+            }
+        }
+        return ImmutableSet.copyOf(entityOpenPorts);
     }
 
     public static boolean isSdnProvider(Entity dockerHost, String providerName) {

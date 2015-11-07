@@ -45,9 +45,6 @@ import brooklyn.location.mesos.framework.marathon.MarathonTaskLocation;
 @ImplementedBy(MarathonTaskImpl.class)
 public interface MarathonTask extends MesosTask, HasNetworkAddresses, LocationOwner<MarathonTaskLocation, MarathonTask>  {
 
-    @SetFromFlag("id")
-    ConfigKey<String> APPLICATION_ID = ConfigKeys.newStringConfigKey("marathon.task.id", "Marathon task application id");
-
     @SetFromFlag("command")
     ConfigKey<String> COMMAND = ConfigKeys.newStringConfigKey("marathon.task.command", "Marathon task command string");
 
@@ -79,12 +76,20 @@ public interface MarathonTask extends MesosTask, HasNetworkAddresses, LocationOw
     @SetFromFlag("env")
     ConfigKey<Map<String, Object>> DOCKER_CONTAINER_ENVIRONMENT = DockerContainer.DOCKER_CONTAINER_ENVIRONMENT.getConfigKey();
 
-    AttributeSensor<Date> TASK_STARTED_AT = Sensors.newSensor(Date.class, "marathon.task.startedAt", "Time task started");
-    AttributeSensor<Date> TASK_STAGED_AT = Sensors.newSensor(Date.class, "marathon.task.stagedAt", "Time task was staged");
-
     @SetFromFlag("entity")
     AttributeSensorAndConfigKey<Entity, Entity> ENTITY = ConfigKeys.newSensorAndConfigKey(Entity.class,
-            "docker.container.entity", "The entity running in this Docker container");
+            "marathon.task.entity", "The entity running in this Marathon task");
+
+    @SetFromFlag("useSsh")
+    ConfigKey<Boolean> DOCKER_USE_SSH = ConfigKeys.newConfigKeyWithDefault(DockerAttributes.DOCKER_USE_SSH, false);
+
+    // Attributes
+
+    AttributeSensor<String> APPLICATION_ID = Sensors.newStringSensor("marathon.task.appId", "Marathon task application id");
+    AttributeSensor<Long> TASK_STARTED_AT = Sensors.newLongSensor("marathon.task.startedAt", "Time task started");
+    AttributeSensor<Long> TASK_STAGED_AT = Sensors.newLongSensor("marathon.task.stagedAt", "Time task was staged");
+
+    // Methods
 
     MarathonFramework getMarathonFramework();
 

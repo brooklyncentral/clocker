@@ -39,7 +39,7 @@ import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.location.BasicLocationDefinition;
 import org.apache.brooklyn.entity.group.Cluster;
 import org.apache.brooklyn.entity.group.DynamicCluster;
-import org.apache.brooklyn.entity.software.base.EmptySoftwareProcess;
+import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.feed.http.HttpFeed;
 import org.apache.brooklyn.feed.http.HttpPollConfig;
 import org.apache.brooklyn.feed.http.HttpValueFunctions;
@@ -119,18 +119,31 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
     }
 
     @Override
-    public boolean startApplication(String id, Map<String, Object> flags) {
+    public String startApplication(String id, Map<String, Object> flags) {
         Map<String, Object> substitutions = MutableMap.copyOf(flags);
         substitutions.put("id", id);
 
-        Optional<String> result = MesosUtils.postJson(Urls.mergePaths(sensors().get(FRAMEWORK_URL), "v2/apps"), "classpath:///brooklyn/entity/mesos/framework/marathon/create-app.json", substitutions);
+        Optional<String> result = MesosUtils.httpPost(Urls.mergePaths(sensors().get(FRAMEWORK_URL), "v2/apps"), "classpath:///brooklyn/entity/mesos/framework/marathon/create-app.json", substitutions);
         if (!result.isPresent()) {
-            return false;
+            throw new IllegalStateException("Failed to start Marathon task");
         } else {
             LOG.debug("Success creating Marathon task");
             JsonElement json = JsonFunctions.asJson().apply(result.get());
-            // TODO set task id and so on
-            return true;
+            String version = json.getAsJsonObject().get("version").getAsString();
+            return version;
+        }
+    }
+
+    @Override
+    public String stopApplication(String id) {
+        Optional<String> result = MesosUtils.httpDelete(Urls.mergePaths(sensors().get(FRAMEWORK_URL), "v2/apps", id));
+        if (!result.isPresent()) {
+            throw new IllegalStateException("Failed to stop Marathon task");
+        } else {
+            LOG.debug("Success deleting Marathon task");
+            JsonElement json = JsonFunctions.asJson().apply(result.get());
+            String deployment = json.getAsJsonObject().get("deploymentId").getAsString();
+            return deployment;
         }
     }
  
@@ -226,7 +239,7 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
         return ImmutableList.<Class<? extends Entity>>builder()
                 .addAll(super.getSupported())
                 .add(VanillaDockerApplication.class)
-                .add(EmptySoftwareProcess.class)
+                .add(SoftwareProcess.class)
                 .build();
     }
 

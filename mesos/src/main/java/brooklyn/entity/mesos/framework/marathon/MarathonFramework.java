@@ -33,7 +33,6 @@ import org.apache.brooklyn.entity.group.DynamicCluster;
 
 import brooklyn.entity.mesos.framework.MesosFramework;
 import brooklyn.location.mesos.framework.marathon.MarathonLocation;
-import brooklyn.networking.subnet.SubnetTier;
 
 /**
  * The Marathon framework for Mesos.
@@ -58,14 +57,22 @@ public interface MarathonFramework extends MesosFramework, LocationOwner<Maratho
     // Effectors
 
     MethodEffector<Void> START_APPLICATION = new MethodEffector<Void>(MarathonFramework.class, "startApplication");
+    MethodEffector<Void> STOP_APPLICATION = new MethodEffector<Void>(MarathonFramework.class, "stopApplication");
 
     /**
      * Start a Marathon application.
      */
     @Effector(description="Start a Marathon application")
-    boolean startApplication(
+    String startApplication(
             @EffectorParam(name="id", description="Application ID") String id,
-            @EffectorParam(name="flags", description="Task flags") Map<String, Object> flags) throws IOException;
+            @EffectorParam(name="flags", description="Task flags") Map<String, Object> flags);
+
+    /**
+     * Stop a Marathon application.
+     */
+    @Effector(description="Stop a Marathon application")
+    String stopApplication(
+            @EffectorParam(name="id", description="Application ID") String id);
 
     // Methods
 

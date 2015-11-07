@@ -91,30 +91,6 @@ public class MarathonLocation extends MesosFrameworkLocation implements MachineP
     // Lookup task details from entity
     private Map<Object, Object> getTaskFlags(Entity entity) {
         Map<Object, Object> flags = MutableMap.of();
-        Map<String, Object> provisioningProperties = ImmutableMap.copyOf(entity.config().get(SoftwareProcess.PROVISIONING_PROPERTIES));
-
-        // CPU
-        Double cpus;
-        Integer minCores = entity.config().get(JcloudsLocationConfig.MIN_CORES);
-        if (minCores == null) {
-            minCores = (Integer) provisioningProperties.get(JcloudsLocationConfig.MIN_CORES.getName());
-        }
-        if (minCores == null) {
-            cpus = entity.config().get(MarathonTask.CPU_RESOURCES);
-        } else {
-            cpus = 1.0d * minCores;
-        }
-        flags.put(MarathonTask.CPU_RESOURCES, Optional.fromNullable(cpus).or(0.25d));
-
-        // Memory
-        Integer memory = (Integer) entity.config().get(JcloudsLocationConfig.MIN_RAM);
-        if (memory == null) {
-            memory = (Integer) provisioningProperties.get(JcloudsLocationConfig.MIN_RAM.getName());
-        }
-        if (memory == null) {
-            memory = entity.config().get(MarathonTask.MEMORY_RESOURCES);
-        }
-        flags.put(MarathonTask.MEMORY_RESOURCES, Optional.fromNullable(memory).or(256));
 
         // Docker command and args
         String command = entity.config().get(MarathonTask.COMMAND);
@@ -146,18 +122,10 @@ public class MarathonLocation extends MesosFrameworkLocation implements MachineP
             String imageName = entity.config().get(DockerContainer.DOCKER_IMAGE_NAME);
             String imageVersion = Optional.fromNullable(entity.config().get(DockerContainer.DOCKER_IMAGE_TAG)).or("latest");
             String name = Optional.fromNullable(entity.config().get(BrooklynCampConstants.PLAN_ID)).or(entity.getId());
-            List<Integer> openPorts = entity.config().get(DockerAttributes.DOCKER_OPEN_PORTS);
-            List<Integer> directPorts = entity.config().get(DockerAttributes.DOCKER_DIRECT_PORTS);
-            Map<Integer, Integer> portBindings = entity.config().get(DockerAttributes.DOCKER_PORT_BINDINGS);
-            Map<String, Object> env = entity.config().get(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT);
 
             Map<Object, Object> taskFlags = MutableMap.builder()
                     .putAll(flags)
                     .put("entity", entity)
-                    .put(MarathonTask.DOCKER_OPEN_PORTS, openPorts)
-                    .put(MarathonTask.DOCKER_DIRECT_PORTS, directPorts)
-                    .put(MarathonTask.DOCKER_PORT_BINDINGS, portBindings)
-                    .put(MarathonTask.DOCKER_CONTAINER_ENVIRONMENT, env)
                     .put(MesosTask.TASK_NAME, Strings.toLowerCase(name))
                     .put(MesosTask.MESOS_CLUSTER, getOwner().getMesosCluster())
                     .put(MesosTask.FRAMEWORK, getOwner())
@@ -167,7 +135,6 @@ public class MarathonLocation extends MesosFrameworkLocation implements MachineP
                     .putAll(getTaskFlags(entity))
                     .build();
             LOG.info("Starting task with image {}:{} on framework {}", new Object[] { imageName, imageVersion, framework });
-            LOG.debug("Task flags are: {}", Joiner.on(",").withKeyValueSeparator("=").useForNull("").join(taskFlags));
             DynamicCluster cluster = framework.sensors().get(MarathonFramework.MARATHON_TASK_CLUSTER);
             Entity added = cluster.addNode(this, taskFlags);
             if (added == null) {

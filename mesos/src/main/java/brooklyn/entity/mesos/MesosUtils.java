@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import com.jayway.jsonpath.JsonPath;
 
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -81,7 +82,7 @@ public class MesosUtils {
         }
     };
 
-    public static final Optional<String> postJson(String targetUrl, String dataUrl, Map<String, Object> substitutions) {
+    public static final Optional<String> httpPost(String targetUrl, String dataUrl, Map<String, Object> substitutions) {
         String templateContents = ResourceUtils.create().getResourceAsString(dataUrl);
         String processedJson = TemplateProcessor.processTemplateContents(templateContents, substitutions);
         LOG.debug("Posting JSON to {}: {}", targetUrl, processedJson);
@@ -93,6 +94,24 @@ public class MesosUtils {
                         HttpHeaders.CONTENT_TYPE, "application/json",
                         HttpHeaders.ACCEPT, "application/json"),
                 processedJson.getBytes());
+        LOG.debug("Response: " + response.getContentAsString());
+        if (!HttpTool.isStatusCodeHealthy(response.getResponseCode())) {
+            LOG.warn("Invalid response code {}: {}", response.getResponseCode(), response.getReasonPhrase());
+            return Optional.absent();
+        } else {
+            LOG.debug("Successfull call to {}: {}", targetUrl);
+            return Optional.of(response.getContentAsString());
+        }
+    }
+
+    public static final Optional<String> httpDelete(String targetUrl) {
+        LOG.debug("Deleting {}", targetUrl);
+        URI deleteUri = URI.create(targetUrl);
+        HttpToolResponse response = HttpTool.httpDelete(
+                HttpTool.httpClientBuilder().uri(deleteUri).build(),
+                deleteUri,
+                MutableMap.of(
+                        HttpHeaders.ACCEPT, "application/json"));
         LOG.debug("Response: " + response.getContentAsString());
         if (!HttpTool.isStatusCodeHealthy(response.getResponseCode())) {
             LOG.warn("Invalid response code {}: {}", response.getResponseCode(), response.getReasonPhrase());

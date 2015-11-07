@@ -16,7 +16,6 @@
 package brooklyn.entity.mesos.task;
 
 import java.util.Collection;
-import java.util.Locale;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +48,7 @@ public class MesosTaskImpl extends BasicStartableImpl implements MesosTask {
 
     @Override
     public String getShortName() {
-        return "brooklyn-" + sensors().get(TASK_NAME).toLowerCase(Locale.ENGLISH);
+        return sensors().get(TASK_NAME);
     }
 
     @Override

@@ -14,7 +14,9 @@
             "privileged": true,
             "portMappings": [ [#list portBindings as port]
                 { "containerPort": ${port.getValue()?c}, "hostPort": ${port.getKey()?c} }[#if port_has_next],[/#if]
-            [/#list] ]
+            [/#list] ],
+            "forcePullImage": true,
+            "volumes": [ ]
         },
         "type": "DOCKER"
     },
