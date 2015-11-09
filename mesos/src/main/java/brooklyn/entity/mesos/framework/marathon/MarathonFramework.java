@@ -32,6 +32,7 @@ import org.apache.brooklyn.entity.group.DynamicCluster;
 
 import brooklyn.entity.mesos.framework.MesosFramework;
 import brooklyn.location.mesos.framework.marathon.MarathonLocation;
+import brooklyn.networking.subnet.SubnetTier;
 
 /**
  * The Marathon framework for Mesos.
@@ -50,8 +51,8 @@ public interface MarathonFramework extends MesosFramework, LocationOwner<Maratho
 
     AttributeSensor<String> MARATHON_LEADER_URI = Sensors.newStringSensor("marathon.leader.uri", "Marathon leader URI");
 
-//    AttributeSensor<SubnetTier> MARATHON_SUBNET_TIER = Sensors.newSensor(SubnetTier.class,
-//            "marathon.subnetTier", "The SubnetTier for Marathon port mapping");
+    AttributeSensor<SubnetTier> MARATHON_SUBNET_TIER = Sensors.newSensor(SubnetTier.class,
+            "marathon.subnetTier", "The SubnetTier for Marathon port mapping");
 
     // Effectors
 

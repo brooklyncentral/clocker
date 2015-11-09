@@ -19,6 +19,9 @@ import java.io.Closeable;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.collect.Maps;
 
@@ -29,6 +32,8 @@ import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import brooklyn.entity.mesos.framework.MesosFramework;
 
 public abstract class MesosFrameworkLocation extends AbstractLocation implements Closeable {
+
+    private static final Logger LOG = LoggerFactory.getLogger(MesosFrameworkLocation.class);
 
     @SetFromFlag("owner")
     protected MesosFramework framework;
@@ -48,6 +53,7 @@ public abstract class MesosFrameworkLocation extends AbstractLocation implements
     public boolean isSupported(Entity entity) {
         List<Class<? extends Entity>> supported = framework.getSupported();
         for (Class<? extends Entity> type : supported) {
+            LOG.info("Entity {} type: {}", entity, entity.getEntityType().getName());
             if (type.isAssignableFrom(entity.getClass())) {
                 return true;
             }
@@ -57,7 +63,8 @@ public abstract class MesosFrameworkLocation extends AbstractLocation implements
 
     @Override
     public ToStringHelper string() {
-        return super.string();
+        return super.string()
+                .add("owner", framework);
     }
 
 }

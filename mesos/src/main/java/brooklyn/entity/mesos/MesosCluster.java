@@ -61,6 +61,7 @@ public interface MesosCluster extends BasicStartable, LocationOwner<MesosLocatio
     @SetFromFlag("shutdownTimeout")
     ConfigKey<Duration> SHUTDOWN_TIMEOUT = ConfigKeys.newDurationConfigKey("mesos.timeout.shutdown", "Timeout to wait for children when shutting down", Duration.FIVE_MINUTES);
 
+    AttributeSensor<DynamicGroup> MESOS_SLAVES = Sensors.newSensor(DynamicGroup.class, "mesos.slaves", "Mesos slaves");
     AttributeSensor<DynamicGroup> MESOS_FRAMEWORKS = Sensors.newSensor(DynamicGroup.class, "mesos.frameworks", "Mesos frameworks");
     AttributeSensor<DynamicGroup> MESOS_TASKS = Sensors.newSensor(DynamicGroup.class, "mesos.tasks", "Mesos tasks");
     AttributeSensor<DynamicMultiGroup> MESOS_APPLICATIONS = Sensors.newSensor(DynamicMultiGroup.class, "mesos.applications", "Mesos applications");
@@ -86,6 +87,7 @@ public interface MesosCluster extends BasicStartable, LocationOwner<MesosLocatio
             .put("marathon", EntitySpec.create(MarathonFramework.class))
             .put("aurora", EntitySpec.create(AuroraFramework.class))
 //            .put("elasticsearch", EntitySpec.create(ElasticSearchFramework.class))
+//            .put("basho", EntitySpec.create(BigDataPlatformFramework.class))
             .build();
 
 }

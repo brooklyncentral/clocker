@@ -71,9 +71,7 @@ public class MarathonResolver implements EnableableLocationResolver {
     }
 
     protected Location newLocationFromString(String spec, LocationRegistry registry, Map properties, Map locationFlags) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Resolving location '" + spec + "' with flags " + Joiner.on(",").withKeyValueSeparator("=").join(locationFlags));
-        }
+        LOG.debug("Resolving location '" + spec + "' with flags " + Joiner.on(",").withKeyValueSeparator("=").join(locationFlags));
         String namedLocation = (String) locationFlags.get(LocationInternal.NAMED_SPEC_NAME.getName());
 
         Matcher matcher = PATTERN.matcher(spec);

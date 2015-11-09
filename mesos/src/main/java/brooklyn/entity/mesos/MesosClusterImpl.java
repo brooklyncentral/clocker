@@ -103,6 +103,9 @@ public class MesosClusterImpl extends BasicStartableImpl implements MesosCluster
         registerLocationResolver();
         super.init();
 
+        DynamicGroup slaves = addChild(EntitySpec.create(DynamicGroup.class)
+                .displayName("Mesos Slaves"));
+
         DynamicGroup frameworks = addChild(EntitySpec.create(DynamicGroup.class)
                 .displayName("Mesos Frameworks"));
 
@@ -125,6 +128,7 @@ public class MesosClusterImpl extends BasicStartableImpl implements MesosCluster
                 .displayName("Mesos Applications"));
 
         if (Entities.isManaged(this)) {
+            Entities.manage(slaves);
             Entities.manage(frameworks);
             Entities.manage(tasks);
             Entities.manage(applications);
@@ -289,7 +293,7 @@ public class MesosClusterImpl extends BasicStartableImpl implements MesosCluster
     public void connectSensors() {
         HttpFeed.Builder httpFeedBuilder = HttpFeed.builder()
                 .entity(this)
-                .period(500, TimeUnit.MILLISECONDS)
+                .period(15, TimeUnit.SECONDS)
                 .baseUri(sensors().get(Attributes.MAIN_URI))
                 .poll(new HttpPollConfig<Boolean>(SERVICE_UP)
                         .suburl("/master/health")

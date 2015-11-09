@@ -103,7 +103,7 @@ public class MesosLocation extends AbstractLocation implements MachineProvisioni
                         return (MesosFrameworkLocation) ((LocationOwner) input).getDynamicLocation();
                     }});
         for (MesosFrameworkLocation framework : locations) {
-            if (framework.isSupported(entity) && framework instanceof MachineProvisioningLocation) {
+            if (framework instanceof MachineProvisioningLocation && framework.isSupported(entity)) {
                 return ((MachineProvisioningLocation) framework).obtain(flags);
             }
         }

@@ -38,6 +38,8 @@ import org.apache.brooklyn.api.mgmt.LocationManager;
 import org.apache.brooklyn.api.mgmt.ManagementContext;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
+import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
+import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.location.BasicLocationDefinition;
 import org.apache.brooklyn.core.location.dynamic.LocationOwner;
 import org.apache.brooklyn.entity.group.Cluster;
@@ -156,6 +158,8 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
  
     @Override
     public void start(Collection<? extends Location> locations) {
+        ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
+
         // Setup port forwarding
         MarathonPortForwarder portForwarder = new MarathonPortForwarder();
         portForwarder.injectManagementContext(getManagementContext());
@@ -169,19 +173,21 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
         MarathonLocation marathon = createLocation(flags);
 
         // Setup subnet tier
-//        SubnetTier subnetTier = addChild(EntitySpec.create(SubnetTier.class, SubnetTierImpl.class)
+        // TODO put this in the slaves?
+//        SubnetTier subnetTier = addChild(EntitySpec.create(SubnetTier.class)
 //                .configure(SubnetTier.PORT_FORWARDER, portForwarder)
 //                .configure(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL));
 //        Entities.manage(subnetTier);
-//        subnetTier.start(ImmutableList.of(marathon));
 //        sensors().set(MARATHON_SUBNET_TIER, subnetTier);
+//        Entities.sart(subnetTier, ImmutableList.of(marathon));
 
         // Add task cluster
         DynamicCluster tasks = getTaskCluster();
         Entities.start(tasks, ImmutableList.of(marathon));
         tasks.sensors().set(SERVICE_UP, Boolean.TRUE);
 
-        super.start(locations);
+        sensors().set(Attributes.SERVICE_UP, true);
+        ServiceStateLogic.setExpectedState(this, Lifecycle.RUNNING);
     }
 
     /**
