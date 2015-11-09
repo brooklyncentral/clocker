@@ -48,6 +48,12 @@
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
+            <groupId>io.brooklyn.clocker</groupId>
+            <artifactId>brooklyn-clocker-jsgui</artifactId>
+            <version>${project.parent.version}</version>
+            <type>war</type>
+        </dependency>
+        <dependency>
             <groupId>org.apache.brooklyn</groupId>
             <artifactId>brooklyn-jsgui</artifactId>
             <version>${brooklyn.version}</version>

@@ -44,8 +44,9 @@ public class Main extends org.apache.brooklyn.cli.Main {
         @Override
         protected BrooklynLauncher createLauncher() {
             return super.createLauncher()
-                    .webapp("/", "brooklyn-jsgui.war")
-                    .webapp("/clocker", "brooklyn-clocker-console.war");
+                    .webapp("/",            "brooklyn-clocker-jsgui.war")
+                    .webapp("/brooklyn",    "brooklyn-jsgui.war")
+                    .webapp("/clocker",     "brooklyn-clocker-console.war");
         }
     }
 
