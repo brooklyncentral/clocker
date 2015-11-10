@@ -19,6 +19,7 @@ import static org.apache.brooklyn.util.ssh.BashCommands.chain;
 
 import java.net.InetAddress;
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -146,6 +147,14 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
         } finally {
             Tasks.resetBlockingDetails();
         }
+    }
+
+    @Override
+    public Map<String, String> getShellEnvironment() {
+        ImmutableMap.Builder<String, String> builder = ImmutableMap.<String, String> builder()
+                .putAll(super.getShellEnvironment())
+                .put("VERSION", entity.config().get(WeaveContainer.SUGGESTED_VERSION));
+        return builder.build();
     }
 
 }
