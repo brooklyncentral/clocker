@@ -87,6 +87,14 @@ public class MarathonLocation extends MesosFrameworkLocation implements MachineP
     private Map<Object, Object> getTaskFlags(Entity entity) {
         Map<Object, Object> flags = MutableMap.of();
 
+        // If we already have Docker image configured, use it
+        Optional<String> imageName = Optional.fromNullable(entity.config().get(DockerContainer.DOCKER_IMAGE_NAME));
+        if (imageName.isPresent()) {
+            String imageVersion = Optional.fromNullable(entity.config().get(DockerContainer.DOCKER_IMAGE_TAG)).or("latest");
+            flags.put(MarathonTask.DOCKER_IMAGE_NAME, imageName.get());
+            flags.put(MarathonTask.DOCKER_IMAGE_TAG, imageVersion);
+        }
+
         // Docker command and args
         String command = entity.config().get(MarathonTask.COMMAND);
         if (command != null) flags.put(MarathonTask.COMMAND, command);
@@ -113,23 +121,19 @@ public class MarathonLocation extends MesosFrameworkLocation implements MachineP
                 throw new NoMachinesAvailableException("Unsupported entity type");
             }
 
-            // Start a new task with flags from entity
-            String imageName = entity.config().get(DockerContainer.DOCKER_IMAGE_NAME);
-            String imageVersion = Optional.fromNullable(entity.config().get(DockerContainer.DOCKER_IMAGE_TAG)).or("latest");
             String name = Optional.fromNullable(entity.config().get(BrooklynCampConstants.PLAN_ID)).or(entity.getId());
 
+            // Start a new task with flags from entity
             Map<Object, Object> taskFlags = MutableMap.builder()
                     .putAll(flags)
                     .put("entity", entity)
-                    .put(MesosTask.TASK_NAME, Strings.toLowerCase(name))
+                    .put(MesosTask.TASK_NAME, name)
                     .put(MesosTask.MESOS_CLUSTER, getOwner().getMesosCluster())
                     .put(MesosTask.FRAMEWORK, getOwner())
                     .put(MesosTask.MANAGED, Boolean.TRUE)
-                    .put(MarathonTask.DOCKER_IMAGE_NAME, imageName)
-                    .put(MarathonTask.DOCKER_IMAGE_TAG, imageVersion)
                     .putAll(getTaskFlags(entity))
                     .build();
-            LOG.info("Starting task with image {}:{} on framework {}", new Object[] { imageName, imageVersion, framework });
+            LOG.info("Starting task {} on framework {}", name, framework);
             DynamicCluster cluster = framework.sensors().get(MarathonFramework.MARATHON_TASK_CLUSTER);
             Entity added = cluster.addNode(this, taskFlags);
             if (added == null) {

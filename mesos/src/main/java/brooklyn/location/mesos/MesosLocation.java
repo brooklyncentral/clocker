@@ -19,6 +19,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,8 +27,11 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Function;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Predicates;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.SetMultimap;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.MachineLocation;
@@ -53,6 +57,9 @@ public class MesosLocation extends AbstractLocation implements MachineProvisioni
 
     @SetFromFlag("owner")
     private MesosCluster cluster;
+
+    @SetFromFlag("tasks")
+    private final SetMultimap<MachineProvisioningLocation, String> tasks = Multimaps.synchronizedSetMultimap(HashMultimap.<MachineProvisioningLocation, String>create());
 
     public MesosLocation() {
         this(Maps.newLinkedHashMap());
@@ -104,7 +111,9 @@ public class MesosLocation extends AbstractLocation implements MachineProvisioni
                     }});
         for (MesosFrameworkLocation framework : locations) {
             if (framework instanceof MachineProvisioningLocation && framework.isSupported(entity)) {
-                return ((MachineProvisioningLocation) framework).obtain(flags);
+                MachineLocation task = ((MachineProvisioningLocation) framework).obtain(flags);
+                tasks.put((MachineProvisioningLocation) framework, task.getId());
+                return task;
             }
         }
 
@@ -114,17 +123,25 @@ public class MesosLocation extends AbstractLocation implements MachineProvisioni
 
     @Override
     public MachineProvisioningLocation<MachineLocation> newSubLocation(Map<?, ?> newFlags) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public void release(MachineLocation machine) {
-        
+    public void release(MachineLocation task) {
+        String id = task.getId();
+        Set<MachineProvisioningLocation> set = Multimaps.filterValues(tasks, Predicates.equalTo(id)).keySet();
+        if (set.isEmpty()) {
+            throw new IllegalArgumentException("Request to release "+task+", but not currently allocated");
+        }
+        MachineProvisioningLocation framework = Iterables.getOnlyElement(set);
+        LOG.debug("Request to remove task mapping {} to {}", framework, id);
+        framework.release(task);
+        tasks.remove(framework, id);
     }
 
     @Override
     public Map<String, Object> getProvisioningFlags(Collection<String> tags) {
-        return null;
+        return Maps.newLinkedHashMap();
     }
 
 }
