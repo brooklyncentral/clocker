@@ -47,7 +47,6 @@ public interface MesosFramework extends BasicStartable {
     AttributeSensor<Integer> MESOS_COMPLETED_TASKS = Sensors.newIntegerSensor("mesos.framework.tasks.completed", "Number of completed tasks");
     AttributeSensor<Integer> MESOS_RUNNING_TASKS = Sensors.newIntegerSensor("mesos.framework.tasks.running", "Number of running tasks");
 
-    AttributeSensor<Void> MESOS_TASK_SCAN = Sensors.newSensor(Void.class, "mesos.framework.tasks.scan", "Notification of task scan");
     AttributeSensor<List<String>> MESOS_TASK_LIST = Sensors.newSensor(new TypeToken<List<String>>() { }, "mesos.framework.tasks.list", "List of Mesos tasks");
 
     // Configuration keys that identify the framework implementation and running instance.

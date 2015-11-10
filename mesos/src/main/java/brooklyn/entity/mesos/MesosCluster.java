@@ -60,6 +60,9 @@ public interface MesosCluster extends BasicStartable, LocationOwner<MesosLocatio
 
     @SetFromFlag("shutdownTimeout")
     ConfigKey<Duration> SHUTDOWN_TIMEOUT = ConfigKeys.newDurationConfigKey("mesos.timeout.shutdown", "Timeout to wait for children when shutting down", Duration.FIVE_MINUTES);
+    
+    ConfigKey<String> MESOS_USERNAME = ConfigKeys.newStringConfigKey("mesos.username", "Username for authenticating to the Mesos instance");
+    ConfigKey<String> MESOS_PASSWORD = ConfigKeys.newStringConfigKey("mesos.password", "Password for authenticating to the Mesos instance");
 
     AttributeSensor<DynamicGroup> MESOS_SLAVES = Sensors.newSensor(DynamicGroup.class, "mesos.slaves", "Mesos slaves");
     AttributeSensor<DynamicGroup> MESOS_FRAMEWORKS = Sensors.newSensor(DynamicGroup.class, "mesos.frameworks", "Mesos frameworks");
@@ -80,7 +83,6 @@ public interface MesosCluster extends BasicStartable, LocationOwner<MesosLocatio
     ConfigKey<Duration> SCAN_INTERVAL = ConfigKeys.newConfigKey(Duration.class,
             "mesos.scanInterval", "Interval between scans of Mesos tasks and frameworks", Duration.TEN_SECONDS);
 
-    AttributeSensor<Void> MESOS_FRAMEWORK_SCAN = Sensors.newSensor(Void.class, "mesos.frameworks.scan", "Notification of framework scan");
     AttributeSensor<List<String>> MESOS_FRAMEWORK_LIST = Sensors.newSensor(new TypeToken<List<String>>() { }, "mesos.frameworks.list", "List of Mesos frameworks");
 
     Map<String, EntitySpec<? extends MesosFramework>> FRAMEWORKS = ImmutableMap.<String, EntitySpec<? extends MesosFramework>>builder()

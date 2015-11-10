@@ -15,26 +15,10 @@
  */
 package brooklyn.entity.mesos.framework;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.URL;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Charsets;
-import com.google.common.base.Functions;
-import com.google.common.base.Optional;
-import com.google.common.base.Predicates;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.io.Resources;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
@@ -47,12 +31,25 @@ import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.entity.group.DynamicGroup;
 import org.apache.brooklyn.entity.stock.BasicStartableImpl;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
-import org.apache.brooklyn.feed.function.FunctionFeed;
-import org.apache.brooklyn.feed.function.FunctionPollConfig;
+import org.apache.brooklyn.feed.http.HttpFeed;
+import org.apache.brooklyn.feed.http.HttpPollConfig;
+import org.apache.brooklyn.feed.http.HttpValueFunctions;
 import org.apache.brooklyn.feed.http.JsonFunctions;
 import org.apache.brooklyn.util.collections.MutableList;
-import org.apache.brooklyn.util.net.Urls;
+import org.apache.brooklyn.util.guava.Functionals;
 import org.apache.brooklyn.util.time.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Function;
+import com.google.common.base.Functions;
+import com.google.common.base.Optional;
+import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import brooklyn.entity.mesos.MesosCluster;
 import brooklyn.entity.mesos.task.MesosTask;
@@ -64,7 +61,7 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
 
     private static final Logger LOG = LoggerFactory.getLogger(MesosFramework.class);
 
-    private transient FunctionFeed taskScan;
+    private transient HttpFeed taskScan;
 
     @Override
     public void init() {
@@ -104,28 +101,27 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
     @Override
     public void connectSensors() {
         Duration scanInterval = config().get(MesosCluster.SCAN_INTERVAL);
-        FunctionFeed.Builder taskScanBuilder = FunctionFeed.builder()
+        HttpFeed.Builder taskScanBuilder = HttpFeed.builder()
                 .entity(this)
-                .poll(new FunctionPollConfig<Object, Void>(MESOS_TASK_SCAN)
-                        .period(scanInterval)
+                .period(scanInterval)
+                .baseUri(config().get(MesosCluster.MESOS_URL))
+                .credentialsIfNotNull(config().get(MesosCluster.MESOS_USERNAME), config().get(MesosCluster.MESOS_PASSWORD))
+                .poll(HttpPollConfig.forSensor(MESOS_TASK_LIST)
                         .description("Scan Tasks")
-                        .callable(new Callable<Void>() {
-                                @Override
-                                public Void call() throws Exception {
-                                    scanTasks();
-                                    return null;
-                                }
-                            })
-                        .onFailureOrException(Functions.<Void>constant(null)));
+                        .suburl("/master/state.json")
+                        .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(), JsonFunctions.walk("frameworks"), new Function<JsonElement, List<String>>() {
+                            @Override
+                            public List<String> apply(JsonElement frameworks) {
+                                return scanTasks(frameworks.getAsJsonArray());
+                            }
+                        }))
+                        .onFailureOrException(Functions.<List<String>>constant(null)));
         taskScan = taskScanBuilder.build();
     }
 
-    public void scanTasks() throws IOException {
+    public List<String> scanTasks(JsonArray frameworks) {
         String frameworkId = sensors().get(FRAMEWORK_ID);
         Entity mesosCluster = sensors().get(MESOS_CLUSTER);
-        URL uri = Urls.toUrl(Urls.mergePaths(config().get(MesosCluster.MESOS_URL), "master/state.json"));
-        String data = Resources.toString(uri, Charsets.UTF_8);
-        JsonArray frameworks = JsonFunctions.asJson().apply(data).getAsJsonObject().getAsJsonArray("frameworks");
         for (int i = 0; i < frameworks.size(); i++) {
             JsonObject framework = frameworks.get(i).getAsJsonObject();
             if (frameworkId.equals(framework.get("id").getAsString())) {
@@ -162,10 +158,11 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
                         task.sensors().set(MesosTask.TASK_STATE, state);
                     }
                 }
-                sensors().set(MESOS_TASK_LIST, taskNames);
-                return;
+                return taskNames;
             }
         }
+        // not found
+        return null;
     }
 
     @Override
