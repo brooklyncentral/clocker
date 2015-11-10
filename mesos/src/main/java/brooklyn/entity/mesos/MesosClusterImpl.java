@@ -355,7 +355,11 @@ public class MesosClusterImpl extends BasicStartableImpl implements MesosCluster
         for (int i = 0; i < frameworks.size(); i++) {
             JsonObject task = frameworks.get(i).getAsJsonObject();
             String id = task.get("id").getAsString();
-            String pid = task.get("pid").getAsString();
+            JsonElement pidObj = task.get("pid");
+            String pid = null;
+            if (pidObj != null && !pidObj.isJsonNull()) {
+                pid = pidObj.getAsString();
+            }
             String name = task.get("name").getAsString();
             String url = task.get("webui_url").getAsString();
             frameworkNames.add(name);

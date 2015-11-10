@@ -134,6 +134,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                 .entity(this)
                 .period(500, TimeUnit.MILLISECONDS)
                 .baseUri(uri)
+                .header("Accept", "application/json")
                 .poll(new HttpPollConfig<Boolean>(SERVICE_UP)
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(), JsonFunctions.walk("tasks"),
                                 new Function<JsonElement, Boolean>() {
@@ -151,9 +152,9 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                                     public Long apply(JsonElement input) {
                                         JsonArray tasks = input.getAsJsonArray();
                                         for (JsonElement each : tasks) {
-                                            if (each.getAsJsonObject().has("startedAt")) {
-                                                String startedAt = each.getAsJsonObject().get("startedAt").getAsString();
-                                                return Time.parseDate(startedAt).getTime();
+                                            JsonElement startedAt = each.getAsJsonObject().get("startedAt");
+                                            if (startedAt != null && !startedAt.isJsonNull()) {
+                                                return Time.parseDate(startedAt.getAsString()).getTime();
                                             }
                                         }
                                         return null;
@@ -167,9 +168,9 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                                     public Long apply(JsonElement input) {
                                         JsonArray tasks = input.getAsJsonArray();
                                         for (JsonElement each : tasks) {
-                                            if (each.getAsJsonObject().has("stagedAt")) {
-                                                String stagedAt = each.getAsJsonObject().get("stagedAt").getAsString();
-                                                return Time.parseDate(stagedAt).getTime();
+                                            JsonElement stagedAt = each.getAsJsonObject().get("stagedAt");
+                                            if (stagedAt != null && !stagedAt.isJsonNull()) {
+                                                return Time.parseDate(stagedAt.getAsString()).getTime();
                                             }
                                         }
                                         return null;
@@ -183,8 +184,9 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                                     public String apply(JsonElement input) {
                                         JsonArray tasks = input.getAsJsonArray();
                                         for (JsonElement each : tasks) {
-                                            if (each.getAsJsonObject().has("host")) {
-                                                return each.getAsJsonObject().get("host").getAsString();
+                                            JsonElement host = each.getAsJsonObject().get("host");
+                                            if (host != null && !host.isJsonNull()) {
+                                                return host.getAsString();
                                             }
                                         }
                                         return null;
@@ -198,10 +200,10 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                                     public String apply(JsonElement input) {
                                         JsonArray tasks = input.getAsJsonArray();
                                         for (JsonElement each : tasks) {
-                                            if (each.getAsJsonObject().has("host")) {
-                                                String host = each.getAsJsonObject().get("host").getAsString();
+                                            JsonElement host = each.getAsJsonObject().get("host");
+                                            if (host != null && !host.isJsonNull()) {
                                                 try {
-                                                    return InetAddress.getByName(host).getHostAddress();
+                                                    return InetAddress.getByName(host.getAsString()).getHostAddress();
                                                 } catch (UnknownHostException uhe) {
                                                     Exceptions.propagate(uhe);
                                                 }
