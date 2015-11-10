@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<!--
+    github GIT_SHA_1
+    clocker-version 1.1.0-SNAPSHOT CLOCKER_VERSION
+    brooklyn-version 0.8.0-incubating BROOKLYN_VERSION
+    advanced-networking-version 0.8.0-incubating ADVANCED_NETWORKING_VERSION
+    jclouds-version 1.9.1 JCLOUDS_VERSION
+-->
+<html>
+<head>
+    <meta charset='utf-8'/>
+    <title>Clocker 1.1.0-SNAPSHOT</title><!-- CLOCKER_VERSION -->
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Clocker Web Console (Javascript GUI)">
+
+    <link rel="icon" type="image/png" href="cog.png">
+    <link rel="stylesheet" href="/assets/css/styles.css">
+
+    <!-- Clocker Branding. -->
+    <link rel="stylesheet" href="/assets/css/clocker.css">
+
+    <style>
+        body {
+            padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+        }
+    </style>
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+</head>
+<body>
+
+<div class="navbar navbar-fixed-top">
+    <div class="navbar-inner">
+        <div class="container">
+            <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </a>
+            <a class="brand" href="#"></a>
+
+            <div class="logo"><!-- added via CSS --></div>
+
+            <div class="nav-collapse menubar-top">
+                <ul class="nav">
+                    <li><a href="#/v1/home" class="nav1 nav1_home">Home</a></li>
+                    <li><a href="#/v1/applications" class="nav1 nav1_apps">Applications</a></li>
+                    <li><a href="#/v1/catalog" class="nav1 nav1_catalog">Catalog</a></li>
+                    <li class="dropdown">
+                        <a href="#" class="nav1 nav1_script dropdown-toggle" data-toggle="dropdown">Script</a>
+                        <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+                            <li><a href="#/v1/apidoc" class="nav1 nav1_apidoc">REST API</a></li>
+                            <li><a href="#/v1/script/groovy" class="nav1 nav1_groovy">Groovy</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="#/v1/help" class="nav1 nav1_help"><b>?</b></a></li>
+                </ul>
+            </div>
+            <!--/.nav-collapse -->
+        </div>
+    </div>
+</div>
+
+<div id="main-content">
+    <div id="application-content"></div>
+    <div id="ha-standby-overlay"></div>
+</div>
+
+<div id="footer-container">
+    <div id="footer">
+        <div id="footer-text"><p>Copyright 2014-2015 by Cloudsoft Corporation Limited</a></p></div>
+        <div id="footer-powered-by" title="Powered by Brooklyn 0.8.0-incubating"></div><!-- BROOKLYN_VERSION -->
+    </div>
+</div>
+
+
+<!-- load our code with require.js. data-main is replaced with optimised file at build -->
+<script type="text/javascript" data-main="assets/js/config.js" src="assets/js/libs/require.js"></script>
+
+</body>
+</html>
