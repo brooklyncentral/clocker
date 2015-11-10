@@ -42,6 +42,7 @@ public class MesosTaskImpl extends BasicStartableImpl implements MesosTask {
         ConfigToAttributes.apply(this, FRAMEWORK);
         ConfigToAttributes.apply(this, MESOS_CLUSTER);
         ConfigToAttributes.apply(this, MANAGED);
+
         if (!sensors().get(MANAGED)) {
             ConfigToAttributes.apply(this, TASK_NAME);
         }

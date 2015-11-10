@@ -50,7 +50,6 @@ import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.api.mgmt.LocationManager;
-import org.apache.brooklyn.camp.brooklyn.BrooklynCampConstants;
 import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
@@ -120,10 +119,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
     public String getIconUrl() { return "classpath://container.png"; }
 
     private String getMarathonApplicationId() {
-        String id = Optional.fromNullable(getRunningEntity().config().get(BrooklynCampConstants.PLAN_ID))
-                .or(Optional.fromNullable(sensors().get(TASK_NAME)))
-               .or(getId());
-        id = "/brooklyn/" + id.toLowerCase(Locale.ENGLISH);
+        String id = "/brooklyn/" + config().get(TASK_NAME).toLowerCase(Locale.ENGLISH);
         return TASK_CHARACTERS_INVALID.trimAndCollapseFrom(id, '_');
     }
 
@@ -357,15 +353,20 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         Map<String, Object> environment = MutableMap.copyOf(config().get(DOCKER_CONTAINER_ENVIRONMENT));
         builder.put("environment", Lists.newArrayList(environment.entrySet()));
 
-        // Docker command or args
-        String command = config().get(COMMAND);
-        builder.putIfNotNull("command", command);
-        List<String> args = config().get(ARGS);
-        builder.putIfNotNull("args", args);
+        Optional<String> imageName = Optional.fromNullable(config().get(DOCKER_IMAGE_NAME));
+        if (imageName.isPresent()) {
+            // Docker image
+            builder.put("imageName", imageName.get());
+            builder.put("imageVersion", config().get(DOCKER_IMAGE_TAG));
 
-        // Docker image
-        builder.put("imageName", config().get(DOCKER_IMAGE_NAME));
-        builder.put("imageVersion", config().get(DOCKER_IMAGE_TAG));
+            // Docker command or args
+            String command = config().get(COMMAND);
+            builder.putIfNotNull("command", command);
+            List<String> args = config().get(ARGS);
+            builder.putIfNotNull("args", args);
+        } else {
+            // TODO handle SoftwareProcess entities
+        }
 
         return builder.build();
     }

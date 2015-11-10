@@ -93,13 +93,13 @@ public class MarathonLocation extends MesosFrameworkLocation implements MachineP
             String imageVersion = Optional.fromNullable(entity.config().get(DockerContainer.DOCKER_IMAGE_TAG)).or("latest");
             flags.put(MarathonTask.DOCKER_IMAGE_NAME, imageName.get());
             flags.put(MarathonTask.DOCKER_IMAGE_TAG, imageVersion);
-        }
 
-        // Docker command and args
-        String command = entity.config().get(MarathonTask.COMMAND);
-        if (command != null) flags.put(MarathonTask.COMMAND, command);
-        List<String> args = entity.config().get(MarathonTask.ARGS);
-        flags.put(MarathonTask.ARGS, args);
+            // Docker command and args
+            String command = entity.config().get(MarathonTask.COMMAND);
+            if (command != null) flags.put(MarathonTask.COMMAND, command);
+            List<String> args = entity.config().get(MarathonTask.ARGS);
+            flags.put(MarathonTask.ARGS, args);
+        }
 
         return flags;
     }
@@ -121,9 +121,8 @@ public class MarathonLocation extends MesosFrameworkLocation implements MachineP
                 throw new NoMachinesAvailableException("Unsupported entity type");
             }
 
-            String name = Optional.fromNullable(entity.config().get(BrooklynCampConstants.PLAN_ID)).or(entity.getId());
-
             // Start a new task with flags from entity
+            String name = Optional.fromNullable(entity.config().get(BrooklynCampConstants.PLAN_ID)).or(entity.getId());
             Map<Object, Object> taskFlags = MutableMap.builder()
                     .putAll(flags)
                     .put("entity", entity)
