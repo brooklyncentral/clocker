@@ -174,4 +174,10 @@ input[type="color"]:focus,.uneditable-input:focus {
     background-image: url("../img/glyphicons-halflings.png") !important;
 }
 
+.light-popup-menu-item:hover,
+.light-popup-menu-item.zeroclipboard-is-hover {
+    background-color: #444444 !important;
+    color: #ffffff !important;
+}
+
 
