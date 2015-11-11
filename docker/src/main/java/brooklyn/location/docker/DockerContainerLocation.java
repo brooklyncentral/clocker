@@ -249,6 +249,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
             getOwner().sensors().set(DockerContainer.IMAGE_ID, imageId);
             getOwner().getDockerHost().getDynamicLocation().markImage(imageName);
         } else if (DockerCallbacks.PUSH.equalsIgnoreCase(command)) {
+            // FIXME this doesn't work yet
             String imageName = getOwner().sensors().get(DockerContainer.IMAGE_NAME);
             getOwner().getDockerHost().runDockerCommand(format("push %s", imageName));
         } else {

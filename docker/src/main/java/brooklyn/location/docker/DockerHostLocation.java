@@ -162,8 +162,8 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
             Optional<String> baseImage = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_NAME));
             String imageTag = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_TAG)).or("latest");
-            Optional<String> imageRepo = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_REGISTRY))
-                    .or(Optional.fromNullable(getDockerInfrastructure().sensors().get(DockerAttributes.DOCKER_IMAGE_REGISTRY)));
+            Optional<String> imageRepo = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_REGISTRY_URL))
+                    .or(Optional.fromNullable(getDockerInfrastructure().sensors().get(DockerAttributes.DOCKER_IMAGE_REGISTRY_URL)));
 
             // TODO incorporate more info (incl registry?)
             final String imageName = DockerUtils.imageName(entity, dockerfile);
@@ -195,8 +195,14 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                 }
                 entity.config().set(SoftwareProcess.SKIP_INSTALLATION, true);
             } else {
-                // Otherwise Clocker is going to make an image for the entity once it is installed.
-                insertCallback(entity, SoftwareProcess.POST_INSTALL_COMMAND, DockerCallbacks.commit());
+                // Push or commit the image, otherwise Clocker will make a new one for the entity once it is installed.
+                if (getDockerInfrastructure().config().get(DockerInfrastructure.DOCKER_IMAGE_REGISTRY_WRITEABLE) &&
+                        (getDockerInfrastructure().config().get(DockerInfrastructure.DOCKER_SHOULD_START_REGISTRY) ||
+                                Strings.isNonBlank(getDockerInfrastructure().sensors().get(DockerInfrastructure.DOCKER_IMAGE_REGISTRY_URL)))) {
+                    insertCallback(entity, SoftwareProcess.POST_INSTALL_COMMAND, DockerCallbacks.push());
+                } else {
+                    insertCallback(entity, SoftwareProcess.POST_INSTALL_COMMAND, DockerCallbacks.commit());
+                }
 
                 if (Strings.isNonBlank(dockerfile)) {
                     if (imageId != null) {
@@ -340,8 +346,8 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
             // Now close and unmange the container
             try {
-                machine.close();
                 container.stop();
+                machine.close();
             } catch (Exception e) {
                 LOG.warn("Error stopping container: " + container, e);
                 Exceptions.propagateIfFatal(e);

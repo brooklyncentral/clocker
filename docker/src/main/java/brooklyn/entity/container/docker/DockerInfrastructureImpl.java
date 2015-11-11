@@ -59,6 +59,7 @@ import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityPredicates;
 import org.apache.brooklyn.core.entity.trait.Startable;
+import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.core.location.BasicLocationDefinition;
 import org.apache.brooklyn.core.location.BasicLocationRegistry;
 import org.apache.brooklyn.core.location.dynamic.LocationOwner;
@@ -108,7 +109,6 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
 
         sensors().set(DOCKER_HOST_COUNTER, new AtomicInteger(0));
         sensors().set(DOCKER_CONTAINER_COUNTER, new AtomicInteger(0));
-        sensors().set(DOCKER_IMAGE_REGISTRY, config().get(DOCKER_IMAGE_REGISTRY));
         int initialSize = config().get(DOCKER_HOST_CLUSTER_MIN_SIZE);
 
         Map<String, String> runtimeFiles = ImmutableMap.of();
@@ -118,6 +118,11 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
                     .put(config().get(DOCKER_SERVER_KEY_PATH), "key.pem")
                     .put(config().get(DOCKER_CA_CERTIFICATE_PATH), "ca.pem")
                     .build();
+        }
+
+        // Try and set the registry URL if configured and not starting local registry
+        if (!config().get(DOCKER_SHOULD_START_REGISTRY)) {
+            ConfigToAttributes.apply(this, DOCKER_IMAGE_REGISTRY_URL);
         }
 
         try {
@@ -396,6 +401,17 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
         sensors().set(SERVICE_UP, Boolean.FALSE);
         Duration timeout = config().get(SHUTDOWN_TIMEOUT);
 
+        // Shutdown the Registry if configured
+        if (config().get(DOCKER_SHOULD_START_REGISTRY)) {
+            try {
+                Entity dockerRegistry = sensors().get(DOCKER_IMAGE_REGISTRY);
+                LOG.debug("Stopping Docker Registry: {}", dockerRegistry);
+                Entities.invokeEffector(this, dockerRegistry, Startable.STOP).get(timeout);
+            } catch (Exception e) {
+                LOG.warn("Error stopping Docker Registry", e);
+            }
+        }
+
         // Find all applications and stop, blocking for up to five minutes until ended
         try {
             Iterable<Entity> entities = Iterables.filter(getManagementContext().getEntityManager().getEntities(), DockerUtils.sameInfrastructure(this));
@@ -447,7 +463,7 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
             EntitySpec<DockerRegistry> spec = EntitySpec.create(DockerRegistry.class)
                     .configure(DockerRegistry.DOCKER_HOST, firstEntity);
 
-            //mount volume with images stored on it
+            // TODO Mount volume with images stored on it
             DockerRegistry dockerRegistry = addChild(spec);
             Entities.manage(dockerRegistry);
 
@@ -455,8 +471,10 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
             Entities.start(dockerRegistry, ImmutableList.of(firstEntity.getDynamicLocation()));
 
             String dockerRegistryUrl = String.format("%s:%d", dockerRegistry.sensors().get(Attributes.HOSTNAME), dockerRegistry.config().get(DockerRegistry.DOCKER_REGISTRY_PORT));
-            LOG.debug("Started new docker registry. Setting registry URL config {} to {}", DOCKER_IMAGE_REGISTRY, dockerRegistryUrl);
-            sensors().set(DOCKER_IMAGE_REGISTRY, dockerRegistryUrl);
+            LOG.debug("Setting registry URL config for {} to {}", dockerRegistry, dockerRegistryUrl);
+
+            sensors().set(DOCKER_IMAGE_REGISTRY_URL, dockerRegistryUrl);
+            sensors().set(DOCKER_IMAGE_REGISTRY, dockerRegistry);
         }
     }
 

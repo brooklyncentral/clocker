@@ -63,8 +63,11 @@ public class DockerAttributes {
     public static final AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_ID = ConfigKeys.newStringSensorAndConfigKey(
             "docker.image.id", "The ID of a Docker image to use for a container");
 
-    public static final AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_REGISTRY = ConfigKeys.newStringSensorAndConfigKey(
-            "docker.image.registry", "The registry of the Docker image used by a container");
+    public static final AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_REGISTRY_URL = ConfigKeys.newStringSensorAndConfigKey(
+            "docker.registry.url", "The URL of the Docker image registry");
+
+    public static final AttributeSensor<Entity> DOCKER_IMAGE_REGISTRY = Sensors.newSensor(Entity.class,
+            "docker.registry.entity", "The Docker image registry entity");
 
     public static final AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_NAME = ConfigKeys.newStringSensorAndConfigKey(
             "docker.image.name", "The name of the Docker image used by a container");

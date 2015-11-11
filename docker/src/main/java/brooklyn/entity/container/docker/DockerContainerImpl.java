@@ -185,7 +185,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     }
 
     public void disconnectSensors() {
-        if (status != null) status.stop();
+        if (status != null) status.destroy();
     }
 
     @Override

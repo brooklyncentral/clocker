@@ -240,8 +240,8 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
 
         // Now close and unmange the host
         try {
-            machine.close();
             host.stop();
+            machine.close();
         } catch (Exception e) {
             LOG.warn("Error stopping host: " + host, e);
             Exceptions.propagateIfFatal(e);

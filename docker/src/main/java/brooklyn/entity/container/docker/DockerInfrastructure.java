@@ -132,9 +132,15 @@ public interface DockerInfrastructure extends Application, Resizable, LocationOw
 
     @CatalogConfig(label = "Start Registry", priority = 50)
     @SetFromFlag("registryStart")
-    ConfigKey<Boolean> DOCKER_SHOULD_START_REGISTRY = ConfigKeys.newBooleanConfigKey("docker.registry.start", "When set to true, clocker with setup a docker registry and use it for pulls", false);
+    ConfigKey<Boolean> DOCKER_SHOULD_START_REGISTRY = ConfigKeys.newBooleanConfigKey("docker.registry.start", "Setup a docker registry and use it for pulls", Boolean.FALSE);
 
-    AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_REGISTRY = DockerAttributes.DOCKER_IMAGE_REGISTRY;
+    @SetFromFlag("registryWriteable")
+    ConfigKey<Boolean> DOCKER_IMAGE_REGISTRY_WRITEABLE = ConfigKeys.newBooleanConfigKey("docker.registry.writeable", "Use the configured docker registry for pushes", Boolean.FALSE);
+
+    @SetFromFlag("registryUrl")
+    AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_REGISTRY_URL = DockerAttributes.DOCKER_IMAGE_REGISTRY_URL;
+
+    AttributeSensor<Entity> DOCKER_IMAGE_REGISTRY = DockerAttributes.DOCKER_IMAGE_REGISTRY;
 
     AttributeSensor<DynamicCluster> DOCKER_HOST_CLUSTER = Sensors.newSensor(DynamicCluster.class, "docker.hosts", "Docker host cluster");
     AttributeSensor<DynamicGroup> DOCKER_CONTAINER_FABRIC = Sensors.newSensor(DynamicGroup.class, "docker.fabric", "Docker container fabric");

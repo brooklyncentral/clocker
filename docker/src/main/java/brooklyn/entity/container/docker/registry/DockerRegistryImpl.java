@@ -3,16 +3,15 @@ package brooklyn.entity.container.docker.registry;
 import static org.apache.brooklyn.util.ssh.BashCommands.chain;
 
 import java.net.URI;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import com.google.api.client.util.Lists;
 import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.core.entity.Attributes;
+import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.core.location.access.BrooklynAccessUtils;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.feed.http.HttpFeed;
@@ -34,8 +33,9 @@ import brooklyn.entity.container.docker.application.VanillaDockerApplicationImpl
 public class DockerRegistryImpl extends VanillaDockerApplicationImpl implements DockerRegistry {
 
     private transient HttpFeed httpFeed;
+
     private final String CREATE_CERTS_SCRIPT_NAME = "docker-registry-create-certs.sh";
-    private final String SCRIPT_LOCATION = "classpath://brooklyn/entity/container/docker/registry/docker-registry-create-certs.sh";
+    private final String SCRIPT_LOCATION = "classpath://brooklyn/entity/container/docker/registry/" + CREATE_CERTS_SCRIPT_NAME;
     private final String DOCKER_REGISTRY_LOGO = "classpath://docker-registry-logo.png";
 
     private String getSSHMachineInstallDir() {
@@ -52,7 +52,7 @@ public class DockerRegistryImpl extends VanillaDockerApplicationImpl implements 
         super.connectSensors();
         connectServiceUpIsRunning();
 
-        HostAndPort hostAndPort = BrooklynAccessUtils.getBrooklynAccessibleAddress(this, config().get(DockerRegistry.DOCKER_REGISTRY_PORT));
+        HostAndPort hostAndPort = BrooklynAccessUtils.getBrooklynAccessibleAddress(this, sensors().get(DockerRegistry.DOCKER_REGISTRY_PORT));
         sensors().set(Attributes.MAIN_URI, URI.create("https://" + hostAndPort + "/v2"));
 
         httpFeed = HttpFeed.builder()
@@ -85,15 +85,17 @@ public class DockerRegistryImpl extends VanillaDockerApplicationImpl implements 
     public void init() {
         super.init();
 
-        DockerHost host = (DockerHost) config().get(DOCKER_HOST);
+        ConfigToAttributes.apply(this, DOCKER_HOST);
+        ConfigToAttributes.apply(this, DOCKER_REGISTRY_PORT);
 
-        config().set(DockerAttributes.DOCKER_PORT_BINDINGS, MutableMap.of(config().get(DOCKER_REGISTRY_PORT), 5000));
-
+        DockerHost host = (DockerHost) sensors().get(DOCKER_HOST);
         String installDir = host.sensors().get(SoftwareProcess.INSTALL_DIR);
-        config().set(DockerAttributes.DOCKER_HOST_VOLUME_MAPPING, MutableMap.of(Os.mergePaths(installDir, "certs"), "/certs"));
-
         SshMachineLocation sshMachine = host.getDynamicLocation().getMachine();
         String sshMachineInstallDir = getSSHMachineInstallDir();
+
+        config().set(DockerAttributes.DOCKER_PORT_BINDINGS, MutableMap.of(sensors().get(DOCKER_REGISTRY_PORT), 5000));
+        config().set(DockerAttributes.DOCKER_HOST_VOLUME_MAPPING, MutableMap.of(Os.mergePaths(installDir, "certs"), "/certs"));
+
         sshMachine.installTo(SCRIPT_LOCATION, Os.mergePaths(sshMachineInstallDir, CREATE_CERTS_SCRIPT_NAME));
         sshMachine.installTo(config().get(DockerInfrastructure.DOCKER_CA_CERTIFICATE_PATH), Os.mergePaths(sshMachineInstallDir, "ca-cert.pem"));
         sshMachine.installTo(config().get(DockerInfrastructure.DOCKER_CA_KEY_PATH), Os.mergePaths(sshMachineInstallDir, "ca-key.pem"));
