@@ -23,8 +23,10 @@ import com.google.common.reflect.TypeToken;
 import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
+import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.annotation.Effector;
 import org.apache.brooklyn.core.annotation.EffectorParam;
+import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.effector.MethodEffector;
 import org.apache.brooklyn.core.location.dynamic.LocationOwner;
 import org.apache.brooklyn.core.sensor.Sensors;
@@ -41,6 +43,8 @@ import brooklyn.networking.subnet.SubnetTier;
         description = "Marathon is an open-source PaaS framework for Mesos.")
 @ImplementedBy(MarathonFrameworkImpl.class)
 public interface MarathonFramework extends MesosFramework, LocationOwner<MarathonLocation, MarathonFramework> {
+
+    ConfigKey<String> MARATHON_URL = ConfigKeys.newConfigKeyWithPrefix("marathon.", FRAMEWORK_URL.getConfigKey());
 
     AttributeSensor<DynamicCluster> MARATHON_TASK_CLUSTER = Sensors.newSensor(DynamicCluster.class,
             "marathon.task.cluster", "The Marathon tasks started by Clocker");

@@ -186,8 +186,9 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
     }
 
     static {
-        RendererHints.register(MESOS_CLUSTER, RendererHints.namedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(FRAMEWORK_TASKS, RendererHints.namedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(FRAMEWORK_URL, RendererHints.namedActionWithUrl());
+        RendererHints.register(MESOS_CLUSTER, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(FRAMEWORK_TASKS, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }

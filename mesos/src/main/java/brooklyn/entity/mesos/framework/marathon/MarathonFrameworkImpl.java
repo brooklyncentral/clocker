@@ -36,6 +36,7 @@ import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationDefinition;
 import org.apache.brooklyn.api.mgmt.LocationManager;
 import org.apache.brooklyn.api.mgmt.ManagementContext;
+import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
@@ -45,6 +46,7 @@ import org.apache.brooklyn.core.location.dynamic.LocationOwner;
 import org.apache.brooklyn.entity.group.Cluster;
 import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
+import org.apache.brooklyn.entity.stock.DelegateEntity;
 import org.apache.brooklyn.feed.http.HttpFeed;
 import org.apache.brooklyn.feed.http.HttpPollConfig;
 import org.apache.brooklyn.feed.http.HttpValueFunctions;
@@ -53,10 +55,12 @@ import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import org.apache.brooklyn.util.guava.Functionals;
 import org.apache.brooklyn.util.net.Urls;
+import org.apache.brooklyn.util.text.Strings;
 
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.application.VanillaDockerApplication;
 import brooklyn.entity.mesos.MesosUtils;
+import brooklyn.entity.mesos.framework.MesosFramework;
 import brooklyn.entity.mesos.framework.MesosFrameworkImpl;
 import brooklyn.entity.mesos.task.marathon.MarathonTask;
 import brooklyn.location.mesos.framework.marathon.MarathonLocation;
@@ -82,12 +86,15 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
                 .configure(DynamicCluster.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .configure(DynamicCluster.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .displayName("Marathon Tasks"));
-
-        if (Entities.isManaged(this)) {
-            Entities.manage(tasks);
-        }
-
+        if (Entities.isManaged(this)) Entities.manage(tasks);
         sensors().set(MARATHON_TASK_CLUSTER, tasks);
+
+        // Check for override of the Marathon URL on the cluster entity
+        String marathonUrl = getMesosCluster().config().get(MARATHON_URL);
+        if (Strings.isNonEmpty(marathonUrl)) {
+            sensors().set(MesosFramework.FRAMEWORK_URL, marathonUrl);
+            sensors().set(Attributes.MAIN_URI, URI.create(marathonUrl));
+        }
     }
 
     @Override
@@ -281,6 +288,10 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
                 .add(VanillaDockerApplication.class)
                 .add(SoftwareProcess.class)
                 .build();
+    }
+
+    static {
+        RendererHints.register(MARATHON_TASK_CLUSTER, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }
