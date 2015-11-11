@@ -15,6 +15,9 @@
  */
 package brooklyn.entity.container.docker;
 
+import javax.annotation.Nullable;
+import javax.net.ssl.X509TrustManager;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -28,9 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.annotation.Nullable;
-import javax.net.ssl.X509TrustManager;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +54,7 @@ import org.apache.brooklyn.api.mgmt.ManagementContext;
 import org.apache.brooklyn.api.policy.PolicySpec;
 import org.apache.brooklyn.api.sensor.EnricherSpec;
 import org.apache.brooklyn.core.config.render.RendererHints;
+import org.apache.brooklyn.core.entity.AbstractApplication;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityPredicates;
@@ -70,7 +71,6 @@ import org.apache.brooklyn.entity.group.DynamicMultiGroup;
 import org.apache.brooklyn.entity.machine.MachineAttributes;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess.ChildStartableMode;
-import org.apache.brooklyn.entity.stock.BasicStartableImpl;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
 import org.apache.brooklyn.policy.autoscaling.AutoScalerPolicy;
 import org.apache.brooklyn.util.collections.MutableMap;
@@ -83,19 +83,22 @@ import org.apache.brooklyn.util.time.Duration;
 
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
+import brooklyn.entity.container.docker.registry.DockerRegistry;
 import brooklyn.entity.container.policy.ContainerHeadroomEnricher;
 import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.DockerResolver;
 import brooklyn.networking.sdn.SdnAttributes;
 
-public class DockerInfrastructureImpl extends BasicStartableImpl implements DockerInfrastructure {
+public class DockerInfrastructureImpl extends AbstractApplication implements DockerInfrastructure {
 
     private static final Logger LOG = LoggerFactory.getLogger(DockerInfrastructure.class);
 
     private transient Object mutex = new Object[0];
 
     @Override
-    public Object getInfrastructureMutex() { return mutex; }
+    public Object getInfrastructureMutex() {
+        return mutex;
+    }
 
     @Override
     public void init() {
@@ -105,6 +108,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
 
         sensors().set(DOCKER_HOST_COUNTER, new AtomicInteger(0));
         sensors().set(DOCKER_CONTAINER_COUNTER, new AtomicInteger(0));
+        sensors().set(DOCKER_IMAGE_REGISTRY, config().get(DOCKER_IMAGE_REGISTRY));
         int initialSize = config().get(DOCKER_HOST_CLUSTER_MIN_SIZE);
 
         Map<String, String> runtimeFiles = ImmutableMap.of();
@@ -159,11 +163,11 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 .configure(DynamicMultiGroup.ENTITY_FILTER, DockerUtils.sameInfrastructure(this))
                 .configure(DynamicMultiGroup.RESCAN_INTERVAL, 15L)
                 .configure(DynamicMultiGroup.BUCKET_FUNCTION, new Function<Entity, String>() {
-                        @Override
-                        public String apply(@Nullable Entity input) {
-                            return input.getApplication().getDisplayName() + ":" + input.getApplicationId();
-                        }
-                    })
+                    @Override
+                    public String apply(@Nullable Entity input) {
+                        return input.getApplication().getDisplayName() + ":" + input.getApplicationId();
+                    }
+                })
                 .configure(DynamicMultiGroup.BUCKET_SPEC, EntitySpec.create(BasicGroup.class)
                         .configure(BasicGroup.MEMBER_DELEGATE_CHILDREN, true))
                 .displayName("Docker Applications"));
@@ -242,8 +246,8 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         // TODO Register separate resolvers for each infrastructure instance, unregister on unmanage.
         LocationRegistry registry = getManagementContext().getLocationRegistry();
         DockerResolver dockerResolver = new DockerResolver();
-        ((BasicLocationRegistry)registry).registerResolver(dockerResolver);
-        if (LOG.isDebugEnabled()) LOG.debug("Explicitly registered docker resolver: "+dockerResolver);
+        ((BasicLocationRegistry) registry).registerResolver(dockerResolver);
+        if (LOG.isDebugEnabled()) LOG.debug("Explicitly registered docker resolver: " + dockerResolver);
     }
 
     @Override
@@ -256,7 +260,9 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
     }
 
     @Override
-    public DynamicCluster getDockerHostCluster() { return sensors().get(DOCKER_HOST_CLUSTER); }
+    public DynamicCluster getDockerHostCluster() {
+        return sensors().get(DOCKER_HOST_CLUSTER);
+    }
 
     @Override
     public List<Entity> getDockerContainerList() {
@@ -268,12 +274,14 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
     }
 
     @Override
-    public DynamicGroup getContainerFabric() { return sensors().get(DOCKER_CONTAINER_FABRIC); }
+    public DynamicGroup getContainerFabric() {
+        return sensors().get(DOCKER_CONTAINER_FABRIC);
+    }
 
     @Override
     public Integer resize(Integer desiredSize) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Resize Docker infrastructure to {} at {}", new Object[] { desiredSize, getLocations() });
+            LOG.debug("Resize Docker infrastructure to {} at {}", new Object[]{desiredSize, getLocations()});
         }
         return getDockerHostCluster().resize(desiredSize);
     }
@@ -361,7 +369,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
     }
 
     @Override
-    public void start(Collection<? extends Location> locations) {
+    public void doStart(Collection<? extends Location> locations) {
         // TODO support multiple locations
         sensors().set(SERVICE_UP, Boolean.FALSE);
 
@@ -375,7 +383,7 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
                 .build();
         createLocation(flags);
 
-        super.start(locations);
+        super.doStart(locations);
 
         sensors().set(SERVICE_UP, Boolean.TRUE);
     }
@@ -393,7 +401,9 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
             Iterable<Entity> entities = Iterables.filter(getManagementContext().getEntityManager().getEntities(), DockerUtils.sameInfrastructure(this));
             Set<Application> applications = ImmutableSet.copyOf(Iterables.transform(entities, new Function<Entity, Application>() {
                 @Override
-                public Application apply(Entity input) { return input.getApplication(); }
+                public Application apply(Entity input) {
+                    return input.getApplication();
+                }
             }));
             LOG.debug("Stopping applications: {}", Iterables.toString(applications));
             Entities.invokeEffectorList(this, applications, Startable.STOP).get(timeout);
@@ -425,6 +435,29 @@ public class DockerInfrastructureImpl extends BasicStartableImpl implements Dock
         super.stop();
 
         deleteLocation();
+    }
+
+    @Override
+    public void postStart(Collection<? extends Location> locations) {
+        super.postStart(locations);
+
+        if (config().get(DOCKER_SHOULD_START_REGISTRY)) {
+            DockerHost firstEntity = (DockerHost) sensors().get(DOCKER_HOST_CLUSTER).sensors().get(DynamicCluster.FIRST);
+
+            EntitySpec<DockerRegistry> spec = EntitySpec.create(DockerRegistry.class)
+                    .configure(DockerRegistry.DOCKER_HOST, firstEntity);
+
+            //mount volume with images stored on it
+            DockerRegistry dockerRegistry = addChild(spec);
+            Entities.manage(dockerRegistry);
+
+            LOG.debug("Starting a new Docker Registry with spec {}", spec);
+            Entities.start(dockerRegistry, ImmutableList.of(firstEntity.getDynamicLocation()));
+
+            String dockerRegistryUrl = String.format("%s:%d", dockerRegistry.sensors().get(Attributes.HOSTNAME), dockerRegistry.config().get(DockerRegistry.DOCKER_REGISTRY_PORT));
+            LOG.debug("Started new docker registry. Setting registry URL config {} to {}", DOCKER_IMAGE_REGISTRY, dockerRegistryUrl);
+            sensors().set(DOCKER_IMAGE_REGISTRY, dockerRegistryUrl);
+        }
     }
 
     static {

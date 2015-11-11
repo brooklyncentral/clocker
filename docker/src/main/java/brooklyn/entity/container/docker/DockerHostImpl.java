@@ -19,6 +19,7 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeoutException;
@@ -392,11 +393,19 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     }
 
     @Override
+    public String layerSshableImageOnFullyQualified(String fullyQualifiedName) {
+        String imageId = getDriver().layerSshableImageOn(fullyQualifiedName);
+        LOG.debug("Successfully added SSHable layer as {}", fullyQualifiedName);
+        return imageId;
+    }
+
+    @Override
     public String layerSshableImageOn(String baseImage, String tag) {
-        String imageId = getDriver().layerSshableImageOn(baseImage, tag);
+        String imageId = getDriver().layerSshableImageOn(baseImage+ ":" +tag);
         LOG.debug("Successfully added SSHable layer as {} from {}", imageId, baseImage);
         return imageId;
     }
+
 
     /** {@inheritDoc} */
     @Override
@@ -714,6 +723,31 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         sensors().set(DOCKER_IMAGE_ID, imageId);
 
         scan = scanner();
+
+        Map<String, String> externalRegistries = config().get(DockerHost.DOCKER_EXTERNAL_REGISTRIES);
+        Map<String, String> externalRegistriesLoginDetails = config().get(DockerHost.DOCKER_EXTERNAL_REGISTRY_LOGIN_DETAILS);
+
+        if(externalRegistries != null && !externalRegistries.isEmpty() && externalRegistriesLoginDetails!= null && !externalRegistriesLoginDetails.isEmpty()){
+            for (Entry<String, String> loginDetail: externalRegistries.entrySet()) {
+                String registry = loginDetail.getKey();
+                String username = loginDetail.getValue();
+
+                if(registry == null || username == null){
+                    throw new IllegalArgumentException(String.format("Either registry {%s} or username {%s} was null ", registry, username));
+                }
+
+                if(!externalRegistriesLoginDetails.containsKey(username)){
+                    throw new IllegalArgumentException(String.format("registry {%s} and username {%s} supplied but no password in DOCKER_EXTERNAL_REGISTRY_LOGIN_DETAILS", registry, username));
+                }
+
+                String password = externalRegistriesLoginDetails.get(username);
+                if(password == null) {
+                    throw new IllegalArgumentException(String.format("registry {%s} and username {%s} supplied but password in DOCKER_EXTERNAL_REGISTRY_LOGIN_DETAILS is null", registry, username));
+                }
+
+                runDockerCommand(String.format("login  -e \"fake@example.org\" -u %s -p %s %s", username, password, registry));
+            }
+        }
     }
 
     private FunctionFeed scanner() {

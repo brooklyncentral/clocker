@@ -97,19 +97,12 @@ public class DockerComputeServiceAdapter implements
               .image(imageId)
               .exposedPorts(exposedPorts);
 
-      if (!templateOptions.getCommands().isEmpty()) {
-         containerConfigBuilder.cmd(templateOptions.getCommands());
-      }
-
+      containerConfigBuilder.entrypoint(templateOptions.getEntrypoint());
+      containerConfigBuilder.cmd(templateOptions.getCommands());
       containerConfigBuilder.memory(templateOptions.getMemory());
-
       containerConfigBuilder.hostname(templateOptions.getHostname());
-
       containerConfigBuilder.cpuShares(templateOptions.getCpuShares());
-
-      if (!templateOptions.getEnv().isEmpty()) {
-         containerConfigBuilder.env(templateOptions.getEnv());
-      }
+      containerConfigBuilder.env(templateOptions.getEnv());
 
       if (!templateOptions.getVolumes().isEmpty()) {
          Map<String, Object> volumes = Maps.newLinkedHashMap();

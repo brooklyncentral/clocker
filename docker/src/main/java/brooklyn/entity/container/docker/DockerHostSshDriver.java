@@ -39,7 +39,9 @@ import com.google.common.collect.Lists;
 import org.apache.brooklyn.api.location.OsDetails;
 import org.apache.brooklyn.api.mgmt.Task;
 import org.apache.brooklyn.core.effector.ssh.SshEffectorTasks;
+import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
+import org.apache.brooklyn.entity.group.AbstractGroup;
 import org.apache.brooklyn.entity.software.base.AbstractSoftwareProcessSshDriver;
 import org.apache.brooklyn.entity.software.base.lifecycle.ScriptHelper;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
@@ -113,13 +115,12 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     /** {@inheritDoc} */
     @Override
-    public String layerSshableImageOn(String name, String tag) {
-        checkNotNull(name, "name");
-        checkNotNull(tag, "tag");
-        copyTemplate(DockerUtils.SSHD_DOCKERFILE, Os.mergePaths(name, "Sshd" + DockerUtils.DOCKERFILE),
-                true, ImmutableMap.<String, Object>of("fullyQualifiedImageName", name + ":" + tag));
-        String sshdImageId = buildDockerfile("Sshd" + DockerUtils.DOCKERFILE, name);
-        log.info("Created SSH-based image from {} with ID {}", name, sshdImageId);
+    public String layerSshableImageOn(String fullyQualifiedImageName) {
+        checkNotNull(fullyQualifiedImageName, "fullyQualifiedImageName");
+        copyTemplate(DockerUtils.SSHD_DOCKERFILE, Os.mergePaths(fullyQualifiedImageName, "Sshd" + DockerUtils.DOCKERFILE),
+                true, ImmutableMap.<String, Object>of("fullyQualifiedImageName", fullyQualifiedImageName));
+        String sshdImageId = buildDockerfile("Sshd" + DockerUtils.DOCKERFILE, fullyQualifiedImageName);
+        log.info("Created SSH-based image from {} with ID {}", fullyQualifiedImageName, sshdImageId);
 
         return sshdImageId;
     }
@@ -304,6 +305,23 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     private String installDockerFallback() {
         return "curl -s https://get.docker.com/ | " + sudo("sh");
     }
+    
+    private String getDockerInsecureRegistries(){
+        List<String> insecureRegistryList = entity.getConfig(DockerHost.DOCKER_INSECURE_REGISTRIES);
+
+        if(insecureRegistryList == null || insecureRegistryList.isEmpty()){
+            return "";
+        }
+
+        String insecureRegistries = "";
+        for (String repo : insecureRegistryList) {
+            insecureRegistries += " --insecure-registry " +  repo;
+        }
+
+        log.debug("insecure registry options {}", insecureRegistries);
+
+        return insecureRegistries;
+    }
 
     @Override
     public void customize() {
@@ -322,13 +340,24 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .execute();
         }
 
-        //Create config for upstart
+        //Add the CA cert as an authorised docker CA for the first host.
+        //This will be used for docker registry etc.
+        String hostnameOfFirstEntity = entity.sensors().get(AbstractGroup.FIRST).sensors().get(Attributes.HOSTNAME);
+        String repoCAPath = "/etc/docker/certs.d/" + hostnameOfFirstEntity + ":"+ entity.config().get(DockerHost.DOCKER_REGISTRY_PORT);
+
+        newScript(CUSTOMIZING)
+                .body.append(
+                chainGroup(sudo("mkdir -p " + repoCAPath),
+                        sudo("cp ca.pem " + repoCAPath + "/ca.crt")))
+                .failOnNonZeroResultCode()
+                .execute();
+        
         newScript(CUSTOMIZING + "-upstart")
                 .body.append(
                         chain(
                                 sudo("mkdir -p /etc/default"),
-                                format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock %s --tlsverify --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem --tlscacert=%<s/ca.pem\"' | ",
-                                        getDockerPort(), getStorageOpts(), getRunDir()) + sudo("tee -a /etc/default/docker"),
+                                format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock %s %s --tlsverify --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem --tlscacert=%<s/ca.pem\"' | ",
+                                        getDockerPort(), getStorageOpts(), getDockerInsecureRegistries(), getRunDir()) + sudo("tee -a /etc/default/docker"),
                                 sudo("groupadd -f docker"),
                                 sudo(format("gpasswd -a %s docker", getMachine().getUser())),
                                 sudo("newgrp docker")
@@ -341,8 +370,8 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .body.append(
                         chain(
                                 sudo("mkdir -p /etc/sysconfig"),
-                                format("echo 'other_args=\"--selinux-enabled -H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock -e lxc %s --tlsverify --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem --tlscacert=%<s/ca.pem\"' | ",
-                                        getDockerPort(), getStorageOpts(), getRunDir()) + sudo("tee -a /etc/sysconfig/docker")
+                                format("echo 'other_args=\"--selinux-enabled -H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock -e lxc %s %s --tlsverify --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem --tlscacert=%<s/ca.pem\"' | ",
+                                        getDockerPort(), getStorageOpts(), getDockerInsecureRegistries(), getRunDir()) + sudo("tee -a /etc/sysconfig/docker")
                         ))
                 .failOnNonZeroResultCode()
                 .execute();
@@ -354,8 +383,8 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 systemDConfigInstallPath,
                 true,
                 ImmutableMap.of("args",
-                        format("-H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock %s --tlsverify --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem --tlscacert=%<s/ca.pem",
-                                getDockerPort(), getStorageOpts(), getRunDir())));
+                        format("-H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock %s %s --tlsverify --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem --tlscacert=%<s/ca.pem",
+                                getDockerPort(), getStorageOpts(), getDockerInsecureRegistries(), getRunDir())));
 
         newScript(CUSTOMIZING + "-systemd")
                 .body.append(

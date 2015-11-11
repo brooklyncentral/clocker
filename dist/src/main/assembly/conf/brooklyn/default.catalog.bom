@@ -112,6 +112,13 @@ brooklyn.catalog:
     item:
       type: brooklyn.networking.sdn.weave.WeaveContainer
 
+  - id: docker-registry
+    name: "Docker Registry"
+    services:
+    - type: brooklyn.entity.container.docker.registry.DockerRegistry
+      brooklyn.config:
+        docker.registry.port: 5000
+
   - id: docker-cloud
     name: "Clocker"
     description: |

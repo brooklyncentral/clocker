@@ -32,7 +32,7 @@ public interface DockerHostDriver extends SoftwareProcessDriver {
      * Build a Docker image from the given Dockerfile and optional entrypoint script.
      * <p>
      * Copies the Dockerfile and script to the host in the {@code name} folder, and
-     * uses {@code brooklyn/name} for the repository. The returned ID is required to
+     * uses {@code brooklyn/name} for the registry. The returned ID is required to
      * start a container using the jclouds API.
      *
      * @return the 64 character Image ID
@@ -43,10 +43,10 @@ public interface DockerHostDriver extends SoftwareProcessDriver {
     /**
      * Build an SSHable Docker image that is based from an image with the given name.
      *
-     * @param name e.g. tomcat:8.0
+     * @param fullyQualifiedImageName e.g. quay.io/graemem/repo/tomcat:8.0
      * @return the new image's ID
      */
-    String layerSshableImageOn(String name, String tag);
+    String layerSshableImageOn(String fullyQualifiedImageName);
 
     String deployArchive(String url);
 
