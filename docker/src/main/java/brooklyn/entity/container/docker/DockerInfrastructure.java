@@ -53,9 +53,6 @@ import brooklyn.networking.sdn.SdnAttributes;
 /**
  * A collection of machines running Docker.
  */
-@Catalog(name = "Docker Infrastructure",
-        description = "Docker is an open-source engine to easily create lightweight, portable, self-sufficient containers from any application.",
-        iconUrl = "classpath:///docker-logo.png")
 @ImplementedBy(DockerInfrastructureImpl.class)
 public interface DockerInfrastructure extends Application, Resizable, LocationOwner<DockerLocation, DockerInfrastructure> {
 
@@ -133,7 +130,7 @@ public interface DockerInfrastructure extends Application, Resizable, LocationOw
             new TypeToken<Map<String, Object>>() { },
             "docker.dockerfile.substitutions", "Dockerfile template substitutions", MutableMap.<String, Object>of());
 
-    @CatalogConfig(label = "Start Registry?", priority = 50)
+    @CatalogConfig(label = "Start Registry", priority = 50)
     @SetFromFlag("registryStart")
     ConfigKey<Boolean> DOCKER_SHOULD_START_REGISTRY = ConfigKeys.newBooleanConfigKey("docker.registry.start", "When set to true, clocker with setup a docker registry and use it for pulls", false);
 
