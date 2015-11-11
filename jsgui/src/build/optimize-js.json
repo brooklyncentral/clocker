@@ -1,0 +1,18 @@
+({
+    // The entry point to the application. Brooklyn's is in config.js.
+    name: "config",
+    baseUrl: "${project.build.webapp}/assets/js",
+    mainConfigFile: "${project.build.webapp}/assets/js/config.js",
+    paths: {
+        // Include paths to external resources (e.g. on a CDN) here.
+
+        // Optimiser looks for js/requireLib.js by default.
+        "requireLib": "libs/require"
+    },
+
+    // Place the optimised file in target/<war>/assets.
+    out: "${project.build.webapp}/assets/js/gui.all.min.js",
+
+    // Set to "none" to skip minification
+    optimize: "uglify"
+})
