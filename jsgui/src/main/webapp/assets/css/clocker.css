@@ -100,30 +100,32 @@ textarea { white-space: pre;word-wrap: normal;overflow-x: auto; }
 
 #effectors-table th { background: #ffffff !important }
 
-.btn-danger { 
-    background-color: #cf1c21 !important;
-    *background-color: #cf1c21 !important;
+.btn-danger,
+.btn-info {
+    background-color: #7d000a !important;
+    *background-color: #7d000a !important;
     background-image: none !important;
+    border-color: #7d000a !important;
     -webkit-border-radius: 3px !important;
     -moz-border-radius: 3px !important;
+    color: #ffffff !important;
 }
-.btn-info { 
-    background-color: #000000 !important;
-    *background-color: #000000 !important;
-    background-image: none !important;
-    border-color: #000000 !important;
-    -webkit-border-radius: 3px !important;
-    -moz-border-radius: 3px !important;
-}
-.btn-info.disabled,
-.btn-info[disabled] { 
-    background-color: #e8e8e8 !important;
-    *background-color: #e8e8e8 !important;
-}
+.btn-danger:hover,
+.btn-danger:active,
+.btn-danger.active,
 .btn-info:hover,
 .btn-info:active,
-.btn-info.active { 
-    border-color: #e8e8e8 !important;
+.btn-info.active {
+    border-color: #000000 !important;
+}
+.btn-danger.disabled,
+.btn-danger[disabled],
+.btn-info.disabled,
+.btn-info[disabled] { 
+    background-color: #444444 !important;
+    *background-color: #444444 !important;
+    border-color: #000000 !important;
+    color: #ffffff !important;
 }
 
 textarea:focus,input[type="text"]:focus,input[type="password"]:focus,
@@ -135,6 +137,8 @@ input[type="color"]:focus,.uneditable-input:focus {
     -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(180, 180, 180, 0.6) !important;
     -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(180, 180, 180, 0.6) !important;
     box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(180, 180, 180, 0.6) !important;
+    -webkit-border-radius: 3px !important;
+    -moz-border-radius: 3px !important;
 }
 
 #footer-container{ background: url(../images/clocker-footer-background.png) repeat-x top; height: 100px; margin-top: -40px; border-top: 2px solid #818181 }
