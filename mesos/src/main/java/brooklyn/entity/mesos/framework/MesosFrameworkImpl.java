@@ -20,24 +20,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.EntitySpec;
-import org.apache.brooklyn.api.location.Location;
-import org.apache.brooklyn.core.config.render.RendererHints;
-import org.apache.brooklyn.core.entity.Attributes;
-import org.apache.brooklyn.core.entity.Entities;
-import org.apache.brooklyn.core.entity.EntityFunctions;
-import org.apache.brooklyn.core.feed.ConfigToAttributes;
-import org.apache.brooklyn.entity.group.DynamicGroup;
-import org.apache.brooklyn.entity.stock.BasicStartableImpl;
-import org.apache.brooklyn.entity.stock.DelegateEntity;
-import org.apache.brooklyn.feed.http.HttpFeed;
-import org.apache.brooklyn.feed.http.HttpPollConfig;
-import org.apache.brooklyn.feed.http.HttpValueFunctions;
-import org.apache.brooklyn.feed.http.JsonFunctions;
-import org.apache.brooklyn.util.collections.MutableList;
-import org.apache.brooklyn.util.guava.Functionals;
-import org.apache.brooklyn.util.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +32,29 @@ import com.google.common.collect.Iterables;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.EntitySpec;
+import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.core.config.render.RendererHints;
+import org.apache.brooklyn.core.entity.Attributes;
+import org.apache.brooklyn.core.entity.Entities;
+import org.apache.brooklyn.core.entity.EntityFunctions;
+import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
+import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
+import org.apache.brooklyn.core.feed.ConfigToAttributes;
+import org.apache.brooklyn.entity.group.Cluster;
+import org.apache.brooklyn.entity.group.DynamicCluster;
+import org.apache.brooklyn.entity.stock.BasicStartableImpl;
+import org.apache.brooklyn.entity.stock.DelegateEntity;
+import org.apache.brooklyn.feed.http.HttpFeed;
+import org.apache.brooklyn.feed.http.HttpPollConfig;
+import org.apache.brooklyn.feed.http.HttpValueFunctions;
+import org.apache.brooklyn.feed.http.JsonFunctions;
+import org.apache.brooklyn.util.collections.MutableList;
+import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
+import org.apache.brooklyn.util.guava.Functionals;
+import org.apache.brooklyn.util.time.Duration;
 
 import brooklyn.entity.mesos.MesosCluster;
 import brooklyn.entity.mesos.task.MesosTask;
@@ -70,8 +75,12 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
 
         ConfigToAttributes.apply(this);
 
-        DynamicGroup tasks = addChild(EntitySpec.create(DynamicGroup.class)
-                .configure(DynamicGroup.MEMBER_DELEGATE_CHILDREN, true)
+        DynamicCluster tasks = addChild(EntitySpec.create(DynamicCluster.class)
+                .configure(Cluster.INITIAL_SIZE, 0)
+                .configure(DynamicCluster.MEMBER_SPEC, config().get(FRAMEWORK_TASK_SPEC))
+                .configure(DynamicCluster.QUARANTINE_FAILED_ENTITIES, true)
+                .configure(DynamicCluster.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
+                .configure(DynamicCluster.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .displayName("Framework Tasks"));
         if (Entities.isManaged(this)) Entities.manage(tasks);
         sensors().set(FRAMEWORK_TASKS, tasks);
@@ -83,23 +92,26 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
     public void start(Collection<? extends Location> locations) {
         sensors().set(SERVICE_UP, Boolean.FALSE);
 
-        super.start(locations);
-
         connectSensors();
+
+        super.start(locations);
     }
 
     @Override
     public void stop() {
         disconnectSensors();
 
-        // TODO stop all tasks belonging to this framework
-        // TODO should we check if we own the task (i.e. started it) first?
-
         sensors().set(SERVICE_UP, Boolean.FALSE);
     }
 
     @Override
     public void connectSensors() {
+        // Start task cluster
+        DynamicCluster tasks = getTaskCluster();
+        Entities.start(tasks, ImmutableList.of(getMesosCluster().getDynamicLocation()));
+        ServiceStateLogic.setExpectedState(tasks, Lifecycle.RUNNING);
+        tasks.sensors().set(SERVICE_UP, Boolean.TRUE);
+
         Duration scanInterval = config().get(MesosCluster.SCAN_INTERVAL);
         HttpFeed.Builder taskScanBuilder = HttpFeed.builder()
                 .entity(this)
@@ -167,7 +179,7 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
 
     @Override
     public void disconnectSensors() {
-        if (taskScan  != null && taskScan.isRunning()) taskScan.stop();
+        if (taskScan  != null && taskScan.isActivated()) taskScan.destroy();
     }
 
     @Override
@@ -183,6 +195,11 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
     @Override
     public MesosCluster getMesosCluster() {
         return (MesosCluster) sensors().get(MESOS_CLUSTER);
+    }
+
+    @Override
+    public DynamicCluster getTaskCluster() {
+        return sensors().get(FRAMEWORK_TASKS);
     }
 
     static {

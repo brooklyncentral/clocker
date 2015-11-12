@@ -31,43 +31,35 @@ import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonElement;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationDefinition;
+import org.apache.brooklyn.api.location.LocationRegistry;
 import org.apache.brooklyn.api.mgmt.LocationManager;
 import org.apache.brooklyn.api.mgmt.ManagementContext;
-import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.entity.Attributes;
-import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.location.BasicLocationDefinition;
+import org.apache.brooklyn.core.location.BasicLocationRegistry;
 import org.apache.brooklyn.core.location.dynamic.LocationOwner;
-import org.apache.brooklyn.entity.group.Cluster;
-import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
-import org.apache.brooklyn.entity.stock.DelegateEntity;
 import org.apache.brooklyn.feed.http.HttpFeed;
 import org.apache.brooklyn.feed.http.HttpPollConfig;
 import org.apache.brooklyn.feed.http.HttpValueFunctions;
 import org.apache.brooklyn.feed.http.JsonFunctions;
 import org.apache.brooklyn.util.collections.MutableMap;
-import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import org.apache.brooklyn.util.guava.Functionals;
-import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Urls;
 import org.apache.brooklyn.util.text.Strings;
 
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.application.VanillaDockerApplication;
-import brooklyn.entity.mesos.MesosCluster;
 import brooklyn.entity.mesos.MesosUtils;
 import brooklyn.entity.mesos.framework.MesosFramework;
 import brooklyn.entity.mesos.framework.MesosFrameworkImpl;
 import brooklyn.entity.mesos.task.marathon.MarathonTask;
 import brooklyn.location.mesos.framework.marathon.MarathonLocation;
 import brooklyn.location.mesos.framework.marathon.MarathonResolver;
-import brooklyn.networking.subnet.SubnetTier;
 
 /**
  * The Marathon framework implementation.
@@ -81,16 +73,7 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
     @Override
     public void init() {
         super.init();
-
-        DynamicCluster tasks = addChild(EntitySpec.create(DynamicCluster.class)
-                .configure(Cluster.INITIAL_SIZE, 0)
-                .configure(DynamicCluster.MEMBER_SPEC, EntitySpec.create(MarathonTask.class))
-                .configure(DynamicCluster.QUARANTINE_FAILED_ENTITIES, true)
-                .configure(DynamicCluster.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
-                .configure(DynamicCluster.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
-                .displayName("Marathon Tasks"));
-        if (Entities.isManaged(this)) Entities.manage(tasks);
-        sensors().set(MARATHON_TASK_CLUSTER, tasks);
+        registerLocationResolver();
 
         // Check for override of the Marathon URL on the cluster entity
         String marathonUrl = getMesosCluster().config().get(MARATHON_URL);
@@ -103,9 +86,14 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
     @Override
     public String getIconUrl() { return "classpath://marathon-logo.png"; }
 
-    @Override
-    public DynamicCluster getTaskCluster() {
-        return sensors().get(MARATHON_TASK_CLUSTER);
+    private void registerLocationResolver() {
+        // Doesn't matter if the resolver is already registered through ServiceLoader.
+        // It just overwrite the existing registration (if any).
+        // TODO Register separate resolvers for each infrastructure instance, unregister on unmanage.
+        LocationRegistry registry = getManagementContext().getLocationRegistry();
+        MarathonResolver marathonResolver = new MarathonResolver();
+        ((BasicLocationRegistry)registry).registerResolver(marathonResolver);
+        LOG.debug("Explicitly registered marathon resolver: "+marathonResolver);
     }
 
     @Override
@@ -133,7 +121,7 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
 
     @Override
     public void disconnectSensors() {
-        if (httpFeed != null && httpFeed.isRunning()) httpFeed.stop();
+        if (httpFeed != null && httpFeed.isActivated()) httpFeed.destroy();
         super.disconnectSensors();
     }
 
@@ -173,33 +161,13 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
     public void start(Collection<? extends Location> locations) {
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
 
-        // Setup port forwarding
-        MarathonPortForwarder portForwarder = new MarathonPortForwarder();
-        portForwarder.injectManagementContext(getManagementContext());
-        String username = config().get(MesosCluster.MESOS_USERNAME);
-        String password = config().get(MesosCluster.MESOS_PASSWORD);
-        portForwarder.init(URI.create(sensors().get(FRAMEWORK_URL)), username, password);
+        connectSensors();
 
         // Create Marathon location
         Map<String, ?> flags = MutableMap.<String, Object>builder()
-                .put("portForwarder", portForwarder)
                 .putAll(config().get(LOCATION_FLAGS))
                 .build();
-        MarathonLocation marathon = createLocation(flags);
-
-        // Setup subnet tier
-        // TODO put this in the slaves?
-        SubnetTier subnetTier = addChild(EntitySpec.create(SubnetTier.class)
-                .configure(SubnetTier.PORT_FORWARDER, portForwarder)
-                .configure(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL));
-        Entities.manage(subnetTier);
-        sensors().set(MARATHON_SUBNET_TIER, subnetTier);
-        Entities.start(subnetTier, ImmutableList.of(marathon));
-
-        // Add task cluster
-        DynamicCluster tasks = getTaskCluster();
-        Entities.start(tasks, ImmutableList.of(marathon));
-        tasks.sensors().set(SERVICE_UP, Boolean.TRUE);
+        createLocation(flags);
 
         sensors().set(Attributes.SERVICE_UP, true);
         ServiceStateLogic.setExpectedState(this, Lifecycle.RUNNING);
@@ -296,10 +264,6 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
                 .add(VanillaDockerApplication.class)
                 .add(SoftwareProcess.class)
                 .build();
-    }
-
-    static {
-        RendererHints.register(MARATHON_TASK_CLUSTER, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }

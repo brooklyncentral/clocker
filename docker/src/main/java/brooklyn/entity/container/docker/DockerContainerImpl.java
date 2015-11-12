@@ -17,8 +17,6 @@ package brooklyn.entity.container.docker;
 
 import static java.lang.String.format;
 
-import javax.annotation.Nullable;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Collection;
@@ -27,6 +25,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

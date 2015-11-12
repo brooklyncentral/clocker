@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.reflect.TypeToken;
 
-import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.catalog.CatalogConfig;
 import org.apache.brooklyn.api.entity.Application;
 import org.apache.brooklyn.api.entity.Entity;

@@ -15,8 +15,9 @@
             "portMappings": [ [#list portBindings as port]
                 { "containerPort": ${port.getKey()?c}, "hostPort": ${port.getValue()?c} }[#if port_has_next],[/#if]
             [/#list] ],
-            "forcePullImage": true,
-            "volumes": [ ]
+            "volumes": [ [#list volumes as vol]
+                { "containerPath": "${vol.getKey()}", "hostPath": "${vol.getValue()}", "mode": "RW" }[#if vol_has_next],[/#if]
+            [/#list] ]
         },
         "type": "DOCKER"
     },
@@ -25,6 +26,9 @@
     "instances": 1,
     "ports": [ [#list openPorts as port]
         ${port?c}[#if port_has_next],[/#if]
+    [/#list] ],
+    "uris": [ [#list uris as u]
+        "${u}[#if u_has_next],[/#if]
     [/#list] ],
     [#if environment?has_content]
     "env": { [#list environment as env]

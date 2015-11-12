@@ -21,6 +21,7 @@ import java.util.Map;
 import com.google.common.reflect.TypeToken;
 
 import org.apache.brooklyn.api.catalog.Catalog;
+import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
@@ -30,11 +31,10 @@ import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.effector.MethodEffector;
 import org.apache.brooklyn.core.location.dynamic.LocationOwner;
 import org.apache.brooklyn.core.sensor.Sensors;
-import org.apache.brooklyn.entity.group.DynamicCluster;
 
 import brooklyn.entity.mesos.framework.MesosFramework;
+import brooklyn.entity.mesos.task.marathon.MarathonTask;
 import brooklyn.location.mesos.framework.marathon.MarathonLocation;
-import brooklyn.networking.subnet.SubnetTier;
 
 /**
  * The Marathon framework for Mesos.
@@ -46,17 +46,13 @@ public interface MarathonFramework extends MesosFramework, LocationOwner<Maratho
 
     ConfigKey<String> MARATHON_URL = ConfigKeys.newConfigKeyWithPrefix("marathon.", FRAMEWORK_URL.getConfigKey());
 
-    AttributeSensor<DynamicCluster> MARATHON_TASK_CLUSTER = Sensors.newSensor(DynamicCluster.class,
-            "marathon.task.cluster", "The Marathon tasks started by Clocker");
+    ConfigKey<EntitySpec> MARATHON_TASK_SPEC = ConfigKeys.newConfigKeyWithDefault(FRAMEWORK_TASK_SPEC, EntitySpec.create(MarathonTask.class));
 
     AttributeSensor<List<String>> MARATHON_APPLICATIONS = Sensors.newSensor(new TypeToken<List<String>>() { }, "marathon.applications", "List of Marathon applications");
 
     AttributeSensor<String> MARATHON_VERSION = Sensors.newStringSensor("marathon.version", "Marathon version");
 
     AttributeSensor<String> MARATHON_LEADER_URI = Sensors.newStringSensor("marathon.leader.uri", "Marathon leader URI");
-
-    AttributeSensor<SubnetTier> MARATHON_SUBNET_TIER = Sensors.newSensor(SubnetTier.class,
-            "marathon.subnetTier", "The SubnetTier for Marathon port mapping");
 
     // Effectors
 
@@ -77,9 +73,5 @@ public interface MarathonFramework extends MesosFramework, LocationOwner<Maratho
     @Effector(description="Stop a Marathon application")
     String stopApplication(
             @EffectorParam(name="id", description="Application ID") String id);
-
-    // Methods
-
-    DynamicCluster getTaskCluster();
 
 }

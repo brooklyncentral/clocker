@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -40,11 +39,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.net.HostAndPort;
 import com.google.common.net.HttpHeaders;
 import com.google.common.primitives.Ints;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 
+import org.jclouds.compute.domain.OsFamily;
 import org.jclouds.compute.domain.Processor;
 import org.jclouds.compute.domain.TemplateBuilder;
 
@@ -63,7 +64,6 @@ import org.apache.brooklyn.core.location.cloud.CloudLocationConfig;
 import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.core.sensor.DependentConfiguration;
 import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
-import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
 import org.apache.brooklyn.feed.http.HttpFeed;
@@ -72,6 +72,7 @@ import org.apache.brooklyn.feed.http.HttpValueFunctions;
 import org.apache.brooklyn.feed.http.JsonFunctions;
 import org.apache.brooklyn.location.jclouds.JcloudsLocationConfig;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
+import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.collections.MutableSet;
 import org.apache.brooklyn.util.core.http.HttpTool;
@@ -80,12 +81,15 @@ import org.apache.brooklyn.util.core.internal.ssh.SshTool;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.guava.Functionals;
 import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.Protocol;
 import org.apache.brooklyn.util.net.Urls;
+import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Time;
 
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.DockerContainer;
+import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.mesos.framework.MesosFramework;
 import brooklyn.entity.mesos.framework.marathon.MarathonFramework;
 import brooklyn.entity.mesos.task.MesosTask;
@@ -223,7 +227,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
 
     @Override
     public void disconnectSensors() {
-        if (httpFeed != null && httpFeed.isRunning()) httpFeed.stop();
+        if (httpFeed != null && httpFeed.isActivated()) httpFeed.destroy();
     }
 
     @Override
@@ -376,8 +380,31 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
 
         // Environment variables
         Map<String, Object> environment = MutableMap.copyOf(config().get(DOCKER_CONTAINER_ENVIRONMENT));
+        environment.putAll(MutableMap.copyOf(entity.config().get(DOCKER_CONTAINER_ENVIRONMENT)));
+        sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, environment);
+        entity.sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, environment);
         builder.put("environment", Lists.newArrayList(environment.entrySet()));
 
+        // Volumes
+        Map<String, String> volumes = MutableMap.of();
+        Map<String, String> mapping = entity.config().get(DockerHost.DOCKER_HOST_VOLUME_MAPPING);
+        if (mapping != null) {
+            for (String source : mapping.keySet()) {
+                volumes.put(source, mapping.get(source));
+            }
+        }
+        sensors().set(DockerAttributes.DOCKER_VOLUME_MAPPING, volumes);
+        entity.sensors().set(DockerAttributes.DOCKER_VOLUME_MAPPING, volumes);
+        builder.put("volumes", Lists.newArrayList(volumes.entrySet()));
+
+        // URIs to copy
+        List<String> uris = MutableList.copyOf(config().get(TASK_URI_LIST));
+        uris.addAll(MutableList.copyOf(entity.config().get(TASK_URI_LIST)));
+        sensors().set(TASK_URI_LIST, uris);
+        entity.sensors().set(TASK_URI_LIST, uris);
+        builder.put("uris", uris);
+
+        // Docker config
         Optional<String> imageName = Optional.fromNullable(config().get(DOCKER_IMAGE_NAME));
         if (imageName.isPresent()) {
             // Docker image
@@ -390,7 +417,45 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
             List<String> args = config().get(ARGS);
             builder.putIfNotNull("args", args);
         } else {
-            // TODO handle SoftwareProcess entities
+            // OS name for image
+            OsFamily os = entity.config().get(JcloudsLocationConfig.OS_FAMILY);
+            if (os == null) {
+                os = (OsFamily) provisioningProperties.get(JcloudsLocationConfig.OS_FAMILY.getName());
+            }
+            if (os == null) {
+                TemplateBuilder template = (TemplateBuilder) provisioningProperties.get(JcloudsLocationConfig.TEMPLATE_BUILDER.getName());
+                if (template != null) {
+                    os = template.build().getImage().getOperatingSystem().getFamily();
+                }
+            }
+            if (os == null) {
+                os = OsFamily.UBUNTU;
+            }
+            imageName = Optional.of(Strings.toLowerCase(os.value()));
+            builder.put("imageName", "clockercentral/" + imageName.get());
+
+            // OS version specified in regex config
+            String version = entity.config().get(JcloudsLocationConfig.OS_VERSION_REGEX);
+            if (version == null) {
+                version = (String) provisioningProperties.get(JcloudsLocationConfig.OS_VERSION_REGEX.getName());
+            }
+            if (version == null) {
+                TemplateBuilder template = (TemplateBuilder) provisioningProperties.get(JcloudsLocationConfig.TEMPLATE_BUILDER.getName());
+                if (template != null) {
+                    version = template.build().getImage().getOperatingSystem().getVersion();
+                }
+            }
+            if (version == null) {
+                version = "latest";
+            }
+            builder.put("imageVersion", version);
+
+            // Empty args
+            builder.put("args", ImmutableList.of());
+
+            // Update volume to copy root's authorized keys from the host
+            volumes.put("/root/.ssh/authorized_keys", "/root/.ssh/authorized_keys");
+            builder.put("volumes", Lists.newArrayList(volumes.entrySet()));
         }
 
         return builder.build();
@@ -404,6 +469,14 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
     @Override
     public void setRunningEntity(Entity entity) {
         sensors().set(ENTITY, entity);
+    }
+
+    public InetAddress getAddress() {
+        try {
+            return InetAddress.getByName(getHostname());
+        } catch (UnknownHostException e) {
+            throw Exceptions.propagate(e);
+        }
     }
 
     @Override
@@ -442,6 +515,39 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
 
     @Override
     public MarathonTaskLocation createLocation(Map<String, ?> flags) {
+        Entity entity = getRunningEntity();
+        SubnetTier subnet = getMesosCluster().getMesosSlave(getHostname()).getSubnetTier();
+
+        // Configure the entity subnet
+        LOG.info("Configuring entity {} via subnet {}", entity, subnet);
+        entity.config().set(SubnetTier.PORT_FORWARDING_MANAGER, subnet.getPortForwardManager());
+        entity.config().set(SubnetTier.PORT_FORWARDER, subnet.getPortForwarder());
+        entity.config().set(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL);
+        DockerUtils.configureEnrichers(subnet, entity);
+
+        // Create our wrapper location around the task
+        LocationSpec<MarathonTaskLocation> spec = LocationSpec.create(MarathonTaskLocation.class)
+                .parent(getMarathonFramework().getDynamicLocation())
+                .configure(flags)
+                .configure(DynamicLocation.OWNER, this)
+                .configure("entity", getRunningEntity())
+                .configure(CloudLocationConfig.WAIT_FOR_SSHABLE, "false")
+                .configure(SshMachineLocation.DETECT_MACHINE_DETAILS, false)
+                .displayName(getShortName());
+        if (config().get(DockerAttributes.DOCKER_USE_SSH)) {
+            spec.configure(SshMachineLocation.SSH_HOST, getHostname())
+                 .configure("address", getAddress())
+//                .configure(SshMachineLocation.SSH_PORT, getSshPort())
+                .configure(LocationConfigKeys.USER, "root")
+                .configure(LocationConfigKeys.PASSWORD, "p4ssw0rd")
+                .configure(SshTool.PROP_PASSWORD, "p4ssw0rd")
+                .configure(LocationConfigKeys.PRIVATE_KEY_DATA, (String) null) // TODO used to generate authorized_keys
+                .configure(LocationConfigKeys.PRIVATE_KEY_FILE, (String) null);
+        }
+        MarathonTaskLocation location = getManagementContext().getLocationManager().createLocation(spec);
+        sensors().set(DYNAMIC_LOCATION, location);
+        sensors().set(LOCATION_NAME, location.getId());
+
         // Lookup mapped ports
         List<Map.Entry<Integer, Integer>> portBindings = (List) flags.get("portBindings");
         Map<Integer, String> tcpMappings = MutableMap.of();
@@ -459,7 +565,10 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                         for (int i = 0; i < array.size(); i++) {
                             int hostPort = array.get(i).getAsInt();
                             int containerPort = portBindings.get(i).getKey();
-                            tcpMappings.put(containerPort, getHostname() + ":" + hostPort);
+                            String target = getId() + ":" + containerPort;
+                            tcpMappings.put(containerPort, target);
+                            subnet.getPortForwarder().openPortForwarding(HostAndPort.fromString(target), Optional.of(hostPort), Protocol.TCP, Cidr.UNIVERSAL);
+                            subnet.getPortForwarder().openPortForwarding(location, containerPort, Optional.of(hostPort), Protocol.TCP, Cidr.UNIVERSAL);
                         }
                     }
                 }
@@ -467,43 +576,6 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         } else {
             throw new IllegalStateException("Cannot retrieve application details for " + sensors().get(APPLICATION_ID));
         }
-
-        // Configure the entity subnet
-        SubnetTier subnet = getMarathonFramework().sensors().get(MarathonFramework.MARATHON_SUBNET_TIER);
-        Entity entity = getRunningEntity();
-        LOG.info("Configuring entity {} via subnet {}", entity, subnet);
-        entity.config().set(SubnetTier.PORT_FORWARDING_MANAGER, subnet.getPortForwardManager());
-        entity.config().set(SubnetTier.PORT_FORWARDER, subnet.getPortForwarder());
-        entity.config().set(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL);
-        DockerUtils.configureEnrichers(subnet, entity);
-        for (int port : (int[]) flags.get("openPorts")) {
-            String name = String.format("docker.port.%d", port);
-            entity.sensors().set(Sensors.newIntegerSensor(name), port);
-        }
-
-        // Create our wrapper location around the task
-        LocationSpec<MarathonTaskLocation> spec = LocationSpec.create(MarathonTaskLocation.class)
-                .parent(getMarathonFramework().getDynamicLocation())
-                .configure(flags)
-                .configure(DynamicLocation.OWNER, this)
-                .configure("entity", getRunningEntity())
-                .configure(CloudLocationConfig.WAIT_FOR_SSHABLE, "false")
-                .configure(SshMachineLocation.DETECT_MACHINE_DETAILS, false)
-                .configure(SshMachineLocation.TCP_PORT_MAPPINGS, tcpMappings)
-                .displayName(getShortName());
-        if (config().get(DockerAttributes.DOCKER_USE_SSH)) {
-            spec.configure(SshMachineLocation.SSH_HOST, getHostname())
-//                .configure(SshMachineLocation.SSH_PORT, getSshPort())
-                .configure(LocationConfigKeys.USER, "root")
-                .configure(LocationConfigKeys.PASSWORD, "p4ssw0rd")
-                .configure(SshTool.PROP_PASSWORD, "p4ssw0rd")
-                .configure(LocationConfigKeys.PRIVATE_KEY_DATA, (String) null) // TODO used to generate authorized_keys
-                .configure(LocationConfigKeys.PRIVATE_KEY_FILE, (String) null);
-        }
-        MarathonTaskLocation location = getManagementContext().getLocationManager().createLocation(spec);
-
-        sensors().set(DYNAMIC_LOCATION, location);
-        sensors().set(LOCATION_NAME, location.getId());
 
         LOG.info("New task location {} created", location);
         return location;
@@ -535,7 +607,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
     }
 
     static {
-        RendererHints.register(ENTITY, RendererHints.namedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(ENTITY, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(TASK_STARTED_AT, RendererHints.displayValue(Time.toDateString()));
         RendererHints.register(TASK_STAGED_AT, RendererHints.displayValue(Time.toDateString()));
     }

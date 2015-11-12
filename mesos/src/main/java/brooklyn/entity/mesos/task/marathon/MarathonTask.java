@@ -34,6 +34,7 @@ import org.apache.brooklyn.util.net.HasNetworkAddresses;
 
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.docker.DockerContainer;
+import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.mesos.framework.marathon.MarathonFramework;
 import brooklyn.entity.mesos.task.MesosTask;
 import brooklyn.location.mesos.framework.marathon.MarathonTaskLocation;
@@ -74,6 +75,14 @@ public interface MarathonTask extends MesosTask, HasNetworkAddresses, LocationOw
 
     @SetFromFlag("env")
     ConfigKey<Map<String, Object>> DOCKER_CONTAINER_ENVIRONMENT = DockerContainer.DOCKER_CONTAINER_ENVIRONMENT.getConfigKey();
+
+    @SetFromFlag("volumes")
+    ConfigKey<Map<String, String>> DOCKER_VOLUME_MAPPINGS = DockerHost.DOCKER_HOST_VOLUME_MAPPING.getConfigKey();
+
+    @SetFromFlag("uris")
+    AttributeSensorAndConfigKey<List<String>, List<String>> TASK_URI_LIST = ConfigKeys.newSensorAndConfigKey(
+            new TypeToken<List<String>>() { },
+            "marathon.task.uris", "List of URIs to copy to the Marathon task");
 
     @SetFromFlag("entity")
     AttributeSensorAndConfigKey<Entity, Entity> ENTITY = ConfigKeys.newSensorAndConfigKey(Entity.class,

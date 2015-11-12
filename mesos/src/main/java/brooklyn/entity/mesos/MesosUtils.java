@@ -121,14 +121,14 @@ public class MesosUtils {
         }
     }
 
-    public static Function<JsonElement, Maybe<JsonElement>> select(final Predicate<JsonElement> predicate) {
-        return new Select(predicate);
+    public static Function<JsonElement, Maybe<JsonElement>> selectM(final Predicate<JsonElement> predicate) {
+        return new SelectMaybe(predicate);
     }
 
-    protected static class Select implements Function<JsonElement, Maybe<JsonElement>> {
+    protected static class SelectMaybe implements Function<JsonElement, Maybe<JsonElement>> {
         private final Predicate<JsonElement> predicate;
 
-        public Select(Predicate<JsonElement> predicate) {
+        public SelectMaybe(Predicate<JsonElement> predicate) {
             this.predicate = predicate;
         }
 

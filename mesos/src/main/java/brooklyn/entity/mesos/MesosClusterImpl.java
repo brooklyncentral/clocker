@@ -15,7 +15,9 @@
  */
 package brooklyn.entity.mesos;
 
+import java.net.InetAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -24,40 +26,6 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
-import org.apache.brooklyn.api.entity.Application;
-import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.EntitySpec;
-import org.apache.brooklyn.api.location.Location;
-import org.apache.brooklyn.api.location.LocationDefinition;
-import org.apache.brooklyn.api.location.LocationRegistry;
-import org.apache.brooklyn.api.mgmt.LocationManager;
-import org.apache.brooklyn.api.mgmt.ManagementContext;
-import org.apache.brooklyn.core.config.render.RendererHints;
-import org.apache.brooklyn.core.entity.Attributes;
-import org.apache.brooklyn.core.entity.Entities;
-import org.apache.brooklyn.core.entity.EntityFunctions;
-import org.apache.brooklyn.core.entity.EntityPredicates;
-import org.apache.brooklyn.core.entity.trait.Startable;
-import org.apache.brooklyn.core.location.BasicLocationDefinition;
-import org.apache.brooklyn.core.location.BasicLocationRegistry;
-import org.apache.brooklyn.core.location.dynamic.LocationOwner;
-import org.apache.brooklyn.entity.group.BasicGroup;
-import org.apache.brooklyn.entity.group.DynamicGroup;
-import org.apache.brooklyn.entity.group.DynamicMultiGroup;
-import org.apache.brooklyn.entity.stock.BasicStartableImpl;
-import org.apache.brooklyn.entity.stock.DelegateEntity;
-import org.apache.brooklyn.feed.http.HttpFeed;
-import org.apache.brooklyn.feed.http.HttpPollConfig;
-import org.apache.brooklyn.feed.http.HttpValueFunctions;
-import org.apache.brooklyn.feed.http.JsonFunctions;
-import org.apache.brooklyn.util.collections.MutableList;
-import org.apache.brooklyn.util.collections.MutableMap;
-import org.apache.brooklyn.util.exceptions.Exceptions;
-import org.apache.brooklyn.util.guava.Functionals;
-import org.apache.brooklyn.util.math.MathFunctions;
-import org.apache.brooklyn.util.text.ByteSizeStrings;
-import org.apache.brooklyn.util.text.Strings;
-import org.apache.brooklyn.util.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,11 +42,55 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import org.apache.brooklyn.api.entity.Application;
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.EntitySpec;
+import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.location.LocationDefinition;
+import org.apache.brooklyn.api.location.LocationRegistry;
+import org.apache.brooklyn.api.location.LocationSpec;
+import org.apache.brooklyn.api.mgmt.LocationManager;
+import org.apache.brooklyn.api.mgmt.ManagementContext;
+import org.apache.brooklyn.core.config.render.RendererHints;
+import org.apache.brooklyn.core.entity.Attributes;
+import org.apache.brooklyn.core.entity.Entities;
+import org.apache.brooklyn.core.entity.EntityFunctions;
+import org.apache.brooklyn.core.entity.EntityPredicates;
+import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
+import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
+import org.apache.brooklyn.core.entity.trait.Startable;
+import org.apache.brooklyn.core.location.BasicLocationDefinition;
+import org.apache.brooklyn.core.location.BasicLocationRegistry;
+import org.apache.brooklyn.core.location.cloud.CloudLocationConfig;
+import org.apache.brooklyn.core.location.dynamic.LocationOwner;
+import org.apache.brooklyn.entity.group.BasicGroup;
+import org.apache.brooklyn.entity.group.DynamicGroup;
+import org.apache.brooklyn.entity.group.DynamicMultiGroup;
+import org.apache.brooklyn.entity.stock.BasicStartableImpl;
+import org.apache.brooklyn.entity.stock.DelegateEntity;
+import org.apache.brooklyn.feed.http.HttpFeed;
+import org.apache.brooklyn.feed.http.HttpPollConfig;
+import org.apache.brooklyn.feed.http.HttpValueFunctions;
+import org.apache.brooklyn.feed.http.JsonFunctions;
+import org.apache.brooklyn.location.ssh.SshMachineLocation;
+import org.apache.brooklyn.util.collections.MutableList;
+import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.guava.Functionals;
+import org.apache.brooklyn.util.math.MathFunctions;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.text.ByteSizeStrings;
+import org.apache.brooklyn.util.text.Strings;
+import org.apache.brooklyn.util.time.Duration;
+import org.apache.brooklyn.util.time.Time;
+
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.mesos.framework.MesosFramework;
+import brooklyn.entity.mesos.framework.marathon.MarathonPortForwarder;
 import brooklyn.entity.mesos.task.MesosTask;
 import brooklyn.location.mesos.MesosLocation;
 import brooklyn.location.mesos.MesosResolver;
+import brooklyn.networking.subnet.SubnetTier;
 
 /**
  * The Mesos cluster implementation.
@@ -88,7 +100,7 @@ public class MesosClusterImpl extends BasicStartableImpl implements MesosCluster
     private static final Logger LOG = LoggerFactory.getLogger(MesosCluster.class);
 
     private transient HttpFeed httpFeed;
-    private transient HttpFeed frameworkScan;
+    private transient HttpFeed scanner;
 
     @Override
     public void init() {
@@ -103,12 +115,16 @@ public class MesosClusterImpl extends BasicStartableImpl implements MesosCluster
                 .displayName("Mesos Frameworks"));
 
         DynamicGroup tasks = addChild(EntitySpec.create(DynamicGroup.class)
-                .configure(DynamicGroup.ENTITY_FILTER, Predicates.and(Predicates.instanceOf(MesosTask.class), EntityPredicates.attributeEqualTo(MesosAttributes.MESOS_CLUSTER, this)))
+                .configure(DynamicGroup.ENTITY_FILTER, Predicates.and(
+                        Predicates.instanceOf(MesosTask.class),
+                        EntityPredicates.attributeEqualTo(MesosAttributes.MESOS_CLUSTER, this)))
                 .configure(DynamicGroup.MEMBER_DELEGATE_CHILDREN, true)
                 .displayName("Mesos Tasks"));
 
         DynamicMultiGroup applications = addChild(EntitySpec.create(DynamicMultiGroup.class)
-                .configure(DynamicMultiGroup.ENTITY_FILTER, MesosUtils.sameCluster(this))
+                .configure(DynamicMultiGroup.ENTITY_FILTER, Predicates.and(
+                        MesosUtils.sameCluster(this),
+                        Predicates.not(EntityPredicates.applicationIdEqualTo(getApplicationId()))))
                 .configure(DynamicMultiGroup.RESCAN_INTERVAL, 15L)
                 .configure(DynamicMultiGroup.BUCKET_FUNCTION, new Function<Entity, String>() {
                         @Override
@@ -127,6 +143,7 @@ public class MesosClusterImpl extends BasicStartableImpl implements MesosCluster
             Entities.manage(applications);
         }
 
+        sensors().set(MESOS_SLAVES, slaves);
         sensors().set(MESOS_FRAMEWORKS, frameworks);
         sensors().set(MESOS_TASKS, tasks);
         sensors().set(MESOS_APPLICATIONS, applications);
@@ -144,7 +161,7 @@ public class MesosClusterImpl extends BasicStartableImpl implements MesosCluster
         LocationRegistry registry = getManagementContext().getLocationRegistry();
         MesosResolver mesosResolver = new MesosResolver();
         ((BasicLocationRegistry)registry).registerResolver(mesosResolver);
-        if (LOG.isDebugEnabled()) LOG.debug("Explicitly registered mesos resolver: "+mesosResolver);
+        LOG.debug("Explicitly registered mesos resolver: "+mesosResolver);
     }
 
     @Override
@@ -226,6 +243,7 @@ public class MesosClusterImpl extends BasicStartableImpl implements MesosCluster
 
     @Override
     public void start(Collection<? extends Location> locations) {
+        ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
         sensors().set(SERVICE_UP, Boolean.FALSE);
 
         LOG.info("Creating new MesosLocation");
@@ -239,10 +257,12 @@ public class MesosClusterImpl extends BasicStartableImpl implements MesosCluster
             Entities.invokeEffectorList(this, frameworks.getMembers(), Startable.START, ImmutableMap.of("locations", locations)).getUnchecked();
         } catch (Exception e) {
             LOG.warn("Error starting frameworks", e);
+            ServiceStateLogic.setExpectedState(this, Lifecycle.ON_FIRE);
             Exceptions.propagate(e);
         }
 
         connectSensors();
+        ServiceStateLogic.setExpectedState(this, Lifecycle.RUNNING);
     }
 
     /**
@@ -253,6 +273,7 @@ public class MesosClusterImpl extends BasicStartableImpl implements MesosCluster
         disconnectSensors();
 
         sensors().set(SERVICE_UP, Boolean.FALSE);
+
         Duration timeout = config().get(SHUTDOWN_TIMEOUT);
 
         // Find all applications and stop, blocking for up to five minutes until ended
@@ -279,7 +300,6 @@ public class MesosClusterImpl extends BasicStartableImpl implements MesosCluster
 
         // Stop anything else left over
         super.stop();
-
         deleteLocation();
     }
 
@@ -332,13 +352,27 @@ public class MesosClusterImpl extends BasicStartableImpl implements MesosCluster
         httpFeed = httpFeedBuilder.build();
 
         Duration scanInterval = config().get(SCAN_INTERVAL);
-        HttpFeed.Builder frameworkScanBuilder = HttpFeed.builder()
+        HttpFeed.Builder scanBuilder = HttpFeed.builder()
                 .entity(this)
                 .period(scanInterval)
                 .baseUri(sensors().get(Attributes.MAIN_URI))
-                .credentialsIfNotNull("admin", "admin")
+                .credentialsIfNotNull(config().get(MESOS_USERNAME), config().get(MESOS_PASSWORD))
+                .poll(HttpPollConfig.forSensor(MESOS_SLAVE_LIST)
+                        .description("Scan Cluster Slaves")
+                        .suburl("/master/state.json")
+                        .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(), JsonFunctions.walk("slaves"), new Function<JsonElement, List<String>>() {
+                            @Override
+                            public List<String> apply(JsonElement slaves) {
+                                try {
+                                    return scanSlaves(slaves.getAsJsonArray());
+                                } catch (UnknownHostException e) {
+                                    throw Exceptions.propagate(e);
+                                }
+                            }
+                        }))
+                        .onFailureOrException(Functions.<List<String>>constant(null)))
                 .poll(HttpPollConfig.forSensor(MESOS_FRAMEWORK_LIST)
-                        .description("Scan Frameworks")
+                        .description("Scan Cluster Frameworks")
                         .suburl("/master/state.json")
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(), JsonFunctions.walk("frameworks"), new Function<JsonElement, List<String>>() {
                             @Override
@@ -347,7 +381,7 @@ public class MesosClusterImpl extends BasicStartableImpl implements MesosCluster
                             }
                         }))
                         .onFailureOrException(Functions.<List<String>>constant(null)));
-        frameworkScan = frameworkScanBuilder.build();
+        scanner = scanBuilder.build();
     }
 
     public List<String> scanFrameworks(JsonArray frameworks) {
@@ -381,22 +415,98 @@ public class MesosClusterImpl extends BasicStartableImpl implements MesosCluster
         return frameworkNames;
     }
 
+    public List<String> scanSlaves(JsonArray slaves) throws UnknownHostException {
+        List<String> slaveIds = MutableList.<String>of();
+        for (int i = 0; i < slaves.size(); i++) {
+            JsonObject slave = slaves.get(i).getAsJsonObject();
+            boolean active = slave.get("active").getAsBoolean();
+            String id = slave.get("id").getAsString();
+            String hostname = slave.get("hostname").getAsString();
+            Double registered = slave.get("registered_time").getAsDouble();
+            slaveIds.add(id);
+
+            Optional<Entity> entity = Iterables.tryFind(sensors().get(MESOS_SLAVES).getMembers(),
+                      Predicates.compose(Predicates.equalTo(id), EntityFunctions.attribute(MesosSlave.MESOS_SLAVE_ID)));
+            if (entity.isPresent()) {
+                entity.get().sensors().set(MesosSlave.SLAVE_ACTIVE, active); continue;
+            }
+
+            // TODO make use of the MesosSlave.SLAVE_SSH_* configuration here
+            LocationSpec<SshMachineLocation> spec = LocationSpec.create(SshMachineLocation.class)
+                            .configure(CloudLocationConfig.WAIT_FOR_SSHABLE, "false")
+                            .configure(SshMachineLocation.DETECT_MACHINE_DETAILS, false)
+                            .configure(SshMachineLocation.SSH_HOST, hostname)
+                            .configure("address", InetAddress.getByName(hostname))
+//                            .configure(SshMachineLocation.SSH_PORT, getSshPort())
+//                            .configure(LocationConfigKeys.USER, "root")
+//                            .configure(LocationConfigKeys.PASSWORD, "p4ssw0rd")
+//                            .configure(SshTool.PROP_PASSWORD, "p4ssw0rd")
+//                            .configure(LocationConfigKeys.PRIVATE_KEY_DATA, (String) null) 
+//                            .configure(LocationConfigKeys.PRIVATE_KEY_FILE, (String) null)
+                            .displayName(hostname);
+            SshMachineLocation machine = getManagementContext().getLocationManager().createLocation(spec);
+
+            // Setup port forwarding
+            MarathonPortForwarder portForwarder = new MarathonPortForwarder();
+            portForwarder.injectManagementContext(getManagementContext());
+            portForwarder.init(hostname);
+
+            EntitySpec<MesosSlave> slaveSpec = EntitySpec.create(MesosSlave.class)
+                    .configure(MesosSlave.MESOS_SLAVE_ID, id)
+                    .configure(MesosSlave.REGISTERED_AT, registered.longValue())
+                    .configure(MesosSlave.MESOS_CLUSTER, this);
+            MesosSlave added = sensors().get(MESOS_SLAVES).addMemberChild(slaveSpec);
+            Entities.manage(added);
+            added.sensors().set(MesosSlave.SLAVE_ACTIVE, active);
+            added.sensors().set(MesosSlave.HOSTNAME, hostname);
+            added.sensors().set(MesosSlave.ADDRESS, hostname);
+
+            // Setup subnet tier
+            SubnetTier subnetTier = added.addChild(EntitySpec.create(SubnetTier.class)
+                    .configure(SubnetTier.PORT_FORWARDER, portForwarder)
+                    .configure(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL));
+            Entities.manage(subnetTier);
+            Entities.start(subnetTier, ImmutableList.of(machine));
+            added.sensors().set(MesosSlave.SUBNET_TIER, subnetTier);
+
+            added.start(ImmutableList.of(machine));
+        }
+        return slaveIds;
+    }
+
+    @Override
+    public MesosSlave getMesosSlave(String hostname) {
+        Collection<Entity> slaves = sensors().get(MESOS_SLAVES).getMembers();
+        Optional<Entity> found = Iterables.tryFind(slaves, Predicates.or(
+                EntityPredicates.attributeEqualTo(MesosSlave.HOSTNAME, hostname),
+                EntityPredicates.attributeEqualTo(MesosSlave.ADDRESS, hostname)));
+        if (found.isPresent()) {
+            return (MesosSlave) found.get();
+        } else {
+            throw new IllegalStateException("Cannot find slave for host: " + hostname);
+        }
+    }
+
+
     public void disconnectSensors() {
-        if (httpFeed != null && httpFeed.isRunning()) httpFeed.stop();
-        if (frameworkScan != null && frameworkScan.isRunning()) frameworkScan.stop();
+        if (httpFeed != null && httpFeed.isActivated()) httpFeed.destroy();
+        if (scanner != null && scanner.isActivated()) scanner.destroy();
     }
 
     static {
-        RendererHints.register(MESOS_FRAMEWORKS, RendererHints.namedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(MESOS_TASKS, RendererHints.namedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(MESOS_APPLICATIONS, RendererHints.namedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(MESOS_SLAVES, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(MESOS_FRAMEWORKS, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(MESOS_TASKS, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(MESOS_APPLICATIONS, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
+
+        RendererHints.register(START_TIME, RendererHints.displayValue(Time.toDateString()));
 
         RendererHints.register(LOAD_1MIN, RendererHints.displayValue(MathFunctions.percent(2)));
         RendererHints.register(LOAD_5MIN, RendererHints.displayValue(MathFunctions.percent(2)));
         RendererHints.register(LOAD_15MIN, RendererHints.displayValue(MathFunctions.percent(2)));
 
-        RendererHints.register(MEMORY_FREE_BYTES, RendererHints.displayValue(ByteSizeStrings.metric()));
-        RendererHints.register(MEMORY_TOTAL_BYTES, RendererHints.displayValue(ByteSizeStrings.metric()));
+        RendererHints.register(MEMORY_FREE_BYTES, RendererHints.displayValue(ByteSizeStrings.iso()));
+        RendererHints.register(MEMORY_TOTAL_BYTES, RendererHints.displayValue(ByteSizeStrings.iso()));
     }
 
 }

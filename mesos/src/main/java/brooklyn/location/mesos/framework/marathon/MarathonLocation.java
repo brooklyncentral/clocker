@@ -36,30 +36,21 @@ import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.NoMachinesAvailableException;
 import org.apache.brooklyn.camp.brooklyn.BrooklynCampConstants;
-import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.location.LocationConfigKeys;
 import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.util.collections.MutableMap;
-import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.exceptions.Exceptions;
-import org.apache.brooklyn.util.net.Cidr;
-import org.apache.brooklyn.util.text.Strings;
 
 import brooklyn.entity.container.DockerAttributes;
-import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.DockerContainer;
+import brooklyn.entity.mesos.framework.MesosFramework;
 import brooklyn.entity.mesos.framework.marathon.MarathonFramework;
 import brooklyn.entity.mesos.task.MesosTask;
 import brooklyn.entity.mesos.task.marathon.MarathonTask;
 import brooklyn.location.mesos.framework.MesosFrameworkLocation;
-import brooklyn.networking.common.subnet.PortForwarder;
-import brooklyn.networking.sdn.SdnAgent;
-import brooklyn.networking.sdn.SdnAttributes;
-import brooklyn.networking.sdn.SdnProvider;
-import brooklyn.networking.subnet.SubnetTier;
 
 public class MarathonLocation extends MesosFrameworkLocation implements MachineProvisioningLocation<MarathonTaskLocation>,
         DynamicLocation<MarathonFramework, MarathonLocation> {
@@ -71,9 +62,6 @@ public class MarathonLocation extends MesosFrameworkLocation implements MachineP
     public static final String TASK_MUTEX = "task";
 
     private transient ReadWriteLock lock = new ReentrantReadWriteLock();
-
-    @SetFromFlag("portForwarder")
-    private PortForwarder portForwarder;
 
     public MarathonLocation() {
         this(Maps.newLinkedHashMap());
@@ -146,8 +134,8 @@ public class MarathonLocation extends MesosFrameworkLocation implements MachineP
                     .putAll(getTaskFlags(entity))
                     .build();
             LOG.info("Starting task {} on framework {}", name, framework);
-            DynamicCluster cluster = framework.sensors().get(MarathonFramework.MARATHON_TASK_CLUSTER);
-            Entity added = cluster.addNode(this, taskFlags);
+            DynamicCluster tasks = framework.sensors().get(MesosFramework.FRAMEWORK_TASKS);
+            Entity added = tasks.addNode(this, taskFlags);
             if (added == null) {
                 throw new NoMachinesAvailableException("Failed to create marathon task");
             } else {
@@ -167,7 +155,7 @@ public class MarathonLocation extends MesosFrameworkLocation implements MachineP
         try {
             LOG.info("Releasing {}", location);
 
-            DynamicCluster cluster = framework.sensors().get(MarathonFramework.MARATHON_TASK_CLUSTER);
+            DynamicCluster cluster = framework.sensors().get(MesosFramework.FRAMEWORK_TASKS);
             MarathonTask task = location.getOwner();
             if (cluster.removeMember(task)) {
                 LOG.info("Marathon framework {}: member {} released", framework, location);

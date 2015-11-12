@@ -15,7 +15,6 @@
  */
 package brooklyn.entity.mesos.framework.marathon;
 
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
@@ -23,23 +22,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
-import org.apache.brooklyn.api.location.MachineLocation;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.api.mgmt.ManagementContext;
 import org.apache.brooklyn.core.location.access.PortForwardManager;
 import org.apache.brooklyn.core.location.access.PortForwardManagerImpl;
 import org.apache.brooklyn.core.location.access.PortMapping;
-import org.apache.brooklyn.location.ssh.SshMachineLocation;
+import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.HasNetworkAddresses;
 import org.apache.brooklyn.util.net.Protocol;
 
+import brooklyn.location.mesos.framework.marathon.MarathonTaskLocation;
 import brooklyn.networking.common.subnet.PortForwarder;
 
 public class MarathonPortForwarder implements PortForwarder {
@@ -47,10 +45,8 @@ public class MarathonPortForwarder implements PortForwarder {
     private static final Logger LOG = LoggerFactory.getLogger(MarathonPortForwarder.class);
 
     private PortForwardManager portForwardManager;
-    private String marathonEndpoint;
     private String marathonHostname;
-    private String marathonIdentity;
-    private String marathonCredential;
+    private Map<HostAndPort, HostAndPort> portmap;
 
     public MarathonPortForwarder() {
     }
@@ -65,20 +61,10 @@ public class MarathonPortForwarder implements PortForwarder {
             portForwardManager = (PortForwardManager) managementContext.getLocationRegistry().resolve("portForwardManager(scope=global)");
         }
     }
-    
-    public void init(String marathonHostIp, int marathonHostPort, String username, String password) {
-        this.marathonEndpoint = URI.create("http://" + marathonHostIp + ":" + marathonHostPort).toASCIIString();
+
+    public void init(String marathonHostIp) {
         this.marathonHostname = marathonHostIp;
-        this.marathonIdentity = username;
-        this.marathonCredential = password;
-    }
-
-
-    public void init(URI endpoint, String identity, String credential) {
-        this.marathonEndpoint = endpoint.toASCIIString();
-        this.marathonHostname = endpoint.getHost();
-        this.marathonIdentity = identity;
-        this.marathonCredential = credential;
+        this.portmap = MutableMap.of();
     }
 
     @Override
@@ -98,7 +84,6 @@ public class MarathonPortForwarder implements PortForwarder {
 
     @Override
     public String openGateway() {
-        // IP of port-forwarder already exists
         return marathonHostname;
     }
 
@@ -109,74 +94,67 @@ public class MarathonPortForwarder implements PortForwarder {
 
     @Override
     public void openFirewallPort(Entity entity, int port, Protocol protocol, Cidr accessingCidr) {
-        // TODO If port is already open in marathon port-mapping then no-op; otherwise UnsupportedOperationException currently
-        LOG.debug("no-op in {} for openFirewallPort({}, {}, {}, {})", new Object[] {this, entity, port, protocol, accessingCidr});
+        LOG.debug("no-op in {} for openFirewallPort({}, {}, {}, {})", new Object[] { this, entity, port, protocol, accessingCidr });
     }
 
     @Override
     public void openFirewallPortRange(Entity entity, PortRange portRange, Protocol protocol, Cidr accessingCidr) {
-        // TODO If port is already open in marathon port-mapping then no-op; otherwise UnsupportedOperationException currently
-        LOG.debug("no-op in {} for openFirewallPortRange({}, {}, {}, {})", new Object[] {this, entity, portRange, protocol, accessingCidr});
+        LOG.debug("no-op in {} for openFirewallPortRange({}, {}, {}, {})", new Object[] { this, entity, portRange, protocol, accessingCidr });
     }
 
     @Override
     public HostAndPort openPortForwarding(HasNetworkAddresses targetMachine, int targetPort, Optional<Integer> optionalPublicPort,
             Protocol protocol, Cidr accessingCidr) {
-
-        String targetIp = Iterables.getFirst(Iterables.concat(targetMachine.getPrivateAddresses(), targetMachine.getPublicAddresses()), null);
-        if (targetIp==null) {
-            throw new IllegalStateException("Failed to open port-forwarding for machine "+targetMachine+" because its" +
-                    " location has no target ip: "+targetMachine);
+        if (targetMachine instanceof MarathonTaskLocation) {
+            PortForwardManager pfw = getPortForwardManager();
+            HostAndPort publicSide;
+            if (optionalPublicPort.isPresent()) {
+                int publicPort = optionalPublicPort.get();
+                publicSide = HostAndPort.fromParts(marathonHostname, publicPort);
+            } else {
+                publicSide = HostAndPort.fromParts(marathonHostname, targetPort);
+            }
+            pfw.associate(marathonHostname, publicSide, (MarathonTaskLocation) targetMachine, targetPort);
+            return publicSide;
+        } else {
+            throw new IllegalArgumentException("Cannot forward ports for a non-Marathon target: " + targetMachine);
         }
-        HostAndPort targetSide = HostAndPort.fromParts(targetIp, targetPort);
-        HostAndPort newFrontEndpoint = openPortForwarding(targetSide, optionalPublicPort, protocol, accessingCidr);
-        LOG.debug("Enabled port-forwarding for {} port {} (VM {}), via {}", new Object[] {targetMachine, targetPort, targetMachine, newFrontEndpoint});
-        return newFrontEndpoint;
     }
 
     @Override
     public HostAndPort openPortForwarding(HostAndPort targetSide, Optional<Integer> optionalPublicPort, Protocol protocol, Cidr accessingCidr) {
-        // FIXME Does this actually open the port forwarding? Or just record that the port is supposed to be open?
         PortForwardManager pfw = getPortForwardManager();
-        PortMapping mapping;
+        HostAndPort publicSide;
         if (optionalPublicPort.isPresent()) {
             int publicPort = optionalPublicPort.get();
-            mapping = pfw.acquirePublicPortExplicit(marathonHostname, publicPort);
+            publicSide = HostAndPort.fromParts(marathonHostname, publicPort);
         } else {
-            mapping = pfw.acquirePublicPortExplicit(marathonHostname, targetSide.getPort());
+            publicSide = HostAndPort.fromParts(marathonHostname, targetSide.getPort());
         }
-        if (mapping == null) {
-            return HostAndPort.fromParts(marathonHostname, targetSide.getPort());
-        } else {
-            return HostAndPort.fromParts(marathonHostname, mapping.getPublicPort());
-        }
+        pfw.associate(marathonHostname, publicSide, targetSide.getPort());
+        portmap.put(publicSide, targetSide);
+        return publicSide;
     }
 
     @Override
     public boolean closePortForwarding(HostAndPort targetSide, HostAndPort publicSide, Protocol protocol) {
-        // no-op; we leave the port-forwarding in place.
-        // This is symmetrical with openPortForwarding, which doesn't actually open it - that just returns the existing open mapping.
+        portmap.remove(publicSide);
         return false;
     }
 
     @Override
     public boolean closePortForwarding(HasNetworkAddresses machine, int targetPort, HostAndPort publicSide, Protocol protocol) {
-        // no-op; we leave the port-forwarding in place.
-        // This is symmetrical with openPortForwarding, which doesn't actually open it - that just returns the existing open mapping.
+        portmap.remove(publicSide);
         return false;
-    }
-
-    public Map<Integer, Integer> getPortMappings(MachineLocation targetMachine) {
-        Map<Integer, String> tcpPortMappings = targetMachine.config().get(SshMachineLocation.TCP_PORT_MAPPINGS);
-        Map<Integer, Integer> portMappings = Maps.newLinkedHashMap();
-//        for (Integer containerPort : tcpPortMappings) {
-//            HostAndPort 
-//        }
-        return portMappings;
     }
 
     @Override
     public boolean isClient() {
         return false;
     }
+
+    public Map<HostAndPort, HostAndPort> getPortMapping() {
+        return ImmutableMap.copyOf(portmap);
+    }
+
 }

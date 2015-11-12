@@ -26,6 +26,7 @@ import org.apache.brooklyn.entity.stock.BasicStartable;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
 import brooklyn.entity.mesos.MesosAttributes;
+import brooklyn.entity.mesos.MesosCluster;
 import brooklyn.entity.mesos.framework.MesosFramework;
 
 /**
@@ -53,5 +54,7 @@ public interface MesosTask extends BasicStartable, HasShortName {
     enum TaskState { TASK_FINISHED, TASK_RUNNING, TASK_FAILED, TASK_ERROR, TASK_KILLED, TASK_LOST, TASK_STAGING, TASK_STARTING }
 
     MesosFramework getFramework();
+
+    MesosCluster getMesosCluster();
 
 }

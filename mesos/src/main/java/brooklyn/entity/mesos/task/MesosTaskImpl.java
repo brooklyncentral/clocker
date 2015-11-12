@@ -26,6 +26,7 @@ import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.entity.stock.BasicStartableImpl;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
 
+import brooklyn.entity.mesos.MesosCluster;
 import brooklyn.entity.mesos.framework.MesosFramework;
 
 /**
@@ -54,6 +55,11 @@ public class MesosTaskImpl extends BasicStartableImpl implements MesosTask {
     }
 
     @Override
+    public MesosCluster getMesosCluster() {
+        return (MesosCluster) sensors().get(MESOS_CLUSTER);
+    }
+
+    @Override
     public MesosFramework getFramework() {
         return (MesosFramework) sensors().get(FRAMEWORK);
     }
@@ -79,13 +85,12 @@ public class MesosTaskImpl extends BasicStartableImpl implements MesosTask {
 
     @Override
     public void stop() {
-        // TODO call stop
         disconnectSensors();
     }
 
     static {
-        RendererHints.register(FRAMEWORK, RendererHints.namedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(MESOS_CLUSTER, RendererHints.namedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(FRAMEWORK, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(MESOS_CLUSTER, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }

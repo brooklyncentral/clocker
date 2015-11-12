@@ -78,12 +78,14 @@ public interface MesosCluster extends BasicStartable, LocationOwner<MesosLocatio
     AttributeSensor<Double> LOAD_1MIN = Sensors.newDoubleSensor("mesos.load.1min", "Average system load for last minute in uptime(1) style");
     AttributeSensor<Double> LOAD_5MIN = Sensors.newDoubleSensor("mesos.load.5min", "Average system load for last 5 minutes in uptime(1) style");
     AttributeSensor<Double> LOAD_15MIN = Sensors.newDoubleSensor("mesos.load.15min", "Average system load for last 15 minutes in uptime(1) style");
+    AttributeSensor<Long> START_TIME = Sensors.newLongSensor("mesos.started", "Time cluster started");
 
     @SetFromFlag("scanInterval")
     ConfigKey<Duration> SCAN_INTERVAL = ConfigKeys.newConfigKey(Duration.class,
             "mesos.scanInterval", "Interval between scans of Mesos tasks and frameworks", Duration.TEN_SECONDS);
 
     AttributeSensor<List<String>> MESOS_FRAMEWORK_LIST = Sensors.newSensor(new TypeToken<List<String>>() { }, "mesos.frameworks.list", "List of Mesos frameworks");
+    AttributeSensor<List<String>> MESOS_SLAVE_LIST = Sensors.newSensor(new TypeToken<List<String>>() { }, "mesos.slaves.list", "List of Mesos slaves");
 
     Map<String, EntitySpec<? extends MesosFramework>> FRAMEWORKS = ImmutableMap.<String, EntitySpec<? extends MesosFramework>>builder()
             .put("marathon", EntitySpec.create(MarathonFramework.class))
@@ -91,5 +93,7 @@ public interface MesosCluster extends BasicStartable, LocationOwner<MesosLocatio
 //            .put("elasticsearch", EntitySpec.create(ElasticSearchFramework.class))
 //            .put("basho", EntitySpec.create(BigDataPlatformFramework.class))
             .build();
+
+    MesosSlave getMesosSlave(String hostname);
 
 }
