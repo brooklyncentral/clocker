@@ -23,7 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
@@ -36,7 +35,7 @@ import org.apache.brooklyn.api.mgmt.ManagementContext;
 import org.apache.brooklyn.core.location.access.PortForwardManager;
 import org.apache.brooklyn.core.location.access.PortForwardManagerImpl;
 import org.apache.brooklyn.core.location.access.PortMapping;
-import org.apache.brooklyn.location.jclouds.JcloudsLocation;
+import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.HasNetworkAddresses;
 import org.apache.brooklyn.util.net.Protocol;
@@ -45,7 +44,7 @@ import brooklyn.networking.common.subnet.PortForwarder;
 
 public class MarathonPortForwarder implements PortForwarder {
 
-    private static final Logger log = LoggerFactory.getLogger(MarathonPortForwarder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MarathonPortForwarder.class);
 
     private PortForwardManager portForwardManager;
     private String marathonEndpoint;
@@ -67,35 +66,19 @@ public class MarathonPortForwarder implements PortForwarder {
         }
     }
     
-    public void init(String marathonHostIp, int marathonHostPort) {
+    public void init(String marathonHostIp, int marathonHostPort, String username, String password) {
         this.marathonEndpoint = URI.create("http://" + marathonHostIp + ":" + marathonHostPort).toASCIIString();
         this.marathonHostname = marathonHostIp;
-        this.marathonIdentity = "notused";
-        this.marathonCredential = "notused";
+        this.marathonIdentity = username;
+        this.marathonCredential = password;
     }
 
-    public void init(URI endpoint) {
-        init(endpoint, "notused", "notused");
-    }
 
     public void init(URI endpoint, String identity, String credential) {
         this.marathonEndpoint = endpoint.toASCIIString();
         this.marathonHostname = endpoint.getHost();
         this.marathonIdentity = identity;
         this.marathonCredential = credential;
-    }
-
-    public void init(Iterable<? extends Location> locations) {
-        Optional<? extends Location> jcloudsLoc = Iterables.tryFind(locations, Predicates.instanceOf(JcloudsLocation.class));
-        String provider = (jcloudsLoc.isPresent()) ? ((JcloudsLocation)jcloudsLoc.get()).getProvider() : null;
-        String endpoint = (jcloudsLoc.isPresent()) ? ((JcloudsLocation)jcloudsLoc.get()).getEndpoint() : null;
-        String identity = (jcloudsLoc.isPresent()) ? ((JcloudsLocation)jcloudsLoc.get()).getIdentity() : null;
-        String credential = (jcloudsLoc.isPresent()) ? ((JcloudsLocation)jcloudsLoc.get()).getCredential() : null;
-        if (jcloudsLoc.isPresent() && "marathon".equals(provider)) {
-            init(URI.create(endpoint), identity, credential);
-        } else {
-            throw new IllegalStateException("Cannot infer marathon host URI from locations: "+locations);
-        }
     }
 
     @Override
@@ -106,7 +89,7 @@ public class MarathonPortForwarder implements PortForwarder {
     @Override
     public PortForwardManager getPortForwardManager() {
         if (portForwardManager == null) {
-            log.warn("Instantiating new PortForwardManager, because ManagementContext not injected into "+this
+            LOG.warn("Instantiating new PortForwardManager, because ManagementContext not injected into "+this
                     +" (deprecated behaviour that will not be supported in future versions)");
             portForwardManager = new PortForwardManagerImpl();
         }
@@ -127,13 +110,13 @@ public class MarathonPortForwarder implements PortForwarder {
     @Override
     public void openFirewallPort(Entity entity, int port, Protocol protocol, Cidr accessingCidr) {
         // TODO If port is already open in marathon port-mapping then no-op; otherwise UnsupportedOperationException currently
-        if (log.isDebugEnabled()) log.debug("no-op in {} for openFirewallPort({}, {}, {}, {})", new Object[] {this, entity, port, protocol, accessingCidr});
+        LOG.debug("no-op in {} for openFirewallPort({}, {}, {}, {})", new Object[] {this, entity, port, protocol, accessingCidr});
     }
 
     @Override
     public void openFirewallPortRange(Entity entity, PortRange portRange, Protocol protocol, Cidr accessingCidr) {
         // TODO If port is already open in marathon port-mapping then no-op; otherwise UnsupportedOperationException currently
-        if (log.isDebugEnabled()) log.debug("no-op in {} for openFirewallPortRange({}, {}, {}, {})", new Object[] {this, entity, portRange, protocol, accessingCidr});
+        LOG.debug("no-op in {} for openFirewallPortRange({}, {}, {}, {})", new Object[] {this, entity, portRange, protocol, accessingCidr});
     }
 
     @Override
@@ -147,7 +130,7 @@ public class MarathonPortForwarder implements PortForwarder {
         }
         HostAndPort targetSide = HostAndPort.fromParts(targetIp, targetPort);
         HostAndPort newFrontEndpoint = openPortForwarding(targetSide, optionalPublicPort, protocol, accessingCidr);
-        log.debug("Enabled port-forwarding for {} port {} (VM {}), via {}", new Object[] {targetMachine, targetPort, targetMachine, newFrontEndpoint});
+        LOG.debug("Enabled port-forwarding for {} port {} (VM {}), via {}", new Object[] {targetMachine, targetPort, targetMachine, newFrontEndpoint});
         return newFrontEndpoint;
     }
 
@@ -184,8 +167,11 @@ public class MarathonPortForwarder implements PortForwarder {
     }
 
     public Map<Integer, Integer> getPortMappings(MachineLocation targetMachine) {
-        // TODO
+        Map<Integer, String> tcpPortMappings = targetMachine.config().get(SshMachineLocation.TCP_PORT_MAPPINGS);
         Map<Integer, Integer> portMappings = Maps.newLinkedHashMap();
+//        for (Integer containerPort : tcpPortMappings) {
+//            HostAndPort 
+//        }
         return portMappings;
     }
 

@@ -10,10 +10,10 @@
     "container": {
         "docker": {
             "image": "${imageName}:${imageVersion}",
-            "network": "HOST",
+            "network": "BRIDGE",
             "privileged": true,
             "portMappings": [ [#list portBindings as port]
-                { "containerPort": ${port.getValue()?c}, "hostPort": ${port.getKey()?c} }[#if port_has_next],[/#if]
+                { "containerPort": ${port.getKey()?c}, "hostPort": ${port.getValue()?c} }[#if port_has_next],[/#if]
             [/#list] ],
             "forcePullImage": true,
             "volumes": [ ]

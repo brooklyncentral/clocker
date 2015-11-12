@@ -54,17 +54,20 @@ import org.apache.brooklyn.feed.http.JsonFunctions;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import org.apache.brooklyn.util.guava.Functionals;
+import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Urls;
 import org.apache.brooklyn.util.text.Strings;
 
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.application.VanillaDockerApplication;
+import brooklyn.entity.mesos.MesosCluster;
 import brooklyn.entity.mesos.MesosUtils;
 import brooklyn.entity.mesos.framework.MesosFramework;
 import brooklyn.entity.mesos.framework.MesosFrameworkImpl;
 import brooklyn.entity.mesos.task.marathon.MarathonTask;
 import brooklyn.location.mesos.framework.marathon.MarathonLocation;
 import brooklyn.location.mesos.framework.marathon.MarathonResolver;
+import brooklyn.networking.subnet.SubnetTier;
 
 /**
  * The Marathon framework implementation.
@@ -141,7 +144,10 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
 
         Optional<String> result = MesosUtils.httpPost(Urls.mergePaths(sensors().get(FRAMEWORK_URL), "v2/apps"), "classpath:///brooklyn/entity/mesos/framework/marathon/create-app.json", substitutions);
         if (!result.isPresent()) {
-            throw new IllegalStateException("Failed to start Marathon task");
+            JsonElement json = JsonFunctions.asJson().apply(result.get());
+            String message = json.getAsJsonObject().get("message").getAsString();
+            LOG.warn("Failed to start task {}: {}", id, message);
+            throw new IllegalStateException("Failed to start Marathon task: " + message);
         } else {
             LOG.debug("Success creating Marathon task");
             JsonElement json = JsonFunctions.asJson().apply(result.get());
@@ -170,7 +176,9 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
         // Setup port forwarding
         MarathonPortForwarder portForwarder = new MarathonPortForwarder();
         portForwarder.injectManagementContext(getManagementContext());
-        portForwarder.init(URI.create(sensors().get(FRAMEWORK_URL)));
+        String username = config().get(MesosCluster.MESOS_USERNAME);
+        String password = config().get(MesosCluster.MESOS_PASSWORD);
+        portForwarder.init(URI.create(sensors().get(FRAMEWORK_URL)), username, password);
 
         // Create Marathon location
         Map<String, ?> flags = MutableMap.<String, Object>builder()
@@ -181,12 +189,12 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
 
         // Setup subnet tier
         // TODO put this in the slaves?
-//        SubnetTier subnetTier = addChild(EntitySpec.create(SubnetTier.class)
-//                .configure(SubnetTier.PORT_FORWARDER, portForwarder)
-//                .configure(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL));
-//        Entities.manage(subnetTier);
-//        sensors().set(MARATHON_SUBNET_TIER, subnetTier);
-//        Entities.sart(subnetTier, ImmutableList.of(marathon));
+        SubnetTier subnetTier = addChild(EntitySpec.create(SubnetTier.class)
+                .configure(SubnetTier.PORT_FORWARDER, portForwarder)
+                .configure(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL));
+        Entities.manage(subnetTier);
+        sensors().set(MARATHON_SUBNET_TIER, subnetTier);
+        Entities.start(subnetTier, ImmutableList.of(marathon));
 
         // Add task cluster
         DynamicCluster tasks = getTaskCluster();

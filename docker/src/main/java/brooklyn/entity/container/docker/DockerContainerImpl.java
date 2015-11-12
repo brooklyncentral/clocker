@@ -39,6 +39,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -58,6 +59,7 @@ import org.apache.brooklyn.api.location.OsDetails;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.api.mgmt.LocationManager;
 import org.apache.brooklyn.camp.brooklyn.BrooklynCampConstants;
+import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
@@ -68,6 +70,7 @@ import org.apache.brooklyn.core.location.LocationConfigKeys;
 import org.apache.brooklyn.core.location.cloud.CloudLocationConfig;
 import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
+import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.stock.BasicStartableImpl;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
@@ -447,7 +450,12 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             if (target.sensors().get(DockerContainer.CONTAINER) != null) {
                 openPorts.addAll(MutableSet.copyOf(target.sensors().get(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS)));
             } else {
-                openPorts.addAll(DockerUtils.getOpenPorts(target));
+                Set<Integer> open = DockerUtils.getOpenPorts(target);
+                for (Integer port : open) {
+                    String sensor = String.format("mapped.docker.port.%d", port);
+                    Integer mapped = Optional.fromNullable(target.sensors().get(Sensors.newIntegerSensor(sensor))).or(port);
+                    openPorts.add(mapped);
+                }
             }
             Map<String, Object> env = MutableMap.of();
             for (Integer port : openPorts) {
@@ -464,6 +472,21 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             LOG.warn("Cannot generate links for {}: no name specified", target);
             return ImmutableMap.<String, Object>of();
         }
+    }
+
+    /** Returns the set of configured ports an entity is listening on. */
+    public static Set<Integer> getOpenPorts(Entity entity) {
+        Set<Integer> ports = MutableSet.of(22);
+        for (ConfigKey<?> k: entity.getEntityType().getConfigKeys()) {
+            if (PortRange.class.isAssignableFrom(k.getType())) {
+                PortRange p = (PortRange) entity.config().get(k);
+                if (p != null && !p.isEmpty()) ports.add(p.iterator().next());
+            }
+        }
+        for (Entity child : entity.getChildren()) {
+            ports.addAll(getOpenPorts(child));
+        }
+        return ImmutableSet.copyOf(ports);
     }
 
     private Optional<String> getContainerName(Entity target) {

@@ -36,6 +36,7 @@ import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.NoMachinesAvailableException;
 import org.apache.brooklyn.camp.brooklyn.BrooklynCampConstants;
+import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.location.LocationConfigKeys;
@@ -44,14 +45,21 @@ import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.text.Strings;
 
+import brooklyn.entity.container.DockerAttributes;
+import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.mesos.framework.marathon.MarathonFramework;
 import brooklyn.entity.mesos.task.MesosTask;
 import brooklyn.entity.mesos.task.marathon.MarathonTask;
 import brooklyn.location.mesos.framework.MesosFrameworkLocation;
 import brooklyn.networking.common.subnet.PortForwarder;
+import brooklyn.networking.sdn.SdnAgent;
+import brooklyn.networking.sdn.SdnAttributes;
+import brooklyn.networking.sdn.SdnProvider;
+import brooklyn.networking.subnet.SubnetTier;
 
 public class MarathonLocation extends MesosFrameworkLocation implements MachineProvisioningLocation<MarathonTaskLocation>,
         DynamicLocation<MarathonFramework, MarathonLocation> {
@@ -99,6 +107,11 @@ public class MarathonLocation extends MesosFrameworkLocation implements MachineP
             if (command != null) flags.put(MarathonTask.COMMAND, command);
             List<String> args = entity.config().get(MarathonTask.ARGS);
             flags.put(MarathonTask.ARGS, args);
+
+            // No SSH used for vanilla Docker images on Marathon
+            flags.put(DockerAttributes.DOCKER_USE_SSH, Boolean.FALSE);
+        } else {
+            flags.put(DockerAttributes.DOCKER_USE_SSH, Boolean.TRUE);
         }
 
         return flags;

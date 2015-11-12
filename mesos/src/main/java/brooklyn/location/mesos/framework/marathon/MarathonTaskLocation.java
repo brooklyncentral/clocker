@@ -72,14 +72,19 @@ public class MarathonTaskLocation extends SshMachineLocation implements Supports
 
     @Override
     public HostAndPort getSocketEndpointFor(Cidr accessor, int privatePort) {
+        LOG.info(">>> getSocketEndpointFor : {} : {}", accessor, privatePort);
         return null;
     }
 
     @Override
-    public boolean obtainSpecificPort(int portNumber) { return true; }
+    public boolean obtainSpecificPort(int portNumber) {
+        LOG.info(">>> obtainSpecificPort : {}", portNumber);
+        return true;
+    }
 
     @Override
     public int obtainPort(PortRange range) {
+        LOG.info(">>> obtainPort : {}", range.toString());
         int portNumber = range.iterator().next();
         return portNumber;
     }
