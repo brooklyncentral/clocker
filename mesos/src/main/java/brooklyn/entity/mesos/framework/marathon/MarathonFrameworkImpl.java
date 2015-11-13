@@ -54,6 +54,7 @@ import org.apache.brooklyn.util.text.Strings;
 
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.application.VanillaDockerApplication;
+import brooklyn.entity.mesos.MesosCluster;
 import brooklyn.entity.mesos.MesosUtils;
 import brooklyn.entity.mesos.framework.MesosFramework;
 import brooklyn.entity.mesos.framework.MesosFrameworkImpl;
@@ -104,6 +105,7 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
                 .entity(this)
                 .period(500, TimeUnit.MILLISECONDS)
                 .baseUri(sensors().get(FRAMEWORK_URL))
+                .credentialsIfNotNull(config().get(MesosCluster.MESOS_USERNAME), config().get(MesosCluster.MESOS_PASSWORD))
                 .poll(new HttpPollConfig<List<String>>(MARATHON_APPLICATIONS)
                         .suburl("/v2/apps/")
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(), JsonFunctions.walk("apps"), JsonFunctions.forEach(JsonFunctions.<String>getPath("id"))))
@@ -130,7 +132,7 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
         Map<String, Object> substitutions = MutableMap.copyOf(flags);
         substitutions.put("id", id);
 
-        Optional<String> result = MesosUtils.httpPost(Urls.mergePaths(sensors().get(FRAMEWORK_URL), "v2/apps"), "classpath:///brooklyn/entity/mesos/framework/marathon/create-app.json", substitutions);
+        Optional<String> result = MesosUtils.httpPost(this, "v2/apps", "classpath:///brooklyn/entity/mesos/framework/marathon/create-app.json", substitutions);
         if (!result.isPresent()) {
             JsonElement json = JsonFunctions.asJson().apply(result.get());
             String message = json.getAsJsonObject().get("message").getAsString();
@@ -146,7 +148,7 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
 
     @Override
     public String stopApplication(String id) {
-        Optional<String> result = MesosUtils.httpDelete(Urls.mergePaths(sensors().get(FRAMEWORK_URL), "v2/apps", id));
+        Optional<String> result = MesosUtils.httpDelete(this, Urls.mergePaths("v2/apps", id));
         if (!result.isPresent()) {
             throw new IllegalStateException("Failed to stop Marathon task");
         } else {

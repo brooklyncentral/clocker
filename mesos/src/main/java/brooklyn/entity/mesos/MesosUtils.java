@@ -42,10 +42,15 @@ import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.ResourceUtils;
 import org.apache.brooklyn.util.core.http.HttpTool;
+import org.apache.brooklyn.util.core.http.HttpTool.HttpClientBuilder;
 import org.apache.brooklyn.util.core.http.HttpToolResponse;
 import org.apache.brooklyn.util.core.text.TemplateProcessor;
 import org.apache.brooklyn.util.guava.Maybe;
+import org.apache.brooklyn.util.net.Urls;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.HttpClient;
 
+import brooklyn.entity.mesos.framework.MesosFramework;
 import brooklyn.location.mesos.MesosLocation;
 
 public class MesosUtils {
@@ -81,13 +86,14 @@ public class MesosUtils {
         }
     };
 
-    public static final Optional<String> httpPost(String targetUrl, String dataUrl, Map<String, Object> substitutions) {
+    public static final Optional<String> httpPost(Entity framework, String subUrl, String dataUrl, Map<String, Object> substitutions) {
+        String targetUrl = Urls.mergePaths(framework.sensors().get(MesosFramework.FRAMEWORK_URL), subUrl); 
         String templateContents = ResourceUtils.create().getResourceAsString(dataUrl);
         String processedJson = TemplateProcessor.processTemplateContents(templateContents, substitutions);
         LOG.debug("Posting JSON to {}: {}", targetUrl, processedJson);
         URI postUri = URI.create(targetUrl);
         HttpToolResponse response = HttpTool.httpPost(
-                HttpTool.httpClientBuilder().uri(postUri).build(),
+                MesosUtils.buildClient(framework),
                 postUri,
                 MutableMap.of(
                         HttpHeaders.CONTENT_TYPE, "application/json",
@@ -103,11 +109,12 @@ public class MesosUtils {
         }
     }
 
-    public static final Optional<String> httpDelete(String targetUrl) {
+    public static final Optional<String> httpDelete(Entity framework, String subUrl) {
+        String targetUrl = Urls.mergePaths(framework.sensors().get(MesosFramework.FRAMEWORK_URL), subUrl); 
         LOG.debug("Deleting {}", targetUrl);
         URI deleteUri = URI.create(targetUrl);
         HttpToolResponse response = HttpTool.httpDelete(
-                HttpTool.httpClientBuilder().uri(deleteUri).build(),
+                buildClient(framework),
                 deleteUri,
                 MutableMap.of(
                         HttpHeaders.ACCEPT, "application/json"));
@@ -155,6 +162,20 @@ public class MesosUtils {
                 return (T) rawElement;
             }
         };
+    }
+
+    public static HttpClient buildClient(Entity framework) {
+        String url = framework.sensors().get(MesosFramework.FRAMEWORK_URL);
+        String username = framework.config().get(MesosCluster.MESOS_USERNAME);
+        String password = framework.config().get(MesosCluster.MESOS_PASSWORD);
+        HttpClientBuilder builder = HttpTool.httpClientBuilder().uri(url);
+        if ("true".equals(System.getProperty("jclouds.trust-all-certs"))) {
+            builder.trustAll();
+        }
+        if (username != null && password != null) {
+            builder.credentials(new UsernamePasswordCredentials(username, password));
+        }
+        return builder.build();
     }
 
 }
