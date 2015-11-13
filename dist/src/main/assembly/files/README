@@ -13,10 +13,10 @@ use the `brooklyn.sh` script with the `clocker` command and alternative options.
     % ./bin/brooklyn.sh clocker
 
 The Clocker catalog contains a blueprint for a Docker Cloud and some example
-applications. To start a Docker Cloud using the provided `docker-cloud.yaml` blueprint
-and its default options, use the following command:
+applications. To start a Docker Cloud using the provided `docker-cloud-calico.yaml`
+blueprint and its default options, use the following command:
 
-    % ./bin/clocker.sh jclouds:aws-ec2:us-east-1
+    % ./bin/clocker.sh jclouds:softlayer:lon02 calico
 
 Other blueprints are provided in the `blueprints` directory to illustrate different
 application configuration mechanisms.

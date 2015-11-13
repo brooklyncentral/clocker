@@ -40,7 +40,7 @@ You can deploy your own **Docker Cloud** with a Weave SDN by running these comma
 st to `weave`, to use Project Calico as your SDN provider, change the last argument to `calico` instead:
 ```Bash
 % wget --no-check-certificate --quiet \
-    -O brooklyn-clocker-dist.tar.gz http://git.io/vCrU7
+    -O brooklyn-clocker-dist.tar.gz http://git.io/v4UMB
 % tar zxf brooklyn-clocker-dist.tar.gz
 % cd brooklyn-clocker
 % ./bin/clocker.sh location network
