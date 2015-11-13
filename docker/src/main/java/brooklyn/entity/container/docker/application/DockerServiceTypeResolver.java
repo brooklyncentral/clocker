@@ -33,7 +33,6 @@ import org.apache.brooklyn.camp.brooklyn.spi.creation.BrooklynComponentTemplateR
 import org.apache.brooklyn.camp.brooklyn.spi.creation.service.BrooklynServiceTypeResolver;
 import org.apache.brooklyn.camp.brooklyn.spi.creation.service.ServiceTypeResolver;
 import org.apache.brooklyn.camp.spi.PlatformComponentTemplate;
-import org.apache.brooklyn.core.entity.BrooklynConfigKeys;
 import org.apache.brooklyn.util.text.Strings;
 
 import brooklyn.entity.container.DockerAttributes;

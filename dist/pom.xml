@@ -39,12 +39,17 @@
     <dependencies>
         <dependency>
             <groupId>io.brooklyn.clocker</groupId>
+            <artifactId>brooklyn-clocker-patches</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.brooklyn.clocker</groupId>
             <artifactId>brooklyn-clocker-docker</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>io.brooklyn.clocker</groupId>
-            <artifactId>brooklyn-clocker-patches</artifactId>
+            <artifactId>brooklyn-clocker-mesos</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>

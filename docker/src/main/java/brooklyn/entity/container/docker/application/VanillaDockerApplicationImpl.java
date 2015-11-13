@@ -15,6 +15,7 @@
  */
 package brooklyn.entity.container.docker.application;
 
+import java.net.URI;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -23,9 +24,12 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 
+import org.apache.brooklyn.api.sensor.AttributeSensor;
+import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.entity.software.base.SoftwareProcessImpl;
 
 import brooklyn.entity.container.DockerAttributes;
+import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.location.docker.DockerContainerLocation;
@@ -35,9 +39,30 @@ public class VanillaDockerApplicationImpl extends SoftwareProcessImpl implements
     private static final Logger LOG = LoggerFactory.getLogger(VanillaDockerApplicationImpl.class);
 
     @Override
+    public String getIconUrl() { return "classpath://container.png"; }
+
+    @Override
     protected void connectSensors() {
         connectServiceUpIsRunning();
         super.connectSensors();
+    }
+
+    @Override
+    public void preStart() {
+        super.preStart();
+
+        // Refresh the sensors that will be mapped, since we now have a location for the enricher to use
+        for (AttributeSensor sensor : Iterables.filter(getEntityType().getSensors(), AttributeSensor.class)) {
+            if (((DockerUtils.URL_SENSOR_NAMES.contains(sensor.getName()) ||
+                            sensor.getName().endsWith(".url") ||
+                            URI.class.isAssignableFrom(sensor.getType())) &&
+                        !DockerUtils.BLACKLIST_URL_SENSOR_NAMES.contains(sensor.getName())) ||
+                    (sensor.getName().matches("docker\\.port\\.[0-9]+") ||
+                        PortAttributeSensorAndConfigKey.class.isAssignableFrom(sensor.getClass()))) {
+                Object current = sensors().get(sensor);
+                sensors().set(sensor, current);
+            }
+        }
     }
 
     @Override

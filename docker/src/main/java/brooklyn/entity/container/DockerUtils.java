@@ -15,11 +15,16 @@
  */
 package brooklyn.entity.container;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Charsets;
@@ -37,8 +42,16 @@ import com.google.common.hash.Hashing;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationDefinition;
+import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.api.mgmt.ManagementContext;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
+import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.core.config.render.RendererHints;
+import org.apache.brooklyn.core.config.render.RendererHints.Hint;
+import org.apache.brooklyn.core.config.render.RendererHints.NamedActionWithUrl;
+import org.apache.brooklyn.core.entity.EntityAndAttribute;
+import org.apache.brooklyn.core.location.PortRanges;
 import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.database.DatastoreMixins;
@@ -47,6 +60,8 @@ import org.apache.brooklyn.entity.nosql.couchbase.CouchbaseCluster;
 import org.apache.brooklyn.entity.nosql.couchbase.CouchbaseNode;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.webapp.WebAppServiceConstants;
+import org.apache.brooklyn.util.collections.MutableList;
+import org.apache.brooklyn.util.collections.MutableSet;
 import org.apache.brooklyn.util.text.Identifiers;
 import org.apache.brooklyn.util.text.Strings;
 
@@ -54,8 +69,11 @@ import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.networking.sdn.SdnAttributes;
+import brooklyn.networking.subnet.SubnetTier;
 
 public class DockerUtils {
+
+    private static final Logger LOG = LoggerFactory.getLogger(DockerUtils.class);
 
     /** Do not instantiate. */
     private DockerUtils() { }
@@ -104,10 +122,10 @@ public class DockerUtils {
     public static <T> AttributeSensor<T> mappedSensor(AttributeSensor<?> source) {
         return (AttributeSensor<T>) Sensors.newSensorWithPrefix(MAPPED + ".", source);
     }
-    public static AttributeSensor<String> mappedPortSensor(PortAttributeSensorAndConfigKey source) {
+    public static AttributeSensor<String> mappedPortSensor(AttributeSensor source) {
         return Sensors.newStringSensor(MAPPED + "." + source.getName(), source.getDescription() + " (Docker mapping)");
     }
-    public static AttributeSensor<String> endpointSensor(PortAttributeSensorAndConfigKey source) {
+    public static AttributeSensor<String> endpointSensor(AttributeSensor source) {
         List<String> name = Lists.transform(source.getNameParts(), new Function<String, String>() {
             @Override
             public String apply(@Nullable String input) {
@@ -125,6 +143,30 @@ public class DockerUtils {
         });
         if (!name.contains(ENDPOINT)) name.add(ENDPOINT);
         return Sensors.newStringSensor(Joiner.on(".").join(name), source.getDescription() + " (Docker mapping)");
+    }
+
+    public static void configureEnrichers(SubnetTier subnetTier, Entity entity) {
+        for (AttributeSensor sensor : Iterables.filter(entity.getEntityType().getSensors(), AttributeSensor.class)) {
+            if ((DockerUtils.URL_SENSOR_NAMES.contains(sensor.getName()) ||
+                        sensor.getName().endsWith(".url") ||
+                        URI.class.isAssignableFrom(sensor.getType())) &&
+                    !DockerUtils.BLACKLIST_URL_SENSOR_NAMES.contains(sensor.getName())) {
+                AttributeSensor<String> target = DockerUtils.<String>mappedSensor(sensor);
+                entity.addEnricher(subnetTier.uriTransformingEnricher(
+                        EntityAndAttribute.create(entity, sensor), target));
+                Set<Hint<?>> hints = RendererHints.getHintsFor(sensor);
+                for (Hint<?> hint : hints) {
+                    RendererHints.register(target, (NamedActionWithUrl) hint);
+                }
+                LOG.debug("Mapped URL sensor: origin={}, mapped={}", sensor.getName(), target.getName());
+            } else if (sensor.getName().matches("docker\\.port\\.[0-9]+") ||
+                    PortAttributeSensorAndConfigKey.class.isAssignableFrom(sensor.getClass())) {
+                AttributeSensor<String> target = DockerUtils.mappedPortSensor(sensor);
+                entity.addEnricher(subnetTier.hostAndPortTransformingEnricher(
+                        EntityAndAttribute.create(entity, sensor), target));
+                LOG.debug("Mapped port sensor: origin={}, mapped={}", sensor.getName(), target.getName());
+            }
+        }
     }
 
     /**
@@ -162,6 +204,43 @@ public class DockerUtils {
 
         String label = Joiner.on(":").skipNulls().join(simpleName, version, dockerfile);
         return Identifiers.makeIdFromHash(Hashing.md5().hashString(label, Charsets.UTF_8).asLong()).toLowerCase(Locale.ENGLISH);
+    }
+
+    /** Returns the set of configured ports an entity is listening on. */
+    public static Set<Integer> getOpenPorts(Entity entity) {
+        Set<Integer> ports = MutableSet.of(22);
+        for (ConfigKey<?> k: entity.getEntityType().getConfigKeys()) {
+            if (PortRange.class.isAssignableFrom(k.getType())) {
+                PortRange p = (PortRange) entity.config().get(k);
+                if (p != null && !p.isEmpty()) ports.add(p.iterator().next());
+            }
+        }
+        for (Entity child : entity.getChildren()) {
+            ports.addAll(getOpenPorts(child));
+        }
+        return ImmutableSet.copyOf(ports);
+    }
+
+    /*
+     * Returns the set of ports configured for the container the entity is running in
+     * and also sets a configuration key and sensor for each.
+     */
+    public static Set<Integer> getContainerPorts(Entity entity) {
+        List<Integer> entityOpenPorts = MutableList.of();
+        List<Integer> openPorts = entity.config().get(DockerAttributes.DOCKER_OPEN_PORTS);
+        if (openPorts != null) entityOpenPorts.addAll(openPorts);
+        Map<Integer, Integer> portBindings = entity.sensors().get(DockerAttributes.DOCKER_CONTAINER_PORT_BINDINGS);
+        if (portBindings != null) entityOpenPorts.addAll(portBindings.values());
+        if (entityOpenPorts.size() > 0) {
+            // Create config and sensor for these ports
+            for (int i = 0; i < entityOpenPorts.size(); i++) {
+                Integer port = entityOpenPorts.get(i);
+                String name = String.format("docker.port.%d", port);
+                entity.sensors().set(Sensors.newIntegerSensor(name), port);
+                entity.config().set(ConfigKeys.newConfigKey(PortRange.class, name), PortRanges.fromInteger(port));
+            }
+        }
+        return ImmutableSet.copyOf(entityOpenPorts);
     }
 
     public static boolean isSdnProvider(Entity dockerHost, String providerName) {

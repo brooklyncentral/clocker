@@ -54,7 +54,6 @@ import org.jclouds.softlayer.features.VirtualGuestApi;
 import org.jclouds.softlayer.reference.SoftLayerConstants;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationDefinition;
@@ -185,6 +184,9 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 .from(containers)
                 .build());
     }
+
+    @Override
+    public String getIconUrl() { return "classpath://docker-logo.png"; }
 
     @Override
     protected Collection<Integer> getRequiredOpenPorts() {

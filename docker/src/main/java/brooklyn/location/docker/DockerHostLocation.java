@@ -17,11 +17,9 @@ package brooklyn.location.docker;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -36,7 +34,6 @@ import com.google.api.client.util.Joiner;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -44,18 +41,12 @@ import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.NoMachinesAvailableException;
-import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
-import org.apache.brooklyn.core.config.render.RendererHints;
-import org.apache.brooklyn.core.config.render.RendererHints.Hint;
-import org.apache.brooklyn.core.config.render.RendererHints.NamedActionWithUrl;
 import org.apache.brooklyn.core.entity.Entities;
-import org.apache.brooklyn.core.entity.EntityAndAttribute;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.location.AbstractLocation;
 import org.apache.brooklyn.core.location.LocationConfigKeys;
 import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
-import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
@@ -152,7 +143,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             } else {
                 entity.config().set(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL);
             }
-            configureEnrichers(entity);
+            DockerUtils.configureEnrichers(dockerHost.getSubnetTier(), entity);
 
             // Add the entity Dockerfile if configured
             String dockerfile = entity.config().get(DockerAttributes.DOCKERFILE_URL);
@@ -301,33 +292,6 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
     public void markImage(String imageName) {
         CountDownLatch latch = images.get(imageName);
         if (latch != null) latch.countDown();
-    }
-
-    private void configureEnrichers(Entity entity) {
-        for (AttributeSensor sensor : Iterables.filter(entity.getEntityType().getSensors(), AttributeSensor.class)) {
-            if ((DockerUtils.URL_SENSOR_NAMES.contains(sensor.getName()) ||
-                        sensor.getName().endsWith(".url") ||
-                        URI.class.isAssignableFrom(sensor.getType())) &&
-                    !DockerUtils.BLACKLIST_URL_SENSOR_NAMES.contains(sensor.getName())) {
-                AttributeSensor<String> target = DockerUtils.<String>mappedSensor(sensor);
-                entity.addEnricher(dockerHost.getSubnetTier().uriTransformingEnricher(
-                        EntityAndAttribute.create(entity, sensor), target));
-                Set<Hint<?>> hints = RendererHints.getHintsFor(sensor);
-                for (Hint<?> hint : hints) {
-                    RendererHints.register(target, (NamedActionWithUrl) hint);
-                }
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Mapped URL sensor: origin={}, mapped={}", sensor.getName(), target.getName());
-                }
-            } else if (PortAttributeSensorAndConfigKey.class.isAssignableFrom(sensor.getClass())) {
-                AttributeSensor<String> target = DockerUtils.mappedPortSensor((PortAttributeSensorAndConfigKey) sensor);
-                entity.addEnricher(dockerHost.getSubnetTier().hostAndPortTransformingEnricher(
-                        EntityAndAttribute.create(entity, sensor), target));
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Mapped port sensor: origin={}, mapped={}", sensor.getName(), target.getName());
-                }
-            }
-        }
     }
 
     @Override

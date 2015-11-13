@@ -1,0 +1,2 @@
+brooklyn.location.mesos.MesosResolver
+brooklyn.location.mesos.framework.marathon.MarathonResolver
