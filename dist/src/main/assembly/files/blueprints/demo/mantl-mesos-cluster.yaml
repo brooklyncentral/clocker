@@ -12,17 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-id: etcd-cluster
-name: Etcd Cluster
-origin: "https://github.com/apache/incubator-brooklyn/"
-locations:
-- my-docker-cloud
+id: mantl-mesos-cluster
+name: "MANTL Mesos Cluster"
+description: |
+  Mesos cluster provisioned using MANTL.
 
 services:
-- type: brooklyn.entity.nosql.etcd.EtcdCluster
-  initialSize: 3
-  id: cluster
+- type: mesos-cluster
   brooklyn.config:
-    install.version: 2.0.5
-    etcd.port.client: 4001
-    etcd.cluster.name: "test"
+    entity.dynamicLocation.name: "my-mesos-cluster"
+    mesos.url: "https://10.1.1.1/mesos/"
+    mesos.username: "admin"
+    mesos.password: "admin"
+    marathon.mesos.framework.url: "https://10.1.1.1/marathon/"
+
+# vim:ts=2:sw=2:ft=yaml:
