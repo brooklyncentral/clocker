@@ -487,6 +487,16 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         return sensors().get(Attributes.HOSTNAME);
     }
 
+    public Integer getSshPort() {
+        String sensorValue = sensors().get(DockerAttributes.DOCKER_MAPPED_SSH_PORT);
+        if (sensorValue != null) {
+            HostAndPort target = HostAndPort.fromString(sensorValue);
+            return target.getPort();
+        } else {
+            return null;
+        }
+    }
+
     @Override
     public Set<String> getPublicAddresses() {
         return ImmutableSet.of(sensors().get(Attributes.ADDRESS));
@@ -529,29 +539,6 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         entity.config().set(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL);
         DockerUtils.configureEnrichers(subnet, entity);
 
-        // Create our wrapper location around the task
-        LocationSpec<MarathonTaskLocation> spec = LocationSpec.create(MarathonTaskLocation.class)
-                .parent(getMarathonFramework().getDynamicLocation())
-                .configure(flags)
-                .configure(DynamicLocation.OWNER, this)
-                .configure("entity", getRunningEntity())
-                .configure(CloudLocationConfig.WAIT_FOR_SSHABLE, "false")
-                .configure(SshMachineLocation.DETECT_MACHINE_DETAILS, false)
-                .displayName(getShortName());
-        if (config().get(DockerAttributes.DOCKER_USE_SSH)) {
-            spec.configure(SshMachineLocation.SSH_HOST, getHostname())
-                 .configure("address", getAddress())
-//                .configure(SshMachineLocation.SSH_PORT, getSshPort())
-                .configure(LocationConfigKeys.USER, "root")
-                .configure(LocationConfigKeys.PASSWORD, "p4ssw0rd")
-                .configure(SshTool.PROP_PASSWORD, "p4ssw0rd")
-                .configure(LocationConfigKeys.PRIVATE_KEY_DATA, (String) null) // TODO used to generate authorized_keys
-                .configure(LocationConfigKeys.PRIVATE_KEY_FILE, (String) null);
-        }
-        MarathonTaskLocation location = getManagementContext().getLocationManager().createLocation(spec);
-        sensors().set(DYNAMIC_LOCATION, location);
-        sensors().set(LOCATION_NAME, location.getId());
-
         // Lookup mapped ports
         List<Map.Entry<Integer, Integer>> portBindings = (List) flags.get("portBindings");
         Map<Integer, String> tcpMappings = MutableMap.of();
@@ -570,15 +557,47 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                             int hostPort = array.get(i).getAsInt();
                             int containerPort = portBindings.get(i).getKey();
                             String target = getId() + ":" + containerPort;
-                            tcpMappings.put(containerPort, target);
-                            subnet.getPortForwarder().openPortForwarding(HostAndPort.fromString(target), Optional.of(hostPort), Protocol.TCP, Cidr.UNIVERSAL);
-                            subnet.getPortForwarder().openPortForwarding(location, containerPort, Optional.of(hostPort), Protocol.TCP, Cidr.UNIVERSAL);
+                            tcpMappings.put(hostPort, target);
+                            if (containerPort == 22) { // XXX should be a better way?
+                                sensors().set(DockerAttributes.DOCKER_MAPPED_SSH_PORT,
+                                        HostAndPort.fromParts(getHostname(), containerPort).toString());
+                            }
                         }
                     }
                 }
             }
         } else {
             throw new IllegalStateException("Cannot retrieve application details for " + sensors().get(APPLICATION_ID));
+        }
+
+        // Create our wrapper location around the task
+        LocationSpec<MarathonTaskLocation> spec = LocationSpec.create(MarathonTaskLocation.class)
+                .parent(getMarathonFramework().getDynamicLocation())
+                .configure(flags)
+                .configure(DynamicLocation.OWNER, this)
+                .configure("entity", getRunningEntity())
+                .configure(CloudLocationConfig.WAIT_FOR_SSHABLE, "false")
+                .configure(SshMachineLocation.DETECT_MACHINE_DETAILS, false)
+                .displayName(getShortName());
+        if (config().get(DockerAttributes.DOCKER_USE_SSH)) {
+            spec.configure(SshMachineLocation.SSH_HOST, getHostname())
+                .configure(SshMachineLocation.SSH_PORT, getSshPort())
+                .configure("address", getAddress())
+                .configure(LocationConfigKeys.USER, "root") // TODO from slave
+                .configure(LocationConfigKeys.PASSWORD, "p4ssw0rd")
+                .configure(SshTool.PROP_PASSWORD, "p4ssw0rd")
+                .configure(LocationConfigKeys.PRIVATE_KEY_DATA, (String) null) // TODO used to generate authorized_keys
+                .configure(LocationConfigKeys.PRIVATE_KEY_FILE, (String) null);
+        }
+        MarathonTaskLocation location = getManagementContext().getLocationManager().createLocation(spec);
+        sensors().set(DYNAMIC_LOCATION, location);
+        sensors().set(LOCATION_NAME, location.getId());
+
+        // Record port mappings
+        for (Integer hostPort : tcpMappings.keySet()) {
+            HostAndPort target = HostAndPort.fromString(tcpMappings.get(hostPort));
+            subnet.getPortForwarder().openPortForwarding(target, Optional.of(hostPort), Protocol.TCP, Cidr.UNIVERSAL);
+            subnet.getPortForwarder().openPortForwarding(location, target.getPort(), Optional.of(hostPort), Protocol.TCP, Cidr.UNIVERSAL);
         }
 
         LOG.info("New task location {} created", location);

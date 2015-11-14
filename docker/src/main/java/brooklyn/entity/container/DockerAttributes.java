@@ -89,6 +89,9 @@ public class DockerAttributes {
     public static final ConfigKey<Boolean> DOCKER_USE_SSH = ConfigKeys.newBooleanConfigKey(
             "docker.useSsh", "Use SSH layer instead of docker exec for container commands", Boolean.TRUE);
 
+    public static final AttributeSensor<String> DOCKER_MAPPED_SSH_PORT = Sensors.newStringSensor(
+            "mapped.docker.port.22", "Docker mapping for SSH default port");
+
     public static final ConfigKey<Integer> DOCKER_CPU_SHARES = ConfigKeys.newIntegerConfigKey(
             "docker.cpuShares", "Container CPU shares configuration");
 
