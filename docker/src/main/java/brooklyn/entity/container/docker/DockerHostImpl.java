@@ -19,7 +19,6 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeoutException;
@@ -77,6 +76,7 @@ import org.apache.brooklyn.core.sensor.DependentConfiguration;
 import org.apache.brooklyn.enricher.stock.Enrichers;
 import org.apache.brooklyn.entity.group.Cluster;
 import org.apache.brooklyn.entity.group.DynamicCluster;
+import org.apache.brooklyn.entity.group.DynamicGroup;
 import org.apache.brooklyn.entity.machine.MachineEntityImpl;
 import org.apache.brooklyn.entity.software.base.AbstractSoftwareProcessSshDriver;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
@@ -113,6 +113,7 @@ import org.apache.brooklyn.util.time.Duration;
 
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
+import brooklyn.entity.container.docker.registry.DockerRegistry;
 import brooklyn.entity.nosql.etcd.EtcdNode;
 import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.docker.DockerLocation;
@@ -607,6 +608,16 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 .build();
         List<IpPermission> permissions = MutableList.of(dockerPort, dockerSslPort, dockerPortForwarding);
 
+        if (config().get(DockerInfrastructure.DOCKER_SHOULD_START_REGISTRY) && sensors().get(DynamicGroup.FIRST_MEMBER)) {
+            IpPermission dockerRegistryPort = IpPermission.builder()
+                    .ipProtocol(IpProtocol.TCP)
+                    .fromPort(config().get(DockerRegistry.DOCKER_REGISTRY_PORT))
+                    .toPort(config().get(DockerRegistry.DOCKER_REGISTRY_PORT))
+                    .cidrBlock(Cidr.UNIVERSAL.toString())
+                    .build();
+            permissions.add(dockerRegistryPort);
+        }
+
         if (config().get(SdnAttributes.SDN_ENABLE)) {
             SdnProvider provider = (SdnProvider) (sensors().get(DockerHost.DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.SDN_PROVIDER));
             Collection<IpPermission> sdnPermissions = provider.getIpPermissions(localhost);
@@ -726,28 +737,15 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
         scan = scanner();
 
-        Map<String, String> externalRegistries = config().get(DockerHost.DOCKER_EXTERNAL_REGISTRIES);
-        Map<String, String> externalRegistriesLoginDetails = config().get(DockerHost.DOCKER_EXTERNAL_REGISTRY_LOGIN_DETAILS);
+        // If a registry URL is configured with credentials then log in
+        String registryUrl = config().get(DockerInfrastructure.DOCKER_IMAGE_REGISTRY_URL);
+        Boolean internalRegistry = config().get(DockerInfrastructure.DOCKER_SHOULD_START_REGISTRY);
+        if (Strings.isNonBlank(registryUrl) && !internalRegistry) {
+            String username = config().get(DockerInfrastructure.DOCKER_IMAGE_REGISTRY_USERNAME);
+            String password = config().get(DockerInfrastructure.DOCKER_IMAGE_REGISTRY_PASSWORD);
 
-        if(externalRegistries != null && !externalRegistries.isEmpty() && externalRegistriesLoginDetails!= null && !externalRegistriesLoginDetails.isEmpty()){
-            for (Entry<String, String> loginDetail: externalRegistries.entrySet()) {
-                String registry = loginDetail.getKey();
-                String username = loginDetail.getValue();
-
-                if(registry == null || username == null){
-                    throw new IllegalArgumentException(String.format("Either registry {%s} or username {%s} was null ", registry, username));
-                }
-
-                if(!externalRegistriesLoginDetails.containsKey(username)){
-                    throw new IllegalArgumentException(String.format("registry {%s} and username {%s} supplied but no password in DOCKER_EXTERNAL_REGISTRY_LOGIN_DETAILS", registry, username));
-                }
-
-                String password = externalRegistriesLoginDetails.get(username);
-                if(password == null) {
-                    throw new IllegalArgumentException(String.format("registry {%s} and username {%s} supplied but password in DOCKER_EXTERNAL_REGISTRY_LOGIN_DETAILS is null", registry, username));
-                }
-
-                runDockerCommand(String.format("login  -e \"fake@example.org\" -u %s -p %s %s", username, password, registry));
+            if (Strings.isNonBlank(username) && Strings.isNonBlank(password)) {
+                runDockerCommand(String.format("login  -e \"fake@example.org\" -u %s -p %s %s", username, password, registryUrl));
             }
         }
     }

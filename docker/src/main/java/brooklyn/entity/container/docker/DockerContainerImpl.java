@@ -706,7 +706,11 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
         disconnectSensors();
 
-        removePortBindings(getDockerHost(), getRunningEntity());
+        // Remove IP permissions for running entity if present
+        Entity entity =  getRunningEntity();
+        if (entity != null) {
+            removePortBindings(getDockerHost(), entity);
+        }
 
         // Stop and remove the Docker container running on the host
         shutDown();

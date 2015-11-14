@@ -1,13 +1,12 @@
 package brooklyn.entity.container.docker.registry;
 
-import static org.apache.brooklyn.util.ssh.BashCommands.chain;
-
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 
 import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.core.entity.Attributes;
@@ -20,6 +19,7 @@ import org.apache.brooklyn.feed.http.HttpValueFunctions;
 import org.apache.brooklyn.feed.http.JsonFunctions;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.core.internal.ssh.SshTool;
 import org.apache.brooklyn.util.guava.Functionals;
 import org.apache.brooklyn.util.os.Os;
 import org.apache.brooklyn.util.ssh.BashCommands;
@@ -34,9 +34,9 @@ public class DockerRegistryImpl extends VanillaDockerApplicationImpl implements 
 
     private transient HttpFeed httpFeed;
 
-    private final String CREATE_CERTS_SCRIPT_NAME = "docker-registry-create-certs.sh";
-    private final String SCRIPT_LOCATION = "classpath://brooklyn/entity/container/docker/registry/" + CREATE_CERTS_SCRIPT_NAME;
-    private final String DOCKER_REGISTRY_LOGO = "classpath://docker-registry-logo.png";
+    public static final String CREATE_CERTS_SCRIPT_NAME = "docker-registry-create-certs.sh";
+    public static final String SCRIPT_LOCATION = "classpath://brooklyn/entity/container/docker/registry/" + CREATE_CERTS_SCRIPT_NAME;
+    public static final String DOCKER_REGISTRY_LOGO = "classpath://docker-registry-logo.png";
 
     private String getSSHMachineInstallDir() {
         return config().get(DockerRegistry.DOCKER_HOST).sensors().get(SoftwareProcess.INSTALL_DIR);
@@ -52,7 +52,7 @@ public class DockerRegistryImpl extends VanillaDockerApplicationImpl implements 
         super.connectSensors();
         connectServiceUpIsRunning();
 
-        HostAndPort hostAndPort = BrooklynAccessUtils.getBrooklynAccessibleAddress(this, sensors().get(DockerRegistry.DOCKER_REGISTRY_PORT));
+        HostAndPort hostAndPort = BrooklynAccessUtils.getBrooklynAccessibleAddress(this, sensors().get(DOCKER_REGISTRY_PORT));
         sensors().set(Attributes.MAIN_URI, URI.create("https://" + hostAndPort + "/v2"));
 
         httpFeed = HttpFeed.builder()
@@ -74,11 +74,11 @@ public class DockerRegistryImpl extends VanillaDockerApplicationImpl implements 
 
     @Override
     public void disconnectSensors() {
-        super.disconnectSensors();
-        disconnectServiceUpIsRunning();
         if (httpFeed != null) {
             httpFeed.stop();
         }
+        disconnectServiceUpIsRunning();
+        super.disconnectSensors();
     }
 
     @Override
@@ -96,21 +96,17 @@ public class DockerRegistryImpl extends VanillaDockerApplicationImpl implements 
         config().set(DockerAttributes.DOCKER_PORT_BINDINGS, MutableMap.of(sensors().get(DOCKER_REGISTRY_PORT), 5000));
         config().set(DockerAttributes.DOCKER_HOST_VOLUME_MAPPING, MutableMap.of(Os.mergePaths(installDir, "certs"), "/certs"));
 
-        sshMachine.installTo(SCRIPT_LOCATION, Os.mergePaths(sshMachineInstallDir, CREATE_CERTS_SCRIPT_NAME));
+        sshMachine.installTo(ImmutableMap.of(SshTool.PROP_PERMISSIONS.getName(), "0755"), SCRIPT_LOCATION, Os.mergePaths(sshMachineInstallDir, CREATE_CERTS_SCRIPT_NAME));
         sshMachine.installTo(config().get(DockerInfrastructure.DOCKER_CA_CERTIFICATE_PATH), Os.mergePaths(sshMachineInstallDir, "ca-cert.pem"));
         sshMachine.installTo(config().get(DockerInfrastructure.DOCKER_CA_KEY_PATH), Os.mergePaths(sshMachineInstallDir, "ca-key.pem"));
 
         int result = sshMachine.execCommands("installCerts",
                 ImmutableList.of(
-                        chain(
-                                "cd " + sshMachineInstallDir,
-                                BashCommands.sudo("chmod 755 " + Os.mergePaths(sshMachineInstallDir, CREATE_CERTS_SCRIPT_NAME)),
                                 BashCommands.sudo(String.format("%s %s %s",
                                                 Os.mergePaths(sshMachineInstallDir, CREATE_CERTS_SCRIPT_NAME),
                                                 host.sensors().get(Attributes.ADDRESS),
                                                 sshMachineInstallDir)
-                                ))));
-
+                                )));
         if (result != 0) {
             throw new IllegalStateException("Could not create certificates for docker registry");
         }

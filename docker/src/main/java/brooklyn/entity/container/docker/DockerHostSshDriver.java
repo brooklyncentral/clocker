@@ -42,6 +42,7 @@ import org.apache.brooklyn.core.effector.ssh.SshEffectorTasks;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.entity.group.AbstractGroup;
+import org.apache.brooklyn.entity.group.DynamicGroup;
 import org.apache.brooklyn.entity.software.base.AbstractSoftwareProcessSshDriver;
 import org.apache.brooklyn.entity.software.base.lifecycle.ScriptHelper;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
@@ -305,22 +306,28 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     private String installDockerFallback() {
         return "curl -s https://get.docker.com/ | " + sudo("sh");
     }
-    
-    private String getDockerInsecureRegistries(){
-        List<String> insecureRegistryList = entity.getConfig(DockerHost.DOCKER_INSECURE_REGISTRIES);
 
-        if(insecureRegistryList == null || insecureRegistryList.isEmpty()){
-            return "";
+    // TODO --registry-mirror
+    private String getDockerRegistryConfig(){
+        StringBuilder config = new StringBuilder();
+
+        String registryUrl = entity.config().get(DockerInfrastructure.DOCKER_IMAGE_REGISTRY_URL);
+        if (Strings.isNonBlank(registryUrl)) {
+            config.append("--insecure-registry ")
+                  .append(registryUrl);
+        } else {
+            if (entity.config().get(DockerInfrastructure.DOCKER_SHOULD_START_REGISTRY)) {
+                String firstHostname = entity.sensors().get(DynamicGroup.FIRST).sensors().get(Attributes.HOSTNAME);
+                Integer registryPort = entity.config().get(DockerInfrastructure.DOCKER_REGISTRY_PORT);
+                config.append("--insecure-registry ")
+                      .append(firstHostname)
+                      .append(":")
+                      .append(registryPort);
+            }
         }
 
-        String insecureRegistries = "";
-        for (String repo : insecureRegistryList) {
-            insecureRegistries += " --insecure-registry " +  repo;
-        }
-
-        log.debug("insecure registry options {}", insecureRegistries);
-
-        return insecureRegistries;
+        log.debug("Registry options: {}", config.toString());
+        return config.toString();
     }
 
     @Override
@@ -343,7 +350,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         //Add the CA cert as an authorised docker CA for the first host.
         //This will be used for docker registry etc.
         String hostnameOfFirstEntity = entity.sensors().get(AbstractGroup.FIRST).sensors().get(Attributes.HOSTNAME);
-        String repoCAPath = "/etc/docker/certs.d/" + hostnameOfFirstEntity + ":"+ entity.config().get(DockerHost.DOCKER_REGISTRY_PORT);
+        String repoCAPath = "/etc/docker/certs.d/" + hostnameOfFirstEntity + ":"+ entity.config().get(DockerInfrastructure.DOCKER_REGISTRY_PORT);
 
         newScript(CUSTOMIZING)
                 .body.append(
@@ -351,13 +358,14 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                         sudo("cp ca.pem " + repoCAPath + "/ca.crt")))
                 .failOnNonZeroResultCode()
                 .execute();
-        
+
+        // Upstart
         newScript(CUSTOMIZING + "-upstart")
                 .body.append(
                         chain(
                                 sudo("mkdir -p /etc/default"),
                                 format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock %s %s --tlsverify --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem --tlscacert=%<s/ca.pem\"' | ",
-                                        getDockerPort(), getStorageOpts(), getDockerInsecureRegistries(), getRunDir()) + sudo("tee -a /etc/default/docker"),
+                                        getDockerPort(), getStorageOpts(), getDockerRegistryConfig(), getRunDir()) + sudo("tee -a /etc/default/docker"),
                                 sudo("groupadd -f docker"),
                                 sudo(format("gpasswd -a %s docker", getMachine().getUser())),
                                 sudo("newgrp docker")
@@ -365,26 +373,25 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .failOnNonZeroResultCode()
                 .execute();
 
-        //CentOS config
+        // CentOS
         newScript(CUSTOMIZING + "-centos")
                 .body.append(
                         chain(
                                 sudo("mkdir -p /etc/sysconfig"),
                                 format("echo 'other_args=\"--selinux-enabled -H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock -e lxc %s %s --tlsverify --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem --tlscacert=%<s/ca.pem\"' | ",
-                                        getDockerPort(), getStorageOpts(), getDockerInsecureRegistries(), getRunDir()) + sudo("tee -a /etc/sysconfig/docker")
+                                        getDockerPort(), getStorageOpts(), getDockerRegistryConfig(), getRunDir()) + sudo("tee -a /etc/sysconfig/docker")
                         ))
                 .failOnNonZeroResultCode()
                 .execute();
 
-        //SystemD
+        // SystemD
         String systemDConfigInstallPath = Os.mergePaths(getInstallDir(), "docker.service");
-
         copyTemplate("classpath://brooklyn/entity/container/docker/SystemDTemplate",
                 systemDConfigInstallPath,
                 true,
                 ImmutableMap.of("args",
                         format("-H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock %s %s --tlsverify --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem --tlscacert=%<s/ca.pem",
-                                getDockerPort(), getStorageOpts(), getDockerInsecureRegistries(), getRunDir())));
+                                getDockerPort(), getStorageOpts(), getDockerRegistryConfig(), getRunDir())));
 
         newScript(CUSTOMIZING + "-systemd")
                 .body.append(

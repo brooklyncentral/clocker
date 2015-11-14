@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 import javax.net.ssl.X509TrustManager;
 
+import org.python.google.common.net.HostAndPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -165,7 +166,8 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
                 .displayName("All Docker Containers"));
 
         DynamicMultiGroup buckets = addChild(EntitySpec.create(DynamicMultiGroup.class)
-                .configure(DynamicMultiGroup.ENTITY_FILTER, DockerUtils.sameInfrastructure(this))
+                .configure(DynamicMultiGroup.ENTITY_FILTER,
+                        Predicates.and(DockerUtils.sameInfrastructure(this), Predicates.not(EntityPredicates.applicationIdEqualTo(getApplicationId()))))
                 .configure(DynamicMultiGroup.RESCAN_INTERVAL, 15L)
                 .configure(DynamicMultiGroup.BUCKET_FUNCTION, new Function<Entity, String>() {
                     @Override
@@ -408,8 +410,10 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
         if (config().get(DOCKER_SHOULD_START_REGISTRY)) {
             try {
                 Entity dockerRegistry = sensors().get(DOCKER_IMAGE_REGISTRY);
-                LOG.debug("Stopping Docker Registry: {}", dockerRegistry);
-                Entities.invokeEffector(this, dockerRegistry, Startable.STOP).get(timeout);
+                if (dockerRegistry != null) {
+                    LOG.debug("Stopping Docker Registry: {}", dockerRegistry);
+                    Entities.invokeEffector(this, dockerRegistry, Startable.STOP).get(timeout);
+                }
             } catch (Exception e) {
                 LOG.warn("Error stopping Docker Registry", e);
             }
@@ -417,7 +421,8 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
 
         // Find all applications and stop, blocking for up to five minutes until ended
         try {
-            Iterable<Entity> entities = Iterables.filter(getManagementContext().getEntityManager().getEntities(), DockerUtils.sameInfrastructure(this));
+            Iterable<Entity> entities = Iterables.filter(getManagementContext().getEntityManager().getEntities(),
+                    Predicates.and(DockerUtils.sameInfrastructure(this), Predicates.not(EntityPredicates.applicationIdEqualTo(getApplicationId()))));
             Set<Application> applications = ImmutableSet.copyOf(Iterables.transform(entities, new Function<Entity, Application>() {
                 @Override
                 public Application apply(Entity input) {
@@ -464,20 +469,19 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
             DockerHost firstEntity = (DockerHost) sensors().get(DOCKER_HOST_CLUSTER).sensors().get(DynamicCluster.FIRST);
 
             EntitySpec<DockerRegistry> spec = EntitySpec.create(DockerRegistry.class)
-                    .configure(DockerRegistry.DOCKER_HOST, firstEntity);
+                    .configure(DockerRegistry.DOCKER_HOST, firstEntity)
+                    .configure(DockerRegistry.DOCKER_REGISTRY_PORT, config().get(DOCKER_REGISTRY_PORT));
 
             // TODO Mount volume with images stored on it
-            DockerRegistry dockerRegistry = addChild(spec);
-            Entities.manage(dockerRegistry);
+            DockerRegistry registry = addChild(spec);
+            Entities.manage(registry);
 
             LOG.debug("Starting a new Docker Registry with spec {}", spec);
-            Entities.start(dockerRegistry, ImmutableList.of(firstEntity.getDynamicLocation()));
+            Entities.start(registry, ImmutableList.of(firstEntity.getDynamicLocation()));
 
-            String dockerRegistryUrl = String.format("%s:%d", dockerRegistry.sensors().get(Attributes.HOSTNAME), dockerRegistry.config().get(DockerRegistry.DOCKER_REGISTRY_PORT));
-            LOG.debug("Setting registry URL config for {} to {}", dockerRegistry, dockerRegistryUrl);
-
-            sensors().set(DOCKER_IMAGE_REGISTRY_URL, dockerRegistryUrl);
-            sensors().set(DOCKER_IMAGE_REGISTRY, dockerRegistry);
+            String registryUrl = HostAndPort.fromParts(firstEntity.sensors().get(Attributes.ADDRESS), config().get(DOCKER_REGISTRY_PORT)).toString();
+            sensors().set(DOCKER_IMAGE_REGISTRY_URL, registryUrl);
+            sensors().set(DOCKER_IMAGE_REGISTRY, registry);
         }
     }
 

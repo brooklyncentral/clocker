@@ -153,8 +153,6 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
             Optional<String> baseImage = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_NAME));
             String imageTag = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_TAG)).or("latest");
-            Optional<String> imageRepo = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_REGISTRY_URL))
-                    .or(Optional.fromNullable(getDockerInfrastructure().sensors().get(DockerAttributes.DOCKER_IMAGE_REGISTRY_URL)));
 
             // TODO incorporate more info (incl registry?)
             final String imageName = DockerUtils.imageName(entity, dockerfile);
@@ -173,7 +171,15 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                 // Skip install phase
                 entity.config().set(SoftwareProcess.SKIP_INSTALLATION, true);
             } else if (baseImage.isPresent()) {
-                String repoAndName = Joiner.on('/').join(Optional.presentInstances(ImmutableList.of(imageRepo, baseImage)));
+                // Use the repository configured on the entity if present
+                Optional<String> imageRepo = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_REGISTRY_URL));
+                // Otherwise only use the configured repo here if it we created it or it is writeable
+                Optional<String> localRepo = Optional.absent();
+                if (config().get(DockerInfrastructure.DOCKER_SHOULD_START_REGISTRY) ||
+                        config().get(DockerInfrastructure.DOCKER_IMAGE_REGISTRY_WRITEABLE)) {
+                    localRepo = Optional.fromNullable(getDockerInfrastructure().sensors().get(DockerAttributes.DOCKER_IMAGE_REGISTRY_URL));;
+                }
+                String repoAndName = Joiner.on('/').join(Optional.presentInstances(ImmutableList.of(imageRepo.or(localRepo), baseImage)));
                 String fullyQualifiedName = repoAndName + ":" + imageTag;
 
                 if (useSsh) {

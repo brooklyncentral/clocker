@@ -133,11 +133,20 @@ public interface DockerInfrastructure extends Application, Resizable, LocationOw
     @SetFromFlag("registryStart")
     ConfigKey<Boolean> DOCKER_SHOULD_START_REGISTRY = ConfigKeys.newBooleanConfigKey("docker.registry.start", "Setup a docker registry and use it for pulls", Boolean.FALSE);
 
+    @SetFromFlag("registryPort")
+    ConfigKey<Integer> DOCKER_REGISTRY_PORT = ConfigKeys.newIntegerConfigKey("docker.registry.port", "", 5000);
+
     @SetFromFlag("registryWriteable")
     ConfigKey<Boolean> DOCKER_IMAGE_REGISTRY_WRITEABLE = ConfigKeys.newBooleanConfigKey("docker.registry.writeable", "Use the configured docker registry for pushes", Boolean.FALSE);
 
     @SetFromFlag("registryUrl")
     AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_REGISTRY_URL = DockerAttributes.DOCKER_IMAGE_REGISTRY_URL;
+
+    @SetFromFlag("registryUsername")
+    ConfigKey<String> DOCKER_IMAGE_REGISTRY_USERNAME = ConfigKeys.newStringConfigKey("docker.registry.username", "Username for docker registry access");
+
+    @SetFromFlag("registryPassword")
+    ConfigKey<String> DOCKER_IMAGE_REGISTRY_PASSWORD = ConfigKeys.newStringConfigKey("docker.registry.password", "Password for docker registry access");
 
     AttributeSensor<Entity> DOCKER_IMAGE_REGISTRY = DockerAttributes.DOCKER_IMAGE_REGISTRY;
 

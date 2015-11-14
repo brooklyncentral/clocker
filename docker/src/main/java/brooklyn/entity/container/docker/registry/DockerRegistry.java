@@ -18,12 +18,12 @@ import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.docker.DockerContainer;
-import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.application.VanillaDockerApplication;
 
 
 @Catalog(name = "Docker Registry",
-        description = "A Docker Registry")
+        description = "The Docker Registry",
+        iconUrl = DockerRegistryImpl.DOCKER_REGISTRY_LOGO)
 @ImplementedBy(DockerRegistryImpl.class)
 public interface DockerRegistry extends VanillaDockerApplication {
 
@@ -33,7 +33,7 @@ public interface DockerRegistry extends VanillaDockerApplication {
     ConfigKey<String> IMAGE_TAG = ConfigKeys.newConfigKeyWithDefault(DockerAttributes.DOCKER_IMAGE_TAG.getConfigKey(), "2");
 
     @SetFromFlag("registryPort")
-    AttributeSensorAndConfigKey<Integer, Integer> DOCKER_REGISTRY_PORT = DockerHost.DOCKER_REGISTRY_PORT;
+    AttributeSensorAndConfigKey<Integer, Integer> DOCKER_REGISTRY_PORT = ConfigKeys.newIntegerSensorAndConfigKey("docker.registry.port", "The docker registry port to expose", 50000);
 
     AttributeSensorAndConfigKey<Entity, Entity> DOCKER_HOST = DockerContainer.DOCKER_HOST;
 
