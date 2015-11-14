@@ -77,6 +77,7 @@ public class MesosSlaveImpl extends MachineEntityImpl implements MesosSlave {
                 .entity(this)
                 .period(30, TimeUnit.SECONDS)
                 .baseUri(getMesosCluster().sensors().get(Attributes.MAIN_URI))
+                .credentialsIfNotNull(config().get(MesosCluster.MESOS_USERNAME), config().get(MesosCluster.MESOS_PASSWORD))
                 .poll(new HttpPollConfig<Long>(MEMORY_AVAILABLE)
                         .suburl("/master/state.json")
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(),

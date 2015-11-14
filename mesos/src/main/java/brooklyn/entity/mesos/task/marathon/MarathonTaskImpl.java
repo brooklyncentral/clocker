@@ -90,6 +90,8 @@ import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
+import brooklyn.entity.mesos.MesosCluster;
+import brooklyn.entity.mesos.MesosUtils;
 import brooklyn.entity.mesos.framework.MesosFramework;
 import brooklyn.entity.mesos.framework.marathon.MarathonFramework;
 import brooklyn.entity.mesos.task.MesosTask;
@@ -143,6 +145,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                 .entity(this)
                 .period(500, TimeUnit.MILLISECONDS)
                 .baseUri(uri)
+                .credentialsIfNotNull(config().get(MesosCluster.MESOS_USERNAME), config().get(MesosCluster.MESOS_PASSWORD))
                 .header("Accept", "application/json")
                 .poll(new HttpPollConfig<Boolean>(SERVICE_UP)
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(), JsonFunctions.walk("tasks"),
@@ -500,9 +503,10 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
     }
 
     public Optional<JsonElement> getApplicationJson() {
-        String uri = Urls.mergePaths(getFramework().sensors().get(MarathonFramework.FRAMEWORK_URL), "/v2/apps", sensors().get(APPLICATION_ID));
+        MesosFramework framework = getFramework();
+        String uri = Urls.mergePaths(framework.sensors().get(MarathonFramework.FRAMEWORK_URL), "/v2/apps", sensors().get(APPLICATION_ID));
         HttpToolResponse response = HttpTool.httpGet(
-                HttpTool.httpClientBuilder().uri(uri).build(),
+                MesosUtils.buildClient(framework),
                 URI.create(uri),
                 MutableMap.of(HttpHeaders.ACCEPT, "application/json"));
         if (!HttpTool.isStatusCodeHealthy(response.getResponseCode())) {
