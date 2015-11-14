@@ -433,7 +433,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
     /* Generate the address to use for a target entity. */
     private String getTargetAddress(Entity target) {
-        if (target.sensors().get(DockerContainer.CONTAINER) != null) {
+        if (target.sensors().get(DockerContainer.CONTAINER) != null && config().get(DockerInfrastructure.SDN_ENABLE)) {
             return target.sensors().get(Attributes.SUBNET_ADDRESS);
         } else {
             return target.sensors().get(Attributes.ADDRESS);
@@ -447,15 +447,15 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         if (name.isPresent()) {
             String address = getTargetAddress(target);
             List<Integer> openPorts = MutableList.of();
-            if (target.sensors().get(DockerContainer.CONTAINER) != null) {
-                openPorts.addAll(MutableSet.copyOf(target.sensors().get(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS)));
-            } else {
-                Set<Integer> open = DockerUtils.getOpenPorts(target);
-                for (Integer port : open) {
+            Set<Integer> containerPorts = MutableSet.copyOf(target.sensors().get(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS));
+            if (containerPorts.size() > 0) {
+                for (Integer port : containerPorts) {
                     String sensor = String.format("mapped.docker.port.%d", port);
                     Integer mapped = Optional.fromNullable(target.sensors().get(Sensors.newIntegerSensor(sensor))).or(port);
                     openPorts.add(mapped);
                 }
+            } else {
+                Set<Integer> open = DockerUtils.getOpenPorts(target);
             }
             Map<String, Object> env = MutableMap.of();
             for (Integer port : openPorts) {

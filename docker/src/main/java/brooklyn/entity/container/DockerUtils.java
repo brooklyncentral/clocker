@@ -210,9 +210,20 @@ public class DockerUtils {
     public static Set<Integer> getOpenPorts(Entity entity) {
         Set<Integer> ports = MutableSet.of(22);
         for (ConfigKey<?> k: entity.getEntityType().getConfigKeys()) {
-            if (PortRange.class.isAssignableFrom(k.getType())) {
+            if (k instanceof PortAttributeSensorAndConfigKey) {
+                String name = ((PortAttributeSensorAndConfigKey) k).getName();
+                Integer p = entity.sensors().get(Sensors.newIntegerSensor("mapped." + name));
+                if (p == null) {
+                    p = ((PortAttributeSensorAndConfigKey) k).getAsSensorValue(entity);
+                }
+                if (p != null) {
+                    ports.add(p);
+                }
+            } else if (PortRange.class.isAssignableFrom(k.getType())) {
                 PortRange p = (PortRange) entity.config().get(k);
-                if (p != null && !p.isEmpty()) ports.add(p.iterator().next());
+                if (p != null && !p.isEmpty()) {
+                    ports.add(p.iterator().next());
+                }
             }
         }
         for (Entity child : entity.getChildren()) {
