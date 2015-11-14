@@ -52,6 +52,7 @@ import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.api.mgmt.LocationManager;
 import org.apache.brooklyn.api.mgmt.ManagementContext;
 import org.apache.brooklyn.core.config.render.RendererHints;
+import org.apache.brooklyn.core.entity.AbstractApplication;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityFunctions;
@@ -66,7 +67,6 @@ import org.apache.brooklyn.core.location.dynamic.LocationOwner;
 import org.apache.brooklyn.entity.group.BasicGroup;
 import org.apache.brooklyn.entity.group.DynamicGroup;
 import org.apache.brooklyn.entity.group.DynamicMultiGroup;
-import org.apache.brooklyn.entity.stock.BasicStartableImpl;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
 import org.apache.brooklyn.feed.http.HttpFeed;
 import org.apache.brooklyn.feed.http.HttpPollConfig;
@@ -95,7 +95,7 @@ import brooklyn.networking.subnet.SubnetTier;
 /**
  * The Mesos cluster implementation.
  */
-public class MesosClusterImpl extends BasicStartableImpl implements MesosCluster {
+public class MesosClusterImpl extends AbstractApplication implements MesosCluster {
 
     private static final Logger LOG = LoggerFactory.getLogger(MesosCluster.class);
 
@@ -242,14 +242,12 @@ public class MesosClusterImpl extends BasicStartableImpl implements MesosCluster
     }
 
     @Override
-    public void start(Collection<? extends Location> locations) {
+    public void doStart(Collection<? extends Location> locations) {
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
         sensors().set(SERVICE_UP, Boolean.FALSE);
 
         LOG.info("Creating new MesosLocation");
         createLocation(MutableMap.<String, Object>of());
-
-        super.start(locations);
 
         // Start frameworks
         try {
@@ -260,6 +258,8 @@ public class MesosClusterImpl extends BasicStartableImpl implements MesosCluster
             ServiceStateLogic.setExpectedState(this, Lifecycle.ON_FIRE);
             Exceptions.propagate(e);
         }
+
+        super.doStart(locations);
 
         connectSensors();
         ServiceStateLogic.setExpectedState(this, Lifecycle.RUNNING);

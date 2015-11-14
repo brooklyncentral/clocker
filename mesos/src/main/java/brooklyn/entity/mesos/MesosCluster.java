@@ -21,8 +21,8 @@ import java.util.Map;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
 
-import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.catalog.CatalogConfig;
+import org.apache.brooklyn.api.entity.Application;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
@@ -32,7 +32,6 @@ import org.apache.brooklyn.core.location.dynamic.LocationOwner;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.group.DynamicGroup;
 import org.apache.brooklyn.entity.group.DynamicMultiGroup;
-import org.apache.brooklyn.entity.stock.BasicStartable;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.time.Duration;
 
@@ -44,11 +43,8 @@ import brooklyn.location.mesos.MesosLocation;
 /**
  * A Mesos cluster entity.
  */
-@Catalog(name = "Mesos Cluster",
-        description = "Mesos is an open-source distributed operating system kernel.",
-        iconUrl = "classpath:///mesos-logo.png")
 @ImplementedBy(MesosClusterImpl.class)
-public interface MesosCluster extends BasicStartable, LocationOwner<MesosLocation, MesosCluster> {
+public interface MesosCluster extends Application, LocationOwner<MesosLocation, MesosCluster> {
 
     @CatalogConfig(label = "Location Name", priority = 90)
     @SetFromFlag("locationName")
