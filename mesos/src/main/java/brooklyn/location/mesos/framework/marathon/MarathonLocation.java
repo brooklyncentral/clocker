@@ -37,6 +37,8 @@ import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.NoMachinesAvailableException;
 import org.apache.brooklyn.camp.brooklyn.BrooklynCampConstants;
 import org.apache.brooklyn.core.entity.Entities;
+import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
+import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.location.LocationConfigKeys;
 import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
@@ -137,12 +139,18 @@ public class MarathonLocation extends MesosFrameworkLocation implements MachineP
             DynamicCluster tasks = framework.sensors().get(MesosFramework.FRAMEWORK_TASKS);
             Entity added = tasks.addNode(this, taskFlags);
             if (added == null) {
-                throw new NoMachinesAvailableException("Failed to create marathon task");
+                throw new NoMachinesAvailableException("Failed to create Marathon task");
             } else {
-                Entities.invokeEffector((EntityLocal) entity, added, Startable.START,  MutableMap.of("locations", ImmutableList.of(this))).getUnchecked();
+                try {
+                    Entities.invokeEffector((EntityLocal) entity, added, Startable.START,  MutableMap.of("locations", ImmutableList.of(this))).getUnchecked();
+                } catch (Exception e) {
+                    ServiceStateLogic.setExpectedState(added, Lifecycle.ON_FIRE);
+                    throw new NoMachinesAvailableException("Failed to start Marathon task", e);
+                }
             }
-            MarathonTask marathonTask = (MarathonTask) added;
 
+            // Return the new task location
+            MarathonTask marathonTask = (MarathonTask) added;
             return marathonTask.getDynamicLocation();
         } finally {
             lock.readLock().unlock();
