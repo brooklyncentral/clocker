@@ -97,6 +97,7 @@ textarea { white-space: pre;word-wrap: normal;overflow-x: auto; }
 .nav-tabs .dropdown-menu li > a:hover, .nav-tabs .dropdown-menu .active > a, .nav-tabs .dropdown-menu .active > a:hover { color: white; background-color: #e8e8e8 !important; }
 .nav-tabs .dropdown-toggle .caret, .nav-pills .dropdown-toggle .caret { opacity: 0.5; margin-top: 6px; border-top-color: #000000; border-bottom-color: #000000; }
 .nav-tabs .dropdown-toggle:hover .caret, .nav-pills .dropdown-toggle:hover .caret { opacity: 0.8; border-top-color: #000000; border-bottom-color: #000000; }
+.dropdown-menu a:hover { background-color: #444444 !important; color: #ffffff !important; }
 
 #effectors-table th { background: #ffffff !important }
 
@@ -180,4 +181,5 @@ input[type="color"]:focus,.uneditable-input:focus {
     color: #ffffff !important;
 }
 
-
+div.apidoc-title { color: #000000 !important; }
+code { color: #000000 !important; }
