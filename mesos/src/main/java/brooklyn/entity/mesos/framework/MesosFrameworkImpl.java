@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -42,6 +43,7 @@ import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityFunctions;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
+import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.entity.group.Cluster;
 import org.apache.brooklyn.entity.group.DynamicCluster;
@@ -54,8 +56,10 @@ import org.apache.brooklyn.feed.http.JsonFunctions;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import org.apache.brooklyn.util.guava.Functionals;
+import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
 
+import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.mesos.MesosCluster;
 import brooklyn.entity.mesos.task.MesosTask;
 
@@ -160,7 +164,8 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
                                 .configure(MesosTask.MESOS_CLUSTER, mesosCluster)
                                 .configure(MesosTask.TASK_NAME, name)
                                 .configure(MesosTask.FRAMEWORK, this);
-                        task = sensors().get(FRAMEWORK_TASKS).addMemberChild(taskSpec);
+
+                        task = getTaskCluster().addMemberChild(taskSpec);
                         Entities.manage(task);
                         task.start(ImmutableList.<Location>of());
                     }
@@ -168,6 +173,21 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
                         taskNames.add(name);
                         task.sensors().set(MesosTask.TASK_ID, id);
                         task.sensors().set(MesosTask.TASK_STATE, state);
+                    }
+                }
+                for (Entity member : ImmutableList.copyOf(getTaskCluster().getMembers())) {
+                    final String name = member.sensors().get(MesosTask.TASK_NAME);
+                    Optional<String> found = Iterables.tryFind(taskNames, Predicates.equalTo(name));
+                    if (found.isPresent()) continue;
+
+                    // Stop and then remove the task as it is no longer running
+                    Lifecycle state = sensors().get(Attributes.SERVICE_STATE_ACTUAL);
+                    if (Lifecycle.STOPPING.equals(state) || Lifecycle.STOPPED.equals(state)) {
+                        getTaskCluster().removeMember(member);
+                        getTaskCluster().removeChild(member);
+                        Entities.unmanage(member);
+                    } else {
+                        ServiceStateLogic.setExpectedState(member, Lifecycle.STOPPING);
                     }
                 }
                 return taskNames;

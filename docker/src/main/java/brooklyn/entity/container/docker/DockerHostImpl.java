@@ -33,6 +33,7 @@ import com.google.common.base.CharMatcher;
 import com.google.common.base.Functions;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
@@ -67,6 +68,8 @@ import org.apache.brooklyn.core.effector.ssh.SshEffectorTasks;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityFunctions;
 import org.apache.brooklyn.core.entity.EntityInternal;
+import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
+import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.core.location.BasicLocationDefinition;
@@ -804,8 +807,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     }
 
     public void scanContainers() {
-        // TODO remember that _half started_ containers left behind are not to be re-used
-        // TODO add cleanup for these?
         getDynamicLocation().getLock().lock();
         try {
             String output = runDockerCommand("ps");
@@ -831,11 +832,31 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                             .configure(DockerContainer.LOCATION_FLAGS, MutableMap.of("container", getMachine()));
 
                     // Create, manage and start the container
-                    DockerContainer added = getDockerContainerCluster().addChild(containerSpec);
+                    DockerContainer added = getDockerContainerCluster().addMemberChild(containerSpec);
                     Entities.manage(added);
-                    getDockerContainerCluster().addMember(added);
                     added.sensors().set(DockerContainer.CONTAINER_ID, containerId);
                     added.start(ImmutableList.of(getDynamicLocation().getMachine()));
+                }
+            }
+            for (Entity member : ImmutableList.copyOf(getDockerContainerCluster().getMembers())) {
+                final String id = member.sensors().get(DockerContainer.CONTAINER_ID);
+                Optional<String> found = Iterables.tryFind(ps, new Predicate<String>() {
+                    @Override
+                    public boolean apply(String input) {
+                        String firstWord = Strings.getFirstWord(input);
+                        return id.startsWith(firstWord);
+                    }
+                });
+                if (found.isPresent()) continue;
+
+                // Stop and then remove the container as it is no longer running
+                Lifecycle state = sensors().get(SERVICE_STATE_ACTUAL);
+                if (Lifecycle.STOPPING.equals(state) || Lifecycle.STOPPED.equals(state)) {
+                    getDockerContainerCluster().removeMember(member);
+                    getDockerContainerCluster().removeChild(member);
+                    Entities.unmanage(member);
+                } else {
+                    ServiceStateLogic.setExpectedState(member, Lifecycle.STOPPING);
                 }
             }
         } finally {
