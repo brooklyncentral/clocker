@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.gson.JsonElement;
 
 import org.apache.brooklyn.api.entity.Entity;
@@ -37,6 +38,7 @@ import org.apache.brooklyn.api.location.LocationRegistry;
 import org.apache.brooklyn.api.mgmt.LocationManager;
 import org.apache.brooklyn.api.mgmt.ManagementContext;
 import org.apache.brooklyn.core.entity.Attributes;
+import org.apache.brooklyn.core.entity.EntityPredicates;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.location.BasicLocationDefinition;
@@ -58,6 +60,7 @@ import brooklyn.entity.mesos.MesosCluster;
 import brooklyn.entity.mesos.MesosUtils;
 import brooklyn.entity.mesos.framework.MesosFramework;
 import brooklyn.entity.mesos.framework.MesosFrameworkImpl;
+import brooklyn.entity.mesos.task.MesosTask;
 import brooklyn.entity.mesos.task.marathon.MarathonTask;
 import brooklyn.location.mesos.framework.marathon.MarathonLocation;
 import brooklyn.location.mesos.framework.marathon.MarathonResolver;
@@ -241,7 +244,7 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
         super.stop();
 
         // Stop all of our managed Marathon tasks
-        Collection<Entity> tasks = getTaskCluster().getMembers();
+        Iterable<Entity> tasks = Iterables.filter(getTaskCluster().getMembers(), EntityPredicates.attributeEqualTo(MesosTask.MANAGED, Boolean.TRUE));
         for (Entity task : tasks) {
             ((MarathonTask) task).stop();
         }

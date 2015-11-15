@@ -840,14 +840,16 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             }
             for (Entity member : ImmutableList.copyOf(getDockerContainerCluster().getMembers())) {
                 final String id = member.sensors().get(DockerContainer.CONTAINER_ID);
-                Optional<String> found = Iterables.tryFind(ps, new Predicate<String>() {
-                    @Override
-                    public boolean apply(String input) {
-                        String firstWord = Strings.getFirstWord(input);
-                        return id.startsWith(firstWord);
-                    }
-                });
-                if (found.isPresent()) continue;
+                if (id != null) {
+                    Optional<String> found = Iterables.tryFind(ps, new Predicate<String>() {
+                        @Override
+                        public boolean apply(String input) {
+                            String firstWord = Strings.getFirstWord(input);
+                            return id.startsWith(firstWord);
+                        }
+                    });
+                    if (found.isPresent()) continue;
+                }
 
                 // Stop and then remove the container as it is no longer running
                 Lifecycle state = sensors().get(SERVICE_STATE_ACTUAL);

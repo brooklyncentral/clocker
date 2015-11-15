@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nullable;
 
+import org.python.google.common.net.HostAndPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +59,7 @@ import org.apache.brooklyn.api.location.NoMachinesAvailableException;
 import org.apache.brooklyn.api.location.OsDetails;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.api.mgmt.LocationManager;
+import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.camp.brooklyn.BrooklynCampConstants;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.render.RendererHints;
@@ -450,9 +452,13 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             Set<Integer> containerPorts = MutableSet.copyOf(target.sensors().get(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS));
             if (containerPorts.size() > 0) {
                 for (Integer port : containerPorts) {
-                    String sensor = String.format("mapped.docker.port.%d", port);
-                    Integer mapped = Optional.fromNullable(target.sensors().get(Sensors.newIntegerSensor(sensor))).or(port);
-                    openPorts.add(mapped);
+                    AttributeSensor<String> sensor = Sensors.newStringSensor(String.format("mapped.docker.port.%d", port));
+                    String hostAndPort = target.sensors().get(sensor);
+                    if (hostAndPort != null) {
+                        openPorts.add(HostAndPort.fromString(hostAndPort).getPort());
+                    } else {
+                        openPorts.add(port);
+                    }
                 }
             } else {
                 Set<Integer> open = DockerUtils.getOpenPorts(target);
