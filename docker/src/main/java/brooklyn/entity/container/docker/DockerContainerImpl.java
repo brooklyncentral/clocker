@@ -69,6 +69,7 @@ import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.core.location.LocationConfigKeys;
+import org.apache.brooklyn.core.location.access.PortForwardManager;
 import org.apache.brooklyn.core.location.cloud.CloudLocationConfig;
 import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
@@ -389,6 +390,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         // Inbound ports
         Set<Integer> entityOpenPorts = MutableSet.copyOf(DockerUtils.getContainerPorts(entity));
         entityOpenPorts.addAll(DockerUtils.getOpenPorts(entity));
+        entityOpenPorts.add(22);
         options.inboundPorts(Ints.toArray(entityOpenPorts));
         sensors().set(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS, ImmutableList.copyOf(entityOpenPorts));
         entity.sensors().set(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS, ImmutableList.copyOf(entityOpenPorts));
@@ -448,29 +450,30 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         Optional<String> name = getContainerName(target);
         if (name.isPresent()) {
             String address = getTargetAddress(target);
-            List<Integer> openPorts = MutableList.of();
+            Map<Integer, Integer> ports = MutableMap.of();
             Set<Integer> containerPorts = MutableSet.copyOf(target.sensors().get(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS));
             if (containerPorts.size() > 0) {
                 for (Integer port : containerPorts) {
                     AttributeSensor<String> sensor = Sensors.newStringSensor(String.format("mapped.docker.port.%d", port));
                     String hostAndPort = target.sensors().get(sensor);
                     if (hostAndPort != null) {
-                        openPorts.add(HostAndPort.fromString(hostAndPort).getPort());
+                        ports.put(HostAndPort.fromString(hostAndPort).getPort(), port);
                     } else {
-                        openPorts.add(port);
+                        ports.put(port, port);
                     }
                 }
             } else {
-                Set<Integer> open = DockerUtils.getOpenPorts(target);
+                ports = ImmutableMap.copyOf(DockerUtils.getMappedPorts(target));
             }
             Map<String, Object> env = MutableMap.of();
-            for (Integer port : openPorts) {
+            for (Integer port : ports.keySet()) {
+                Integer containerPort = ports.get(port);
                 env.put(String.format("%S_NAME", name.get()), String.format("/%s/%s", getDockerContainerName(), name.get()));
                 env.put(String.format("%S_PORT", name.get()), String.format("tcp://%s:%d", address, port));
-                env.put(String.format("%S_PORT_%d_TCP", name.get(), port), String.format("tcp://%s:%d", address, port));
-                env.put(String.format("%S_PORT_%d_TCP_ADDR", name.get(), port), address);
-                env.put(String.format("%S_PORT_%d_TCP_PORT", name.get(), port), port);
-                env.put(String.format("%S_PORT_%d_TCP_PROTO", name.get(), port), "tcp");
+                env.put(String.format("%S_PORT_%d_TCP", name.get(), containerPort), String.format("tcp://%s:%d", address, port));
+                env.put(String.format("%S_PORT_%d_TCP_ADDR", name.get(), containerPort), address);
+                env.put(String.format("%S_PORT_%d_TCP_PORT", name.get(), containerPort), port);
+                env.put(String.format("%S_PORT_%d_TCP_PROTO", name.get(), containerPort), "tcp");
             }
             LOG.debug("Links for {}: {}", name, Joiner.on(" ").withKeyValueSeparator("=").join(env));
             return env;
@@ -478,21 +481,6 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             LOG.warn("Cannot generate links for {}: no name specified", target);
             return ImmutableMap.<String, Object>of();
         }
-    }
-
-    /** Returns the set of configured ports an entity is listening on. */
-    public static Set<Integer> getOpenPorts(Entity entity) {
-        Set<Integer> ports = MutableSet.of(22);
-        for (ConfigKey<?> k: entity.getEntityType().getConfigKeys()) {
-            if (PortRange.class.isAssignableFrom(k.getType())) {
-                PortRange p = (PortRange) entity.config().get(k);
-                if (p != null && !p.isEmpty()) ports.add(p.iterator().next());
-            }
-        }
-        for (Entity child : entity.getChildren()) {
-            ports.addAll(getOpenPorts(child));
-        }
-        return ImmutableSet.copyOf(ports);
     }
 
     private Optional<String> getContainerName(Entity target) {

@@ -34,6 +34,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -61,7 +62,7 @@ import org.apache.brooklyn.entity.nosql.couchbase.CouchbaseNode;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.webapp.WebAppServiceConstants;
 import org.apache.brooklyn.util.collections.MutableList;
-import org.apache.brooklyn.util.collections.MutableSet;
+import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.text.Identifiers;
 import org.apache.brooklyn.util.text.Strings;
 
@@ -206,30 +207,37 @@ public class DockerUtils {
         return Identifiers.makeIdFromHash(Hashing.md5().hashString(label, Charsets.UTF_8).asLong()).toLowerCase(Locale.ENGLISH);
     }
 
-    /** Returns the set of configured ports an entity is listening on. */
-    public static Set<Integer> getOpenPorts(Entity entity) {
-        Set<Integer> ports = MutableSet.of(22);
+    public static Map<Integer, Integer> getMappedPorts(Entity entity) {
+        Map<Integer, Integer> ports = MutableMap.of();
         for (ConfigKey<?> k: entity.getEntityType().getConfigKeys()) {
             if (k instanceof PortAttributeSensorAndConfigKey) {
                 String name = ((PortAttributeSensorAndConfigKey) k).getName();
-                Integer p = entity.sensors().get(Sensors.newIntegerSensor("mapped." + name));
-                if (p == null) {
-                    p = ((PortAttributeSensorAndConfigKey) k).getAsSensorValue(entity);
-                }
-                if (p != null) {
-                    ports.add(p);
+                Integer p = ((PortAttributeSensorAndConfigKey) k).getAsSensorValue(entity);
+                Integer m = entity.sensors().get(Sensors.newIntegerSensor("mapped." + name));
+                if (m == null) {
+                    ports.put(p, p);
+                } else {
+                    ports.put(m, p);
                 }
             } else if (PortRange.class.isAssignableFrom(k.getType())) {
-                PortRange p = (PortRange) entity.config().get(k);
-                if (p != null && !p.isEmpty()) {
-                    ports.add(p.iterator().next());
+                PortRange r = (PortRange) entity.config().get(k);
+                if (r != null && !r.isEmpty()) {
+                    Integer p = r.iterator().next();
+                    ports.put(p, p);
                 }
             }
         }
         for (Entity child : entity.getChildren()) {
-            ports.addAll(getOpenPorts(child));
+            ports.putAll(getMappedPorts(child));
         }
-        return ImmutableSet.copyOf(ports);
+        return ImmutableMap.copyOf(ports);
+    }
+
+    // XXX port 22 not special cased...
+
+    /** Returns the set of configured ports an entity is listening on. */
+    public static Set<Integer> getOpenPorts(Entity entity) {
+        return ImmutableSet.copyOf(getMappedPorts(entity).keySet());
     }
 
     /*
