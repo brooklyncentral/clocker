@@ -62,6 +62,7 @@ import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.location.BasicLocationDefinition;
 import org.apache.brooklyn.core.location.BasicLocationRegistry;
+import org.apache.brooklyn.core.location.LocationConfigKeys;
 import org.apache.brooklyn.core.location.cloud.CloudLocationConfig;
 import org.apache.brooklyn.core.location.dynamic.LocationOwner;
 import org.apache.brooklyn.entity.group.BasicGroup;
@@ -75,6 +76,7 @@ import org.apache.brooklyn.feed.http.JsonFunctions;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.core.internal.ssh.SshTool;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.guava.Functionals;
 import org.apache.brooklyn.util.math.MathFunctions;
@@ -435,17 +437,22 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
 
             // TODO make use of the MesosSlave.SLAVE_SSH_* configuration here
             LocationSpec<SshMachineLocation> spec = LocationSpec.create(SshMachineLocation.class)
-                            .configure(CloudLocationConfig.WAIT_FOR_SSHABLE, "false")
-                            .configure(SshMachineLocation.DETECT_MACHINE_DETAILS, false)
                             .configure(SshMachineLocation.SSH_HOST, hostname)
                             .configure("address", InetAddress.getByName(hostname))
-//                            .configure(SshMachineLocation.SSH_PORT, getSshPort())
-//                            .configure(LocationConfigKeys.USER, "root")
-//                            .configure(LocationConfigKeys.PASSWORD, "p4ssw0rd")
-//                            .configure(SshTool.PROP_PASSWORD, "p4ssw0rd")
-//                            .configure(LocationConfigKeys.PRIVATE_KEY_DATA, (String) null) 
-//                            .configure(LocationConfigKeys.PRIVATE_KEY_FILE, (String) null)
                             .displayName(hostname);
+            if (config().get(MESOS_SLAVE_ACCESSIBLE)) {
+                spec.configure(CloudLocationConfig.WAIT_FOR_SSHABLE, "true")
+                    .configure(SshMachineLocation.DETECT_MACHINE_DETAILS, true)
+                    .configure(SshMachineLocation.SSH_PORT, config().get(MesosSlave.SLAVE_SSH_PORT))
+                    .configure(LocationConfigKeys.USER, config().get(MesosSlave.SLAVE_SSH_USER))
+                    .configure(LocationConfigKeys.PASSWORD, config().get(MesosSlave.SLAVE_SSH_PASSWORD))
+                    .configure(SshTool.PROP_PASSWORD, config().get(MesosSlave.SLAVE_SSH_PASSWORD))
+                    .configure(LocationConfigKeys.PRIVATE_KEY_DATA, config().get(MesosSlave.SLAVE_SSH_PRIVATE_KEY_DATA))
+                    .configure(LocationConfigKeys.PRIVATE_KEY_FILE, config().get(MesosSlave.SLAVE_SSH_PRIVATE_KEY_FILE));
+            } else {
+                spec.configure(CloudLocationConfig.WAIT_FOR_SSHABLE, "false")
+                    .configure(SshMachineLocation.DETECT_MACHINE_DETAILS, false);
+            }
             SshMachineLocation machine = getManagementContext().getLocationManager().createLocation(spec);
 
             // Setup port forwarding

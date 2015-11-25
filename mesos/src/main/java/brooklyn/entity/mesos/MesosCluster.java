@@ -60,6 +60,9 @@ public interface MesosCluster extends StartableApplication, LocationOwner<MesosL
     ConfigKey<String> MESOS_USERNAME = ConfigKeys.newStringConfigKey("mesos.username", "Username for authenticating to the Mesos instance");
     ConfigKey<String> MESOS_PASSWORD = ConfigKeys.newStringConfigKey("mesos.password", "Password for authenticating to the Mesos instance");
 
+    @SetFromFlag("slaveAccessible")
+    ConfigKey<Boolean> MESOS_SLAVE_ACCESSIBLE = MesosSlave.SLAVE_ACCESSIBLE;
+
     AttributeSensor<DynamicGroup> MESOS_SLAVES = Sensors.newSensor(DynamicGroup.class, "mesos.slaves", "Mesos slaves");
     AttributeSensor<DynamicGroup> MESOS_FRAMEWORKS = Sensors.newSensor(DynamicGroup.class, "mesos.frameworks", "Mesos frameworks");
     AttributeSensor<DynamicGroup> MESOS_TASKS = Sensors.newSensor(DynamicGroup.class, "mesos.tasks", "Mesos tasks");
