@@ -386,6 +386,8 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         environment.putAll(MutableMap.copyOf(entity.config().get(DOCKER_CONTAINER_ENVIRONMENT)));
         sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, environment);
         entity.sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, environment);
+        environment.put("CALICO_IP", "auto"); // Automaticlly chosen by Calico
+        environment.put("CALICO_PROFILE", entity.getApplicationId()); // Same for entire application
         builder.put("environment", Lists.newArrayList(environment.entrySet()));
 
         // Volumes
