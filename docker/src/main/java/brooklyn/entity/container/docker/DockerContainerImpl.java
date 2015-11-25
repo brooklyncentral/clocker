@@ -390,6 +390,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         // Inbound ports
         Set<Integer> entityOpenPorts = MutableSet.copyOf(DockerUtils.getContainerPorts(entity));
         entityOpenPorts.addAll(DockerUtils.getOpenPorts(entity));
+        entityOpenPorts.add(22);
         options.inboundPorts(Ints.toArray(entityOpenPorts));
         sensors().set(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS, ImmutableList.copyOf(entityOpenPorts));
         entity.sensors().set(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS, ImmutableList.copyOf(entityOpenPorts));
@@ -480,21 +481,6 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             LOG.warn("Cannot generate links for {}: no name specified", target);
             return ImmutableMap.<String, Object>of();
         }
-    }
-
-    /** Returns the set of configured ports an entity is listening on. */
-    public static Set<Integer> getOpenPorts(Entity entity) {
-        Set<Integer> ports = MutableSet.of(22);
-        for (ConfigKey<?> k: entity.getEntityType().getConfigKeys()) {
-            if (PortRange.class.isAssignableFrom(k.getType())) {
-                PortRange p = (PortRange) entity.config().get(k);
-                if (p != null && !p.isEmpty()) ports.add(p.iterator().next());
-            }
-        }
-        for (Entity child : entity.getChildren()) {
-            ports.addAll(getOpenPorts(child));
-        }
-        return ImmutableSet.copyOf(ports);
     }
 
     private Optional<String> getContainerName(Entity target) {
