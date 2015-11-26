@@ -45,7 +45,7 @@ public class SdnAttributes {
 
     public static final ConfigKey<EntitySpec> SDN_PROVIDER_SPEC = ConfigKeys.newConfigKey(EntitySpec.class, "sdn.provider.spec", "SDN provider entity specification");
 
-    public static final AttributeSensor<Entity> SDN_PROVIDER = Sensors.newSensor(Entity.class, "sdn.provier.network", "SDN provider network entity");
+    public static final AttributeSensor<Entity> SDN_PROVIDER = Sensors.newSensor(Entity.class, "sdn.provider.network", "SDN provider network entity");
 
     public static final AttributeSensor<List<String>> ATTACHED_NETWORKS = Sensors.newSensor(new TypeToken<List<String>>() { },
             "sdn.networks.attached", "The list of networks that an entity is attached to");

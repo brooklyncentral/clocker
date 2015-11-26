@@ -36,7 +36,6 @@ import brooklyn.networking.subnet.SubnetTier;
  */
 public interface SdnAgent extends SoftwareProcess {
 
-
     @SetFromFlag("host")
     AttributeSensorAndConfigKey<DockerHost,DockerHost> DOCKER_HOST = ConfigKeys.newSensorAndConfigKey(DockerHost.class, "sdn.agent.docker.host", "Docker host we are running on");
 

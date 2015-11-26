@@ -41,6 +41,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.common.net.HostAndPort;
 import com.google.common.net.HttpHeaders;
 import com.google.common.primitives.Ints;
@@ -101,7 +102,9 @@ import brooklyn.entity.mesos.framework.marathon.MarathonFramework;
 import brooklyn.entity.mesos.task.MesosTask;
 import brooklyn.entity.mesos.task.MesosTaskImpl;
 import brooklyn.location.mesos.framework.marathon.MarathonTaskLocation;
+import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.networking.sdn.SdnProvider;
+import brooklyn.networking.sdn.SdnUtils;
 import brooklyn.networking.subnet.SubnetTier;
 
 /**
@@ -409,13 +412,34 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         environment.putAll(MutableMap.copyOf(entity.config().get(DOCKER_CONTAINER_ENVIRONMENT)));
         sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, ImmutableMap.copyOf(environment));
         entity.sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, ImmutableMap.copyOf(environment));
-        if (getMesosCluster().config().get(MesosCluster.SDN_ENABLE)) {
-            String networkId = entity.getApplicationId();
-            InetAddress address = ((SdnProvider) getMesosCluster().sensors().get(MesosCluster.SDN_PROVIDER)).getNextContainerAddress(networkId);
-            environment.put("CALICO_IP", address.getHostAddress());
-            environment.put("CALICO_PROFILE", networkId);
-        }
         builder.put("environment", Lists.newArrayList(Maps.transformValues(environment, Functions.toStringFunction()).entrySet()));
+
+        // We need to modify the environment if using Calico SDN
+        if (getMesosCluster().config().get(MesosCluster.SDN_ENABLE)) {
+            SdnProvider provider =  ((SdnProvider) getMesosCluster().sensors().get(MesosCluster.SDN_PROVIDER));
+            List<String> networks = Lists.newArrayList(entity.getApplicationId());
+            Collection<String> extra = entity.config().get(SdnAttributes.NETWORK_LIST);
+            if (extra != null) networks.addAll(extra);
+            sensors().set(SdnAttributes.ATTACHED_NETWORKS, networks);
+            entity.sensors().set(SdnAttributes.ATTACHED_NETWORKS, networks);
+            Set<String> addresses = Sets.newHashSet();
+            for (String networkId : networks) {
+                SdnUtils.createNetwork(provider, networkId);
+                InetAddress address = provider.getNextContainerAddress(networkId);
+                addresses.add(address.getHostAddress().toString());
+                // TODO link container to extra networks ...
+                if (networkId.equals(entity.getApplicationId())) {
+                    sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
+                    sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostAddress());
+                    entity.sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
+                    entity.sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostAddress());
+                    builder.put("CALICO_IP", address.getHostAddress());
+                    builder.put("CALICO_PROFILE", networkId);
+                }
+            }
+            sensors().set(DockerContainer.CONTAINER_ADDRESSES, addresses);
+            entity.sensors().set(DockerContainer.CONTAINER_ADDRESSES, addresses);
+        }
 
         // Volumes
         Map<String, String> volumes = MutableMap.of();

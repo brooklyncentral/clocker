@@ -122,6 +122,7 @@ import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.docker.DockerResolver;
 import brooklyn.networking.portforwarding.DockerPortForwarder;
+import brooklyn.networking.sdn.DockerSdnProvider;
 import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.networking.sdn.SdnProvider;
@@ -622,7 +623,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         }
 
         if (config().get(SdnAttributes.SDN_ENABLE)) {
-            SdnProvider provider = (SdnProvider) (sensors().get(DockerHost.DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.SDN_PROVIDER));
+            DockerSdnProvider provider = (DockerSdnProvider) (sensors().get(DockerHost.DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.SDN_PROVIDER));
             Collection<IpPermission> sdnPermissions = provider.getIpPermissions(localhost);
             permissions.addAll(sdnPermissions);
         }

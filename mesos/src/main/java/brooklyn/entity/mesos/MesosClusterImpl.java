@@ -86,7 +86,6 @@ import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
 import org.apache.brooklyn.util.time.Time;
 
-import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.mesos.framework.MesosFramework;
 import brooklyn.entity.mesos.framework.marathon.MarathonPortForwarder;
@@ -144,6 +143,16 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
             Entities.manage(frameworks);
             Entities.manage(tasks);
             Entities.manage(applications);
+        }
+
+        if (config().get(SDN_ENABLE) && config().get(SDN_PROVIDER_SPEC) != null) {
+            Entity sdn = addChild(EntitySpec.create(config().get(SDN_PROVIDER_SPEC))
+                    .configure(MesosAttributes.MESOS_CLUSTER, this));
+            sensors().set(SDN_PROVIDER, sdn);
+
+            if (Entities.isManaged(this)) {
+                Entities.manage(sdn);
+            }
         }
 
         sensors().set(MESOS_SLAVES, slaves);
@@ -442,16 +451,6 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
                 entity.get().sensors().set(MesosSlave.SLAVE_ACTIVE, active); continue;
             }
 
-            if (config().get(SDN_ENABLE) && config().get(SDN_PROVIDER_SPEC) != null) {
-                Entity sdn = addChild(EntitySpec.create(config().get(SDN_PROVIDER_SPEC))
-                        .configure(MesosAttributes.MESOS_CLUSTER, this));
-                sensors().set(SDN_PROVIDER, sdn);
-
-                if (Entities.isManaged(this)) {
-                    Entities.manage(sdn);
-                }
-            }
-
             LocationSpec<SshMachineLocation> spec = LocationSpec.create(SshMachineLocation.class)
                             .configure(SshMachineLocation.SSH_HOST, hostname)
                             .configure("address", InetAddress.getByName(hostname))
@@ -523,6 +522,7 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
         RendererHints.register(MESOS_FRAMEWORKS, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(MESOS_TASKS, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(MESOS_APPLICATIONS, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(SDN_PROVIDER, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
 
         RendererHints.register(START_TIME, RendererHints.displayValue(Time.toDateString()));
 

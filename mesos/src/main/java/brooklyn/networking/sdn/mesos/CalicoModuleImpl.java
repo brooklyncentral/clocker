@@ -41,6 +41,7 @@ import org.apache.brooklyn.entity.stock.BasicStartableImpl;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
 import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.ssh.BashCommands;
 
 import brooklyn.entity.mesos.MesosCluster;
 import brooklyn.entity.mesos.MesosSlave;
@@ -50,6 +51,7 @@ import brooklyn.networking.VirtualNetwork;
 import brooklyn.networking.location.NetworkProvisioningExtension;
 import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.networking.sdn.SdnProvider;
+import brooklyn.networking.sdn.SdnUtils;
 
 public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule {
 
@@ -199,10 +201,10 @@ public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule
 
     @Override
     public void provisionNetwork(VirtualNetwork network) {
-        // Call provisionNetwork on one of the Mesos slaves to create it
+        String networkId = network.sensors().get(VirtualNetwork.NETWORK_ID);
+        Cidr subnetCidr = SdnUtils.provisionNetwork(this, network);
         MesosSlave slave = (MesosSlave) getMesosCluster().sensors().get(MesosCluster.MESOS_SLAVES).getMembers().iterator().next();
-//        slave.execCommand("calicoctl ip pool something");
-        String networkId = network.getId();
+        slave.execCommand(BashCommands.sudo(String.format("calicoctl pool add %s --ipip --nat-outgoing", subnetCidr)));
 
         // Create a DynamicGroup with all attached entities
         EntitySpec<DynamicGroup> networkSpec = EntitySpec.create(DynamicGroup.class)

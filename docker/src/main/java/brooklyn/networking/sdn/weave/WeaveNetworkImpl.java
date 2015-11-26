@@ -35,7 +35,6 @@ import org.apache.brooklyn.util.text.Strings;
 
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.networking.sdn.SdnAgent;
-import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.networking.sdn.SdnProviderImpl;
 
 public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
@@ -47,14 +46,14 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
         LOG.info("Starting Weave network id {}", getId());
         super.init();
 
-        EntitySpec<?> agentSpec = EntitySpec.create(getConfig(SdnProvider.SDN_AGENT_SPEC, EntitySpec.create(WeaveContainer.class)))
+        EntitySpec<?> agentSpec = EntitySpec.create(getConfig(SDN_AGENT_SPEC, EntitySpec.create(WeaveContainer.class)))
                 .configure(WeaveContainer.WEAVE_PORT, config().get(WeaveNetwork.WEAVE_PORT))
                 .configure(WeaveContainer.SDN_PROVIDER, this);
         String weaveVersion = config().get(WEAVE_VERSION);
         if (Strings.isNonBlank(weaveVersion)) {
             agentSpec.configure(SoftwareProcess.SUGGESTED_VERSION, weaveVersion);
         }
-        sensors().set(SdnProvider.SDN_AGENT_SPEC, agentSpec);
+        sensors().set(SDN_AGENT_SPEC, agentSpec);
 
         Cidr weaveCidr = getNextSubnetCidr();
         config().set(AGENT_CIDR, weaveCidr);
