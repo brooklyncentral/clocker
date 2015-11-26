@@ -87,6 +87,13 @@ brooklyn.catalog:
           $brooklyn:entitySpec:
             type: etcd-node
 
+  - id: calico-module
+    name: "Calico Network Module"
+    item:
+      type: brooklyn.networking.sdn.mesos.CalicoModule
+      brooklyn.config:
+        calico.version: 0.8.0
+
   - id: etcd-node
     name: "Etcd Node"
     item:

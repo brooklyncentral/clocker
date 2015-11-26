@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
 
 import org.apache.brooklyn.api.catalog.CatalogConfig;
+import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
@@ -39,6 +40,7 @@ import brooklyn.entity.mesos.framework.MesosFramework;
 import brooklyn.entity.mesos.framework.aurora.AuroraFramework;
 import brooklyn.entity.mesos.framework.marathon.MarathonFramework;
 import brooklyn.location.mesos.MesosLocation;
+import brooklyn.networking.sdn.SdnAttributes;
 
 /**
  * A Mesos cluster entity.
@@ -62,6 +64,14 @@ public interface MesosCluster extends StartableApplication, LocationOwner<MesosL
 
     @SetFromFlag("slaveAccessible")
     ConfigKey<Boolean> MESOS_SLAVE_ACCESSIBLE = MesosSlave.SLAVE_ACCESSIBLE;
+
+    @SetFromFlag("enableSdn")
+    ConfigKey<Boolean> SDN_ENABLE = SdnAttributes.SDN_ENABLE;
+
+    @SetFromFlag("sdnProviderSpec")
+    ConfigKey<EntitySpec> SDN_PROVIDER_SPEC = SdnAttributes.SDN_PROVIDER_SPEC;
+
+    AttributeSensor<Entity> SDN_PROVIDER = SdnAttributes.SDN_PROVIDER;
 
     AttributeSensor<DynamicGroup> MESOS_SLAVES = Sensors.newSensor(DynamicGroup.class, "mesos.slaves", "Mesos slaves");
     AttributeSensor<DynamicGroup> MESOS_FRAMEWORKS = Sensors.newSensor(DynamicGroup.class, "mesos.frameworks", "Mesos frameworks");

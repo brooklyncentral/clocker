@@ -86,6 +86,7 @@ import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
 import org.apache.brooklyn.util.time.Time;
 
+import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.mesos.framework.MesosFramework;
 import brooklyn.entity.mesos.framework.marathon.MarathonPortForwarder;
@@ -303,7 +304,13 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
         }
 
         // Stop anything else left over
-        super.stop();
+        // TODO Stop slave entities
+        try {
+            super.stop();
+        } catch (Exception e) {
+            LOG.warn("Error stopping children", e);
+        }
+
         deleteLocation();
     }
 
@@ -435,7 +442,16 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
                 entity.get().sensors().set(MesosSlave.SLAVE_ACTIVE, active); continue;
             }
 
-            // TODO make use of the MesosSlave.SLAVE_SSH_* configuration here
+            if (config().get(SDN_ENABLE) && config().get(SDN_PROVIDER_SPEC) != null) {
+                Entity sdn = addChild(EntitySpec.create(config().get(SDN_PROVIDER_SPEC))
+                        .configure(MesosAttributes.MESOS_CLUSTER, this));
+                sensors().set(SDN_PROVIDER, sdn);
+
+                if (Entities.isManaged(this)) {
+                    Entities.manage(sdn);
+                }
+            }
+
             LocationSpec<SshMachineLocation> spec = LocationSpec.create(SshMachineLocation.class)
                             .configure(SshMachineLocation.SSH_HOST, hostname)
                             .configure("address", InetAddress.getByName(hostname))

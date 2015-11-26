@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.networking.sdn;
+package brooklyn.networking.sdn.mesos;
 
 import java.net.InetAddress;
 import java.util.Collection;
@@ -31,37 +31,32 @@ import com.google.common.collect.Maps;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
-import org.apache.brooklyn.api.entity.Group;
 import org.apache.brooklyn.api.location.Location;
-import org.apache.brooklyn.api.policy.PolicySpec;
 import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityPredicates;
-import org.apache.brooklyn.core.feed.ConfigToAttributes;
-import org.apache.brooklyn.entity.group.AbstractMembershipTrackingPolicy;
 import org.apache.brooklyn.entity.group.BasicGroup;
-import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.group.DynamicGroup;
 import org.apache.brooklyn.entity.stock.BasicStartableImpl;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
 import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import org.apache.brooklyn.util.net.Cidr;
 
-import brooklyn.entity.container.docker.DockerContainer;
-import brooklyn.entity.container.docker.DockerHost;
-import brooklyn.entity.container.docker.DockerInfrastructure;
+import brooklyn.entity.mesos.MesosCluster;
+import brooklyn.entity.mesos.MesosSlave;
+import brooklyn.entity.mesos.MesosUtils;
+import brooklyn.entity.mesos.task.marathon.MarathonTask;
 import brooklyn.networking.VirtualNetwork;
 import brooklyn.networking.location.NetworkProvisioningExtension;
+import brooklyn.networking.sdn.SdnAttributes;
+import brooklyn.networking.sdn.SdnProvider;
 
-public abstract class SdnProviderImpl extends BasicStartableImpl implements DockerSdnProvider{
+public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SdnProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CalicoModule.class);
 
     /** Held while obtaining new IP addresses for containers. */
     protected transient final Object addressMutex = new Object[0];
-
-    /** Held while adding or removing new {@link SdnAgent} entities on hosts. */
-    protected transient final Object hostMutex = new Object[0];
 
     /** Mutex for provisioning new networks */
     protected transient final Object networkMutex = new Object[0];
@@ -70,13 +65,6 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements Dock
     public void init() {
         LOG.info("Starting SDN provider id {}", getId());
         super.init();
-
-        ConfigToAttributes.apply(this, DOCKER_INFRASTRUCTURE);
-
-        BasicGroup agents = addChild(EntitySpec.create(BasicGroup.class)
-                .configure(BasicGroup.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
-                .configure(BasicGroup.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
-                .displayName("SDN Host Agents"));
 
         BasicGroup networks = addChild(EntitySpec.create(BasicGroup.class)
                 .configure(BasicGroup.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
@@ -90,18 +78,14 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements Dock
                 .displayName("SDN Networked Applications"));
 
         if (Entities.isManaged(this)) {
-            Entities.manage(agents);
             Entities.manage(networks);
             Entities.manage(applications);
         }
 
-        sensors().set(SDN_AGENTS, agents);
         sensors().set(SDN_NETWORKS, networks);
         sensors().set(SDN_APPLICATIONS, applications);
 
         synchronized (addressMutex) {
-            sensors().set(ALLOCATED_IPS, 0);
-            sensors().set(ALLOCATED_ADDRESSES, Maps.<String, InetAddress>newConcurrentMap());
             sensors().set(SUBNET_ADDRESS_ALLOCATIONS, Maps.<String, Integer>newConcurrentMap());
         }
 
@@ -112,20 +96,6 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements Dock
 
         sensors().set(SUBNET_ENTITIES, Maps.<String, VirtualNetwork>newConcurrentMap());
         sensors().set(CONTAINER_ADDRESSES, HashMultimap.<String, InetAddress>create());
-    }
-
-    @Override
-    public InetAddress getNextAgentAddress(String agentId) {
-        synchronized (addressMutex) {
-            Cidr cidr = config().get(AGENT_CIDR);
-            Integer allocated = sensors().get(ALLOCATED_IPS);
-            InetAddress next = cidr.addressAtOffset(allocated + 1);
-            sensors().set(ALLOCATED_IPS, allocated + 1);
-            Map<String, InetAddress> addresses = sensors().get(ALLOCATED_ADDRESSES);
-            addresses.put(agentId, next);
-            sensors().set(ALLOCATED_ADDRESSES, addresses);
-            return next;
-        }
     }
 
     @Override
@@ -197,31 +167,14 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements Dock
     public Object getNetworkMutex() { return networkMutex; }
 
     @Override
-    public DynamicCluster getDockerHostCluster() {
-        return config().get(DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.DOCKER_HOST_CLUSTER);
-    }
-
-    @Override
-    public Group getAgents() { return sensors().get(SDN_AGENTS); }
-
-    public static class MemberTrackingPolicy extends AbstractMembershipTrackingPolicy {
-        @Override
-        protected void onEntityEvent(EventType type, Entity member) {
-            ((SdnProviderImpl) entity).onHostChanged(member);
-        }
-    }
-
-    @Override
     public void start(Collection<? extends Location> locations) {
         sensors().set(SERVICE_UP, Boolean.FALSE);
 
         // Add ouserlves as an extension to the Docker location
-        DockerInfrastructure infrastructure = (DockerInfrastructure) config().get(DOCKER_INFRASTRUCTURE);
-        infrastructure.getDynamicLocation().addExtension(NetworkProvisioningExtension.class, this);
+        MesosCluster cluster = (MesosCluster) config().get(MESOS_CLUSTER);
+        cluster.getDynamicLocation().addExtension(NetworkProvisioningExtension.class, this);
 
         super.start(locations);
-
-        addHostTrackerPolicy();
 
         sensors().set(SERVICE_UP, Boolean.TRUE);
     }
@@ -239,50 +192,6 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements Dock
         // TODO implement custom SDN provider rebind logic
     }
 
-    protected void addHostTrackerPolicy() {
-        Group hosts = getDockerHostCluster();
-        if (hosts != null) {
-            MemberTrackingPolicy hostTrackerPolicy = addPolicy(PolicySpec.create(MemberTrackingPolicy.class)
-                    .displayName("Docker host tracker")
-                    .configure("group", hosts));
-            LOG.info("Added policy {} to {}, during start", hostTrackerPolicy, this);
-        }
-    }
-
-    private void onHostAdded(Entity item) {
-        synchronized (hostMutex) {
-            if (item instanceof DockerHost) {
-                addHost((DockerHost) item);
-            }
-        }
-    }
-
-    private void onHostRemoved(Entity item) {
-        synchronized (hostMutex) {
-            if (item instanceof DockerHost) {
-                removeHost((DockerHost) item);
-            }
-        }
-    }
-
-    private void onHostChanged(Entity item) {
-        synchronized (hostMutex) {
-            boolean exists = getDockerHostCluster().hasMember(item);
-            Boolean running = item.sensors().get(SERVICE_UP);
-            if (exists && running && item.sensors().get(SdnAgent.SDN_AGENT) == null) {
-                onHostAdded(item);
-            } else if (!exists) {
-                onHostRemoved(item);
-            }
-        }
-    }
-
-    /* Callbacks for Docker hosts using this SDN provider. */
-
-    protected abstract void addHost(DockerHost host);
-
-    protected abstract void removeHost(DockerHost host);
-
     @Override
     public Map<String, Cidr> listManagedNetworkAddressSpace() {
         return ImmutableMap.copyOf(sensors().get(SUBNETS));
@@ -290,15 +199,16 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements Dock
 
     @Override
     public void provisionNetwork(VirtualNetwork network) {
-        // Call provisionNetwork on one of the agents to create it
-        SdnAgent agent = (SdnAgent) (getAgents().getMembers().iterator().next());
-        String networkId = agent.provisionNetwork(network);
+        // Call provisionNetwork on one of the Mesos slaves to create it
+        MesosSlave slave = (MesosSlave) getMesosCluster().sensors().get(MesosCluster.MESOS_SLAVES).getMembers().iterator().next();
+//        slave.execCommand("calicoctl ip pool something");
+        String networkId = network.getId();
 
         // Create a DynamicGroup with all attached entities
         EntitySpec<DynamicGroup> networkSpec = EntitySpec.create(DynamicGroup.class)
                 .configure(DynamicGroup.ENTITY_FILTER, Predicates.and(
-                        Predicates.not(Predicates.or(Predicates.instanceOf(DockerContainer.class), Predicates.instanceOf(DelegateEntity.class))),
-                        EntityPredicates.attributeEqualTo(DockerContainer.DOCKER_INFRASTRUCTURE, sensors().get(DOCKER_INFRASTRUCTURE)),
+                        Predicates.not(Predicates.or(Predicates.instanceOf(MarathonTask.class), Predicates.instanceOf(DelegateEntity.class))),
+                        MesosUtils.sameCluster(this),
                         SdnAttributes.attachedToNetwork(networkId)))
                 .configure(DynamicGroup.MEMBER_DELEGATE_CHILDREN, true)
                 .displayName(network.getDisplayName());
@@ -327,11 +237,15 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements Dock
         // TODO actually deprovision the network if possible?
     }
 
+    @Override
+    public MesosCluster getMesosCluster() {
+        return (MesosCluster) sensors().get(MESOS_CLUSTER);
+    }
+
     static {
-        RendererHints.register(SDN_AGENTS, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(SDN_NETWORKS, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(SDN_APPLICATIONS, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(DOCKER_INFRASTRUCTURE, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(MESOS_CLUSTER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }
