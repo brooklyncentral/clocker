@@ -57,6 +57,7 @@ import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.api.mgmt.LocationManager;
+import org.apache.brooklyn.api.mgmt.Task;
 import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
@@ -81,6 +82,8 @@ import org.apache.brooklyn.util.collections.MutableSet;
 import org.apache.brooklyn.util.core.http.HttpTool;
 import org.apache.brooklyn.util.core.http.HttpToolResponse;
 import org.apache.brooklyn.util.core.internal.ssh.SshTool;
+import org.apache.brooklyn.util.core.task.DynamicTasks;
+import org.apache.brooklyn.util.core.task.Tasks;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.guava.Functionals;
 import org.apache.brooklyn.util.net.Cidr;
@@ -88,6 +91,7 @@ import org.apache.brooklyn.util.net.Protocol;
 import org.apache.brooklyn.util.net.Urls;
 import org.apache.brooklyn.util.ssh.BashCommands;
 import org.apache.brooklyn.util.text.Strings;
+import org.apache.brooklyn.util.time.Duration;
 import org.apache.brooklyn.util.time.Time;
 
 import brooklyn.entity.container.DockerAttributes;
@@ -263,13 +267,16 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
             Exceptions.propagate(e);
         }
 
-        String hostname = DependentConfiguration.waitInTaskForAttributeReady(this, Attributes.HOSTNAME, Predicates.notNull());
+        // Waiting for TASK_RUNNING status
+        Task<?> task = DependentConfiguration.attributeWhenReady(this, MesosTask.TASK_STATE, Predicates.equalTo(MesosTask.TaskState.TASK_RUNNING.toString()));
+        DynamicTasks.queueIfPossible(task).orSubmitAndBlock(this).asTask().getUnchecked(Duration.FIVE_MINUTES);
+        String hostname = getHostname();
         LOG.info("Task {} running on {} successfully", id, hostname);
 
         String containerId = null;
         MesosSlave slave = getMesosCluster().getMesosSlave(hostname);
         String ps = slave.execCommand(BashCommands.sudo("docker ps --filter=name=mesos-* -q"));
-        Iterable<String> containers = Splitter.on(CharMatcher.WHITESPACE).split(ps);
+        Iterable<String> containers = Splitter.on(CharMatcher.WHITESPACE).omitEmptyStrings().split(ps);
         for (String each : containers) {
             String env = slave.execCommand(BashCommands.sudo("docker inspect --format='{{range .Config.Env}}{{println .}}{{end}}' " + each));
             Optional<String> found = Iterables.tryFind(Splitter.on(CharMatcher.WHITESPACE).split(env), Predicates.equalTo("MARATHON_APP_ID=" + sensors().get(APPLICATION_ID)));
@@ -414,7 +421,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         entity.sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, ImmutableMap.copyOf(environment));
         builder.put("environment", Lists.newArrayList(Maps.transformValues(environment, Functions.toStringFunction()).entrySet()));
 
-        // We need to modify the environment if using Calico SDN
+        // Set network configuration is using Calico SDN
         if (getMesosCluster().config().get(MesosCluster.SDN_ENABLE)) {
             SdnProvider provider =  ((SdnProvider) getMesosCluster().sensors().get(MesosCluster.SDN_PROVIDER));
             List<String> networks = Lists.newArrayList(entity.getApplicationId());
@@ -433,8 +440,8 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                     sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostAddress());
                     entity.sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
                     entity.sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostAddress());
-                    builder.put("CALICO_IP", address.getHostAddress());
-                    builder.put("CALICO_PROFILE", networkId);
+                    builder.put("address", address.getHostAddress());
+                    builder.put("networkId", networkId);
                 }
             }
             sensors().set(DockerContainer.CONTAINER_ADDRESSES, addresses);
@@ -557,7 +564,12 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
 
     @Override
     public Set<String> getPrivateAddresses() {
-        return ImmutableSet.of(sensors().get(Attributes.ADDRESS));
+        Set<String> containerAddresses = sensors().get(DockerContainer.CONTAINER_ADDRESSES);
+        if (containerAddresses != null) {
+            return ImmutableSet.copyOf(containerAddresses);
+        } else {
+            return ImmutableSet.of(sensors().get(Attributes.ADDRESS));
+        }
     }
 
     @Override

@@ -215,7 +215,7 @@ public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule
         EntitySpec<DynamicGroup> networkSpec = EntitySpec.create(DynamicGroup.class)
                 .configure(DynamicGroup.ENTITY_FILTER, Predicates.and(
                         Predicates.not(Predicates.or(Predicates.instanceOf(MarathonTask.class), Predicates.instanceOf(DelegateEntity.class))),
-                        MesosUtils.sameCluster(this),
+                        MesosUtils.sameCluster(getMesosCluster()),
                         SdnAttributes.attachedToNetwork(networkId)))
                 .configure(DynamicGroup.MEMBER_DELEGATE_CHILDREN, true)
                 .displayName(network.getDisplayName());

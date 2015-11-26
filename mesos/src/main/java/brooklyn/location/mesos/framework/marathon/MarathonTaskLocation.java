@@ -25,11 +25,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.base.Optional;
 import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.PortRange;
+import org.apache.brooklyn.core.entity.Attributes;
+import org.apache.brooklyn.core.location.HasSubnetHostname;
 import org.apache.brooklyn.core.location.SupportsPortForwarding;
 import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
@@ -43,7 +46,7 @@ import brooklyn.entity.mesos.task.marathon.MarathonTask;
 /**
  * A {@link Location} that wraps a Marathon task; i.e. a Docker container.
  */
-public class MarathonTaskLocation extends SshMachineLocation implements SupportsPortForwarding, DynamicLocation<MarathonTask, MarathonTaskLocation> { // SupportsPortForwarding
+public class MarathonTaskLocation extends SshMachineLocation implements HasSubnetHostname, SupportsPortForwarding, DynamicLocation<MarathonTask, MarathonTaskLocation> { // SupportsPortForwarding
 
     /** serialVersionUID */
     private static final long serialVersionUID = 610389734596906782L;
@@ -112,13 +115,24 @@ public class MarathonTaskLocation extends SshMachineLocation implements Supports
 
     @Override
     public InetAddress getAddress() {
-        String address = getOwner().getPublicAddresses().iterator().next();
+        String address = getOwner().sensors().get(Attributes.ADDRESS);
         try {
             return InetAddress.getByName(address);
         } catch (UnknownHostException e) {
             throw Exceptions.propagate(e);
         }
     }
+
+    @Override
+    public String getSubnetHostname() {
+        return Optional.fromNullable(getOwner().sensors().get(Attributes.SUBNET_HOSTNAME)).or(getOwner().sensors().get(Attributes.HOSTNAME));
+    }
+
+    @Override
+    public String getSubnetIp() {
+        return Optional.fromNullable(getOwner().sensors().get(Attributes.SUBNET_ADDRESS)).or(getOwner().sensors().get(Attributes.ADDRESS));
+    }
+
 
     @Override
     public void close() throws IOException {
@@ -141,5 +155,4 @@ public class MarathonTaskLocation extends SshMachineLocation implements Supports
                 .add("entity", entity)
                 .add("owner", marathonTask);
     }
-
 }

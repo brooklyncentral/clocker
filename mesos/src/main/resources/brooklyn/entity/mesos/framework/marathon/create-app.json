@@ -31,9 +31,10 @@
         "${u}[#if u_has_next],[/#if]
     [/#list] ],
     "env": {
-    [#if CALICO_IP?has_content]
-        "CALICO_IP": "${CALICO_IP}", "CALICO_PROFILE": "${CALICO_PROFILE}"[#if environment?has_content],[#/if]
-    [/#if] [#if environment?has_content] [#list environment as env]
+    [#if address??]
+        "CALICO_IP": "${address}", "CALICO_PROFILE": "${networkId}"[#if environment?has_content],[/#if]
+    [/#if]
+    [#if environment?has_content] [#list environment as env]
         "${env.getKey()}": "${env.getValue()}"[#if env_has_next],[/#if]
     [/#list] [/#if]
     },
