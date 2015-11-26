@@ -288,6 +288,8 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
 
         sensors().set(SERVICE_UP, Boolean.FALSE);
 
+        deleteLocation();
+
         Duration timeout = config().get(SHUTDOWN_TIMEOUT);
 
         // Find all applications and stop, blocking for up to five minutes until ended
@@ -319,8 +321,6 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
         } catch (Exception e) {
             LOG.warn("Error stopping children", e);
         }
-
-        deleteLocation();
     }
 
     public void connectSensors() {
