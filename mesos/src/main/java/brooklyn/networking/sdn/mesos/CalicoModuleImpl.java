@@ -35,6 +35,7 @@ import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityPredicates;
+import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.entity.group.BasicGroup;
 import org.apache.brooklyn.entity.group.DynamicGroup;
 import org.apache.brooklyn.entity.stock.BasicStartableImpl;
@@ -98,6 +99,8 @@ public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule
 
         sensors().set(SUBNET_ENTITIES, Maps.<String, VirtualNetwork>newConcurrentMap());
         sensors().set(CONTAINER_ADDRESSES, HashMultimap.<String, InetAddress>create());
+
+        ConfigToAttributes.apply(this, MESOS_CLUSTER);
     }
 
     @Override

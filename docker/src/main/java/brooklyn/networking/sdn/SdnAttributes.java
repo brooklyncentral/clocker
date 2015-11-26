@@ -30,6 +30,7 @@ import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 
 /**
@@ -45,7 +46,7 @@ public class SdnAttributes {
 
     public static final ConfigKey<EntitySpec> SDN_PROVIDER_SPEC = ConfigKeys.newConfigKey(EntitySpec.class, "sdn.provider.spec", "SDN provider entity specification");
 
-    public static final AttributeSensor<Entity> SDN_PROVIDER = Sensors.newSensor(Entity.class, "sdn.provider.network", "SDN provider network entity");
+    public static final AttributeSensorAndConfigKey<Entity, Entity> SDN_PROVIDER = ConfigKeys.newSensorAndConfigKey(Entity.class, "sdn.provider.network", "SDN provider network entity");
 
     public static final AttributeSensor<List<String>> ATTACHED_NETWORKS = Sensors.newSensor(new TypeToken<List<String>>() { },
             "sdn.networks.attached", "The list of networks that an entity is attached to");

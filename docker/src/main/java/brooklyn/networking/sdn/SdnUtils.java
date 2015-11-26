@@ -60,6 +60,7 @@ public class SdnUtils {
         if (createNetwork) {
             // Get a CIDR for the subnet from the availabkle pool and create a virtual network
             EntitySpec<VirtualNetwork> networkSpec = EntitySpec.create(VirtualNetwork.class)
+                    .configure(SdnAttributes.SDN_PROVIDER, provider)
                     .configure(VirtualNetwork.NETWORK_ID, networkId)
                     .configure(VirtualNetwork.NETWORK_CIDR, subnetCidr);
 

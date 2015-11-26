@@ -20,6 +20,7 @@ import java.util.Map;
 import com.google.common.collect.Maps;
 import com.google.common.reflect.TypeToken;
 
+import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.Group;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
@@ -32,6 +33,7 @@ import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.net.Cidr;
 
 import brooklyn.networking.location.NetworkProvisioningExtension;
+import brooklyn.networking.sdn.SdnAttributes;
 
 /**
  * A virtual network segment.
@@ -44,6 +46,9 @@ public interface VirtualNetwork extends BasicStartable {
 
     @SetFromFlag("cidr")
     AttributeSensorAndConfigKey<Cidr, Cidr> NETWORK_CIDR = ConfigKeys.newSensorAndConfigKey(Cidr.class, "network.cidr", "CIDR for the network segment");
+
+    @SetFromFlag("sdn")
+    AttributeSensorAndConfigKey<Entity, Entity> SDN_PROVIDER = SdnAttributes.SDN_PROVIDER;
 
     @SetFromFlag("flags")
     ConfigKey<Map<String, Object>> NETWORK_PROVISIONING_FLAGS = ConfigKeys.newConfigKey(
