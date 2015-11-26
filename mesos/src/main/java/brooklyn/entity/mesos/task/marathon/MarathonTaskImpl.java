@@ -281,7 +281,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
             String env = slave.execCommand(BashCommands.sudo("docker inspect --format='{{range .Config.Env}}{{println .}}{{end}}' " + each));
             Optional<String> found = Iterables.tryFind(Splitter.on(CharMatcher.WHITESPACE).split(env), Predicates.equalTo("MARATHON_APP_ID=" + sensors().get(APPLICATION_ID)));
             if (found.isPresent()) {
-                containerId = id;
+                containerId = each;
                 break;
             }
         }

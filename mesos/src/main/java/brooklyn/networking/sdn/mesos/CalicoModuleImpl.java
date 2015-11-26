@@ -33,14 +33,19 @@ import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.core.config.render.RendererHints;
+import org.apache.brooklyn.core.effector.ssh.SshEffectorTasks;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityPredicates;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
+import org.apache.brooklyn.core.location.Machines;
 import org.apache.brooklyn.entity.group.BasicGroup;
 import org.apache.brooklyn.entity.group.DynamicGroup;
 import org.apache.brooklyn.entity.stock.BasicStartableImpl;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
+import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
+import org.apache.brooklyn.util.core.task.DynamicTasks;
+import org.apache.brooklyn.util.guava.Maybe;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.ssh.BashCommands;
 
@@ -209,7 +214,14 @@ public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule
         String etcdUrl = sensors().get(ETCD_CLUSTER_URL);
         Cidr subnetCidr = SdnUtils.provisionNetwork(this, network);
         MesosSlave slave = (MesosSlave) getMesosCluster().sensors().get(MesosCluster.MESOS_SLAVES).getMembers().iterator().next();
-        slave.execCommand(BashCommands.sudo(String.format("ETCD_AUTHORITY=%s calicoctl pool add %s --ipip --nat-outgoing", etcdUrl, subnetCidr)));
+        Maybe<SshMachineLocation> machine = Machines.findUniqueSshMachineLocation(slave.getLocations());
+        DynamicTasks.queue(SshEffectorTasks.ssh(BashCommands.sudo(String.format("calicoctl pool add %s --ipip --nat-outgoing", subnetCidr)))
+                        .environmentVariable("ETCD_AUTHORITY", etcdUrl)
+                        .machine(machine.get())
+                        .requiringExitCodeZero()
+                        .newTask())
+                .asTask()
+                .getUnchecked();
 
         // Create a DynamicGroup with all attached entities
         EntitySpec<DynamicGroup> networkSpec = EntitySpec.create(DynamicGroup.class)
