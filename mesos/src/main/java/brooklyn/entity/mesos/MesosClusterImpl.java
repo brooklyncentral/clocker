@@ -474,7 +474,7 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
 
             // Setup port forwarding
             MarathonPortForwarder portForwarder = new MarathonPortForwarder();
-            portForwarder.injectManagementContext(getManagementContext());
+            portForwarder.setManagementContext(getManagementContext());
 
             EntitySpec<MesosSlave> slaveSpec = EntitySpec.create(MesosSlave.class)
                     .configure(MesosSlave.MESOS_SLAVE_ID, id)
