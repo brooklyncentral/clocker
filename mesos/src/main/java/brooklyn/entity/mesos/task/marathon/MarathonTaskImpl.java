@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.python.google.common.base.Splitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,10 +34,13 @@ import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicates;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
 import com.google.common.net.HttpHeaders;
 import com.google.common.primitives.Ints;
@@ -83,6 +85,7 @@ import org.apache.brooklyn.util.guava.Functionals;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Protocol;
 import org.apache.brooklyn.util.net.Urls;
+import org.apache.brooklyn.util.ssh.BashCommands;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Time;
 
@@ -91,12 +94,14 @@ import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.mesos.MesosCluster;
+import brooklyn.entity.mesos.MesosSlave;
 import brooklyn.entity.mesos.MesosUtils;
 import brooklyn.entity.mesos.framework.MesosFramework;
 import brooklyn.entity.mesos.framework.marathon.MarathonFramework;
 import brooklyn.entity.mesos.task.MesosTask;
 import brooklyn.entity.mesos.task.MesosTaskImpl;
 import brooklyn.location.mesos.framework.marathon.MarathonTaskLocation;
+import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.networking.subnet.SubnetTier;
 
 /**
@@ -257,6 +262,23 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         String hostname = DependentConfiguration.waitInTaskForAttributeReady(this, Attributes.HOSTNAME, Predicates.notNull());
         LOG.info("Task {} running on {} successfully", id, hostname);
 
+        String containerId = null;
+        MesosSlave slave = getMesosCluster().getMesosSlave(hostname);
+        String ps = slave.execCommand(BashCommands.sudo("docker ps --filter=name=mesos-* -q"));
+        Iterable<String> containers = Splitter.on(CharMatcher.WHITESPACE).split(ps);
+        for (String each : containers) {
+            String env = slave.execCommand(BashCommands.sudo("docker inspect --format='{{range .Config.Env}}{{println .}}{{end}}' " + each));
+            Optional<String> found = Iterables.tryFind(Splitter.on(CharMatcher.WHITESPACE).split(env), Predicates.equalTo("MARATHON_APP_ID=" + sensors().get(APPLICATION_ID)));
+            if (found.isPresent()) {
+                containerId = id;
+                break;
+            }
+        }
+        sensors().set(DockerContainer.CONTAINER_ID, containerId);
+        entity.sensors().set(DockerContainer.CONTAINER_ID, containerId);
+        // XXX configure profile with multiple networks
+        // XXX more calico interaction to configure endpoints and ip pools
+
         createLocation(flags);
 
         ServiceStateLogic.setExpectedState(this, Lifecycle.RUNNING);
@@ -384,11 +406,15 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         // Environment variables
         Map<String, Object> environment = MutableMap.copyOf(config().get(DOCKER_CONTAINER_ENVIRONMENT));
         environment.putAll(MutableMap.copyOf(entity.config().get(DOCKER_CONTAINER_ENVIRONMENT)));
-        sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, environment);
-        entity.sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, environment);
-        environment.put("CALICO_IP", "auto"); // Automaticlly chosen by Calico
-        environment.put("CALICO_PROFILE", entity.getApplicationId()); // Same for entire application
-        builder.put("environment", Lists.newArrayList(environment.entrySet()));
+        sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, ImmutableMap.copyOf(environment));
+        entity.sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, ImmutableMap.copyOf(environment));
+        if (getMesosCluster().config().get(MesosCluster.SDN_ENABLE)) {
+            String networkId = entity.getApplicationId();
+            InetAddress address = ((SdnProvider) getMesosCluster().sensors().get(MesosCluster.SDN_PROVIDER)).getNextContainerAddress(networkId);
+            environment.put("CALICO_IP", address.getHostAddress());
+            environment.put("CALICO_PROFILE", networkId);
+        }
+        builder.put("environment", Lists.newArrayList(Maps.transformValues(environment, Functions.toStringFunction()).entrySet()));
 
         // Volumes
         Map<String, String> volumes = MutableMap.of();
