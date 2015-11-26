@@ -101,6 +101,7 @@ public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule
         sensors().set(CONTAINER_ADDRESSES, HashMultimap.<String, InetAddress>create());
 
         ConfigToAttributes.apply(this, MESOS_CLUSTER);
+        ConfigToAttributes.apply(this, ETCD_CLUSTER_URL);
     }
 
     @Override
@@ -205,9 +206,10 @@ public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule
     @Override
     public void provisionNetwork(VirtualNetwork network) {
         String networkId = network.sensors().get(VirtualNetwork.NETWORK_ID);
+        String etcdUrl = sensors().get(ETCD_CLUSTER_URL);
         Cidr subnetCidr = SdnUtils.provisionNetwork(this, network);
         MesosSlave slave = (MesosSlave) getMesosCluster().sensors().get(MesosCluster.MESOS_SLAVES).getMembers().iterator().next();
-        slave.execCommand(BashCommands.sudo(String.format("calicoctl pool add %s --ipip --nat-outgoing", subnetCidr)));
+        slave.execCommand(BashCommands.sudo(String.format("ETCD_AUTHORITY=%s calicoctl pool add %s --ipip --nat-outgoing", etcdUrl, subnetCidr)));
 
         // Create a DynamicGroup with all attached entities
         EntitySpec<DynamicGroup> networkSpec = EntitySpec.create(DynamicGroup.class)
