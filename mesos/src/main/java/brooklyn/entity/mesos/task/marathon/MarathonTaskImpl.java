@@ -245,6 +245,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
 
         Entity entity = getRunningEntity();
+        
         MarathonFramework marathon = (MarathonFramework) sensors().get(FRAMEWORK);
         marathon.sensors().get(MesosFramework.FRAMEWORK_TASKS).addMember(this);
 
