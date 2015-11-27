@@ -15,6 +15,7 @@
  */
 package brooklyn.clocker.example;
 
+import brooklyn.entity.container.docker.DockerContainer;
 import org.apache.brooklyn.api.catalog.CatalogConfig;
 import org.apache.brooklyn.api.entity.Application;
 import org.apache.brooklyn.api.entity.ImplementedBy;
@@ -23,6 +24,8 @@ import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.entity.BrooklynConfigKeys;
 
 import brooklyn.entity.container.docker.application.VanillaDockerApplication;
+
+import java.util.Map;
 
 /**
  * Brooklyn managed {@link VanillaDockerApplication}.
@@ -40,6 +43,9 @@ public interface Microservice extends Application {
 
     @CatalogConfig(label = "Direct Ports", priority = 70)
     ConfigKey<String> DIRECT_PORTS = ConfigKeys.newStringConfigKey("docker.directPorts", "Comma separated list of ports to open directly on the host");
+
+    @CatalogConfig(label = "Container Environment Variables", priority = 70)
+    ConfigKey<Map<String, Object>> DOCKER_CONTAINER_ENVIRONMENT = DockerContainer.DOCKER_CONTAINER_ENVIRONMENT.getConfigKey();
 
     ConfigKey<String> ONBOX_BASE_DIR = ConfigKeys.newConfigKeyWithDefault(BrooklynConfigKeys.ONBOX_BASE_DIR, "/tmp/brooklyn");
     ConfigKey<Boolean> SKIP_ON_BOX_BASE_DIR_RESOLUTION = ConfigKeys.newConfigKeyWithDefault(BrooklynConfigKeys.SKIP_ON_BOX_BASE_DIR_RESOLUTION, Boolean.TRUE);
