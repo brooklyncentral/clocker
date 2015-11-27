@@ -100,8 +100,8 @@ public class DockerUtils {
             SoftwareProcess.DOWNLOAD_URL.getName(),
             CouchbaseCluster.COUCHBASE_CLUSTER_CONNECTION_URL.getName());
 
-    public static final String DEFAULT_DOCKER_CONTAINER_NAME_FORMAT = "docker-container-brooklyn-%1$s";
-    public static final String DEFAULT_DOCKER_HOST_NAME_FORMAT = "docker-host-brooklyn-%1$s";
+    public static final String DEFAULT_DOCKER_CONTAINER_NAME_FORMAT = "clocker-%2$02x";
+    public static final String DEFAULT_DOCKER_HOST_NAME_FORMAT = "docker-%1$s";
 
     public static final String UBUNTU_DOCKERFILE = "classpath://brooklyn/entity/container/docker/ubuntu/Dockerfile";
     public static final String UBUNTU_NETWORKING_DOCKERFILE = "classpath://brooklyn/entity/container/docker/ubuntu/NetworkingDockerfile";

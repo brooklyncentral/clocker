@@ -161,15 +161,6 @@ brooklyn.catalog:
           - $brooklyn:object:
               type: brooklyn.location.docker.strategy.DepthFirstPlacementStrategy
           sdn.enable: false
-          docker.host.spec:
-            $brooklyn:entitySpec:
-              type: docker-host
-              brooklyn.config:
-                docker.container.spec:
-                  $brooklyn:entitySpec:
-                    type: docker-container
-                    brooklyn.config:
-                      docker.container.nameFormat: "docker-%2$02x"
 
   - id: docker-cloud-calico
     name: "Clocker with Calico"

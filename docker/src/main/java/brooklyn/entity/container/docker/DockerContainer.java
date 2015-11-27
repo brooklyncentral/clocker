@@ -41,6 +41,7 @@ import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.net.HasNetworkAddresses;
 
 import brooklyn.entity.container.DockerAttributes;
+import brooklyn.entity.container.DockerUtils;
 import brooklyn.location.docker.DockerContainerLocation;
 
 /**
@@ -108,7 +109,7 @@ public interface DockerContainer extends BasicStartable, HasNetworkAddresses, Ha
             "docker.container.entity", "The entity running in this Docker container");
 
     ConfigKey<String> DOCKER_CONTAINER_NAME_FORMAT = ConfigKeys.newStringConfigKey(
-            "docker.container.nameFormat", "Format for generating Docker container names");
+            "docker.container.nameFormat", "Format for generating Docker container names", DockerUtils.DEFAULT_DOCKER_CONTAINER_NAME_FORMAT);
 
     AttributeSensor<String> IMAGE_ID = Sensors.newStringSensor("docker.container.image.id", "The Docker container image ID");
     AttributeSensor<String> IMAGE_NAME = Sensors.newStringSensor("docker.container.image.name", "The Docker container image name");
