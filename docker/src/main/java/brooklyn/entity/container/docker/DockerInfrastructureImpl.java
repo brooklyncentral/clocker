@@ -59,6 +59,8 @@ import org.apache.brooklyn.core.entity.AbstractApplication;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityPredicates;
+import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
+import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.core.location.BasicLocationDefinition;
@@ -382,6 +384,7 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
     public void doStart(Collection<? extends Location> locations) {
         // TODO support multiple locations
         sensors().set(SERVICE_UP, Boolean.FALSE);
+        ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
 
         Location provisioner = Iterables.getOnlyElement(locations);
         LOG.info("Creating new DockerLocation wrapping {}", provisioner);
@@ -395,7 +398,30 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
 
         super.doStart(locations);
 
+        ServiceStateLogic.setExpectedState(this, Lifecycle.RUNNING);
         sensors().set(SERVICE_UP, Boolean.TRUE);
+    }
+
+    @Override
+    public void postStart(Collection<? extends Location> locations) {
+        if (config().get(DOCKER_SHOULD_START_REGISTRY)) {
+            DockerHost firstEntity = (DockerHost) sensors().get(DOCKER_HOST_CLUSTER).sensors().get(DynamicCluster.FIRST);
+
+            EntitySpec<DockerRegistry> spec = EntitySpec.create(DockerRegistry.class)
+                    .configure(DockerRegistry.DOCKER_HOST, firstEntity)
+                    .configure(DockerRegistry.DOCKER_REGISTRY_PORT, config().get(DOCKER_REGISTRY_PORT));
+
+            // TODO Mount volume with images stored on it
+            DockerRegistry registry = addChild(spec);
+            Entities.manage(registry);
+
+            LOG.debug("Starting a new Docker Registry with spec {}", spec);
+            Entities.start(registry, ImmutableList.of(firstEntity.getDynamicLocation()));
+
+            String registryUrl = HostAndPort.fromParts(firstEntity.sensors().get(Attributes.ADDRESS), config().get(DOCKER_REGISTRY_PORT)).toString();
+            sensors().set(DOCKER_IMAGE_REGISTRY_URL, registryUrl);
+            sensors().set(DOCKER_IMAGE_REGISTRY, registry);
+        }
     }
 
     /**
@@ -459,30 +485,6 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
         super.stop();
 
         deleteLocation();
-    }
-
-    @Override
-    public void postStart(Collection<? extends Location> locations) {
-        super.postStart(locations);
-
-        if (config().get(DOCKER_SHOULD_START_REGISTRY)) {
-            DockerHost firstEntity = (DockerHost) sensors().get(DOCKER_HOST_CLUSTER).sensors().get(DynamicCluster.FIRST);
-
-            EntitySpec<DockerRegistry> spec = EntitySpec.create(DockerRegistry.class)
-                    .configure(DockerRegistry.DOCKER_HOST, firstEntity)
-                    .configure(DockerRegistry.DOCKER_REGISTRY_PORT, config().get(DOCKER_REGISTRY_PORT));
-
-            // TODO Mount volume with images stored on it
-            DockerRegistry registry = addChild(spec);
-            Entities.manage(registry);
-
-            LOG.debug("Starting a new Docker Registry with spec {}", spec);
-            Entities.start(registry, ImmutableList.of(firstEntity.getDynamicLocation()));
-
-            String registryUrl = HostAndPort.fromParts(firstEntity.sensors().get(Attributes.ADDRESS), config().get(DOCKER_REGISTRY_PORT)).toString();
-            sensors().set(DOCKER_IMAGE_REGISTRY_URL, registryUrl);
-            sensors().set(DOCKER_IMAGE_REGISTRY, registry);
-        }
     }
 
     static {

@@ -22,13 +22,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.reflect.TypeToken;
 
 import org.apache.brooklyn.api.catalog.CatalogConfig;
-import org.apache.brooklyn.api.entity.Application;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.core.entity.StartableApplication;
 import org.apache.brooklyn.core.entity.trait.Resizable;
 import org.apache.brooklyn.core.location.dynamic.LocationOwner;
 import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
@@ -53,7 +53,7 @@ import brooklyn.networking.sdn.SdnAttributes;
  * A collection of machines running Docker.
  */
 @ImplementedBy(DockerInfrastructureImpl.class)
-public interface DockerInfrastructure extends Application, Resizable, LocationOwner<DockerLocation, DockerInfrastructure> {
+public interface DockerInfrastructure extends StartableApplication, Resizable, LocationOwner<DockerLocation, DockerInfrastructure> {
 
     @CatalogConfig(label = "Location Name", priority = 90)
     @SetFromFlag("locationName")
