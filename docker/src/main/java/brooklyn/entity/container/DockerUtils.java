@@ -63,6 +63,7 @@ import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.webapp.WebAppServiceConstants;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.collections.MutableSet;
 import org.apache.brooklyn.util.text.Identifiers;
 import org.apache.brooklyn.util.text.Strings;
 
@@ -233,11 +234,11 @@ public class DockerUtils {
         return ImmutableMap.copyOf(ports);
     }
 
-    // XXX port 22 not special cased...
-
     /** Returns the set of configured ports an entity is listening on. */
     public static Set<Integer> getOpenPorts(Entity entity) {
-        return ImmutableSet.copyOf(getMappedPorts(entity).keySet());
+        Set<Integer> ports = MutableSet.of(22); // Default for SSH, may be removed
+        ports.addAll(getMappedPorts(entity).keySet());
+        return ImmutableSet.copyOf(ports);
     }
 
     /*

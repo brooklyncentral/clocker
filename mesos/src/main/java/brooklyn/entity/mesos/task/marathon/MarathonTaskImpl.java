@@ -553,7 +553,8 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
             HostAndPort target = HostAndPort.fromString(sensorValue);
             return target.getPort();
         } else {
-            return null;
+            Integer sshPort = getRunningEntity().config().get(SshMachineLocation.SSH_PORT);
+            return Optional.fromNullable(sshPort).or(22);
         }
     }
 

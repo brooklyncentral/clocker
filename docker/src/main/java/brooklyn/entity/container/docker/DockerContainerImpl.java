@@ -387,7 +387,9 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         // Inbound ports
         Set<Integer> entityOpenPorts = MutableSet.copyOf(DockerUtils.getContainerPorts(entity));
         entityOpenPorts.addAll(DockerUtils.getOpenPorts(entity));
-        entityOpenPorts.add(22);
+        if (!config().get(DockerContainer.DOCKER_USE_SSH)) {
+            entityOpenPorts.remove(22);
+        }
         options.inboundPorts(Ints.toArray(entityOpenPorts));
         sensors().set(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS, ImmutableList.copyOf(entityOpenPorts));
         entity.sensors().set(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS, ImmutableList.copyOf(entityOpenPorts));
@@ -413,14 +415,12 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         }
         sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, environment);
         entity.sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, environment);
-
         List<String> env = MutableList.of();
         if (environment != null && !environment.isEmpty()) {
             for (Map.Entry<String, Object> entry : environment.entrySet()) {
                 env.add(entry.getKey() + "=" + entry.getValue());
             }
         }
-
         options.env(env);
 
         // Log for debugging without password
@@ -618,6 +618,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                     .configure("machine", container) // the underlying JcloudsLocation
                     .configure(container.config().getBag().getAllConfig())
                     .configureIfNotNull(SshMachineLocation.SSH_HOST, getSshHostAddress())
+                    .configureIfNotNull(SshMachineLocation.SSH_PORT, getSshPort())
                     .displayName(getDockerContainerName());
             DockerContainerLocation location = getManagementContext().getLocationManager().createLocation(spec);
 
@@ -628,6 +629,17 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             return location;
         } catch (NoMachinesAvailableException e) {
             throw Exceptions.propagate(e);
+        }
+    }
+
+    public Integer getSshPort() {
+        String sensorValue = sensors().get(DockerAttributes.DOCKER_MAPPED_SSH_PORT);
+        if (sensorValue != null) {
+            HostAndPort target = HostAndPort.fromString(sensorValue);
+            return target.getPort();
+        } else {
+            Integer sshPort = getRunningEntity().config().get(SshMachineLocation.SSH_PORT);
+            return Optional.fromNullable(sshPort).or(22);
         }
     }
 
