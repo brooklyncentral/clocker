@@ -382,10 +382,10 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
 
     @Override
     public void doStart(Collection<? extends Location> locations) {
-        // TODO support multiple locations
         sensors().set(SERVICE_UP, Boolean.FALSE);
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
 
+        // TODO support multiple provisioners
         Location provisioner = Iterables.getOnlyElement(locations);
         LOG.info("Creating new DockerLocation wrapping {}", provisioner);
 

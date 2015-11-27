@@ -32,6 +32,7 @@ import com.google.common.collect.Maps;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.mgmt.TaskWrapper;
 import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.effector.ssh.SshEffectorTasks;
 import org.apache.brooklyn.core.entity.Entities;
@@ -44,6 +45,7 @@ import org.apache.brooklyn.entity.stock.BasicStartableImpl;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
+import org.apache.brooklyn.util.core.internal.ssh.SshTool;
 import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.guava.Maybe;
 import org.apache.brooklyn.util.net.Cidr;
@@ -208,20 +210,26 @@ public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule
         return ImmutableMap.copyOf(sensors().get(SUBNETS));
     }
 
+    protected String execCalicoCommand(MesosSlave slave, String command) {
+        String etcdUrl = sensors().get(ETCD_CLUSTER_URL);
+        Maybe<SshMachineLocation> machine = Machines.findUniqueSshMachineLocation(slave.getLocations());
+        TaskWrapper<String> process = SshEffectorTasks.ssh(BashCommands.sudo(command))
+                .environmentVariable("ETCD_AUTHORITY", etcdUrl)
+                .machine(machine.get())
+                .configure(SshTool.PROP_ALLOCATE_PTY, true)
+                .requiringZeroAndReturningStdout()
+                .newTask();
+        String output = DynamicTasks.queue(process).asTask().getUnchecked();
+        return output;
+    }
+
     @Override
     public void provisionNetwork(VirtualNetwork network) {
         String networkId = network.sensors().get(VirtualNetwork.NETWORK_ID);
-        String etcdUrl = sensors().get(ETCD_CLUSTER_URL);
         Cidr subnetCidr = SdnUtils.provisionNetwork(this, network);
+        String addPool = String.format("calicoctl pool add %s --ipip --nat-outgoing", subnetCidr);
         MesosSlave slave = (MesosSlave) getMesosCluster().sensors().get(MesosCluster.MESOS_SLAVES).getMembers().iterator().next();
-        Maybe<SshMachineLocation> machine = Machines.findUniqueSshMachineLocation(slave.getLocations());
-        DynamicTasks.queue(SshEffectorTasks.ssh(BashCommands.sudo(String.format("calicoctl pool add %s --ipip --nat-outgoing", subnetCidr)))
-                        .environmentVariable("ETCD_AUTHORITY", etcdUrl)
-                        .machine(machine.get())
-                        .requiringExitCodeZero()
-                        .newTask())
-                .asTask()
-                .getUnchecked();
+        execCalicoCommand(slave, addPool);
 
         // Create a DynamicGroup with all attached entities
         EntitySpec<DynamicGroup> networkSpec = EntitySpec.create(DynamicGroup.class)
@@ -262,9 +270,9 @@ public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule
     }
 
     static {
-        RendererHints.register(SDN_NETWORKS, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(SDN_APPLICATIONS, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(MESOS_CLUSTER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(SDN_NETWORKS, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(SDN_APPLICATIONS, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(MESOS_CLUSTER, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }
