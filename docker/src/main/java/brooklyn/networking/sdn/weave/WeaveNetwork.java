@@ -21,17 +21,17 @@ import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
-import brooklyn.networking.sdn.SdnProvider;
+import brooklyn.networking.sdn.DockerSdnProvider;
 
 /**
  * A collection of machines running Weave.
  */
 @Catalog(name = "Weave Infrastructure", description = "Weave SDN", iconUrl = "classpath://weaveworks-logo.png")
 @ImplementedBy(WeaveNetworkImpl.class)
-public interface WeaveNetwork extends SdnProvider {
+public interface WeaveNetwork extends DockerSdnProvider {
 
     @SetFromFlag("version")
-    ConfigKey<String> WEAVE_VERSION = ConfigKeys.newStringConfigKey("weave.version", "The Weave SDN version number", "1.0.3");
+    ConfigKey<String> WEAVE_VERSION = ConfigKeys.newStringConfigKey("weave.version", "The Weave SDN version number", "1.1.2");
 
     @SetFromFlag("weavePort")
     ConfigKey<Integer> WEAVE_PORT = WeaveContainer.WEAVE_PORT;

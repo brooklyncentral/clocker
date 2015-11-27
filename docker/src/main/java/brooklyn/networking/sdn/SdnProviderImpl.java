@@ -53,7 +53,7 @@ import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.networking.VirtualNetwork;
 import brooklyn.networking.location.NetworkProvisioningExtension;
 
-public abstract class SdnProviderImpl extends BasicStartableImpl implements DockerSdnProvider{
+public abstract class SdnProviderImpl extends BasicStartableImpl implements DockerSdnProvider {
 
     private static final Logger LOG = LoggerFactory.getLogger(SdnProvider.class);
 

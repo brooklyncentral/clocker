@@ -432,6 +432,8 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
         sensors().set(SERVICE_UP, Boolean.FALSE);
         Duration timeout = config().get(SHUTDOWN_TIMEOUT);
 
+        deleteLocation();
+
         // Shutdown the Registry if configured
         if (config().get(DOCKER_SHOULD_START_REGISTRY)) {
             try {
@@ -482,9 +484,11 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
         }
 
         // Stop anything else left over
-        super.stop();
-
-        deleteLocation();
+        try {
+            super.stop();
+        } catch (Exception e) {
+            LOG.warn("Error stopping children", e);
+        }
     }
 
     static {
