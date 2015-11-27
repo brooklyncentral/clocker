@@ -125,7 +125,7 @@ public class MarathonLocation extends MesosFrameworkLocation implements MachineP
             }
 
             // Start a new task with flags from entity
-            String name = Optional.fromNullable(entity.config().get(BrooklynCampConstants.PLAN_ID)).or(entity.getId());
+            String name = getTaskName(entity);
             Map<Object, Object> taskFlags = MutableMap.builder()
                     .putAll(flags)
                     .put("entity", entity)
@@ -154,6 +154,15 @@ public class MarathonLocation extends MesosFrameworkLocation implements MachineP
             return marathonTask.getDynamicLocation();
         } finally {
             lock.readLock().unlock();
+        }
+    }
+
+    private String getTaskName(Entity entity) {
+        String planId = entity.config().get(BrooklynCampConstants.PLAN_ID);
+        if (planId != null) {
+            return planId + "/" + entity.getId();
+        } else {
+            return entity.getId();
         }
     }
 
