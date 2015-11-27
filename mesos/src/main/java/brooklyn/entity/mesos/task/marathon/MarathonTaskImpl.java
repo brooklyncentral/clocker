@@ -522,8 +522,13 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         if (!HttpTool.isStatusCodeHealthy(response.getResponseCode())) {
             return Optional.absent();
         } else {
-            LOG.debug("Application JSON: {}", response.getContentAsString());
-            return Optional.of(HttpValueFunctions.jsonContents().apply(response));
+            JsonElement app = HttpValueFunctions.jsonContents().apply(response);
+            if (app.isJsonNull()) {
+                return Optional.absent();
+            } else {
+                LOG.debug("Application JSON: {}", response.getContentAsString());
+                return Optional.of(app);
+            }
         }
     }
 
