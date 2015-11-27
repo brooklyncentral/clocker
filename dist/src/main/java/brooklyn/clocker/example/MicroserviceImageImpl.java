@@ -56,7 +56,7 @@ public class MicroserviceImageImpl extends AbstractApplication implements Micros
                     .configure(DockerInfrastructure.LOCATION_NAME, locationName)
                     .displayName("Docker Infrastructure"));
 
-            Entities.start(dockerInfrastructure, getLocations());
+            Entities.start(dockerInfrastructure, locations);
 
             dockerLocation = Optional.of(getManagementContext().getLocationRegistry().resolve(locationName));
         }

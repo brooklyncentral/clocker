@@ -243,8 +243,8 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
 
     @Override
     public void doStart(Collection<? extends Location> locations) {
-        ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
         sensors().set(SERVICE_UP, Boolean.FALSE);
+        ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
 
         LOG.info("Creating new MesosLocation");
         createLocation(MutableMap.<String, Object>of());
@@ -262,7 +262,9 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
         super.doStart(locations);
 
         connectSensors();
+
         ServiceStateLogic.setExpectedState(this, Lifecycle.RUNNING);
+        sensors().set(SERVICE_UP, Boolean.TRUE);
     }
 
     /**

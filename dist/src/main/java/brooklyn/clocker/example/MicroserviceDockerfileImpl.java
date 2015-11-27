@@ -55,7 +55,7 @@ public class MicroserviceDockerfileImpl extends AbstractApplication implements M
                     .configure(DockerInfrastructure.LOCATION_NAME, locationName)
                     .displayName("Docker Infrastructure"));
 
-            Entities.start(dockerInfrastructure, getLocations());
+            Entities.start(dockerInfrastructure, locations);
 
             dockerLocation = Optional.of(getManagementContext().getLocationRegistry().resolve(locationName));
         }
