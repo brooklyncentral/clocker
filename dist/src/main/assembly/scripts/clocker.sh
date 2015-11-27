@@ -20,20 +20,20 @@
 ROOT=$(cd "$(dirname "$0")/.." && pwd -P)
 
 # check command line arguments for location
-if [ $# -ge 1 -a $# -le 2 ] ; then
+if [ $# -eq 1 -o $# -eq 2 ] ; then
     location=$1
     network=$2
     if [ -f "${network}" ] ; then
         blueprint="${network}"
     else
-        blueprint="${ROOT}/blueprints/docker-cloud-${network:-weave}.yaml"
+        blueprint="${ROOT}/blueprints/docker-cloud-${network:-calico}.yaml"
     fi
     if [ ! -f ${blueprint} ] ; then
         echo "Cannot find blueprint for network ${network}"
-        echo "Supported network options: weave, calico, host, localhost"
+        echo "Supported network options: calico, host, localhost, weave"
         exit 1
     fi
-    LAUNCH_FLAGS="--app ${blueprint} --location ${location}"
+    LAUNCH_FLAGS="${LAUNCH_FLAGS} --app ${blueprint} --location ${location}"
 elif [ $# -ne 0 ] ; then
     echo "Too many arguments; Usage: clocker.sh [location [network]]"
     exit 1
