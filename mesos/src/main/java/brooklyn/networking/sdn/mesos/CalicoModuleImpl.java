@@ -210,7 +210,8 @@ public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule
         return ImmutableMap.copyOf(sensors().get(SUBNETS));
     }
 
-    protected String execCalicoCommand(MesosSlave slave, String command) {
+    @Override
+    public String execCalicoCommand(MesosSlave slave, String command) {
         String etcdUrl = sensors().get(ETCD_CLUSTER_URL);
         Maybe<SshMachineLocation> machine = Machines.findUniqueSshMachineLocation(slave.getLocations());
         TaskWrapper<String> process = SshEffectorTasks.ssh(BashCommands.sudo(command))

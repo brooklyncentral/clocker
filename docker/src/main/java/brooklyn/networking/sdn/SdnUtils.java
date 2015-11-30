@@ -15,7 +15,6 @@
  */
 package brooklyn.networking.sdn;
 
-import java.util.Collections;
 import java.util.concurrent.Callable;
 
 import org.slf4j.Logger;
@@ -36,7 +35,6 @@ import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.repeat.Repeater;
 import org.apache.brooklyn.util.time.Duration;
 
-import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.networking.VirtualNetwork;
 
 public class SdnUtils {

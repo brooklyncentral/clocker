@@ -462,6 +462,7 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
                     .configure(LocationConfigKeys.USER, config().get(MesosSlave.SLAVE_SSH_USER))
                     .configure(LocationConfigKeys.PASSWORD, config().get(MesosSlave.SLAVE_SSH_PASSWORD))
                     .configure(SshTool.PROP_PASSWORD, config().get(MesosSlave.SLAVE_SSH_PASSWORD))
+                    .configure(SshTool.PROP_PORT, config().get(MesosSlave.SLAVE_SSH_PORT))
                     .configure(LocationConfigKeys.PRIVATE_KEY_DATA, config().get(MesosSlave.SLAVE_SSH_PRIVATE_KEY_DATA))
                     .configure(LocationConfigKeys.PRIVATE_KEY_FILE, config().get(MesosSlave.SLAVE_SSH_PRIVATE_KEY_FILE));
             } else {
@@ -473,17 +474,20 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
             // Setup port forwarding
             MarathonPortForwarder portForwarder = new MarathonPortForwarder();
             portForwarder.injectManagementContext(getManagementContext());
-            portForwarder.init(hostname);
 
             EntitySpec<MesosSlave> slaveSpec = EntitySpec.create(MesosSlave.class)
                     .configure(MesosSlave.MESOS_SLAVE_ID, id)
                     .configure(MesosSlave.REGISTERED_AT, registered.longValue())
-                    .configure(MesosSlave.MESOS_CLUSTER, this);
+                    .configure(MesosSlave.MESOS_CLUSTER, this)
+                    .displayName("Mesos Slave (" + hostname + ")");
             MesosSlave added = sensors().get(MESOS_SLAVES).addMemberChild(slaveSpec);
             Entities.manage(added);
             added.sensors().set(MesosSlave.SLAVE_ACTIVE, active);
             added.sensors().set(MesosSlave.HOSTNAME, hostname);
             added.sensors().set(MesosSlave.ADDRESS, hostname);
+
+            added.start(ImmutableList.of(machine));
+            portForwarder.init(hostname, this);
 
             // Setup subnet tier
             SubnetTier subnetTier = added.addChild(EntitySpec.create(SubnetTier.class)
@@ -492,8 +496,6 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
             Entities.manage(subnetTier);
             Entities.start(subnetTier, ImmutableList.of(machine));
             added.sensors().set(MesosSlave.SUBNET_TIER, subnetTier);
-
-            added.start(ImmutableList.of(machine));
         }
         return slaveIds;
     }

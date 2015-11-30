@@ -159,11 +159,13 @@ public class MarathonLocation extends MesosFrameworkLocation implements MachineP
 
     private String getTaskName(Entity entity) {
         String planId = entity.config().get(BrooklynCampConstants.PLAN_ID);
+        String name = null;
         if (planId != null) {
-            return planId + "/" + entity.getId();
+            name = planId + "/" + entity.getId();
         } else {
-            return entity.getId();
+            name = entity.getId();
         }
+        return name.toLowerCase();
     }
 
     @Override

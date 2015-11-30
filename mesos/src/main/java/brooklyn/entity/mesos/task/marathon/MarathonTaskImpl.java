@@ -83,7 +83,6 @@ import org.apache.brooklyn.util.core.http.HttpTool;
 import org.apache.brooklyn.util.core.http.HttpToolResponse;
 import org.apache.brooklyn.util.core.internal.ssh.SshTool;
 import org.apache.brooklyn.util.core.task.DynamicTasks;
-import org.apache.brooklyn.util.core.task.Tasks;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.guava.Functionals;
 import org.apache.brooklyn.util.net.Cidr;
@@ -252,7 +251,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
 
         Entity entity = getRunningEntity();
-        
+
         MarathonFramework marathon = (MarathonFramework) sensors().get(FRAMEWORK);
         marathon.sensors().get(MesosFramework.FRAMEWORK_TASKS).addMember(this);
 
@@ -267,14 +266,15 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
             Exceptions.propagate(e);
         }
 
-        // Waiting for TASK_RUNNING status
-        Task<?> task = DependentConfiguration.attributeWhenReady(this, MesosTask.TASK_STATE, Predicates.equalTo(MesosTask.TaskState.TASK_RUNNING.toString()));
-        DynamicTasks.queueIfPossible(task).orSubmitAndBlock(this).asTask().getUnchecked(Duration.FIVE_MINUTES);
-        String hostname = getHostname();
-        LOG.info("Task {} running on {} successfully", id, hostname);
+        // Waiting for TASK_RUNNING status and get hostname
+        Task<?> running = DependentConfiguration.attributeWhenReady(this, MesosTask.TASK_STATE, Predicates.equalTo(MesosTask.TaskState.TASK_RUNNING.toString()));
+        DynamicTasks.queueIfPossible(running).orSubmitAndBlock(this).asTask().getUnchecked(Duration.FIVE_MINUTES);
+        Task<?> hostname = DependentConfiguration.attributeWhenReady(this, Attributes.HOSTNAME, Predicates.notNull());
+        DynamicTasks.queueIfPossible(hostname).orSubmitAndBlock(this).asTask().getUnchecked(Duration.FIVE_MINUTES);
+        LOG.info("Task {} running on {} successfully", id, getHostname());
 
         String containerId = null;
-        MesosSlave slave = getMesosCluster().getMesosSlave(hostname);
+        MesosSlave slave = getMesosCluster().getMesosSlave(getHostname());
         String ps = slave.execCommand(BashCommands.sudo("docker ps --filter=name=mesos-* -q"));
         Iterable<String> containers = Splitter.on(CharMatcher.WHITESPACE).omitEmptyStrings().split(ps);
         for (String each : containers) {
@@ -602,6 +602,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
     public MarathonTaskLocation createLocation(Map<String, ?> flags) {
         Entity entity = getRunningEntity();
         SubnetTier subnet = getMesosCluster().getMesosSlave(getHostname()).getSubnetTier();
+        Boolean sdn = config().get(MesosCluster.SDN_ENABLE);
 
         // Configure the entity subnet
         LOG.info("Configuring entity {} via subnet {}", entity, subnet);
@@ -627,12 +628,14 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                         for (int i = 0; i < array.size(); i++) {
                             int hostPort = array.get(i).getAsInt();
                             int containerPort = portBindings.get(i).getKey();
-                            String target = getId() + ":" + containerPort;
+                            String target = (sdn ? sensors().get(Attributes.SUBNET_ADDRESS) : getId()) + ":" + containerPort;
                             tcpMappings.put(hostPort, target);
                             if (containerPort == 22) { // XXX should be a better way?
                                 sensors().set(DockerAttributes.DOCKER_MAPPED_SSH_PORT,
-                                        HostAndPort.fromParts(getHostname(), containerPort).toString());
+                                        HostAndPort.fromParts(getHostname(), hostPort).toString());
                             }
+                            subnet.getPortForwarder().openPortForwarding(HostAndPort.fromString(target), Optional.of(hostPort), Protocol.TCP, Cidr.UNIVERSAL);
+                            subnet.getPortForwarder().openFirewallPort(entity, hostPort, Protocol.TCP, Cidr.UNIVERSAL);
                         }
                     }
                 }
@@ -649,6 +652,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                 .configure("entity", getRunningEntity())
                 .configure(CloudLocationConfig.WAIT_FOR_SSHABLE, "false")
                 .configure(SshMachineLocation.DETECT_MACHINE_DETAILS, false)
+                .configure(SshMachineLocation.TCP_PORT_MAPPINGS, tcpMappings)
                 .displayName(getShortName());
         if (config().get(DockerAttributes.DOCKER_USE_SSH)) {
             spec.configure(SshMachineLocation.SSH_HOST, getHostname())
@@ -657,6 +661,8 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                 .configure(LocationConfigKeys.USER, "root") // TODO from slave
                 .configure(LocationConfigKeys.PASSWORD, "p4ssw0rd")
                 .configure(SshTool.PROP_PASSWORD, "p4ssw0rd")
+                .configure(SshTool.PROP_HOST, getHostname())
+                .configure(SshTool.PROP_PORT, getSshPort())
                 .configure(LocationConfigKeys.PRIVATE_KEY_DATA, (String) null) // TODO used to generate authorized_keys
                 .configure(LocationConfigKeys.PRIVATE_KEY_FILE, (String) null);
         }
@@ -667,7 +673,6 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         // Record port mappings
         for (Integer hostPort : tcpMappings.keySet()) {
             HostAndPort target = HostAndPort.fromString(tcpMappings.get(hostPort));
-            subnet.getPortForwarder().openPortForwarding(target, Optional.of(hostPort), Protocol.TCP, Cidr.UNIVERSAL);
             subnet.getPortForwarder().openPortForwarding(location, target.getPort(), Optional.of(hostPort), Protocol.TCP, Cidr.UNIVERSAL);
         }
 

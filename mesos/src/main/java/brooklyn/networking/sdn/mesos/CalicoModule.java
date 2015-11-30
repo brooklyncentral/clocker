@@ -21,6 +21,7 @@ import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
 
 import brooklyn.entity.mesos.MesosAttributes;
 import brooklyn.entity.mesos.MesosCluster;
+import brooklyn.entity.mesos.MesosSlave;
 import brooklyn.entity.nosql.etcd.EtcdProxy;
 import brooklyn.networking.sdn.SdnProvider;
 
@@ -35,5 +36,7 @@ public interface CalicoModule extends SdnProvider {
     AttributeSensorAndConfigKey<String, String> ETCD_CLUSTER_URL = EtcdProxy.ETCD_CLUSTER_URL;
 
     MesosCluster getMesosCluster();
+
+    String execCalicoCommand(MesosSlave slave, String command);
 
 }

@@ -26,19 +26,16 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Optional;
-import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.location.HasSubnetHostname;
-import org.apache.brooklyn.core.location.SupportsPortForwarding;
 import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.exceptions.Exceptions;
-import org.apache.brooklyn.util.net.Cidr;
 
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.mesos.task.marathon.MarathonTask;
@@ -46,7 +43,7 @@ import brooklyn.entity.mesos.task.marathon.MarathonTask;
 /**
  * A {@link Location} that wraps a Marathon task; i.e. a Docker container.
  */
-public class MarathonTaskLocation extends SshMachineLocation implements HasSubnetHostname, SupportsPortForwarding, DynamicLocation<MarathonTask, MarathonTaskLocation> { // SupportsPortForwarding
+public class MarathonTaskLocation extends SshMachineLocation implements HasSubnetHostname, DynamicLocation<MarathonTask, MarathonTaskLocation> { // SupportsPortForwarding
 
     /** serialVersionUID */
     private static final long serialVersionUID = 610389734596906782L;
@@ -71,12 +68,6 @@ public class MarathonTaskLocation extends SshMachineLocation implements HasSubne
 
     public Entity getEntity() {
         return entity;
-    }
-
-    @Override
-    public HostAndPort getSocketEndpointFor(Cidr accessor, int privatePort) {
-        LOG.debug("Calling getSocketEndpointFor: {} via {}", accessor, privatePort);
-        return null;
     }
 
     @Override
