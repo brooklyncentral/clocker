@@ -43,7 +43,8 @@ public class MicroserviceImageImpl extends AbstractApplication implements Micros
                 .configure("imageTag", config().get(IMAGE_TAG))
                 .configure("openPorts", config().get(OPEN_PORTS))
                 .configure("directPorts", config().get(DIRECT_PORTS))
-                .configure("env", config().get(DOCKER_CONTAINER_ENVIRONMENT)));
+                .configure("env", config().get(DOCKER_CONTAINER_ENVIRONMENT))
+                .configure("portBindings", config().get(DOCKER_PORT_BINDINGS)));
     }
 
     @Override

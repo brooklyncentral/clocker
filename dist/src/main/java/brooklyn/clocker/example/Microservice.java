@@ -15,6 +15,7 @@
  */
 package brooklyn.clocker.example;
 
+import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.docker.DockerContainer;
 import org.apache.brooklyn.api.catalog.CatalogConfig;
 import org.apache.brooklyn.api.entity.Application;
@@ -43,6 +44,9 @@ public interface Microservice extends Application {
 
     @CatalogConfig(label = "Direct Ports", priority = 70)
     ConfigKey<String> DIRECT_PORTS = ConfigKeys.newStringConfigKey("docker.directPorts", "Comma separated list of ports to open directly on the host");
+
+    @CatalogConfig(label = "Mapped Ports", priority = 70)
+    ConfigKey<Map<Integer, Integer>> DOCKER_PORT_BINDINGS = DockerAttributes.DOCKER_PORT_BINDINGS;
 
     @CatalogConfig(label = "Container Environment Variables", priority = 70)
     ConfigKey<Map<String, Object>> DOCKER_CONTAINER_ENVIRONMENT = DockerContainer.DOCKER_CONTAINER_ENVIRONMENT.getConfigKey();
