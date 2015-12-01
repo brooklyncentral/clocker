@@ -289,13 +289,38 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     private String installDockerOnUbuntu() {
-        String version = getVersion();
-        log.debug("Installing Docker version {} on Ubuntu", version);
+        String dockerVersion = getVersion();
+        String ubuntuVersion = getMachine().getMachineDetails().getOsDetails().getVersion();
+
+        String dockerRepoName;
+        String repositoryVersionName;
+        switch (ubuntuVersion) {
+            case "12.04":
+                dockerRepoName = "ubuntu-precise";
+                repositoryVersionName = dockerVersion + "-0~precise";
+                break;
+            case "14.04":
+                dockerRepoName = "ubuntu-trusty";
+                repositoryVersionName = dockerVersion + "-0~trusty";
+                break;
+            case "15.04":
+                dockerRepoName = "ubuntu-vivid";
+                repositoryVersionName = dockerVersion + "-0~vivid";
+                break;
+            case "15.10":
+                dockerRepoName = "ubuntu-wily";
+                repositoryVersionName = dockerVersion + "-0~wily";
+                break;
+            default:
+                throw new IllegalArgumentException("No docker repo found for ubuntu version: " + ubuntuVersion);
+        }
+
+        log.debug("Installing Docker version {} on Ubuntu {} with docker repo name {} and repository version number {}", new String[]{dockerVersion, ubuntuVersion, dockerRepoName, repositoryVersionName});
         return chainGroup(
                 installPackage("apt-transport-https"),
-                "echo 'deb https://get.docker.com/ubuntu docker main' | " + sudo("tee -a /etc/apt/sources.list.d/docker.list"),
-                sudo("apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9"),
-                installPackage("lxc-docker-" + version));
+                "echo 'deb https://apt.dockerproject.org/repo " + dockerRepoName + " main' | " + sudo("tee -a /etc/apt/sources.list.d/docker.list"),
+                sudo("apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D"),
+                installPackage("docker-engine=" + repositoryVersionName));
     }
 
     /**
