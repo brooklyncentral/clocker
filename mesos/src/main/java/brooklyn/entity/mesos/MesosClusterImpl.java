@@ -294,7 +294,8 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
 
         // Find all applications and stop, blocking for up to five minutes until ended
         try {
-            Iterable<Entity> entities = Iterables.filter(getManagementContext().getEntityManager().getEntities(), MesosUtils.sameCluster(this));
+            Iterable<Entity> entities = Iterables.filter(getManagementContext().getEntityManager().getEntities(),
+                    Predicates.and(MesosUtils.sameCluster(this), Predicates.not(EntityPredicates.applicationIdEqualTo(getApplicationId()))));
             Set<Application> applications = ImmutableSet.copyOf(Iterables.transform(entities, new Function<Entity, Application>() {
                 @Override
                 public Application apply(Entity input) { return input.getApplication(); }
