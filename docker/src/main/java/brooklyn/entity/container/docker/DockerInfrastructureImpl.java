@@ -382,10 +382,10 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
 
     @Override
     public void doStart(Collection<? extends Location> locations) {
-        // TODO support multiple locations
         sensors().set(SERVICE_UP, Boolean.FALSE);
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
 
+        // TODO support multiple provisioners
         Location provisioner = Iterables.getOnlyElement(locations);
         LOG.info("Creating new DockerLocation wrapping {}", provisioner);
 
@@ -431,6 +431,8 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
     public void stop() {
         sensors().set(SERVICE_UP, Boolean.FALSE);
         Duration timeout = config().get(SHUTDOWN_TIMEOUT);
+
+        deleteLocation();
 
         // Shutdown the Registry if configured
         if (config().get(DOCKER_SHOULD_START_REGISTRY)) {
@@ -482,9 +484,11 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
         }
 
         // Stop anything else left over
-        super.stop();
-
-        deleteLocation();
+        try {
+            super.stop();
+        } catch (Exception e) {
+            LOG.warn("Error stopping children", e);
+        }
     }
 
     static {

@@ -19,16 +19,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import javax.annotation.Nullable;
-
-import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.reflect.TypeToken;
 
 import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 
 /**
@@ -42,31 +40,11 @@ public class SdnAttributes {
     public static final ConfigKey<Boolean> SDN_ENABLE = ConfigKeys.newBooleanConfigKey("sdn.enable", "Enable Sofware-Defined Networking", Boolean.FALSE);
     public static final ConfigKey<Boolean> SDN_DEBUG = ConfigKeys.newBooleanConfigKey("sdn.debug", "Enable SDN debugging utility installation", Boolean.FALSE);
 
+    public static final ConfigKey<EntitySpec> SDN_PROVIDER_SPEC = ConfigKeys.newConfigKey(EntitySpec.class, "sdn.provider.spec", "SDN provider entity specification");
+
+    public static final AttributeSensorAndConfigKey<Entity, Entity> SDN_PROVIDER = ConfigKeys.newSensorAndConfigKey(Entity.class, "sdn.provider.network", "SDN provider network entity");
+
     public static final AttributeSensor<List<String>> ATTACHED_NETWORKS = Sensors.newSensor(new TypeToken<List<String>>() { },
             "sdn.networks.attached", "The list of networks that an entity is attached to");
-
-    public static final Predicate<Entity> attachedToNetwork(String networkId) {
-        Preconditions.checkNotNull(networkId, "networkId");
-        return new AttachedToNetworkPredicate(networkId);
-    }
-
-    public static class AttachedToNetworkPredicate implements Predicate<Entity> {
-
-        private final String id;
-
-        public AttachedToNetworkPredicate(String id) {
-            this.id = Preconditions.checkNotNull(id, "id");
-        }
-
-        @Override
-        public boolean apply(@Nullable Entity input) {
-            List<String> networks = input.sensors().get(SdnAttributes.ATTACHED_NETWORKS);
-            if (networks != null) {
-                return networks.contains(id);
-            } else {
-                return false;
-            }
-        }
-    };
 
 }

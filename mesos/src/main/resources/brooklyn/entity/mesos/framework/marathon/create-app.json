@@ -12,6 +12,10 @@
             "image": "${imageName}:${imageVersion}",
             "network": "BRIDGE",
             "privileged": true,
+            [#if extraHosts?has_content]
+            "parameters": [ [#list extraHosts as host]
+                { "key": "add-host", "value": "${host.getKey()}:${host.getValue()}" }[#if host_has_next],[/#if]
+            [/#list] ], [/#if]
             "portMappings": [ [#list portBindings as port]
                 { "containerPort": ${port.getKey()?c}, "hostPort": ${port.getValue()?c} }[#if port_has_next],[/#if]
             [/#list] ],
@@ -30,10 +34,13 @@
     "uris": [ [#list uris as u]
         "${u}[#if u_has_next],[/#if]
     [/#list] ],
-    [#if environment?has_content]
-    "env": { [#list environment as env]
-        "${env.getKey()}": "${env.getValue()?c}"[#if env_has_next],[/#if]
-    [/#list] },
+    "env": {
+    [#if address??]
+        "CALICO_IP": "${address}", "CALICO_PROFILE": "${networkId}"[#if environment?has_content],[/#if]
     [/#if]
+    [#if environment?has_content] [#list environment as env]
+        "${env.getKey()}": "${env.getValue()}"[#if env_has_next],[/#if]
+    [/#list] [/#if]
+    },
     "id": "${id}"
 }

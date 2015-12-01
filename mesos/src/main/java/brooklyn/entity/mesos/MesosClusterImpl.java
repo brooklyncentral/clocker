@@ -62,6 +62,7 @@ import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.location.BasicLocationDefinition;
 import org.apache.brooklyn.core.location.BasicLocationRegistry;
+import org.apache.brooklyn.core.location.LocationConfigKeys;
 import org.apache.brooklyn.core.location.cloud.CloudLocationConfig;
 import org.apache.brooklyn.core.location.dynamic.LocationOwner;
 import org.apache.brooklyn.entity.group.BasicGroup;
@@ -75,6 +76,7 @@ import org.apache.brooklyn.feed.http.JsonFunctions;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.core.internal.ssh.SshTool;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.guava.Functionals;
 import org.apache.brooklyn.util.math.MathFunctions;
@@ -141,6 +143,16 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
             Entities.manage(frameworks);
             Entities.manage(tasks);
             Entities.manage(applications);
+        }
+
+        if (config().get(SDN_ENABLE) && config().get(SDN_PROVIDER_SPEC) != null) {
+            Entity sdn = addChild(EntitySpec.create(config().get(SDN_PROVIDER_SPEC))
+                    .configure(MesosAttributes.MESOS_CLUSTER, this));
+            sensors().set(SDN_PROVIDER, sdn);
+
+            if (Entities.isManaged(this)) {
+                Entities.manage(sdn);
+            }
         }
 
         sensors().set(MESOS_SLAVES, slaves);
@@ -276,11 +288,14 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
 
         sensors().set(SERVICE_UP, Boolean.FALSE);
 
+        deleteLocation();
+
         Duration timeout = config().get(SHUTDOWN_TIMEOUT);
 
         // Find all applications and stop, blocking for up to five minutes until ended
         try {
-            Iterable<Entity> entities = Iterables.filter(getManagementContext().getEntityManager().getEntities(), MesosUtils.sameCluster(this));
+            Iterable<Entity> entities = Iterables.filter(getManagementContext().getEntityManager().getEntities(),
+                    Predicates.and(MesosUtils.sameCluster(this), Predicates.not(EntityPredicates.applicationIdEqualTo(getApplicationId()))));
             Set<Application> applications = ImmutableSet.copyOf(Iterables.transform(entities, new Function<Entity, Application>() {
                 @Override
                 public Application apply(Entity input) { return input.getApplication(); }
@@ -301,8 +316,12 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
         }
 
         // Stop anything else left over
-        super.stop();
-        deleteLocation();
+        // TODO Stop slave entities
+        try {
+            super.stop();
+        } catch (Exception e) {
+            LOG.warn("Error stopping children", e);
+        }
     }
 
     public void connectSensors() {
@@ -433,35 +452,43 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
                 entity.get().sensors().set(MesosSlave.SLAVE_ACTIVE, active); continue;
             }
 
-            // TODO make use of the MesosSlave.SLAVE_SSH_* configuration here
             LocationSpec<SshMachineLocation> spec = LocationSpec.create(SshMachineLocation.class)
-                            .configure(CloudLocationConfig.WAIT_FOR_SSHABLE, "false")
-                            .configure(SshMachineLocation.DETECT_MACHINE_DETAILS, false)
                             .configure(SshMachineLocation.SSH_HOST, hostname)
                             .configure("address", InetAddress.getByName(hostname))
-//                            .configure(SshMachineLocation.SSH_PORT, getSshPort())
-//                            .configure(LocationConfigKeys.USER, "root")
-//                            .configure(LocationConfigKeys.PASSWORD, "p4ssw0rd")
-//                            .configure(SshTool.PROP_PASSWORD, "p4ssw0rd")
-//                            .configure(LocationConfigKeys.PRIVATE_KEY_DATA, (String) null) 
-//                            .configure(LocationConfigKeys.PRIVATE_KEY_FILE, (String) null)
                             .displayName(hostname);
+            if (config().get(MESOS_SLAVE_ACCESSIBLE)) {
+                spec.configure(CloudLocationConfig.WAIT_FOR_SSHABLE, "true")
+                    .configure(SshMachineLocation.DETECT_MACHINE_DETAILS, true)
+                    .configure(SshMachineLocation.SSH_PORT, config().get(MesosSlave.SLAVE_SSH_PORT))
+                    .configure(LocationConfigKeys.USER, config().get(MesosSlave.SLAVE_SSH_USER))
+                    .configure(LocationConfigKeys.PASSWORD, config().get(MesosSlave.SLAVE_SSH_PASSWORD))
+                    .configure(SshTool.PROP_PASSWORD, config().get(MesosSlave.SLAVE_SSH_PASSWORD))
+                    .configure(SshTool.PROP_PORT, config().get(MesosSlave.SLAVE_SSH_PORT))
+                    .configure(LocationConfigKeys.PRIVATE_KEY_DATA, config().get(MesosSlave.SLAVE_SSH_PRIVATE_KEY_DATA))
+                    .configure(LocationConfigKeys.PRIVATE_KEY_FILE, config().get(MesosSlave.SLAVE_SSH_PRIVATE_KEY_FILE));
+            } else {
+                spec.configure(CloudLocationConfig.WAIT_FOR_SSHABLE, "false")
+                    .configure(SshMachineLocation.DETECT_MACHINE_DETAILS, false);
+            }
             SshMachineLocation machine = getManagementContext().getLocationManager().createLocation(spec);
 
             // Setup port forwarding
             MarathonPortForwarder portForwarder = new MarathonPortForwarder();
             portForwarder.injectManagementContext(getManagementContext());
-            portForwarder.init(hostname);
 
             EntitySpec<MesosSlave> slaveSpec = EntitySpec.create(MesosSlave.class)
                     .configure(MesosSlave.MESOS_SLAVE_ID, id)
                     .configure(MesosSlave.REGISTERED_AT, registered.longValue())
-                    .configure(MesosSlave.MESOS_CLUSTER, this);
+                    .configure(MesosSlave.MESOS_CLUSTER, this)
+                    .displayName("Mesos Slave (" + hostname + ")");
             MesosSlave added = sensors().get(MESOS_SLAVES).addMemberChild(slaveSpec);
             Entities.manage(added);
             added.sensors().set(MesosSlave.SLAVE_ACTIVE, active);
             added.sensors().set(MesosSlave.HOSTNAME, hostname);
             added.sensors().set(MesosSlave.ADDRESS, hostname);
+
+            added.start(ImmutableList.of(machine));
+            portForwarder.init(hostname, this);
 
             // Setup subnet tier
             SubnetTier subnetTier = added.addChild(EntitySpec.create(SubnetTier.class)
@@ -470,8 +497,6 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
             Entities.manage(subnetTier);
             Entities.start(subnetTier, ImmutableList.of(machine));
             added.sensors().set(MesosSlave.SUBNET_TIER, subnetTier);
-
-            added.start(ImmutableList.of(machine));
         }
         return slaveIds;
     }
@@ -500,6 +525,7 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
         RendererHints.register(MESOS_FRAMEWORKS, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(MESOS_TASKS, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(MESOS_APPLICATIONS, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(SDN_PROVIDER, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
 
         RendererHints.register(START_TIME, RendererHints.displayValue(Time.toDateString()));
 

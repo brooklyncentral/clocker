@@ -16,33 +16,17 @@
 package brooklyn.networking.sdn;
 
 import java.net.InetAddress;
-import java.util.Collections;
-import java.util.concurrent.Callable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Optional;
-import com.google.common.collect.Iterables;
-
-import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.EntitySpec;
-import org.apache.brooklyn.api.mgmt.Task;
 import org.apache.brooklyn.core.config.render.RendererHints;
-import org.apache.brooklyn.core.entity.Entities;
-import org.apache.brooklyn.core.entity.EntityPredicates;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
-import org.apache.brooklyn.entity.group.DynamicGroup;
 import org.apache.brooklyn.entity.software.base.SoftwareProcessImpl;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
-import org.apache.brooklyn.util.core.task.DynamicTasks;
-import org.apache.brooklyn.util.core.task.TaskBuilder;
 import org.apache.brooklyn.util.net.Cidr;
-import org.apache.brooklyn.util.repeat.Repeater;
-import org.apache.brooklyn.util.time.Duration;
 
 import brooklyn.entity.container.docker.DockerHost;
-import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.networking.VirtualNetwork;
 
 /**
@@ -84,7 +68,7 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
 
     @Override
     public void preStart() {
-        InetAddress address = sensors().get(SDN_PROVIDER).getNextAgentAddress(getId());
+        InetAddress address = ((DockerSdnProvider) sensors().get(SDN_PROVIDER)).getNextAgentAddress(getId());
         sensors().set(SDN_AGENT_ADDRESS, address);
     }
 
@@ -102,61 +86,10 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
     @Override
     public InetAddress attachNetwork(String containerId, final String networkId) {
         final SdnProvider provider = sensors().get(SDN_PROVIDER);
-        boolean createNetwork = false;
-        Cidr subnetCidr = null;
-        synchronized (provider.getNetworkMutex()) {
-            subnetCidr = provider.getSubnetCidr(networkId);
-            if (subnetCidr == null) {
-                subnetCidr = provider.getNextSubnetCidr(networkId);
-                createNetwork = true;
-            }
-        }
-        if (createNetwork) {
-            // Get a CIDR for the subnet from the availabkle pool and create a virtual network
-            EntitySpec<VirtualNetwork> networkSpec = EntitySpec.create(VirtualNetwork.class)
-                    .configure(VirtualNetwork.NETWORK_ID, networkId)
-                    .configure(VirtualNetwork.NETWORK_CIDR, subnetCidr);
-
-            // Start and then add this virtual network as a child of SDN_NETWORKS
-            VirtualNetwork network = provider.sensors().get(SdnProvider.SDN_NETWORKS).addChild(networkSpec);
-            Entities.manage(network);
-            Entities.start(network, Collections.singleton(((DockerInfrastructure) provider.sensors().get(SdnProvider.DOCKER_INFRASTRUCTURE)).getDynamicLocation()));
-            Entities.waitForServiceUp(network);
-        } else {
-            Task<Boolean> lookup = TaskBuilder.<Boolean> builder()
-                    .displayName("Waiting until virtual network is available")
-                    .body(new Callable<Boolean>() {
-                        @Override
-                        public Boolean call() throws Exception {
-                            return Repeater.create()
-                                    .every(Duration.TEN_SECONDS)
-                                    .until(new Callable<Boolean>() {
-                                        public Boolean call() {
-                                            Optional<Entity> found = Iterables.tryFind(provider.sensors().get(SdnProvider.SDN_NETWORKS).getMembers(),
-                                                    EntityPredicates.attributeEqualTo(VirtualNetwork.NETWORK_ID, networkId));
-                                            return found.isPresent();
-                                        }
-                                    })
-                                    .limitTimeTo(Duration.ONE_MINUTE)
-                                    .run();
-                        }
-                    })
-                    .build();
-            Boolean result = DynamicTasks.queueIfPossible(lookup)
-                    .orSubmitAndBlock()
-                    .andWaitForSuccess();
-            if (!result) {
-                throw new IllegalStateException(String.format("Cannot find virtual network entity for %s", networkId));
-            }
-        }
+        VirtualNetwork network = SdnUtils.createNetwork(provider, networkId);
 
         InetAddress address = getDriver().attachNetwork(containerId, networkId);
         LOG.info("Attached container ID {} to {}: {}", new Object[] { containerId, networkId,  address.getHostAddress() });
-
-        // Rescan SDN network groups for containers
-        DynamicGroup network = (DynamicGroup) Iterables.find(provider.sensors().get(SdnProvider.SDN_APPLICATIONS).getMembers(),
-                EntityPredicates.attributeEqualTo(VirtualNetwork.NETWORK_ID, networkId));
-        network.rescanEntities();
 
         return address;
     }
@@ -165,16 +98,10 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
     public String provisionNetwork(VirtualNetwork network) {
         String networkId = network.sensors().get(VirtualNetwork.NETWORK_ID);
 
-        // Record the network CIDR being provisioned, allocating if required
-        Cidr subnetCidr = network.config().get(VirtualNetwork.NETWORK_CIDR);
-        if (subnetCidr == null) {
-            subnetCidr = sensors().get(SDN_PROVIDER).getNextSubnetCidr(networkId);
-        } else {
-            sensors().get(SDN_PROVIDER).recordSubnetCidr(networkId, subnetCidr);
-        }
-        network.sensors().set(VirtualNetwork.NETWORK_CIDR, subnetCidr);
+        SdnProvider provider = sensors().get(SDN_PROVIDER);
+        Cidr subnetCidr = SdnUtils.provisionNetwork(provider, network);
 
-        // Create the netwoek using the SDN driver
+        // Create the network using the SDN driver
         getDriver().createSubnet(network.getId(), networkId, subnetCidr);
 
         return networkId;

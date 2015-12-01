@@ -24,10 +24,15 @@ import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 
+import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.core.config.render.RendererHints;
+import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
+import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
+import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.entity.stock.BasicStartableImpl;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
+import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.text.StringFunctions;
 import org.apache.brooklyn.util.text.Strings;
@@ -48,6 +53,7 @@ public class VirtualNetworkImpl extends BasicStartableImpl implements VirtualNet
 
         sensors().set(NETWORK_ID, networkId);
         setDisplayName(String.format("Virtual Network (%s)", networkId));
+        ConfigToAttributes.apply(this, SDN_PROVIDER);
     }
 
     @Override
@@ -56,9 +62,20 @@ public class VirtualNetworkImpl extends BasicStartableImpl implements VirtualNet
 
         super.start(locations);
 
-        NetworkProvisioningExtension provisioner = findNetworkProvisioner(locations);
-        sensors().set(NETWORK_PROVISIONER, provisioner);
-        provisioner.provisionNetwork(this);
+        try {
+            NetworkProvisioningExtension provisioner = null;
+            Entity sdn = sensors().get(SDN_PROVIDER);
+            if (sdn instanceof NetworkProvisioningExtension) {
+                provisioner = (NetworkProvisioningExtension) sdn;
+            } else {
+                provisioner = findNetworkProvisioner(locations);
+            }
+            sensors().set(NETWORK_PROVISIONER, provisioner);
+            provisioner.provisionNetwork(this);
+        } catch (Exception e) {
+            ServiceStateLogic.setExpectedState(this, Lifecycle.ON_FIRE);
+            throw Exceptions.propagate(e);
+        }
 
         sensors().set(SERVICE_UP, Boolean.TRUE);
     }

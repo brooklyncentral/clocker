@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.python.google.common.base.Splitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,10 +34,14 @@ import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicates;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.common.net.HostAndPort;
 import com.google.common.net.HttpHeaders;
 import com.google.common.primitives.Ints;
@@ -54,6 +57,7 @@ import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.api.mgmt.LocationManager;
+import org.apache.brooklyn.api.mgmt.Task;
 import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
@@ -78,25 +82,33 @@ import org.apache.brooklyn.util.collections.MutableSet;
 import org.apache.brooklyn.util.core.http.HttpTool;
 import org.apache.brooklyn.util.core.http.HttpToolResponse;
 import org.apache.brooklyn.util.core.internal.ssh.SshTool;
+import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.guava.Functionals;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Protocol;
 import org.apache.brooklyn.util.net.Urls;
+import org.apache.brooklyn.util.ssh.BashCommands;
 import org.apache.brooklyn.util.text.Strings;
+import org.apache.brooklyn.util.time.Duration;
 import org.apache.brooklyn.util.time.Time;
 
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
+import brooklyn.entity.mesos.MesosAttributes;
 import brooklyn.entity.mesos.MesosCluster;
+import brooklyn.entity.mesos.MesosSlave;
 import brooklyn.entity.mesos.MesosUtils;
 import brooklyn.entity.mesos.framework.MesosFramework;
 import brooklyn.entity.mesos.framework.marathon.MarathonFramework;
 import brooklyn.entity.mesos.task.MesosTask;
 import brooklyn.entity.mesos.task.MesosTaskImpl;
 import brooklyn.location.mesos.framework.marathon.MarathonTaskLocation;
+import brooklyn.networking.sdn.SdnAttributes;
+import brooklyn.networking.sdn.SdnProvider;
+import brooklyn.networking.sdn.SdnUtils;
 import brooklyn.networking.subnet.SubnetTier;
 
 /**
@@ -240,6 +252,9 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
 
         Entity entity = getRunningEntity();
+        entity.sensors().set(DockerContainer.CONTAINER, this);
+        entity.sensors().set(MesosAttributes.MESOS_CLUSTER, getMesosCluster());
+
         MarathonFramework marathon = (MarathonFramework) sensors().get(FRAMEWORK);
         marathon.sensors().get(MesosFramework.FRAMEWORK_TASKS).addMember(this);
 
@@ -254,8 +269,27 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
             Exceptions.propagate(e);
         }
 
-        String hostname = DependentConfiguration.waitInTaskForAttributeReady(this, Attributes.HOSTNAME, Predicates.notNull());
-        LOG.info("Task {} running on {} successfully", id, hostname);
+        // Waiting for TASK_RUNNING status and get hostname
+        Task<?> running = DependentConfiguration.attributeWhenReady(this, MesosTask.TASK_STATE, Predicates.equalTo(MesosTask.TaskState.TASK_RUNNING.toString()));
+        DynamicTasks.queueIfPossible(running).orSubmitAndBlock(this).asTask().getUnchecked(Duration.FIVE_MINUTES);
+        Task<?> hostname = DependentConfiguration.attributeWhenReady(this, Attributes.HOSTNAME, Predicates.notNull());
+        DynamicTasks.queueIfPossible(hostname).orSubmitAndBlock(this).asTask().getUnchecked(Duration.FIVE_MINUTES);
+        LOG.info("Task {} running on {} successfully", id, getHostname());
+
+        String containerId = null;
+        MesosSlave slave = getMesosCluster().getMesosSlave(getHostname());
+        String ps = slave.execCommand(BashCommands.sudo("docker ps --no-trunc --filter=name=mesos-* -q"));
+        Iterable<String> containers = Splitter.on(CharMatcher.WHITESPACE).omitEmptyStrings().split(ps);
+        for (String each : containers) {
+            String env = slave.execCommand(BashCommands.sudo("docker inspect --format='{{range .Config.Env}}{{println .}}{{end}}' " + each));
+            Optional<String> found = Iterables.tryFind(Splitter.on(CharMatcher.WHITESPACE).split(env), Predicates.equalTo("MARATHON_APP_ID=" + sensors().get(APPLICATION_ID)));
+            if (found.isPresent()) {
+                containerId = each;
+                break;
+            }
+        }
+        sensors().set(DockerContainer.CONTAINER_ID, containerId);
+        entity.sensors().set(DockerContainer.CONTAINER_ID, containerId);
 
         createLocation(flags);
 
@@ -381,12 +415,54 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         entity.sensors().set(DockerAttributes.DOCKER_CONTAINER_PORT_BINDINGS, bindings);
         builder.put("portBindings", Lists.newArrayList(marathonBindings.entrySet()));
 
-        // Environment variables
+        // Set network configuration is using Calico SDN
+        if (getMesosCluster().config().get(MesosCluster.SDN_ENABLE)) {
+            SdnProvider provider =  ((SdnProvider) getMesosCluster().sensors().get(MesosCluster.SDN_PROVIDER));
+            List<String> networks = Lists.newArrayList(entity.getApplicationId());
+            Collection<String> extra = entity.config().get(SdnAttributes.NETWORK_LIST);
+            if (extra != null) networks.addAll(extra);
+            sensors().set(SdnAttributes.ATTACHED_NETWORKS, networks);
+            entity.sensors().set(SdnAttributes.ATTACHED_NETWORKS, networks);
+            Set<String> addresses = Sets.newHashSet();
+            for (String networkId : networks) {
+                SdnUtils.createNetwork(provider, networkId);
+                InetAddress address = provider.getNextContainerAddress(networkId);
+                addresses.add(address.getHostAddress().toString());
+                // TODO link container to extra networks ...
+                if (networkId.equals(entity.getApplicationId())) {
+                    sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
+                    sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostAddress());
+                    entity.sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
+                    entity.sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostAddress());
+                    builder.put("address", address.getHostAddress());
+                    builder.put("networkId", networkId);
+                }
+            }
+            sensors().set(DockerContainer.CONTAINER_ADDRESSES, addresses);
+            entity.sensors().set(DockerContainer.CONTAINER_ADDRESSES, addresses);
+        }
+
+        // Environment variables and Docker links
         Map<String, Object> environment = MutableMap.copyOf(config().get(DOCKER_CONTAINER_ENVIRONMENT));
         environment.putAll(MutableMap.copyOf(entity.config().get(DOCKER_CONTAINER_ENVIRONMENT)));
-        sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, environment);
-        entity.sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, environment);
-        builder.put("environment", Lists.newArrayList(environment.entrySet()));
+        List<Entity> links = entity.config().get(DockerAttributes.DOCKER_LINKS);
+        if (links != null && links.size() > 0) {
+            LOG.debug("Found links: {}", links);
+            Map<String, String> extraHosts = MutableMap.of();
+            for (Entity linked : links) {
+                Map<String, Object> linkVars = DockerUtils.generateLinks(getRunningEntity(), linked);
+                environment.putAll(linkVars);
+                Optional<String> alias = DockerUtils.getContainerName(linked);
+                if (alias.isPresent()) {
+                    String targetAddress = DockerUtils.getTargetAddress(getRunningEntity(), linked);
+                    extraHosts.put(alias.get(), targetAddress);
+                }
+            }
+            builder.put("extraHosts", Lists.newArrayList(extraHosts.entrySet()));
+        }
+        sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, ImmutableMap.copyOf(environment));
+        entity.sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, ImmutableMap.copyOf(environment));
+        builder.put("environment", Lists.newArrayList(Maps.transformValues(environment, Functions.toStringFunction()).entrySet()));
 
         // Volumes
         Map<String, String> volumes = MutableMap.of();
@@ -493,7 +569,8 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
             HostAndPort target = HostAndPort.fromString(sensorValue);
             return target.getPort();
         } else {
-            return null;
+            Integer sshPort = getRunningEntity().config().get(SshMachineLocation.SSH_PORT);
+            return Optional.fromNullable(sshPort).or(22);
         }
     }
 
@@ -504,7 +581,12 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
 
     @Override
     public Set<String> getPrivateAddresses() {
-        return ImmutableSet.of(sensors().get(Attributes.ADDRESS));
+        Set<String> containerAddresses = sensors().get(DockerContainer.CONTAINER_ADDRESSES);
+        if (containerAddresses != null) {
+            return ImmutableSet.copyOf(containerAddresses);
+        } else {
+            return ImmutableSet.of(sensors().get(Attributes.ADDRESS));
+        }
     }
 
     @Override
@@ -536,6 +618,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
     public MarathonTaskLocation createLocation(Map<String, ?> flags) {
         Entity entity = getRunningEntity();
         SubnetTier subnet = getMesosCluster().getMesosSlave(getHostname()).getSubnetTier();
+        Boolean sdn = config().get(MesosCluster.SDN_ENABLE);
 
         // Configure the entity subnet
         LOG.info("Configuring entity {} via subnet {}", entity, subnet);
@@ -561,12 +644,14 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                         for (int i = 0; i < array.size(); i++) {
                             int hostPort = array.get(i).getAsInt();
                             int containerPort = portBindings.get(i).getKey();
-                            String target = getId() + ":" + containerPort;
+                            String target = (sdn ? sensors().get(Attributes.SUBNET_ADDRESS) : getId()) + ":" + containerPort;
                             tcpMappings.put(hostPort, target);
                             if (containerPort == 22) { // XXX should be a better way?
                                 sensors().set(DockerAttributes.DOCKER_MAPPED_SSH_PORT,
-                                        HostAndPort.fromParts(getHostname(), containerPort).toString());
+                                        HostAndPort.fromParts(getHostname(), hostPort).toString());
                             }
+                            subnet.getPortForwarder().openPortForwarding(HostAndPort.fromString(target), Optional.of(hostPort), Protocol.TCP, Cidr.UNIVERSAL);
+                            subnet.getPortForwarder().openFirewallPort(entity, hostPort, Protocol.TCP, Cidr.UNIVERSAL);
                         }
                     }
                 }
@@ -583,6 +668,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                 .configure("entity", getRunningEntity())
                 .configure(CloudLocationConfig.WAIT_FOR_SSHABLE, "false")
                 .configure(SshMachineLocation.DETECT_MACHINE_DETAILS, false)
+                .configure(SshMachineLocation.TCP_PORT_MAPPINGS, tcpMappings)
                 .displayName(getShortName());
         if (config().get(DockerAttributes.DOCKER_USE_SSH)) {
             spec.configure(SshMachineLocation.SSH_HOST, getHostname())
@@ -591,6 +677,8 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                 .configure(LocationConfigKeys.USER, "root") // TODO from slave
                 .configure(LocationConfigKeys.PASSWORD, "p4ssw0rd")
                 .configure(SshTool.PROP_PASSWORD, "p4ssw0rd")
+                .configure(SshTool.PROP_HOST, getHostname())
+                .configure(SshTool.PROP_PORT, getSshPort())
                 .configure(LocationConfigKeys.PRIVATE_KEY_DATA, (String) null) // TODO used to generate authorized_keys
                 .configure(LocationConfigKeys.PRIVATE_KEY_FILE, (String) null);
         }
@@ -601,7 +689,6 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         // Record port mappings
         for (Integer hostPort : tcpMappings.keySet()) {
             HostAndPort target = HostAndPort.fromString(tcpMappings.get(hostPort));
-            subnet.getPortForwarder().openPortForwarding(target, Optional.of(hostPort), Protocol.TCP, Cidr.UNIVERSAL);
             subnet.getPortForwarder().openPortForwarding(location, target.getPort(), Optional.of(hostPort), Protocol.TCP, Cidr.UNIVERSAL);
         }
 

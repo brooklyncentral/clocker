@@ -178,9 +178,11 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
                         if (found.isPresent()) continue;
                     }
 
-                    // Stop and then remove the task as it is no longer running
-                    Lifecycle state = sensors().get(Attributes.SERVICE_STATE_ACTUAL);
-                    if (Lifecycle.STOPPING.equals(state) || Lifecycle.STOPPED.equals(state)) {
+                    // Stop and then remove the task as it is no longer running, unless ON_FIRE
+                    Lifecycle state = member.sensors().get(Attributes.SERVICE_STATE_ACTUAL);
+                    if (Lifecycle.ON_FIRE.equals(state) || Lifecycle.STARTING.equals(state)) {
+                        continue;
+                    } else if (Lifecycle.STOPPING.equals(state) || Lifecycle.STOPPED.equals(state)) {
                         getTaskCluster().removeMember(member);
                         getTaskCluster().removeChild(member);
                         Entities.unmanage(member);

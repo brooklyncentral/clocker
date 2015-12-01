@@ -49,7 +49,6 @@ import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.nosql.etcd.EtcdCluster;
 import brooklyn.entity.nosql.etcd.EtcdNode;
 import brooklyn.networking.sdn.SdnAgent;
-import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.networking.sdn.SdnProviderImpl;
 
 public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork {
@@ -84,13 +83,13 @@ public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork 
 
         sensors().set(ETCD_CLUSTER, etcd);
 
-        EntitySpec<?> agentSpec = EntitySpec.create(getConfig(SdnProvider.SDN_AGENT_SPEC, EntitySpec.create(CalicoNode.class)))
+        EntitySpec<?> agentSpec = EntitySpec.create(getConfig(SDN_AGENT_SPEC, EntitySpec.create(CalicoNode.class)))
                 .configure(CalicoNode.SDN_PROVIDER, this);
         String calicoVersion = config().get(CALICO_VERSION);
         if (Strings.isNonBlank(calicoVersion)) {
             agentSpec.configure(SoftwareProcess.SUGGESTED_VERSION, calicoVersion);
         }
-        sensors().set(SdnProvider.SDN_AGENT_SPEC, agentSpec);
+        sensors().set(SDN_AGENT_SPEC, agentSpec);
     }
 
     @Override

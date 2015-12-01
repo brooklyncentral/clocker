@@ -24,6 +24,7 @@ import org.apache.brooklyn.core.entity.BrooklynConfigKeys;
 import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.machine.MachineEntity;
+import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
 import brooklyn.networking.subnet.SubnetTier;
 
@@ -33,8 +34,12 @@ import brooklyn.networking.subnet.SubnetTier;
 @ImplementedBy(MesosSlaveImpl.class)
 public interface MesosSlave extends MachineEntity {
 
+    @SetFromFlag("slaveAccessible")
+    ConfigKey<Boolean> SLAVE_ACCESSIBLE = ConfigKeys.newBooleanConfigKey("mesos.slave.accessible", "Try to connect to Mesos slave over SSH", Boolean.FALSE);
+
     ConfigKey<String> SLAVE_SSH_USER = ConfigKeys.newStringConfigKey("mesos.slave.ssh.user", "Username for SSH access to Mesos slaves", "root");
     ConfigKey<String> SLAVE_SSH_PASSWORD = ConfigKeys.newStringConfigKey("mesos.slave.ssh.password", "Password for SSH access to Mesos slaves");
+    ConfigKey<Integer> SLAVE_SSH_PORT = ConfigKeys.newIntegerConfigKey("mesos.slave.ssh.port", "Port for SSH access to Mesos slaves", 22);
     ConfigKey<String> SLAVE_SSH_PRIVATE_KEY_FILE = ConfigKeys.newStringConfigKey("mesos.slave.ssh.privateKey.file", "Private key file for SSH access to Mesos slaves");
     ConfigKey<String> SLAVE_SSH_PRIVATE_KEY_DATA = ConfigKeys.newStringConfigKey("mesos.slave.ssh.privateKey.data", "Private key data for SSH access to Mesos slaves");
 

@@ -153,7 +153,7 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
 
             // Return its endpoint ID
             ScriptHelper getEndpointId = newScript("getEndpointId")
-                    .body.append(sudo(String.format("%s container %s endpoint-id show", getCalicoCommand(), containerId, address.getHostAddress())))
+                    .body.append(sudo(String.format("%s container %s endpoint-id show", getCalicoCommand(), containerId)))
                     .noExtraOutput()
                     .gatherOutput();
             getEndpointId.execute();

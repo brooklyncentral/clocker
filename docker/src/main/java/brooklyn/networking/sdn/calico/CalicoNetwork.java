@@ -25,14 +25,14 @@ import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
 import brooklyn.entity.nosql.etcd.EtcdCluster;
-import brooklyn.networking.sdn.SdnProvider;
+import brooklyn.networking.sdn.DockerSdnProvider;
 
 /**
  * A collection of machines running Calico.
  */
 @Catalog(name = "Calico Infrastructure", description = "Calico SDN", iconUrl = "classpath://calico-logo.png")
 @ImplementedBy(CalicoNetworkImpl.class)
-public interface CalicoNetwork extends SdnProvider {
+public interface CalicoNetwork extends DockerSdnProvider {
 
     @SetFromFlag("calicoVersion")
     ConfigKey<String> CALICO_VERSION = ConfigKeys.newStringConfigKey("calico.version", "The Calico SDN version number", "0.4.9");
