@@ -561,8 +561,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             }
 
             // Create our wrapper location around the container
-            LocationSpec<DockerContainerLocation> spec = LocationSpec.create(DockerContainerLocation.class)
-                    .parent(host)
+            LocationSpec<DockerContainerLocation> spec = (LocationSpec<DockerContainerLocation>) LocationSpec.create(DockerContainerLocation.class);
                     .configure(flags)
                     .configure(DynamicLocation.OWNER, this)
                     .configure("machine", container) // the underlying JcloudsLocation
