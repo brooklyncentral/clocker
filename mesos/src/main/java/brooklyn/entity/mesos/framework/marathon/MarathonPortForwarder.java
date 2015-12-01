@@ -40,14 +40,12 @@ import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.HasNetworkAddresses;
 import org.apache.brooklyn.util.net.Protocol;
 import org.apache.brooklyn.util.ssh.BashCommands;
-import org.apache.brooklyn.util.ssh.IptablesCommands;
-import org.apache.brooklyn.util.ssh.IptablesCommands.Chain;
-import org.apache.brooklyn.util.ssh.IptablesCommands.Policy;
 
 import brooklyn.entity.mesos.MesosCluster;
 import brooklyn.entity.mesos.MesosSlave;
 import brooklyn.location.mesos.framework.marathon.MarathonTaskLocation;
 import brooklyn.networking.common.subnet.PortForwarder;
+import brooklyn.networking.sdn.mesos.CalicoModule;
 
 public class MarathonPortForwarder implements PortForwarder {
 
@@ -57,6 +55,7 @@ public class MarathonPortForwarder implements PortForwarder {
     private String marathonHostname;
     private Map<HostAndPort, HostAndPort> portmap;
     private MesosCluster cluster;
+    private MesosSlave slave;
     private SshMachineLocation host;
 
     public MarathonPortForwarder() {
@@ -77,8 +76,7 @@ public class MarathonPortForwarder implements PortForwarder {
         this.marathonHostname = marathonHostIp;
         this.cluster = cluster;
         this.portmap = MutableMap.of();
-
-        MesosSlave slave = cluster.getMesosSlave(marathonHostname);
+        this.slave = cluster.getMesosSlave(marathonHostname);
         Maybe<SshMachineLocation> machine = Machines.findUniqueSshMachineLocation(slave.getLocations());
         this.host = machine.get();
     }
@@ -111,8 +109,14 @@ public class MarathonPortForwarder implements PortForwarder {
     @Override
     public void openFirewallPort(Entity entity, int port, Protocol protocol, Cidr accessingCidr) {
         LOG.debug("Open iptables rule for {}, {}, {}, {}", new Object[] { this, entity, port, protocol, accessingCidr });
-        HostAndPort target = portmap.get(HostAndPort.fromParts(marathonHostname, port));
-        addIptablesRule(port, target);
+        if (cluster.config().get(MesosCluster.SDN_ENABLE)) {
+            HostAndPort target = portmap.get(HostAndPort.fromParts(marathonHostname, port));
+            addIptablesRule(port, target);
+            String profile = entity.getApplicationId(); // TODO allow other Calico profiles
+            String command = BashCommands.sudo(String.format("calicoctl profile %s rule add inbound allow tcp to ports %d", profile, target.getPort()));
+            CalicoModule calico = (CalicoModule) cluster.sensors().get(MesosCluster.SDN_PROVIDER);
+            calico.execCalicoCommand(slave, command);
+        }
     }
 
     @Override
