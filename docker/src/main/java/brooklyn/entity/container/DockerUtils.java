@@ -34,23 +34,30 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.google.common.hash.Hashing;
+import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationDefinition;
+import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.api.mgmt.ManagementContext;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
+import org.apache.brooklyn.camp.brooklyn.BrooklynCampConstants;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.config.render.RendererHints.Hint;
 import org.apache.brooklyn.core.config.render.RendererHints.NamedActionWithUrl;
+import org.apache.brooklyn.core.entity.Attributes;
+import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityAndAttribute;
 import org.apache.brooklyn.core.location.PortRanges;
 import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
@@ -67,6 +74,7 @@ import org.apache.brooklyn.util.collections.MutableSet;
 import org.apache.brooklyn.util.text.Identifiers;
 import org.apache.brooklyn.util.text.Strings;
 
+import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.location.docker.DockerContainerLocation;
@@ -206,6 +214,66 @@ public class DockerUtils {
 
         String label = Joiner.on(":").skipNulls().join(simpleName, version, dockerfile);
         return Identifiers.makeIdFromHash(Hashing.md5().hashString(label, Charsets.UTF_8).asLong()).toLowerCase(Locale.ENGLISH);
+    }
+
+    public static Optional<String> getContainerName(Entity target) {
+        return Optional.fromNullable(target.sensors().get(DockerContainer.DOCKER_CONTAINER_NAME))
+                .or(Optional.fromNullable(target.config().get(DockerContainer.DOCKER_CONTAINER_NAME)))
+                .or(Optional.fromNullable(target.config().get(BrooklynCampConstants.PLAN_ID)))
+                .transform(DockerUtils.ALLOWED);
+    }
+
+    /* Generate the address to use to talk to another target entity. */
+    public static String getTargetAddress(Entity source, Entity target) {
+        boolean local = source.sensors().get(SoftwareProcess.PROVISIONING_LOCATION).equals(target.sensors().get(SoftwareProcess.PROVISIONING_LOCATION));
+        List networks = ImmutableList.copyOf(target.sensors().get(SdnAttributes.ATTACHED_NETWORKS));
+        if (local && networks.size() > 0) {
+            return target.sensors().get(Attributes.SUBNET_ADDRESS);
+        } else {
+            return target.sensors().get(Attributes.ADDRESS);
+        }
+    }
+
+    /* Generate the list of link environment variables. */
+    public static Map<String, Object> generateLinks(Entity source, Entity target) {
+        Entities.waitForServiceUp(target);
+        Optional<String> from = DockerUtils.getContainerName(source);
+        Optional<String> to = DockerUtils.getContainerName(target);
+        boolean local = source.sensors().get(SoftwareProcess.PROVISIONING_LOCATION).equals(target.sensors().get(SoftwareProcess.PROVISIONING_LOCATION));
+        List networks = ImmutableList.copyOf(target.sensors().get(SdnAttributes.ATTACHED_NETWORKS));
+        if (to.isPresent()) {
+            String address = DockerUtils.getTargetAddress(source, target);
+            Map<Integer, Integer> ports = MutableMap.of();
+            Set<Integer> containerPorts = MutableSet.copyOf(target.sensors().get(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS));
+            if (containerPorts.size() > 0) {
+                for (Integer port : containerPorts) {
+                    AttributeSensor<String> sensor = Sensors.newStringSensor(String.format("mapped.docker.port.%d", port));
+                    String hostAndPort = target.sensors().get(sensor);
+                    if ((local && networks.size() > 0) || hostAndPort == null) {
+                        ports.put(port, port);
+                    } else {
+                        ports.put(HostAndPort.fromString(hostAndPort).getPort(), port);
+                    }
+                }
+            } else {
+                ports = ImmutableMap.copyOf(DockerUtils.getMappedPorts(target));
+            }
+            Map<String, Object> env = MutableMap.of();
+            for (Integer port : ports.keySet()) {
+                Integer containerPort = ports.get(port);
+                env.put(String.format("%S_NAME", to.get()), String.format("/%s/%s", from.or(source.getId()), to.get()));
+                env.put(String.format("%S_PORT", to.get()), String.format("tcp://%s:%d", address, port));
+                env.put(String.format("%S_PORT_%d_TCP", to.get(), containerPort), String.format("tcp://%s:%d", address, port));
+                env.put(String.format("%S_PORT_%d_TCP_ADDR", to.get(), containerPort), address);
+                env.put(String.format("%S_PORT_%d_TCP_PORT", to.get(), containerPort), port);
+                env.put(String.format("%S_PORT_%d_TCP_PROTO", to.get(), containerPort), "tcp");
+            }
+            LOG.debug("Links for {}: {}", to, Joiner.on(" ").withKeyValueSeparator("=").join(env));
+            return env;
+        } else {
+            LOG.warn("Cannot generate links for {}: no name specified", target);
+            return ImmutableMap.<String, Object>of();
+        }
     }
 
     public static Map<Integer, Integer> getMappedPorts(Entity entity) {

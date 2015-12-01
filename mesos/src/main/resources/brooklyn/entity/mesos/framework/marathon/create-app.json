@@ -12,6 +12,10 @@
             "image": "${imageName}:${imageVersion}",
             "network": "BRIDGE",
             "privileged": true,
+            [#if extraHosts?has_content]
+            "parameters": [ [#list extraHosts as host]
+                { "key": "add-host", "value": "${host.getKey()}:${host.getValue()}" }[#if host_has_next],[/#if]
+            [/#list] ], [/#if]
             "portMappings": [ [#list portBindings as port]
                 { "containerPort": ${port.getKey()?c}, "hostPort": ${port.getValue()?c} }[#if port_has_next],[/#if]
             [/#list] ],

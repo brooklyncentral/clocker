@@ -57,7 +57,6 @@ import brooklyn.entity.mesos.MesosUtils;
 import brooklyn.entity.mesos.task.marathon.MarathonTask;
 import brooklyn.networking.VirtualNetwork;
 import brooklyn.networking.location.NetworkProvisioningExtension;
-import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.networking.sdn.SdnUtils;
 
@@ -237,7 +236,7 @@ public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule
                 .configure(DynamicGroup.ENTITY_FILTER, Predicates.and(
                         Predicates.not(Predicates.or(Predicates.instanceOf(MarathonTask.class), Predicates.instanceOf(DelegateEntity.class))),
                         MesosUtils.sameCluster(getMesosCluster()),
-                        SdnAttributes.attachedToNetwork(networkId)))
+                        SdnUtils.attachedToNetwork(networkId)))
                 .configure(DynamicGroup.MEMBER_DELEGATE_CHILDREN, true)
                 .displayName(network.getDisplayName());
         DynamicGroup subnet = sensors().get(SDN_APPLICATIONS).addMemberChild(networkSpec);

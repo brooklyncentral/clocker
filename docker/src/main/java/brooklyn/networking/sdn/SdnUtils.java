@@ -15,12 +15,17 @@
  */
 package brooklyn.networking.sdn;
 
+import java.util.List;
 import java.util.concurrent.Callable;
+
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 
 import org.apache.brooklyn.api.entity.Entity;
@@ -119,5 +124,29 @@ public class SdnUtils {
 
         return subnetCidr;
     }
+
+    public static final Predicate<Entity> attachedToNetwork(String networkId) {
+        Preconditions.checkNotNull(networkId, "networkId");
+        return new AttachedToNetworkPredicate(networkId);
+    }
+
+    public static class AttachedToNetworkPredicate implements Predicate<Entity> {
+
+        private final String id;
+
+        public AttachedToNetworkPredicate(String id) {
+            this.id = Preconditions.checkNotNull(id, "id");
+        }
+
+        @Override
+        public boolean apply(@Nullable Entity input) {
+            List<String> networks = input.sensors().get(SdnAttributes.ATTACHED_NETWORKS);
+            if (networks != null) {
+                return networks.contains(id);
+            } else {
+                return false;
+            }
+        }
+    };
 
 }

@@ -97,6 +97,7 @@ import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.container.docker.DockerHost;
+import brooklyn.entity.mesos.MesosAttributes;
 import brooklyn.entity.mesos.MesosCluster;
 import brooklyn.entity.mesos.MesosSlave;
 import brooklyn.entity.mesos.MesosUtils;
@@ -251,6 +252,8 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
 
         Entity entity = getRunningEntity();
+        entity.sensors().set(DockerContainer.CONTAINER, this);
+        entity.sensors().set(MesosAttributes.MESOS_CLUSTER, getMesosCluster());
 
         MarathonFramework marathon = (MarathonFramework) sensors().get(FRAMEWORK);
         marathon.sensors().get(MesosFramework.FRAMEWORK_TASKS).addMember(this);
@@ -275,7 +278,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
 
         String containerId = null;
         MesosSlave slave = getMesosCluster().getMesosSlave(getHostname());
-        String ps = slave.execCommand(BashCommands.sudo("docker ps --filter=name=mesos-* -q"));
+        String ps = slave.execCommand(BashCommands.sudo("docker ps --no-trunc --filter=name=mesos-* -q"));
         Iterable<String> containers = Splitter.on(CharMatcher.WHITESPACE).omitEmptyStrings().split(ps);
         for (String each : containers) {
             String env = slave.execCommand(BashCommands.sudo("docker inspect --format='{{range .Config.Env}}{{println .}}{{end}}' " + each));
@@ -287,8 +290,6 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         }
         sensors().set(DockerContainer.CONTAINER_ID, containerId);
         entity.sensors().set(DockerContainer.CONTAINER_ID, containerId);
-        // XXX configure profile with multiple networks
-        // XXX more calico interaction to configure endpoints and ip pools
 
         createLocation(flags);
 
@@ -414,13 +415,6 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         entity.sensors().set(DockerAttributes.DOCKER_CONTAINER_PORT_BINDINGS, bindings);
         builder.put("portBindings", Lists.newArrayList(marathonBindings.entrySet()));
 
-        // Environment variables
-        Map<String, Object> environment = MutableMap.copyOf(config().get(DOCKER_CONTAINER_ENVIRONMENT));
-        environment.putAll(MutableMap.copyOf(entity.config().get(DOCKER_CONTAINER_ENVIRONMENT)));
-        sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, ImmutableMap.copyOf(environment));
-        entity.sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, ImmutableMap.copyOf(environment));
-        builder.put("environment", Lists.newArrayList(Maps.transformValues(environment, Functions.toStringFunction()).entrySet()));
-
         // Set network configuration is using Calico SDN
         if (getMesosCluster().config().get(MesosCluster.SDN_ENABLE)) {
             SdnProvider provider =  ((SdnProvider) getMesosCluster().sensors().get(MesosCluster.SDN_PROVIDER));
@@ -447,6 +441,28 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
             sensors().set(DockerContainer.CONTAINER_ADDRESSES, addresses);
             entity.sensors().set(DockerContainer.CONTAINER_ADDRESSES, addresses);
         }
+
+        // Environment variables and Docker links
+        Map<String, Object> environment = MutableMap.copyOf(config().get(DOCKER_CONTAINER_ENVIRONMENT));
+        environment.putAll(MutableMap.copyOf(entity.config().get(DOCKER_CONTAINER_ENVIRONMENT)));
+        List<Entity> links = entity.config().get(DockerAttributes.DOCKER_LINKS);
+        if (links != null && links.size() > 0) {
+            LOG.debug("Found links: {}", links);
+            Map<String, String> extraHosts = MutableMap.of();
+            for (Entity linked : links) {
+                Map<String, Object> linkVars = DockerUtils.generateLinks(getRunningEntity(), linked);
+                environment.putAll(linkVars);
+                Optional<String> alias = DockerUtils.getContainerName(linked);
+                if (alias.isPresent()) {
+                    String targetAddress = DockerUtils.getTargetAddress(getRunningEntity(), linked);
+                    extraHosts.put(alias.get(), targetAddress);
+                }
+            }
+            builder.put("extraHosts", Lists.newArrayList(extraHosts.entrySet()));
+        }
+        sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, ImmutableMap.copyOf(environment));
+        entity.sensors().set(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT, ImmutableMap.copyOf(environment));
+        builder.put("environment", Lists.newArrayList(Maps.transformValues(environment, Functions.toStringFunction()).entrySet()));
 
         // Volumes
         Map<String, String> volumes = MutableMap.of();

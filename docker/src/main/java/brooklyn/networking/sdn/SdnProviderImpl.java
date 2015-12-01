@@ -299,7 +299,7 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements Dock
                 .configure(DynamicGroup.ENTITY_FILTER, Predicates.and(
                         Predicates.not(Predicates.or(Predicates.instanceOf(DockerContainer.class), Predicates.instanceOf(DelegateEntity.class))),
                         EntityPredicates.attributeEqualTo(DockerContainer.DOCKER_INFRASTRUCTURE, sensors().get(DOCKER_INFRASTRUCTURE)),
-                        SdnAttributes.attachedToNetwork(networkId)))
+                        SdnUtils.attachedToNetwork(networkId)))
                 .configure(DynamicGroup.MEMBER_DELEGATE_CHILDREN, true)
                 .displayName(network.getDisplayName());
         DynamicGroup subnet = sensors().get(SDN_APPLICATIONS).addMemberChild(networkSpec);
