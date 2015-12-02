@@ -224,8 +224,8 @@ public class DockerUtils {
     /* Generate the address to use to talk to another target entity. */
     public static String getTargetAddress(Entity source, Entity target) {
         boolean local = source.sensors().get(SoftwareProcess.PROVISIONING_LOCATION).equals(target.sensors().get(SoftwareProcess.PROVISIONING_LOCATION));
-        List networks = ImmutableList.copyOf(target.sensors().get(SdnAttributes.ATTACHED_NETWORKS));
-        if (local && networks.size() > 0) {
+        List networks = target.sensors().get(SdnAttributes.ATTACHED_NETWORKS);
+        if (local && (networks != null && networks.size() > 0)) {
             return target.sensors().get(Attributes.SUBNET_ADDRESS);
         } else {
             return target.sensors().get(Attributes.ADDRESS);
@@ -238,7 +238,7 @@ public class DockerUtils {
         Optional<String> from = DockerUtils.getContainerName(source);
         Optional<String> to = DockerUtils.getContainerName(target);
         boolean local = source.sensors().get(SoftwareProcess.PROVISIONING_LOCATION).equals(target.sensors().get(SoftwareProcess.PROVISIONING_LOCATION));
-        List networks = ImmutableList.copyOf(target.sensors().get(SdnAttributes.ATTACHED_NETWORKS));
+        List networks = target.sensors().get(SdnAttributes.ATTACHED_NETWORKS);
         if (to.isPresent()) {
             String address = DockerUtils.getTargetAddress(source, target);
             Map<Integer, Integer> ports = MutableMap.of();
@@ -247,7 +247,7 @@ public class DockerUtils {
                 for (Integer port : containerPorts) {
                     AttributeSensor<String> sensor = Sensors.newStringSensor(String.format("mapped.docker.port.%d", port));
                     String hostAndPort = target.sensors().get(sensor);
-                    if ((local && networks.size() > 0) || hostAndPort == null) {
+                    if ((local && (networks != null && networks.size() > 0)) || hostAndPort == null) {
                         ports.put(port, port);
                     } else {
                         ports.put(HostAndPort.fromString(hostAndPort).getPort(), port);
