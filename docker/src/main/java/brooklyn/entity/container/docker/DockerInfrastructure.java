@@ -97,8 +97,8 @@ public interface DockerInfrastructure extends StartableApplication, Resizable, L
     @SetFromFlag("generateCerts")
     ConfigKey<Boolean> DOCKER_GENERATE_TLS_CERTIFICATES = ConfigKeys.newBooleanConfigKey("docker.tls.generate", "Generate the TLS required TLS certificate and keys for each host", Boolean.TRUE);
 
-    ConfigKey<String> DOCKER_CA_CERTIFICATE_PATH = ConfigKeys.newStringConfigKey("docker.tls.caCert", "The Docker Engine TLS CA certificate PEM file path", "conf/ca-cert.pem");
-    ConfigKey<String> DOCKER_CA_KEY_PATH = ConfigKeys.newStringConfigKey("docker.tls.caKey", "The Docker Engine TLS CA certificate PEM file path", "conf/ca-key.pem");
+    ConfigKey<String> DOCKER_CA_CERTIFICATE_PATH = ConfigKeys.newStringConfigKey("docker.tls.caCert", "The Docker Engine TLS CA certificate PEM file path", "ca-cert.pem");
+    ConfigKey<String> DOCKER_CA_KEY_PATH = ConfigKeys.newStringConfigKey("docker.tls.caKey", "The Docker Engine TLS CA certificate PEM file path", "ca-key.pem");
 
     ConfigKey<String> DOCKER_SERVER_CERTIFICATE_PATH = ConfigKeys.newStringConfigKey("docker.tls.serverCert", "The Docker Engine TLS Server certificate PEM file path");
     ConfigKey<String> DOCKER_SERVER_KEY_PATH = ConfigKeys.newStringConfigKey("docker.tls.serverKey", "The Docker Engine TLS Server key PEM file path");
