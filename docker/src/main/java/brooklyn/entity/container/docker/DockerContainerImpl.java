@@ -19,6 +19,7 @@ import static java.lang.String.format;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -26,9 +27,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.annotation.Nullable;
-
-import org.python.google.common.net.HostAndPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -383,10 +381,10 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         // Inbound ports
         Set<Integer> entityOpenPorts = MutableSet.copyOf(DockerUtils.getContainerPorts(entity));
         entityOpenPorts.addAll(DockerUtils.getOpenPorts(entity));
+        options.inboundPorts(Ints.toArray(entityOpenPorts));
         if (!config().get(DockerContainer.DOCKER_USE_SSH)) {
             entityOpenPorts.remove(22);
         }
-        options.inboundPorts(Ints.toArray(entityOpenPorts));
         sensors().set(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS, ImmutableList.copyOf(entityOpenPorts));
         entity.sensors().set(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS, ImmutableList.copyOf(entityOpenPorts));
 
@@ -436,17 +434,21 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         return options;
     }
 
-    @Nullable
-    private String getSshHostAddress() {
+    private InetAddress getSshHostAddress() {
         DockerHost dockerHost = getDockerHost();
         OsDetails osDetails = dockerHost.getDynamicLocation().getMachine().getMachineDetails().getOsDetails();
         if (osDetails.isMac()) {
             String address = dockerHost.execCommand("boot2docker ip");
-            LOG.debug("The boot2docker IP address is {}", Strings.trim(address));
-            return Strings.trim(address);
-        } else {
-            return null;
+            if (Strings.isNonBlank(address)) {
+                LOG.debug("The boot2docker IP address is {}", Strings.trim(address));
+                try {
+                    return InetAddress.getByName(Strings.trim(address));
+                } catch (UnknownHostException e) {
+                    throw Exceptions.propagate(e);
+                }
+            }
         }
+        return dockerHost.getDynamicLocation().getMachine().getAddress();
     }
 
     public void configurePortBindings(DockerHost host, Entity entity) {
@@ -548,9 +550,9 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                     addresses.add(address.getHostAddress().toString());
                     if (networkId.equals(entity.getApplicationId())) {
                         sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
-                        sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostAddress());
+                        sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostName());
                         entity.sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
-                        entity.sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostAddress());
+                        entity.sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostName());
                     }
                 }
                 sensors().set(CONTAINER_ADDRESSES, addresses);
@@ -564,8 +566,10 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                     .configure(DynamicLocation.OWNER, this)
                     .configure("machine", container) // the underlying JcloudsLocation
                     .configure(container.config().getBag().getAllConfig())
-                    .configureIfNotNull(SshMachineLocation.SSH_HOST, getSshHostAddress())
-                    .configureIfNotNull(SshMachineLocation.SSH_PORT, getSshPort())
+                    .configure("address", getSshHostAddress())
+                    .configure(SshMachineLocation.SSH_HOST, getSshHostAddress().getHostName())
+                    .configure(SshTool.PROP_HOST, getSshHostAddress().getHostName())
+                    .configure(SshTool.PROP_PORT, container.getNode().getLoginPort())
                     .displayName(getDockerContainerName());
             DockerContainerLocation location = getManagementContext().getLocationManager().createLocation(spec);
 
@@ -576,17 +580,6 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             return location;
         } catch (NoMachinesAvailableException e) {
             throw Exceptions.propagate(e);
-        }
-    }
-
-    public Integer getSshPort() {
-        String sensorValue = sensors().get(DockerAttributes.DOCKER_MAPPED_SSH_PORT);
-        if (sensorValue != null) {
-            HostAndPort target = HostAndPort.fromString(sensorValue);
-            return target.getPort();
-        } else {
-            Integer sshPort = getRunningEntity().config().get(SshMachineLocation.SSH_PORT);
-            return Optional.fromNullable(sshPort).or(22);
         }
     }
 

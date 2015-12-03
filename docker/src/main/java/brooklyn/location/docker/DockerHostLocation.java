@@ -187,7 +187,11 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                     imageId = dockerHost.layerSshableImageOnFullyQualified(fullyQualifiedName);
                     LOG.info("Created SSHable image from {}: {}", fullyQualifiedName, imageId);
                 } else {
-                    dockerHost.runDockerCommand(String.format("pull %s", fullyQualifiedName));
+                    try {
+                        dockerHost.runDockerCommand(String.format("pull %s", fullyQualifiedName));
+                    } catch (Exception e) {
+                        LOG.debug("Caught exception pulling {}: {}", fullyQualifiedName, e.getMessage());
+                    }
                     imageId = dockerHost.getImageNamed(repoAndName, imageTag).get();
                 }
                 entity.config().set(SoftwareProcess.SKIP_INSTALLATION, true);
