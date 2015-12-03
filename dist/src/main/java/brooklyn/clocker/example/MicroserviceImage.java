@@ -15,10 +15,13 @@
  */
 package brooklyn.clocker.example;
 
+import java.util.List;
+
 import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.catalog.CatalogConfig;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
 import brooklyn.entity.container.docker.application.VanillaDockerApplication;
 
@@ -32,9 +35,14 @@ import brooklyn.entity.container.docker.application.VanillaDockerApplication;
 public interface MicroserviceImage extends Microservice {
 
     @CatalogConfig(label = "Image Name", priority = 80)
+    @SetFromFlag("imageName")
     ConfigKey<String> IMAGE_NAME = VanillaDockerApplication.IMAGE_NAME;
 
     @CatalogConfig(label = "Image Tag", priority = 80)
+    @SetFromFlag("imageTag")
     ConfigKey<String> IMAGE_TAG = VanillaDockerApplication.IMAGE_TAG;
+
+    @SetFromFlag("entrypoint")
+    ConfigKey<List<String>> IMAGE_ENTRYPOINT = VanillaDockerApplication.IMAGE_ENTRYPOINT;
 
 }

@@ -419,6 +419,14 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         }
         options.env(env);
 
+        // Entrypoint
+        List<String> entrypoint = entity.config().get(DockerContainer.DOCKER_IMAGE_ENTRYPOINT);
+        if (entrypoint != null && entrypoint.size() > 0) {
+            options.entrypoint(entrypoint);
+            sensors().set(DockerAttributes.DOCKER_IMAGE_ENTRYPOINT, entrypoint);
+            entity.sensors().set(DockerAttributes.DOCKER_IMAGE_ENTRYPOINT, entrypoint);
+        }
+
         // Log for debugging without password
         LOG.debug("Docker options for {}: {}", entity, options);
 

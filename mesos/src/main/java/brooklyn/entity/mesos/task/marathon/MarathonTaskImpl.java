@@ -493,7 +493,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
             // Docker command or args
             String command = config().get(COMMAND);
             builder.putIfNotNull("command", command);
-            List<String> args = config().get(ARGS);
+            List<String> args = MutableList.copyOf(config().get(ARGS));
             builder.putIfNotNull("args", args);
         } else {
             // OS name for image

@@ -19,6 +19,7 @@ import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.catalog.CatalogConfig;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
 import brooklyn.entity.container.docker.application.VanillaDockerApplication;
 
@@ -32,6 +33,7 @@ import brooklyn.entity.container.docker.application.VanillaDockerApplication;
 public interface MicroserviceDockerfile extends Microservice {
 
     @CatalogConfig(label = "Dockerfile URL", priority = 80)
+    @SetFromFlag("dockerfileUrl")
     ConfigKey<String> DOCKERFILE_URL = VanillaDockerApplication.DOCKERFILE_URL;
 
 }

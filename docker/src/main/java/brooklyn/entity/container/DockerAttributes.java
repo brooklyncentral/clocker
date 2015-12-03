@@ -75,6 +75,10 @@ public class DockerAttributes {
     public static final AttributeSensorAndConfigKey<String, String> DOCKER_IMAGE_TAG = ConfigKeys.newStringSensorAndConfigKey(
             "docker.image.tag", "The tag of the image to use", "latest");
 
+    public static final AttributeSensorAndConfigKey<List<String>, List<String>> DOCKER_IMAGE_ENTRYPOINT = ConfigKeys.newSensorAndConfigKey(
+            new TypeToken<List<String>>() { },
+            "docker.image.entrypoint", "Optional replacement for the image entrypoint command");
+
     public static final AttributeSensorAndConfigKey<String, String> DOCKER_HARDWARE_ID = ConfigKeys.newStringSensorAndConfigKey(
             "docker.hardwareId", "The ID of a Docker hardware type to use for a container", "small");
 

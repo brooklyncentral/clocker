@@ -18,7 +18,6 @@ package brooklyn.entity.mesos.task.marathon;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
 
 import org.apache.brooklyn.api.entity.Entity;
@@ -49,8 +48,7 @@ public interface MarathonTask extends MesosTask, HasNetworkAddresses, LocationOw
     ConfigKey<String> COMMAND = ConfigKeys.newStringConfigKey("marathon.task.command", "Marathon task command string");
 
     @SetFromFlag("args")
-    ConfigKey<List<String>> ARGS = ConfigKeys.newConfigKey(new TypeToken<List<String>>() { },
-            "marathon.task.args", "Marathon task command args", ImmutableList.<String>of());
+    ConfigKey<List<String>> ARGS = DockerContainer.DOCKER_IMAGE_ENTRYPOINT;
 
     @SetFromFlag("imageName")
     ConfigKey<String> DOCKER_IMAGE_NAME = DockerAttributes.DOCKER_IMAGE_NAME.getConfigKey();
