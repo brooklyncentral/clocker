@@ -499,6 +499,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
         // Configure the container options based on the host and the running entity
         DockerTemplateOptions options = getDockerTemplateOptions();
+        DockerUtils.configureEnrichers(subnetTier, entity);
 
         // put these fields on the location so it has the info it needs to create the subnet
         Map<?, ?> dockerFlags = MutableMap.<Object, Object>builder()

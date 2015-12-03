@@ -143,7 +143,6 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             } else {
                 entity.config().set(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL);
             }
-            DockerUtils.configureEnrichers(dockerHost.getSubnetTier(), entity);
 
             // Add the entity Dockerfile if configured
             String dockerfile = entity.config().get(DockerAttributes.DOCKERFILE_URL);
