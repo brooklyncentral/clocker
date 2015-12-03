@@ -498,8 +498,6 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 .put(LocationConfigKeys.USER, "root")
                 .put(LocationConfigKeys.PASSWORD, config().get(DOCKER_PASSWORD))
                 .put(SshTool.PROP_PASSWORD, config().get(DOCKER_PASSWORD))
-                .put(LocationConfigKeys.PRIVATE_KEY_DATA, null)
-                .put(LocationConfigKeys.PRIVATE_KEY_FILE, null)
                 .put(CloudLocationConfig.WAIT_FOR_SSHABLE, false)
                 .put(JcloudsLocationConfig.INBOUND_PORTS, options.getInboundPorts())
                 .put(JcloudsLocation.USE_PORT_FORWARDING, true)
