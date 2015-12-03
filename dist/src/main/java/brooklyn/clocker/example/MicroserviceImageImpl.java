@@ -29,8 +29,6 @@ import org.apache.brooklyn.core.entity.Entities;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.container.docker.application.VanillaDockerApplication;
 import brooklyn.location.docker.DockerLocation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class MicroserviceImageImpl extends AbstractApplication implements MicroserviceImage {
     protected VanillaDockerApplication vanillaDockerApplication = null;
@@ -41,9 +39,12 @@ public class MicroserviceImageImpl extends AbstractApplication implements Micros
                 .configure("containerName", config().get(CONTAINER_NAME))
                 .configure("imageName", config().get(IMAGE_NAME))
                 .configure("imageTag", config().get(IMAGE_TAG))
+                .configure("entrypoint", config().get(IMAGE_ENTRYPOINT))
                 .configure("openPorts", config().get(OPEN_PORTS))
                 .configure("directPorts", config().get(DIRECT_PORTS))
-                .configure("env", config().get(DOCKER_CONTAINER_ENVIRONMENT)));
+                .configure("portBindings", config().get(PORT_BINDINGS))
+                .configure("env", config().get(DOCKER_CONTAINER_ENVIRONMENT))
+                .configure("volumeMappings", config().get(DOCKER_HOST_VOLUME_MAPPING)));
     }
 
     @Override

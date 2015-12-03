@@ -40,7 +40,10 @@ public class MicroserviceDockerfileImpl extends AbstractApplication implements M
                 .configure("containerName", config().get(CONTAINER_NAME))
                 .configure("dockerfileUrl", config().get(DOCKERFILE_URL))
                 .configure("openPorts", config().get(OPEN_PORTS))
-                .configure("directPorts", config().get(DIRECT_PORTS)));
+                .configure("directPorts", config().get(DIRECT_PORTS))
+                .configure("portBindings", config().get(PORT_BINDINGS))
+                .configure("env", config().get(DOCKER_CONTAINER_ENVIRONMENT))
+                .configure("volumeMappings", config().get(DOCKER_HOST_VOLUME_MAPPING)));
     }
 
     @Override
