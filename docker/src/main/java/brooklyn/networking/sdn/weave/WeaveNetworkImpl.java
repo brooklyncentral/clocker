@@ -60,6 +60,9 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
     }
 
     @Override
+    public String getIconUrl() { return "classpath://weaveworks-logo.png"; }
+
+    @Override
     public Collection<IpPermission> getIpPermissions(String source) {
         Collection<IpPermission> permissions = MutableList.of();
         Integer weavePort = config().get(WeaveContainer.WEAVE_PORT);

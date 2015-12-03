@@ -93,6 +93,9 @@ public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork 
     }
 
     @Override
+    public String getIconUrl() { return "classpath://calico-logo.png"; }
+
+    @Override
     public Collection<IpPermission> getIpPermissions(String source) {
         Collection<IpPermission> permissions = MutableList.of();
         PortRange etcdClientPortConfig = config().get(EtcdNode.ETCD_CLIENT_PORT);

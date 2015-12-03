@@ -111,6 +111,9 @@ public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule
     }
 
     @Override
+    public String getIconUrl() { return "classpath://calico-logo.png"; }
+
+    @Override
     public InetAddress getNextContainerAddress(String subnetId) {
         Cidr cidr = getSubnetCidr(subnetId);
 
