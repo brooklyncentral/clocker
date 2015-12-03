@@ -271,7 +271,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         Boolean useHostDns = Objects.firstNonNull(entity.config().get(DOCKER_USE_HOST_DNS_NAME), Boolean.FALSE);
         String hostname = getDockerHost().sensors().get(Attributes.HOSTNAME);
         String address = getDockerHost().sensors().get(Attributes.ADDRESS);
-        String container = DockerUtils.getContainerName(entity).or(getDockerContainerName());
+        String container = DockerUtils.getContainerName(entity).or(Optional.fromNullable(getDockerContainerName())).get();
         String name = (!useHostDns || hostname.equalsIgnoreCase(address)) ? container : hostname;
         options.hostname(name);
         options.nodeNames(ImmutableList.of(name));
