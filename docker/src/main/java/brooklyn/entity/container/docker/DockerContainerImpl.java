@@ -606,24 +606,27 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     @Override
     public void start(Collection<? extends Location> locations) {
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
+        try {
+            Boolean started = config().get(SoftwareProcess.ENTITY_STARTED);
+            if (Boolean.TRUE.equals(started)) {
+                DockerHost dockerHost = getDockerHost();
+                DockerHostLocation host = dockerHost.getDynamicLocation();
+                sensors().set(DockerContainer.IMAGE_ID, config().get(DOCKER_IMAGE_ID));
+                sensors().set(DockerContainer.IMAGE_NAME, config().get(DockerAttributes.DOCKER_IMAGE_NAME));
+                sensors().set(SSH_MACHINE_LOCATION, host.getMachine());
+            } else {
+                Map<String, ?> flags = MutableMap.copyOf(config().get(LOCATION_FLAGS));
+                DockerContainerLocation location = createLocation(flags);
+                sensors().set(SSH_MACHINE_LOCATION, location.getMachine());
+            }
 
-        Boolean started = config().get(SoftwareProcess.ENTITY_STARTED);
-        if (Boolean.TRUE.equals(started)) {
-            DockerHost dockerHost = getDockerHost();
-            DockerHostLocation host = dockerHost.getDynamicLocation();
-            sensors().set(DockerContainer.IMAGE_ID, config().get(DOCKER_IMAGE_ID));
-            sensors().set(DockerContainer.IMAGE_NAME, config().get(DockerAttributes.DOCKER_IMAGE_NAME));
-            sensors().set(SSH_MACHINE_LOCATION, host.getMachine());
-        } else {
-            Map<String, ?> flags = MutableMap.copyOf(config().get(LOCATION_FLAGS));
-            DockerContainerLocation location = createLocation(flags);
-            sensors().set(SSH_MACHINE_LOCATION, location.getMachine());
+            connectSensors();
+
+            super.start(locations);
+        } catch (Exception e) {
+            ServiceStateLogic.setExpectedState(this, Lifecycle.ON_FIRE);
+            throw Exceptions.propagate(e);
         }
-
-        connectSensors();
-
-        super.start(locations);
-
         ServiceStateLogic.setExpectedState(this, Lifecycle.RUNNING);
     }
 

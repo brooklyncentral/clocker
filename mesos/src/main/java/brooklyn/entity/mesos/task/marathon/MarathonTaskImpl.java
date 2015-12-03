@@ -266,7 +266,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
             marathon.startApplication(id, flags);
         } catch (Exception e) {
             ServiceStateLogic.setExpectedState(this, Lifecycle.ON_FIRE);
-            Exceptions.propagate(e);
+            throw Exceptions.propagate(e);
         }
 
         // Waiting for TASK_RUNNING status and get hostname
