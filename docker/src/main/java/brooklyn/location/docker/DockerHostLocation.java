@@ -154,7 +154,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             String imageTag = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_TAG)).or("latest");
 
             // TODO incorporate more info (incl registry?)
-            final String imageName = DockerUtils.imageName(entity, dockerfile);
+            String imageName = DockerUtils.imageName(entity, dockerfile);
 
             // Lookup image ID or build new image from Dockerfile
             LOG.info("ImageName for entity {}: {}", entity, imageName);
@@ -178,8 +178,8 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                         config().get(DockerInfrastructure.DOCKER_IMAGE_REGISTRY_WRITEABLE)) {
                     localRepo = Optional.fromNullable(getDockerInfrastructure().sensors().get(DockerAttributes.DOCKER_IMAGE_REGISTRY_URL));;
                 }
-                String repoAndName = Joiner.on('/').join(Optional.presentInstances(ImmutableList.of(imageRepo.or(localRepo), baseImage)));
-                String fullyQualifiedName = repoAndName + ":" + imageTag;
+                imageName = Joiner.on('/').join(Optional.presentInstances(ImmutableList.of(imageRepo.or(localRepo), baseImage)));
+                String fullyQualifiedName = imageName + ":" + imageTag;
 
                 if (useSsh) {
                     // Create an SSHable image from the one configured
@@ -189,9 +189,10 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                     try {
                         dockerHost.runDockerCommand(String.format("pull %s", fullyQualifiedName));
                     } catch (Exception e) {
+                        // XXX pulls fail sometimes but issue fixed in Docker 1.9.1
                         LOG.debug("Caught exception pulling {}: {}", fullyQualifiedName, e.getMessage());
                     }
-                    imageId = dockerHost.getImageNamed(repoAndName, imageTag).get();
+                    imageId = dockerHost.getImageNamed(imageName, imageTag).orNull();
                 }
                 entity.config().set(SoftwareProcess.SKIP_INSTALLATION, true);
             } else {
@@ -237,6 +238,8 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                     .put("useSsh", useSsh)
                     .put("entity", entity)
                     .putIfNotNull("imageId", imageId)
+                    .putIfNotNull("imageName", imageId == null ? imageName : null)
+                    .putIfNotNull("imageTag", imageId == null ? imageTag : null)
                     .putIfNotNull("hardwareId", hardwareId)
                     .build();
             DynamicCluster cluster = dockerHost.getDockerContainerCluster();
