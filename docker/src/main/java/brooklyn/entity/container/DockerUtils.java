@@ -58,6 +58,8 @@ import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityAndAttribute;
 import org.apache.brooklyn.core.location.PortRanges;
+import org.apache.brooklyn.core.mgmt.BrooklynTags;
+import org.apache.brooklyn.core.mgmt.BrooklynTaskTags;
 import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.database.DatastoreMixins;
@@ -66,9 +68,14 @@ import org.apache.brooklyn.entity.nosql.couchbase.CouchbaseCluster;
 import org.apache.brooklyn.entity.nosql.couchbase.CouchbaseNode;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.webapp.WebAppServiceConstants;
+import org.apache.brooklyn.location.jclouds.JcloudsLocationConfig;
+import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.collections.MutableSet;
+import org.apache.brooklyn.util.core.task.DynamicTasks;
+import org.apache.brooklyn.util.core.task.ssh.SshTasks;
+import org.apache.brooklyn.util.core.task.system.ProcessTaskWrapper;
 import org.apache.brooklyn.util.text.Identifiers;
 import org.apache.brooklyn.util.text.Strings;
 
@@ -383,6 +390,24 @@ public class DockerUtils {
             Location resolved = context.getLocationRegistry().resolve(definition);
             context.getLocationRegistry().updateDefinedLocation(definition);
             context.getLocationManager().manage(resolved);
+        }
+    }
+
+    public static void addExtraPublicKeys(Entity entity, SshMachineLocation location) {
+        String extraPublicKey = location.config().get(JcloudsLocationConfig.EXTRA_PUBLIC_KEY_DATA_TO_AUTH);
+        if (extraPublicKey == null) {
+            // Custom location config doesn't get passed through because locations are cached for performance reasons.
+            // As a fallback check the entity config.
+            extraPublicKey = entity.config().get(JcloudsLocationConfig.EXTRA_PUBLIC_KEY_DATA_TO_AUTH);
+        }
+        if (extraPublicKey != null) {
+            LOG.info(location + ": Adding public key " + extraPublicKey);
+            String cmd = "mkdir -p ~/.ssh && cat <<EOF >> ~/.ssh/authorized_keys\n" + extraPublicKey + "\nEOF\n";
+            ProcessTaskWrapper<Integer> task = SshTasks.newSshExecTaskFactory(location, cmd)
+                .summary("Add public key")
+                .requiringExitCodeZero().newTask();
+            BrooklynTaskTags.markInessential(task);
+            DynamicTasks.queueIfPossible(task).orSubmitAsync(entity);
         }
     };
 }
