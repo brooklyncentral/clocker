@@ -22,7 +22,7 @@
         <ul>
           <li class="download"><a class="buttons" href="https://github.com/brooklyncentral/clocker/zipball/master">Source ZIP</a></li>
           <li class="download"><a class="buttons" href="https://github.com/brooklyncentral/clocker/tarball/master">Source TAR</a></li>
-          <li class="download"><a class="buttons" href="https://github.com/brooklyncentral/clocker/releases/download/v1.1.0-PREVIEW.20151113/brooklyn-clocker-dist.tar.gz">Distribution TGZ</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/brooklyncentral/clocker/releases/download/v1.1.0-PREVIEW.20151205/brooklyn-clocker-dist.tar.gz">Distribution TGZ</a></li>
           <li><a class="buttons github" href="https://github.com/brooklyncentral/clocker">View On GitHub</a></li>
         </ul>
         <p class="header">This project is maintained by <a class="header name" href="https://github.com/grkvlt">@grkvlt</a> and <a class="header name" href="https://github.com/andreaturli">@andreaturli</a></p>
@@ -63,12 +63,12 @@ and container naming schemes.</p>
 
 <h3><a name="using-the-latest-clocker-release" class="anchor" href="#using-the-latest-clocker-release"><span class="octicon octicon-link"></span></a>Using the latest Clocker release</h3>
 
-<p>The current version of Clocker is <b><a href="https://github.com/brooklyncentral/clocker/releases/tag/v1.1.0-PREVIEW.20151113">1.1.0-PREVIEW.20151113</a></b>.
+<p>The current version of Clocker is <b><a href="https://github.com/brooklyncentral/clocker/releases/tag/v1.1.0-PREVIEW.20151205">1.1.0-PREVIEW.20151205</a></b>.
 You can deploy your own <b>Docker Cloud</b> with a Project Calico SDN by running these commands with the
 <code>&lt;network&gt;</code> argument set to <code>calico</code>, to use Weave as your SDN provider, change the argument to <code>weave</code> instead:</p>
 
 <pre><code>% wget --no-check-certificate --quiet \
-    -O brooklyn-clocker-dist.tar.gz http://git.io/v4UMB
+    -O brooklyn-clocker-dist.tar.gz http://git.io/vRu1e
 % tar zxf brooklyn-clocker-dist.tar.gz
 % cd brooklyn-clocker
 % ./bin/clocker.sh &lt;location&gt; &lt;network&gt;
@@ -110,11 +110,11 @@ brooklyn.ssh.config.publicKeyFile = ~/.ssh/id_rsa_clocker.pub
 # Cloud location configurations
 brooklyn.location.jclouds.softlayer.identity = user.name
 brooklyn.location.jclouds.softlayer.credential = softlayersecretapikey
-brooklyn.location.named.Softlayer\ California = jclouds:softlayer:sjc01
+brooklyn.location.named.Softlayer-California = jclouds:softlayer:sjc01
 
 brooklyn.location.jclouds.aws-ec2.identity = ACCESS_KEY
 brooklyn.location.jclouds.aws-ec2.credential = awssecretkey
-brooklyn.location.named.Amazon\ Ireland = jclouds:aws-ec2:eu-west-1
+brooklyn.location.named.Amazon-Ireland = jclouds:aws-ec2:eu-west-1
 </code></pre>
 
 <p>For more information on setting up locations, including supplying cloud provider credentials, see the
