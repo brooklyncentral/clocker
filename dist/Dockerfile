@@ -23,10 +23,10 @@ RUN apk-install openjdk7-jre-base ; \
     apk-install bash ; \
     apk-install wget
 
-COPY imp.sh /tmp/imp.sh
+COPY certgen.sh /tmp/certgen.sh
 
-RUN bash /tmp/imp.sh /usr/lib/jvm/java-1.7-openjdk/jre/lib/security/cacerts ; \
-    rm -f /tmp/imp.sh
+RUN bash /tmp/certgen.sh /usr/lib/jvm/java-1.7-openjdk/jre/lib/security/cacerts ; \
+    rm -f /tmp/certgen.sh
 
 # CLOCKER_VERSION_BELOW
 RUN wget --no-check-certificate https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots\&g=io.brooklyn.clocker\&a=brooklyn-clocker-dist\&v=1.1.0-SNAPSHOT\&c=dist\&e=tar.gz -O /brooklyn-clocker-dist.tar.gz ; \
