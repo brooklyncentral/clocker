@@ -12,9 +12,9 @@ Docker Cloud infrastructure.
 This repository contains all of the required Brooklyn entities, locations and examples.
 
 [![Build Status](https://api.travis-ci.org/brooklyncentral/clocker.svg?branch=master)](https://travis-ci.org/brooklyncentral/clocker)
-[![Latest Builds](http://img.shields.io/badge/version-1.1.0--SNAPSHOT-blue.svg?style=flat)](http://clocker-latest.s3-website-eu-west-1.amazonaws.com/)
+[![Latest Builds](http://img.shields.io/badge/version-1.1.0--SNAPSHOT-blue.svg?style=flat)](http://clocker-latest.s3-website-eu-west-1.amazonaws.com/)<!-- CLOCKER_VERSION_ESCAPED master -->
 [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/brooklyncentral/clocker)
-[![Docker Image](https://badge.imagelayers.io/clockercentral/clocker:latest.svg)](https://imagelayers.io/?images=clockercentral/clocker:latest)
+[![Docker Image](https://badge.imagelayers.io/clockercentral/clocker:latest.svg)](https://imagelayers.io/?images=clockercentral/clocker:latest)<!-- CLOCKER_VERSION release -->
 
 ## Getting started
 
@@ -35,12 +35,13 @@ depending on your choice of SDN provider.
 
 ### Using the latest Clocker release
 
-The latest version of Clocker is [1.1.0-PREVIEW.20151014](https://github.com/brooklyncentral/clocker/releases/tag/v1.1.0-PREVIEW.20151014).
+<!-- CLOCKER_VERSION_BELOW release -->
+The latest version of Clocker is [1.1.0-PREVIEW.20151205](https://github.com/brooklyncentral/clocker/releases/tag/v1.1.0-PREVIEW.20151205).
 You can deploy your own **Docker Cloud** with a Weave SDN by running these commands with the _network_ argument
 st to `weave`, to use Project Calico as your SDN provider, change the last argument to `calico` instead:
 ```Bash
 % wget --no-check-certificate --quiet \
-    -O brooklyn-clocker-dist.tar.gz http://git.io/v4UMB
+    -O brooklyn-clocker-dist.tar.gz http://git.io/vRu1e
 % tar zxf brooklyn-clocker-dist.tar.gz
 % cd brooklyn-clocker
 % ./bin/clocker.sh location network
@@ -53,6 +54,7 @@ Brooklyn will start up without running Clocker, and you can choose the applicati
 A Docker image is also available on [Docker Hub](https://hub.docker.com/r/clockercentral/clocker/). You must provide volume sources for a`.brooklyn`
 directory that is writeable, and your `.ssh` directory, and if you want to use a different port to 8080 or 8443 they must be forwarded on the host.
 A suitable startup command would be:
+
 ```Bash
 % docker run -d -v ~/.brooklyn:/root/.brooklyn -v ~/.ssh:/root/.ssh -P \
     clockercentral/clocker location network
@@ -65,22 +67,22 @@ For all cloud locations you must first configure the `~/.brooklyn/brooklyn.prope
 necessary credentials and security details, and select an SSH key (defaulting to `~/.ssh/id_rsa`).
 A basic `brooklyn.properties` file should look like the following:
 
-```
+```properties
 brooklyn.ssh.config.privateKeyFile = ~/.ssh/id_rsa_clocker
 brooklyn.ssh.config.publicKeyFile = ~/.ssh/id_rsa_clocker.pub
 
 brooklyn.location.jclouds.softlayer.identity = user.name
 brooklyn.location.jclouds.softlayer.credential = softlayersecretapikey
-brooklyn.location.named.Softlayer\ California = jclouds:softlayer:sjc01
+brooklyn.location.named.Softlayer-California = jclouds:softlayer:sjc01
 
 brooklyn.location.jclouds.aws-ec2.identity = ACCESS_KEY
 brooklyn.location.jclouds.aws-ec2.credential = awssecretkey
-brooklyn.location.named.Amazon\ Ireland = jclouds:aws-ec2:eu-west-1
+brooklyn.location.named.Amazon-Ireland = jclouds:aws-ec2:eu-west-1
 ```
 
 For more information on setting up locations, including supplying cloud provider credentials, see the
 [_Setting up Locations_ section of Brooklyn Getting Started](https://brooklyn.incubator.apache.org/quickstart/#configuring-a-location),
-and the more detailed [locations guide](https://brooklyn.incubator.apache.org/v/0.7.0-M1/use/guide/locations/index.html).
+and the more detailed [locations guide](https://brooklyn.incubator.apache.org/v/0.8.0-incubating/use/guide/locations/index.html).<!-- BROOKLYN_VERSION -->
 The Brooklyn documentation also covers setting up security for the web-console, and configuring users
 and passwords.
 
@@ -115,7 +117,7 @@ services:
 
 ### Building from source
 
-<!-- CLOCKER_VERSION_BELOW -->
+<!-- CLOCKER_VERSION_BELOW master -->
 The master branch of Clocker is at version [1.1.0-SNAPSHOT](http://github.com/brooklyncentral/clocker/).
 Build and run this version of Clocker from source as follows:
 
