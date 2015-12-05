@@ -159,15 +159,15 @@ services:
 <pre><code>
 location: my-docker-cloud
 services:
-- type: docker:redis:3
+- type: org.apache.brooklyn.entity.nosql.redis.RedisStore
   id: redis
-  openPorts:
-  - 6379
-- type: docker:amouat/dnmonster:1.0
+  install.version: 3.0.0
+  start.timeout: 10m
+- type: docker:clockercentral/dnmonster:1.0
   id: dnmonster
   openPorts:
   - 8080
-- type: docker:amouat/identidock:1.0
+- type: docker:clockercentral/identidock:1.8
   id: identidock
   portBindings:
     80: 9090
