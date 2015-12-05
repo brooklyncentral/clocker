@@ -137,8 +137,7 @@ and it will use Docker containers instead of virtual machines.</p>
 <a href="https://brooklyn.incubator.apache.org/v/latest/start/blueprints.html#launching-from-the-catalog"><em>Launching from the Catalog</em></a>
 in the Brooklyn user guide. You can also paste a YAML blueprint into the <em>YAML</em> tab of the <em>Add Application</em> dialog, as follows:</p>
 
-<pre><code>
-location: my-docker-cloud
+<pre><code>location: my-docker-cloud
 services:
 - type: org.apache.brooklyn.entity.webapp.tomcat.Tomcat8Server
   wars.root: "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/hello-world.war"
@@ -146,8 +145,7 @@ services:
 
 <p>A blueprint for a simple application using a single Docker image would look like this:</p>
 
-<pre><code>
-location: my-docker-cloud
+<pre><code>location: my-docker-cloud
 services:
 - type: docker:redis:3
   directPorts:
@@ -156,8 +154,7 @@ services:
 
 <p>More complex applications using multiple images can link them with the <code>links</code> configuration key, for example like this:</p>
 
-<pre><code>
-location: my-docker-cloud
+<pre><code>location: my-docker-cloud
 services:
 - type: org.apache.brooklyn.entity.nosql.redis.RedisStore
   id: redis
