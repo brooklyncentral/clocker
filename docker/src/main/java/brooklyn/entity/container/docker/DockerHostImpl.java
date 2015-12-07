@@ -160,8 +160,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
         ConfigToAttributes.apply(this, DOCKER_INFRASTRUCTURE);
 
-        EntitySpec<DockerContainer> dockerContainerSpec = EntitySpec.create(config().get(DOCKER_CONTAINER_SPEC))
-                .configure(DockerContainer.DOCKER_HOST, this)
+        EntitySpec<DockerContainer> dockerContainerSpec = EntitySpec.create(config().get(DOCKER_CONTAINER_SPEC));
+        dockerContainerSpec.configure(DockerContainer.DOCKER_HOST, this)
                 .configure(DockerContainer.DOCKER_INFRASTRUCTURE, getInfrastructure());
         if (config().get(DockerInfrastructure.HA_POLICY_ENABLE)) {
             dockerContainerSpec.policy(PolicySpec.create(ServiceRestarter.class)
@@ -824,8 +824,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                     String containerId = Strings.getFirstWord(runDockerCommand("inspect --format {{.Id}} " + id));
                     String imageId = Strings.getFirstWord(runDockerCommand("inspect --format {{.Image}} " + id));
                     String imageName = Strings.getFirstWord(runDockerCommand("inspect --format {{.Config.Image}} " + id));
-                    EntitySpec<DockerContainer> containerSpec = EntitySpec.create(config().get(DOCKER_CONTAINER_SPEC))
-                            .configure(SoftwareProcess.ENTITY_STARTED, Boolean.TRUE)
+                    EntitySpec<DockerContainer> containerSpec = EntitySpec.create(config().get(DOCKER_CONTAINER_SPEC));
+                    containerSpec.configure(SoftwareProcess.ENTITY_STARTED, Boolean.TRUE)
                             .configure(DockerContainer.DOCKER_HOST, this)
                             .configure(DockerContainer.DOCKER_INFRASTRUCTURE, getInfrastructure())
                             .configure(DockerContainer.DOCKER_IMAGE_ID, imageId)

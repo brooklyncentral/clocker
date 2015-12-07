@@ -146,7 +146,7 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
         }
 
         if (config().get(SDN_ENABLE) && config().get(SDN_PROVIDER_SPEC) != null) {
-            Entity sdn = addChild(EntitySpec.create(config().get(SDN_PROVIDER_SPEC))
+            Entity sdn = addChild(EntitySpec.create((EntitySpec<?>)config().get(SDN_PROVIDER_SPEC))
                     .configure(MesosAttributes.MESOS_CLUSTER, this));
             sensors().set(SDN_PROVIDER, sdn);
 
