@@ -182,8 +182,9 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
                 .displayName("Docker Applications"));
 
         if (config().get(SDN_ENABLE) && config().get(SDN_PROVIDER_SPEC) != null) {
-            Entity sdn = addChild(EntitySpec.create((EntitySpec<?>)config().get(SDN_PROVIDER_SPEC))
-                    .configure(DockerAttributes.DOCKER_INFRASTRUCTURE, this));
+            EntitySpec entitySpec = EntitySpec.create(config().get(SDN_PROVIDER_SPEC));
+            entitySpec.configure(DockerAttributes.DOCKER_INFRASTRUCTURE, this);
+            Entity sdn = addChild(entitySpec);
             sensors().set(SDN_PROVIDER, sdn);
 
             if (Entities.isManaged(this)) {
