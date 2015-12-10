@@ -15,7 +15,9 @@
  */
 package brooklyn.entity.container.docker;
 
+import java.net.InetAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +67,7 @@ import org.apache.brooklyn.api.policy.PolicySpec;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.effector.ssh.SshEffectorTasks;
+import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityFunctions;
 import org.apache.brooklyn.core.entity.EntityInternal;
@@ -591,26 +594,31 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
      * @return Extra IP permissions to be configured on this entity's location.
      */
     protected Collection<IpPermission> getIpPermissions() {
-        String localhost = LocalhostExternalIpLoader.getLocalhostIpWithin(Duration.minutes(1)) + "/32";
-        IpPermission dockerPort = IpPermission.builder()
-                .ipProtocol(IpProtocol.TCP)
-                .fromPort(sensors().get(DockerHost.DOCKER_PORT))
-                .toPort(sensors().get(DockerHost.DOCKER_PORT))
-                .cidrBlock(localhost)
-                .build();
-        IpPermission dockerSslPort = IpPermission.builder()
-                .ipProtocol(IpProtocol.TCP)
-                .fromPort(sensors().get(DockerHost.DOCKER_SSL_PORT))
-                .toPort(sensors().get(DockerHost.DOCKER_SSL_PORT))
-                .cidrBlock(localhost)
-                .build();
+        List<IpPermission> permissions = MutableList.of();
+
+        String publicIpCidr = LocalhostExternalIpLoader.getLocalhostIpWithin(Duration.minutes(1)) + "/32";
+        permissions.addAll(getClockerPermisionsForCIDR(publicIpCidr));
+
+        if (config().get(ADD_LOCALHOST_PERMISSION)) {
+            String localhostAddress = null;
+            try {
+                localhostAddress = InetAddress.getLocalHost().getHostAddress();
+            } catch (UnknownHostException e) {
+                throw Exceptions.propagate(e);
+            }
+
+            String localhostCIDR = localhostAddress + "/32";
+            if (Strings.isNonEmpty(localhostAddress) && !publicIpCidr.equals(localhostCIDR)) {
+                permissions.addAll(getClockerPermisionsForCIDR(localhostCIDR));
+            }
+        }
         IpPermission dockerPortForwarding = IpPermission.builder()
                 .ipProtocol(IpProtocol.TCP)
                 .fromPort(32768)
                 .toPort(65534)
                 .cidrBlock(Cidr.UNIVERSAL.toString())
                 .build();
-        List<IpPermission> permissions = MutableList.of(dockerPort, dockerSslPort, dockerPortForwarding);
+        permissions.add(dockerPortForwarding);
 
         if (config().get(DockerInfrastructure.DOCKER_SHOULD_START_REGISTRY) && sensors().get(DynamicGroup.FIRST_MEMBER)) {
             IpPermission dockerRegistryPort = IpPermission.builder()
@@ -622,9 +630,29 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             permissions.add(dockerRegistryPort);
         }
 
+        return permissions;
+    }
+
+    private List<IpPermission> getClockerPermisionsForCIDR(String cidr) {
+        List<IpPermission> permissions = MutableList.of();
+        IpPermission dockerPort = IpPermission.builder()
+                .ipProtocol(IpProtocol.TCP)
+                .fromPort(sensors().get(DockerHost.DOCKER_PORT))
+                .toPort(sensors().get(DockerHost.DOCKER_PORT))
+                .cidrBlock(cidr)
+                .build();
+        IpPermission dockerSslPort = IpPermission.builder()
+                .ipProtocol(IpProtocol.TCP)
+                .fromPort(sensors().get(DockerHost.DOCKER_SSL_PORT))
+                .toPort(sensors().get(DockerHost.DOCKER_SSL_PORT))
+                .cidrBlock(cidr)
+                .build();
+        permissions.add(dockerPort);
+        permissions.add(dockerSslPort);
+
         if (config().get(SdnAttributes.SDN_ENABLE)) {
             DockerSdnProvider provider = (DockerSdnProvider) (sensors().get(DockerHost.DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.SDN_PROVIDER));
-            Collection<IpPermission> sdnPermissions = provider.getIpPermissions(localhost);
+            Collection<IpPermission> sdnPermissions = provider.getIpPermissions(cidr);
             permissions.addAll(sdnPermissions);
         }
 
