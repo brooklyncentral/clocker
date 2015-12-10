@@ -86,6 +86,8 @@ import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
 import org.apache.brooklyn.feed.function.FunctionFeed;
 import org.apache.brooklyn.feed.function.FunctionPollConfig;
+import org.apache.brooklyn.feed.ssh.SshFeed;
+import org.apache.brooklyn.feed.ssh.SshPollConfig;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsLocationConfig;
 import org.apache.brooklyn.location.jclouds.JcloudsMachineLocation;
@@ -139,6 +141,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     private static final Logger LOG = LoggerFactory.getLogger(DockerHost.class);
 
+    private transient SshFeed serviceUpIsRunningFeed;
     private transient FunctionFeed scan;
 
     @Override
@@ -719,6 +722,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     public void postStart() {
+        Entities.waitForServiceUp(this);
+
         sensors().get(DOCKER_CONTAINER_CLUSTER).sensors().set(SERVICE_UP, Boolean.TRUE);
 
         if (Boolean.TRUE.equals(sensors().get(DOCKER_INFRASTRUCTURE).config().get(SdnAttributes.SDN_ENABLE))) {
@@ -868,6 +873,26 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             getDynamicLocation().getLock().unlock();
         }
     }
+
+    @Override
+    protected void connectServiceUpIsRunning() {
+        //TODO change to HttpFeed with client certificates at some point in the future
+        serviceUpIsRunningFeed = SshFeed.builder()
+                .entity(this)
+                .period(Duration.FIVE_SECONDS)
+                .machine(this.getMachine())
+                .poll(new SshPollConfig<Boolean>(SERVICE_UP)
+                        .command("docker ps")
+                        .onSuccess(Functions.constant(true))
+                        .onFailureOrException(Functions.constant(false)))
+                .build();
+    }
+
+    @Override
+    protected void disconnectServiceUpIsRunning() {
+        if (serviceUpIsRunningFeed != null) serviceUpIsRunningFeed.stop();
+    }
+
 
     static {
         RendererHints.register(DOCKER_INFRASTRUCTURE, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
