@@ -139,6 +139,13 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
     AttributeSensor<SubnetTier> DOCKER_HOST_SUBNET_TIER = Sensors.newSensor(SubnetTier.class,
             "docker.subnetTier", "The SubnetTier for Docker port mapping");
 
+    // TODO add notNull constraint
+    @SetFromFlag("addLocalhostPermission")
+    ConfigKey<Boolean> ADD_LOCALHOST_PERMISSION = ConfigKeys.newBooleanConfigKey(
+            "docker.addLocalhostPermission",
+            "When true, will add the localhost IP address to the docker host as an acceptable ingress address. This is useful when running Clocker in the same network as the hosts will be run in (e.g. same AWS availibility zone).",
+            false);
+
     String getPassword();
 
     Integer getDockerPort();
