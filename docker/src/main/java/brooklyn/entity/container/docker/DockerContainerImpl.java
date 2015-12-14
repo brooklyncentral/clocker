@@ -577,6 +577,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             sensors().set(DYNAMIC_LOCATION, location);
             sensors().set(LOCATION_NAME, location.getId());
 
+            DockerUtils.addExtraPublicKeys(entity, location);
+
             LOG.info("New Docker container location {} created", location);
             return location;
         } catch (NoMachinesAvailableException e) {

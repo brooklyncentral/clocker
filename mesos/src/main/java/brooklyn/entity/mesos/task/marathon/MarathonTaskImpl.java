@@ -695,19 +695,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
 
         LOG.info("New task location {} created", location);
         if (useSsh) {
-            String extraPublicKey = config().get(JcloudsLocationConfig.EXTRA_PUBLIC_KEY_DATA_TO_AUTH);
-            if (extraPublicKey == null) {
-                // Custom location config doesn't get passed through because locations are cached for performance reasons.
-                // As a fallback check the entity config.
-                extraPublicKey = entity.config().get(JcloudsLocationConfig.EXTRA_PUBLIC_KEY_DATA_TO_AUTH);
-            }
-            if (extraPublicKey != null) {
-                LOG.info("Adding public key " + extraPublicKey);
-                int result = location.execCommands("add public key", ImmutableList.of("cat <<EOF >> ~/.ssh/authorized_keys\n" + extraPublicKey + "\nEOF\n"));
-                if (result != 0) {
-                    throw new IllegalStateException("Unable to add custom public key to " + location + ". Script exit code is " + result + ".");
-                }
-            }
+            DockerUtils.addExtraPublicKeys(entity, location);
         }
         return location;
     }
