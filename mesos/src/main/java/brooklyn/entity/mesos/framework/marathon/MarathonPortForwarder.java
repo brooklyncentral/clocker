@@ -35,6 +35,7 @@ import org.apache.brooklyn.core.location.access.PortForwardManager;
 import org.apache.brooklyn.core.location.access.PortForwardManagerImpl;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.core.internal.ssh.SshTool;
 import org.apache.brooklyn.util.guava.Maybe;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.HasNetworkAddresses;
@@ -129,7 +130,7 @@ public class MarathonPortForwarder implements PortForwarder {
         List<String> commands = ImmutableList.of(
                         BashCommands.sudo(String.format("iptables -t nat -A PREROUTING -p tcp --dport %d -j DNAT --to-destination %s", hostPort, container.toString())),
                         BashCommands.sudo(String.format("iptables -A FORWARD -p tcp -d %s --dport %d -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT", container.getHostText(), container.getPort())));
-        int result = host.execCommands(String.format("Open iptables TCP/%d", hostPort), commands);
+        int result = host.execCommands(MutableMap.of(SshTool.PROP_ALLOCATE_PTY.getName(), true), String.format("Open iptables TCP/%d", hostPort), commands);
         if (result != 0) {
             String msg = String.format("Error running iptables update for TCP/%d on %s", hostPort, host);
             LOG.error(msg);

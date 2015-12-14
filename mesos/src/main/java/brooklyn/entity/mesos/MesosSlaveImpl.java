@@ -16,6 +16,7 @@
 package brooklyn.entity.mesos;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +28,7 @@ import com.google.gson.JsonElement;
 
 import org.apache.brooklyn.api.sensor.EnricherSpec;
 import org.apache.brooklyn.core.config.render.RendererHints;
+import org.apache.brooklyn.core.effector.ssh.SshEffectorTasks;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
@@ -34,13 +36,19 @@ import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.enricher.stock.Enrichers;
 import org.apache.brooklyn.entity.machine.MachineEntityImpl;
+import org.apache.brooklyn.entity.software.base.AbstractSoftwareProcessSshDriver;
 import org.apache.brooklyn.feed.http.HttpFeed;
 import org.apache.brooklyn.feed.http.HttpPollConfig;
 import org.apache.brooklyn.feed.http.HttpValueFunctions;
 import org.apache.brooklyn.feed.http.JsonFunctions;
+import org.apache.brooklyn.util.core.internal.ssh.SshTool;
+import org.apache.brooklyn.util.core.task.DynamicTasks;
+import org.apache.brooklyn.util.core.task.system.ProcessTaskWrapper;
+import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.guava.Functionals;
 import org.apache.brooklyn.util.math.MathFunctions;
 import org.apache.brooklyn.util.text.ByteSizeStrings;
+import org.apache.brooklyn.util.time.Duration;
 import org.apache.brooklyn.util.time.Time;
 
 import brooklyn.networking.subnet.SubnetTier;
@@ -179,6 +187,32 @@ public class MesosSlaveImpl extends MachineEntityImpl implements MesosSlave {
     @Override
     public SubnetTier getSubnetTier() {
         return sensors().get(SUBNET_TIER);
+    }
+
+    @Override
+    public String execCommandTimeout(String command, Duration timeout) {
+        ProcessTaskWrapper<String> task = SshEffectorTasks.ssh(command)
+                .environmentVariables(((AbstractSoftwareProcessSshDriver) getDriver()).getShellEnvironment())
+                .configure(SshTool.PROP_ALLOCATE_PTY, true) // TODO configure globally
+                .requiringZeroAndReturningStdout()
+                .machine(getMachine())
+                .summary(command)
+                .newTask();
+
+        try {
+            String result = DynamicTasks.queueIfPossible(task)
+                    .executionContext(this)
+                    .orSubmitAsync()
+                    .asTask()
+                    .get(timeout);
+            return result;
+        } catch (TimeoutException te) {
+            throw new IllegalStateException("Timed out running command: " + command);
+        } catch (Exception e) {
+            Integer exitCode = task.getExitCode();
+            LOG.warn("Command failed, return code {}: {}", exitCode == null ? -1 : exitCode, task.getStderr());
+            throw Exceptions.propagate(e);
+        }
     }
 
     static {
