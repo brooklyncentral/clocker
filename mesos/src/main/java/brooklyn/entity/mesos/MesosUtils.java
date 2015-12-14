@@ -23,6 +23,7 @@ import javax.annotation.Nullable;
 
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.HttpClient;
+import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,8 +97,8 @@ public class MesosUtils {
                 MesosUtils.buildClient(framework),
                 postUri,
                 MutableMap.of(
-                        HttpHeaders.CONTENT_TYPE, "application/json",
-                        HttpHeaders.ACCEPT, "application/json"),
+                        HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType(),
+                        HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()),
                 processedJson.getBytes());
         LOG.debug("Response: " + response.getContentAsString());
         if (!HttpTool.isStatusCodeHealthy(response.getResponseCode())) {

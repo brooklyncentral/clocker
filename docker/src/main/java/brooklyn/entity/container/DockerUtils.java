@@ -336,14 +336,6 @@ public class DockerUtils {
         return ImmutableSet.copyOf(entityOpenPorts);
     }
 
-    public static boolean isSdnProvider(Entity dockerHost, String providerName) {
-        if (dockerHost.config().get(SdnAttributes.SDN_ENABLE)) {
-            Entity sdn = dockerHost.sensors().get(DockerHost.DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.SDN_PROVIDER);
-            if (sdn == null) return false;
-            return sdn.getEntityType().getSimpleName().equalsIgnoreCase(providerName);
-        } else return false;
-    }
-
     public static final Predicate<Entity> sameInfrastructure(Entity entity) {
         Preconditions.checkNotNull(entity, "entity");
         return new SameInfrastructurePredicate(entity.getId());

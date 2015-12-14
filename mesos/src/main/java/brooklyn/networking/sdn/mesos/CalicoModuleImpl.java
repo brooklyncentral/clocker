@@ -15,15 +15,20 @@
  */
 package brooklyn.networking.sdn.mesos;
 
+import static org.apache.brooklyn.util.ssh.BashCommands.sudo;
+
 import java.net.InetAddress;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicates;
+import com.google.common.base.Splitter;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -44,12 +49,15 @@ import org.apache.brooklyn.entity.group.DynamicGroup;
 import org.apache.brooklyn.entity.stock.BasicStartableImpl;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
+import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import org.apache.brooklyn.util.core.internal.ssh.SshTool;
 import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.guava.Maybe;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.ssh.BashCommands;
+import org.apache.brooklyn.util.text.StringPredicates;
+import org.apache.brooklyn.util.text.Strings;
 
 import brooklyn.entity.mesos.MesosCluster;
 import brooklyn.entity.mesos.MesosSlave;
@@ -226,11 +234,65 @@ public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule
         return output;
     }
 
+    /** For Calico we use profiles to group containers in networks and add the required IP address to the eth1 calico interface. */
+    @Override
+    public InetAddress attachNetwork(MesosSlave slave, Entity entity, String containerId, String subnetId) {
+        InetAddress address = getNextContainerAddress(subnetId);
+
+        // Run some commands to get information about the container network namespace
+        String dockerIpOutput = slave.execCommand(sudo("ip addr show dev docker0 scope global label docker0"));
+        String dockerIp = Strings.getFirstWordAfter(dockerIpOutput.replace('/', ' '), "inet");
+        String inspect = Strings.trimEnd(slave.execCommand(sudo("docker inspect -f '{{.State.Pid}}' " + containerId)));
+        String dockerPid = Iterables.find(Splitter.on(CharMatcher.anyOf("\r\n")).omitEmptyStrings().split(inspect),
+                StringPredicates.matchesRegex("^[0-9]+$"));
+        Cidr subnetCidr = getSubnetCidr(subnetId);
+        String slaveAddressOutput = slave.execCommand(sudo("ip addr show dev eth0 scope global label eth0"));
+        String slaveAddress = Strings.getFirstWordAfter(slaveAddressOutput.replace('/', ' '), "inet");
+
+        // Determine whether we are attatching the container to the initial application network
+        String applicationId = entity.getApplicationId();
+        boolean initial = subnetId.equals(applicationId);
+
+        // Add the container if we have not yet done so
+        if (initial) {
+            execCalicoCommand(slave, String.format("calicoctl container add %s %s", containerId, address.getHostAddress()));
+
+            // Return its endpoint ID
+            String getEndpointId = String.format("calicoctl container %s endpoint-id show", containerId);
+            String getEndpointIdStdout = execCalicoCommand(slave, getEndpointId);
+            Optional<String> endpointId = Iterables.tryFind(
+                    Splitter.on(CharMatcher.anyOf("\r\n")).split(getEndpointIdStdout),
+                    StringPredicates.matchesRegex("[0-9a-f]{32}"));
+            if (!endpointId.isPresent()) throw new IllegalStateException("Cannot find endpoint-id: " + getEndpointIdStdout);
+
+            // Add to the application profile
+            execCalicoCommand(slave, String.format("calicoctl profile add %s", subnetId));
+            execCalicoCommand(slave, String.format("calicoctl endpoint %s profile append %s", endpointId.get(), subnetId));
+        }
+
+        // Set up the network
+        List<String> commands = MutableList.of();
+        commands.add(sudo("mkdir -p /var/run/netns"));
+        commands.add(BashCommands.ok(sudo(String.format("ln -s /proc/%s/ns/net /var/run/netns/%s", dockerPid, dockerPid))));
+        if (initial) {
+            commands.add(sudo(String.format("ip netns exec %s ip route del default", dockerPid)));
+            commands.add(sudo(String.format("ip netns exec %s ip route add default via %s", dockerPid, dockerIp)));
+            commands.add(sudo(String.format("ip netns exec %s ip route add %s via %s", dockerPid, subnetCidr.toString(), slaveAddress)));
+        } else {
+            commands.add(sudo(String.format("ip netns exec %s ip addr add %s/%d dev eth1", dockerPid, address.getHostAddress(), subnetCidr.getLength())));
+        }
+        for (String cmd : commands) {
+            slave.execCommand(cmd);
+        }
+
+        return address;
+    }
+
     @Override
     public void provisionNetwork(VirtualNetwork network) {
         String networkId = network.sensors().get(VirtualNetwork.NETWORK_ID);
         Cidr subnetCidr = SdnUtils.provisionNetwork(this, network);
-        String addPool = String.format("calicoctl pool add %s --ipip --nat-outgoing", subnetCidr);
+        String addPool = String.format("calicoctl pool add %s", subnetCidr); // XXX  --ipip --nat-outgoing
         MesosSlave slave = (MesosSlave) getMesosCluster().sensors().get(MesosCluster.MESOS_SLAVES).getMembers().iterator().next();
         execCalicoCommand(slave, addPool);
 

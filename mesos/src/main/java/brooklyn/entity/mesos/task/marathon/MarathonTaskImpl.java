@@ -89,6 +89,7 @@ import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Protocol;
 import org.apache.brooklyn.util.net.Urls;
 import org.apache.brooklyn.util.ssh.BashCommands;
+import org.apache.brooklyn.util.text.StringPredicates;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
 import org.apache.brooklyn.util.time.Time;
@@ -107,8 +108,8 @@ import brooklyn.entity.mesos.task.MesosTask;
 import brooklyn.entity.mesos.task.MesosTaskImpl;
 import brooklyn.location.mesos.framework.marathon.MarathonTaskLocation;
 import brooklyn.networking.sdn.SdnAttributes;
-import brooklyn.networking.sdn.SdnProvider;
 import brooklyn.networking.sdn.SdnUtils;
+import brooklyn.networking.sdn.mesos.CalicoModule;
 import brooklyn.networking.subnet.SubnetTier;
 
 /**
@@ -279,10 +280,11 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         String containerId = null;
         MesosSlave slave = getMesosCluster().getMesosSlave(getHostname());
         String ps = slave.execCommand(BashCommands.sudo("docker ps --no-trunc --filter=name=mesos-* -q"));
-        Iterable<String> containers = Splitter.on(CharMatcher.WHITESPACE).omitEmptyStrings().split(ps);
+        Iterable<String> containers = Iterables.filter(Splitter.on(CharMatcher.anyOf("\r\n")).omitEmptyStrings().split(ps),
+                StringPredicates.matchesRegex("[a-z0-9]{64}"));
         for (String each : containers) {
             String env = slave.execCommand(BashCommands.sudo("docker inspect --format='{{range .Config.Env}}{{println .}}{{end}}' " + each));
-            Optional<String> found = Iterables.tryFind(Splitter.on(CharMatcher.WHITESPACE).split(env), Predicates.equalTo("MARATHON_APP_ID=" + sensors().get(APPLICATION_ID)));
+            Optional<String> found = Iterables.tryFind(Splitter.on(CharMatcher.anyOf("\r\n")).split(env), Predicates.equalTo("MARATHON_APP_ID=" + sensors().get(APPLICATION_ID)));
             if (found.isPresent()) {
                 containerId = each;
                 break;
@@ -290,6 +292,30 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         }
         sensors().set(DockerContainer.CONTAINER_ID, containerId);
         entity.sensors().set(DockerContainer.CONTAINER_ID, containerId);
+
+        // Set network configuration if using Calico SDN
+        if (SdnUtils.isSdnProvider(getMesosCluster(), "CalicoModule")) {
+            CalicoModule provider =  ((CalicoModule) getMesosCluster().sensors().get(MesosCluster.SDN_PROVIDER));
+            List<String> networks = Lists.newArrayList(entity.getApplicationId());
+            Collection<String> extra = entity.config().get(SdnAttributes.NETWORK_LIST);
+            if (extra != null) networks.addAll(extra);
+            sensors().set(SdnAttributes.ATTACHED_NETWORKS, networks);
+            entity.sensors().set(SdnAttributes.ATTACHED_NETWORKS, networks);
+            Set<String> addresses = Sets.newHashSet();
+            for (String networkId : networks) {
+                SdnUtils.createNetwork(provider, networkId);
+                InetAddress address = provider.attachNetwork(slave, entity, containerId, networkId);
+                addresses.add(address.getHostAddress().toString());
+                if (networkId.equals(entity.getApplicationId())) {
+                    sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
+                    sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostAddress());
+                    entity.sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
+                    entity.sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostAddress());
+                }
+            }
+            sensors().set(DockerContainer.CONTAINER_ADDRESSES, addresses);
+            entity.sensors().set(DockerContainer.CONTAINER_ADDRESSES, addresses);
+        }
 
         createLocation(flags);
 
@@ -414,33 +440,6 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         sensors().set(DockerAttributes.DOCKER_CONTAINER_PORT_BINDINGS, bindings);
         entity.sensors().set(DockerAttributes.DOCKER_CONTAINER_PORT_BINDINGS, bindings);
         builder.put("portBindings", Lists.newArrayList(marathonBindings.entrySet()));
-
-        // Set network configuration is using Calico SDN
-        if (getMesosCluster().config().get(MesosCluster.SDN_ENABLE)) {
-            SdnProvider provider =  ((SdnProvider) getMesosCluster().sensors().get(MesosCluster.SDN_PROVIDER));
-            List<String> networks = Lists.newArrayList(entity.getApplicationId());
-            Collection<String> extra = entity.config().get(SdnAttributes.NETWORK_LIST);
-            if (extra != null) networks.addAll(extra);
-            sensors().set(SdnAttributes.ATTACHED_NETWORKS, networks);
-            entity.sensors().set(SdnAttributes.ATTACHED_NETWORKS, networks);
-            Set<String> addresses = Sets.newHashSet();
-            for (String networkId : networks) {
-                SdnUtils.createNetwork(provider, networkId);
-                InetAddress address = provider.getNextContainerAddress(networkId);
-                addresses.add(address.getHostAddress().toString());
-                // TODO link container to extra networks ...
-                if (networkId.equals(entity.getApplicationId())) {
-                    sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
-                    sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostAddress());
-                    entity.sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
-                    entity.sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostAddress());
-                    builder.put("address", address.getHostAddress());
-                    builder.put("networkId", networkId);
-                }
-            }
-            sensors().set(DockerContainer.CONTAINER_ADDRESSES, addresses);
-            entity.sensors().set(DockerContainer.CONTAINER_ADDRESSES, addresses);
-        }
 
         // Environment variables and Docker links
         Map<String, Object> environment = MutableMap.copyOf(config().get(DOCKER_CONTAINER_ENVIRONMENT));

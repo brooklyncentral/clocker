@@ -49,6 +49,15 @@ public class SdnUtils {
     /** Do not instantiate. */
     private SdnUtils() { }
 
+    /** Checks if the SDN provider is of the specified type. */
+    public static boolean isSdnProvider(Entity entity, String providerName) {
+        if (entity.config().get(SdnAttributes.SDN_ENABLE)) {
+            Entity sdn = entity.sensors().get(SdnAttributes.SDN_PROVIDER);
+            if (sdn == null) return false;
+            return sdn.getEntityType().getSimpleName().equalsIgnoreCase(providerName);
+        } else return false;
+    }
+
     public static final VirtualNetwork createNetwork(final SdnProvider provider, final String networkId) {
         boolean createNetwork = false;
         Cidr subnetCidr = null;

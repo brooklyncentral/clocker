@@ -46,7 +46,6 @@ import com.google.common.collect.Iterables;
 import org.jclouds.compute.config.ComputeServiceProperties;
 import org.jclouds.compute.domain.OsFamily;
 import org.jclouds.compute.domain.TemplateBuilder;
-import org.jclouds.compute.domain.Volume;
 import org.jclouds.net.domain.IpPermission;
 import org.jclouds.net.domain.IpProtocol;
 import org.jclouds.softlayer.SoftLayerApi;
@@ -131,6 +130,7 @@ import brooklyn.networking.sdn.DockerSdnProvider;
 import brooklyn.networking.sdn.SdnAgent;
 import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.networking.sdn.SdnProvider;
+import brooklyn.networking.sdn.SdnUtils;
 import brooklyn.networking.sdn.calico.CalicoNode;
 import brooklyn.networking.sdn.weave.WeaveContainer;
 import brooklyn.networking.sdn.weave.WeaveNetwork;
@@ -205,13 +205,13 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         if (config().get(DockerInfrastructure.SDN_ENABLE)) {
             Entity sdn = sensors().get(DockerHost.DOCKER_INFRASTRUCTURE)
                     .sensors().get(DockerInfrastructure.SDN_PROVIDER);
-            if (DockerUtils.isSdnProvider(this, "WeaveNetwork")) {
+            if (SdnUtils.isSdnProvider(getInfrastructure(), "WeaveNetwork")) {
                 Integer weavePort = sdn.config().get(WeaveNetwork.WEAVE_PORT);
                 if (weavePort != null) ports.add(weavePort);
                 Integer proxyPort = sdn.config().get(WeaveContainer.WEAVE_PROXY_PORT);
                 if (proxyPort != null) ports.add(proxyPort);
             }
-            if (DockerUtils.isSdnProvider(this, "CalicoNetwork")) {
+            if (SdnUtils.isSdnProvider(getInfrastructure(), "CalicoNetwork")) {
                 PortRange etcdPort = sdn.config().get(EtcdNode.ETCD_CLIENT_PORT);
                 if (etcdPort != null) ports.add(etcdPort.iterator().next());
                 Integer powerstripPort = sdn.config().get(CalicoNode.POWERSTRIP_PORT);
@@ -308,10 +308,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             if (isJcloudsLocation(location, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME)) {
                 if (template == null) template = new PortableTemplateBuilder();
                 SoftLayerTemplateOptions options = new SoftLayerTemplateOptions();
-                if (DockerUtils.isSdnProvider(this, "SdnVeNetwork")) {
-                    template.osFamily(OsFamily.CENTOS).osVersionMatches("6").os64Bit(true);
-                    options.diskType(Volume.Type.LOCAL.name());// FIXME Temporary setting overriding capacity limitation on account
-                }
                 options.portSpeed(Objects.firstNonNull(options.getPortSpeed(), 1000));
 
                 // Try and determine if we need to set a VLAN for this host (overriding location)
@@ -690,13 +686,13 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
         Integer dockerPort = getDockerPort();
         boolean tlsEnabled = true;
-        if (DockerUtils.isSdnProvider(this, "CalicoNetwork")) {
+        if (SdnUtils.isSdnProvider(getInfrastructure(), "CalicoNetwork")) {
             dockerPort = sensors().get(DockerHost.DOCKER_INFRASTRUCTURE)
                     .sensors().get(DockerInfrastructure.SDN_PROVIDER)
                     .config().get(CalicoNode.POWERSTRIP_PORT);
             tlsEnabled = false;
         }
-        if (DockerUtils.isSdnProvider(this, "WeaveNetwork")) {
+        if (SdnUtils.isSdnProvider(getInfrastructure(), "WeaveNetwork")) {
             dockerPort = sensors().get(DockerHost.DOCKER_INFRASTRUCTURE)
                     .sensors().get(DockerInfrastructure.SDN_PROVIDER)
                     .config().get(WeaveContainer.WEAVE_PROXY_PORT);

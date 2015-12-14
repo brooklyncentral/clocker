@@ -15,6 +15,8 @@
  */
 package brooklyn.networking.sdn.mesos;
 
+import java.net.InetAddress;
+
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
@@ -38,5 +40,7 @@ public interface CalicoModule extends SdnProvider {
     MesosCluster getMesosCluster();
 
     String execCalicoCommand(MesosSlave slave, String command);
+
+    InetAddress attachNetwork(MesosSlave slave, Entity entity, String containerId, String subnetId);
 
 }
