@@ -14,7 +14,19 @@
 
 sudo: false
 language: java
+jdk:
+  - oraclejdk7
+
 script: mvn clean install
+
+after_success:
+  - .buildscript/deploy_snapshot.sh
+
+env:
+  global:
+    - secure: "eixhldm0eCdKfO37uru2qpLRv22liokwd7HaY2JkJqx1LonDM25uWWJ2a51HLSDClt3PYdLzKRXPtsLWCNlGxzlbSjXngsANXg/LIG8aoyyJdk4Hg+oNZW/LI1cDb7iUQyV1xVkKbRIOPuEAZEPIc4kOYTqTRenncCYVrXaeHAk="
+    - secure: "EG+DuKB4+LwaOuPa8GOdjqPyfKfGjsCs677nQgKX9+PSn0c3Dw6kOweeCK8CSvQIhADs+oPOoqUFCAMu2kvrpsISsmWZJBtoM4JLAM7o6XKNKdqdBm1T/ZMuftaes16w4BLTTa0rBwJKNdcIHggnSh9ws7CbkbDBbTglOGNpJV8="
+
 before_deploy: "mkdir artifacts && mv dist/target/brooklyn-clocker-dist.tar.gz artifacts/brooklyn-clocker-${TRAVIS_BUILD_NUMBER}-${TRAVIS_COMMIT}-dist.tar.gz"
 deploy:
   - provider: s3
