@@ -22,12 +22,8 @@ script: mvn clean install
 after_success:
   - .buildscript/deploy_snapshot.sh
 
-env:
-  global:
-    - secure: "eixhldm0eCdKfO37uru2qpLRv22liokwd7HaY2JkJqx1LonDM25uWWJ2a51HLSDClt3PYdLzKRXPtsLWCNlGxzlbSjXngsANXg/LIG8aoyyJdk4Hg+oNZW/LI1cDb7iUQyV1xVkKbRIOPuEAZEPIc4kOYTqTRenncCYVrXaeHAk="
-    - secure: "EG+DuKB4+LwaOuPa8GOdjqPyfKfGjsCs677nQgKX9+PSn0c3Dw6kOweeCK8CSvQIhADs+oPOoqUFCAMu2kvrpsISsmWZJBtoM4JLAM7o6XKNKdqdBm1T/ZMuftaes16w4BLTTa0rBwJKNdcIHggnSh9ws7CbkbDBbTglOGNpJV8="
-
 before_deploy: "mkdir artifacts && mv dist/target/brooklyn-clocker-dist.tar.gz artifacts/brooklyn-clocker-${TRAVIS_BUILD_NUMBER}-${TRAVIS_COMMIT}-dist.tar.gz"
+
 deploy:
   - provider: s3
     access_key_id: AKIAJL5SMCB2JZCJ2WAQ
@@ -40,9 +36,16 @@ deploy:
     local-dir: artifacts
     on:
       branch: master
+
+env:
+  global:
+    - secure: "BrRh52Ae8fkDqBRGOgFCi89DKDtTWnvZju3K1ntV0kC0nP0pIdKKKgCKZC9u8EmFYF8HZnHagqn3VSRX2+tASwo0xauY0urV4GlMUp38+Dnzt1Kg9XKL/m6aQdEu+EjhMm6KCar5CKZ1TdO36RWZdY6yM/0QZMSS6HqrdlDc8eo="
+    - secure: "T8804sbwQgUGniJhfC/DdIwQ3Tt4UdyGVJWFzdVXKk+zSVm302PG1Ibp3A4kzMy9MUbYspRNh/lNmGsGN0DR1pElDqAO6zVDo7+KBaU7/gEoTjVigvhYcV1Y4E3X+KqXY1fykmLC4zjGpdmkWa602SX7EXpiJ0o31hujFXA3ElQ="
+
 cache:
   directories:
     - $HOME/.m2
+
 notifications:
   email:
   - andrew.kennedy@cloudsoft.io
