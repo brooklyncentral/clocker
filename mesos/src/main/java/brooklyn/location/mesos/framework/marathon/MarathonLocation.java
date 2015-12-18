@@ -161,6 +161,7 @@ public class MarathonLocation extends MesosFrameworkLocation implements MachineP
         String planId = entity.config().get(BrooklynCampConstants.PLAN_ID);
         String name = null;
         if (planId != null) {
+            //Plan IDs are not unique even in a single application
             name = planId + "/" + entity.getId();
         } else {
             name = entity.getId();
