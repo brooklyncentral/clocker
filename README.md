@@ -12,9 +12,11 @@ Docker Cloud infrastructure.
 This repository contains all of the required Brooklyn entities, locations and examples.
 
 [![Build Status](https://api.travis-ci.org/brooklyncentral/clocker.svg?branch=master)](https://travis-ci.org/brooklyncentral/clocker)
-[![Latest Builds](http://img.shields.io/badge/version-1.1.0--SNAPSHOT-blue.svg?style=flat)](http://clocker-latest.s3-website-eu-west-1.amazonaws.com/)<!-- CLOCKER_VERSION_ESCAPED master -->
+[![Latest Builds](http://img.shields.io/badge/version-1.1.0--SNAPSHOT-blue.svg?style=flat)](http://clocker-latest.s3-website-eu-west-1.amazonaws.com/) 
+<!--- CLOCKER_VERSION_ESCAPED master --->
 [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/brooklyncentral/clocker)
-[![Docker Image](https://badge.imagelayers.io/clockercentral/clocker:latest.svg)](https://imagelayers.io/?images=clockercentral/clocker:latest)<!-- CLOCKER_VERSION release -->
+[![Docker Image](https://badge.imagelayers.io/clockercentral/clocker:latest.svg)](https://imagelayers.io/?images=clockercentral/clocker:latest) 
+<!--- CLOCKER_VERSION release --->
 
 ## Getting started
 
