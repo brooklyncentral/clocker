@@ -79,6 +79,7 @@ import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.collections.MutableSet;
+import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.core.http.HttpTool;
 import org.apache.brooklyn.util.core.http.HttpToolResponse;
 import org.apache.brooklyn.util.core.internal.ssh.SshTool;
@@ -89,6 +90,7 @@ import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Protocol;
 import org.apache.brooklyn.util.net.Urls;
 import org.apache.brooklyn.util.ssh.BashCommands;
+import org.apache.brooklyn.util.text.ByteSizeStrings;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
 import org.apache.brooklyn.util.time.Time;
@@ -318,7 +320,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
 
     private Map<String, Object> getMarathonFlags(Entity entity) {
         MutableMap.Builder<String, Object> builder = MutableMap.builder();
-        Map<String, Object> provisioningProperties = ImmutableMap.copyOf(entity.config().get(SoftwareProcess.PROVISIONING_PROPERTIES));
+        ConfigBag provisioningProperties = ConfigBag.newInstance(entity.config().get(SoftwareProcess.PROVISIONING_PROPERTIES));
 
         // CPU
         Double cpus = entity.config().get(MarathonTask.CPU_RESOURCES);
@@ -326,10 +328,10 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         if (cpus == null) {
             Integer minCores = entity.config().get(JcloudsLocationConfig.MIN_CORES);
             if (minCores == null) {
-                minCores = (Integer) provisioningProperties.get(JcloudsLocationConfig.MIN_CORES.getName());
+                minCores = provisioningProperties.get(JcloudsLocationConfig.MIN_CORES);
             }
             if (minCores == null) {
-                TemplateBuilder template = (TemplateBuilder) provisioningProperties.get(JcloudsLocationConfig.TEMPLATE_BUILDER.getName());
+                TemplateBuilder template = provisioningProperties.get(JcloudsLocationConfig.TEMPLATE_BUILDER);
                 if (template != null) {
                     minCores = 0;
                     for (Processor cpu : template.build().getHardware().getProcessors()) {
@@ -348,12 +350,12 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         Integer memory = entity.config().get(MarathonTask.MEMORY_RESOURCES);
         if (memory == null) memory = config().get(MarathonTask.MEMORY_RESOURCES);
         if (memory == null) {
-            Integer minRam = (Integer) entity.config().get(JcloudsLocationConfig.MIN_RAM);
+            Integer minRam = parseMbSizeString(entity.config().get(JcloudsLocationConfig.MIN_RAM));
             if (minRam == null) {
-                minRam = (Integer) provisioningProperties.get(JcloudsLocationConfig.MIN_RAM.getName());
+                minRam = parseMbSizeString(provisioningProperties.get(JcloudsLocationConfig.MIN_RAM));
             }
             if (minRam == null) {
-                TemplateBuilder template = (TemplateBuilder) provisioningProperties.get(JcloudsLocationConfig.TEMPLATE_BUILDER.getName());
+                TemplateBuilder template = provisioningProperties.get(JcloudsLocationConfig.TEMPLATE_BUILDER);
                 if (template != null) {
                     minRam = template.build().getHardware().getRam();
                 }
@@ -499,10 +501,10 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
             // OS name for image
             OsFamily os = entity.config().get(JcloudsLocationConfig.OS_FAMILY);
             if (os == null) {
-                os = (OsFamily) provisioningProperties.get(JcloudsLocationConfig.OS_FAMILY.getName());
+                os = provisioningProperties.get(JcloudsLocationConfig.OS_FAMILY);
             }
             if (os == null) {
-                TemplateBuilder template = (TemplateBuilder) provisioningProperties.get(JcloudsLocationConfig.TEMPLATE_BUILDER.getName());
+                TemplateBuilder template = provisioningProperties.get(JcloudsLocationConfig.TEMPLATE_BUILDER);
                 if (template != null) {
                     os = template.build().getImage().getOperatingSystem().getFamily();
                 }
@@ -516,10 +518,10 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
             // OS version specified in regex config
             String version = entity.config().get(JcloudsLocationConfig.OS_VERSION_REGEX);
             if (version == null) {
-                version = (String) provisioningProperties.get(JcloudsLocationConfig.OS_VERSION_REGEX.getName());
+                version = provisioningProperties.get(JcloudsLocationConfig.OS_VERSION_REGEX);
             }
             if (version == null) {
-                TemplateBuilder template = (TemplateBuilder) provisioningProperties.get(JcloudsLocationConfig.TEMPLATE_BUILDER.getName());
+                TemplateBuilder template = provisioningProperties.get(JcloudsLocationConfig.TEMPLATE_BUILDER);
                 if (template != null) {
                     version = template.build().getImage().getOperatingSystem().getVersion();
                 }
@@ -538,6 +540,16 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         }
 
         return builder.build();
+    }
+    
+    private Long parseSizeString(Object obj, String defaultUnit) {
+        if (obj == null) return null;
+        return ByteSizeStrings.parse(Strings.toString(obj), defaultUnit);
+    }
+    
+    private Integer parseMbSizeString(Object obj) {
+        if (obj == null) return null;
+        return (int)(parseSizeString(obj, "mb")/1000/1000);
     }
 
     @Override
