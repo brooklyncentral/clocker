@@ -1,0 +1,56 @@
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                      https://maven.apache.org/xsd/settings-1.0.0.xsd">
+    <profiles>
+        <profile>
+            <id>QA</id>
+            <pluginRepositories>
+                <pluginRepository>
+                    <snapshots />
+                    <id>cloudsoft-snapshots</id>
+                    <name>cloudsoft-snapshots</name>
+                    <url>https://artifactory.cloudsoftcorp.com/artifactory/libs-snapshot-local</url>
+                </pluginRepository>
+            </pluginRepositories>
+            <repositories>
+                <repository>
+                    <id>cloudsoft-releases</id>
+                    <url>http://artifactory.cloudsoftcorp.com/artifactory/libs-release-local/</url>
+                </repository>
+                <repository>
+                    <id>cloudsoft-snapshots</id>
+                    <url>https://artifactory.cloudsoftcorp.com/artifactory/libs-snapshot-local/</url>
+                    <releases>
+                        <enabled>false</enabled>
+                    </releases>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                </repository>
+                <repository>
+                    <id>sonatype-nexus-snapshots</id>
+                    <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+                    <releases>
+                        <enabled>false</enabled>
+                    </releases>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                </repository>
+
+                <!-- enable apache snapshots repo (only for snapshots) -->
+                <repository>
+                    <id>apache-snapshots</id>
+                    <url>https://repository.apache.org/content/repositories/snapshots</url>
+                    <releases>
+                        <enabled>false</enabled>
+                    </releases>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                </repository>
+            </repositories>
+        </profile>
+    </profiles>
+</settings>

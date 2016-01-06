@@ -54,6 +54,7 @@ import org.apache.brooklyn.api.mgmt.LocationManager;
 import org.apache.brooklyn.api.mgmt.ManagementContext;
 import org.apache.brooklyn.api.policy.PolicySpec;
 import org.apache.brooklyn.api.sensor.EnricherSpec;
+import org.apache.brooklyn.camp.brooklyn.BrooklynCampConstants;
 import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.entity.AbstractApplication;
 import org.apache.brooklyn.core.entity.Attributes;
@@ -100,6 +101,8 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
     private static final Logger LOG = LoggerFactory.getLogger(DockerInfrastructure.class);
 
     private transient Object mutex = new Object[0];
+
+    private static final AtomicInteger infrastructureID = new AtomicInteger();
 
     @Override
     public Object getInfrastructureMutex() {
@@ -162,6 +165,7 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
                 .configure(DynamicCluster.MEMBER_SPEC, dockerHostSpec)
                 .configure(DynamicCluster.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .configure(DynamicCluster.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
+                .configure(BrooklynCampConstants.PLAN_ID, "docker-hosts")
                 .displayName("Docker Hosts"));
 
         DynamicGroup fabric = addChild(EntitySpec.create(DynamicGroup.class)
@@ -310,7 +314,7 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
         if (Strings.isBlank(locationName)) {
             String prefix = config().get(LOCATION_NAME_PREFIX);
             String suffix = config().get(LOCATION_NAME_SUFFIX);
-            locationName = Joiner.on("-").skipNulls().join(prefix, getId(), suffix);
+            locationName = Joiner.on("-").skipNulls().join(prefix, getId(), suffix, infrastructureID.incrementAndGet());
         }
         LocationDefinition check = getManagementContext().getLocationRegistry().getDefinedLocationByName(locationName);
         if (check != null) {

@@ -177,113 +177,48 @@
 
     <profiles>
         <profile>
-            <id>AcceptanceTest</id>
-            <activation>
-                <property>
-                    <name>Integration</name>
-                </property>
-            </activation>
+            <id>QA</id>
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>build-helper-maven-plugin</artifactId>
-                        <version>1.9.1</version>
+                        <groupId>com.bazaarvoice.maven.plugins</groupId>
+                        <artifactId>s3-upload-maven-plugin</artifactId>
+                        <version>1.2</version>
                         <executions>
                             <execution>
-                                <id>reserve-brooklyn-port</id>
-                                <!-- Want a port to be reserved before resources are processed. -->
-                                <phase>initialize</phase>
+                                <phase>integration-test</phase>
                                 <goals>
-                                    <goal>reserve-network-port</goal>
+                                    <goal>s3-upload</goal>
                                 </goals>
                             </execution>
                         </executions>
                         <configuration>
-                            <portNames>
-                                <portName>brooklyn.console</portName>
-                            </portNames>
+                            <bucketName>clocker-latest</bucketName>
+                            <source>dist/target/brooklyn-clocker-dist.tar.gz</source>
                         </configuration>
                     </plugin>
+
                     <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <version>1.3.2</version>
+                        <groupId>io.cloudsoft.amp</groupId>
+                        <artifactId>test-framework-maven-plugin</artifactId>
+                        <version>1.1-SNAPSHOT</version>
+                        <inherited>false</inherited>
                         <executions>
                             <execution>
-                                <id>run-brooklyn-server</id>
-                                <phase>pre-integration-test</phase>
-                                <goals><goal>exec</goal></goals>
+                                <phase>integration-test</phase>
+                                <goals>
+                                    <goal>brooklyn-test</goal>
+                                </goals>
                                 <configuration>
-                                    <executable>${project.build.testOutputDirectory}/run-brooklyn.sh</executable>
-                                    <arguments>
-                                        <argument>${project.build.directory}/brooklyn-clocker-dist/brooklyn-clocker/bin/brooklyn.sh</argument>
-                                    </arguments>
+                                    <ampTestClusterUrl>http://169.50.81.105:8081</ampTestClusterUrl>
+                                    <locationFolderURI>${project.build.testOutputDirectory}/quality_assurance/locations</locationFolderURI>
+                                    <testAppFileURI>${project.build.testOutputDirectory}/quality_assurance/apps/nodejs_test.yaml</testAppFileURI>
+                                    <testSpecFileURI>${project.build.testOutputDirectory}/quality_assurance/combined_test.yaml</testSpecFileURI>
+                                    <noTearDownOnFailure>true</noTearDownOnFailure>
+                                    <verbose>false</verbose>
+                                    <maxTestDuration>80m</maxTestDuration>
+                                    <ampTestClusterUsername>brooklyn</ampTestClusterUsername>
                                 </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <!-- maven-resources-plugin does not preserve permissions when copying files. -->
-                    <!-- https://jira.codehaus.org/browse/MRESOURCES-132 -->
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-antrun-plugin</artifactId>
-                        <version>1.8</version>
-                        <executions>
-                            <execution>
-                                <id>fix-permissions-on-run.sh</id>
-                                <phase>process-test-resources</phase>
-                                <configuration>
-                                    <target>
-                                        <chmod file="target/test-classes/run-brooklyn.sh" perm="755"/>
-                                    </target>
-                                </configuration>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <version>2.18.1</version>
-                        <configuration>
-                            <parallel>methods</parallel>
-                            <threadCount>3</threadCount>
-                            <includes>
-                                <include>**/*IntegrationTest.java</include>
-                            </includes>
-                            <systemPropertyVariables>
-                                <brooklyn>http://localhost:${brooklyn.console}</brooklyn>
-                            </systemPropertyVariables>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>integration-tests</id>
-                                <goals>
-                                    <goal>integration-test</goal>
-                                    <goal>verify</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>io.brooklyn.maven</groupId>
-                        <artifactId>brooklyn-maven-plugin</artifactId>
-                        <version>0.2.0-SNAPSHOT</version>
-                        <configuration>
-                            <server>http://localhost:${brooklyn.console}</server>
-                            <blueprint>${project.build.testOutputDirectory}/test-docker-cloud.yaml</blueprint>
-                            <!-- Fifteen minutes for slow clouds to provision. -->
-                            <timeout>15</timeout>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>deploy-docker-cloud</id>
-                                <goals>
-                                    <goal>deploy</goal>
-                                    <goal>stop-brooklyn</goal>
-                                </goals>
                             </execution>
                         </executions>
                     </plugin>
@@ -291,5 +226,4 @@
             </build>
         </profile>
     </profiles>
-
 </project>

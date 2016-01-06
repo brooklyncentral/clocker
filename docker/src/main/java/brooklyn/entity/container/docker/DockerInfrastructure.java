@@ -32,6 +32,7 @@ import org.apache.brooklyn.core.entity.StartableApplication;
 import org.apache.brooklyn.core.entity.trait.Resizable;
 import org.apache.brooklyn.core.location.dynamic.LocationOwner;
 import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
+import org.apache.brooklyn.core.sensor.BasicAttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.group.DynamicGroup;
@@ -57,7 +58,7 @@ public interface DockerInfrastructure extends StartableApplication, Resizable, L
 
     @CatalogConfig(label = "Location Name", priority = 90)
     @SetFromFlag("locationName")
-    AttributeSensorAndConfigKey<String, String> LOCATION_NAME = ConfigKeys.newSensorAndConfigKeyWithDefault(LocationOwner.LOCATION_NAME, "my-docker-cloud");
+    BasicAttributeSensorAndConfigKey<String> LOCATION_NAME = LocationOwner.LOCATION_NAME;
 
     @CatalogConfig(label = "Docker Version", priority = 10)
     @SetFromFlag("dockerVersion")
