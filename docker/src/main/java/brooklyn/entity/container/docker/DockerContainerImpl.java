@@ -561,17 +561,16 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             }
 
             // Create our wrapper location around the container
-            LocationSpec<DockerContainerLocation> spec = LocationSpec.create(DockerContainerLocation.class)
-                    .parent(host)
-                    .configure(flags)
-                    .configure(DynamicLocation.OWNER, this)
-                    .configure("machine", container) // the underlying JcloudsLocation
-                    .configure(container.config().getBag().getAllConfig())
-                    .configure("address", getSshHostAddress())
-                    .configure(SshMachineLocation.SSH_HOST, getSshHostAddress().getHostName())
-                    .configure(SshTool.PROP_HOST, getSshHostAddress().getHostName())
-                    .configure(SshTool.PROP_PORT, container.getNode().getLoginPort())
-                    .displayName(getDockerContainerName());
+            LocationSpec<DockerContainerLocation> spec = LocationSpec.create(DockerContainerLocation.class);
+            spec.configure(flags)
+                .configure(DynamicLocation.OWNER, this)
+                .configure("machine", container) // the underlying JcloudsLocation
+                .configure(container.config().getBag().getAllConfig())
+                .configure("address", getSshHostAddress())
+                .configure(SshMachineLocation.SSH_HOST, getSshHostAddress().getHostName())
+                .configure(SshTool.PROP_HOST, getSshHostAddress().getHostName())
+                .configure(SshTool.PROP_PORT, container.getNode().getLoginPort())
+                .displayName(getDockerContainerName());
             DockerContainerLocation location = getManagementContext().getLocationManager().createLocation(spec);
 
             sensors().set(DYNAMIC_LOCATION, location);

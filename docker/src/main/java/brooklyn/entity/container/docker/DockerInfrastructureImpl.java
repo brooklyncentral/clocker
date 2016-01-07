@@ -142,8 +142,8 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
             Exceptions.propagate(e);
         }
 
-        EntitySpec<?> dockerHostSpec = EntitySpec.create(config().get(DOCKER_HOST_SPEC))
-                .configure(DockerHost.DOCKER_INFRASTRUCTURE, this)
+        EntitySpec<?> dockerHostSpec = EntitySpec.create(config().get(DOCKER_HOST_SPEC));
+        dockerHostSpec.configure(DockerHost.DOCKER_INFRASTRUCTURE, this)
                 .configure(DockerHost.RUNTIME_FILES, runtimeFiles)
                 .configure(SoftwareProcess.CHILDREN_STARTABLE_MODE, ChildStartableMode.BACKGROUND_LATE);
         String dockerVersion = config().get(DOCKER_VERSION);
@@ -182,8 +182,9 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
                 .displayName("Docker Applications"));
 
         if (config().get(SDN_ENABLE) && config().get(SDN_PROVIDER_SPEC) != null) {
-            Entity sdn = addChild(EntitySpec.create(config().get(SDN_PROVIDER_SPEC))
-                    .configure(DockerAttributes.DOCKER_INFRASTRUCTURE, this));
+            EntitySpec entitySpec = EntitySpec.create(config().get(SDN_PROVIDER_SPEC));
+            entitySpec.configure(DockerAttributes.DOCKER_INFRASTRUCTURE, this);
+            Entity sdn = addChild(entitySpec);
             sensors().set(SDN_PROVIDER, sdn);
 
             if (Entities.isManaged(this)) {

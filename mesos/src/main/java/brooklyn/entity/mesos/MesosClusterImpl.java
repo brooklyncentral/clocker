@@ -147,8 +147,9 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
         }
 
         if (config().get(SDN_ENABLE) && config().get(SDN_PROVIDER_SPEC) != null) {
-            Entity sdn = addChild(EntitySpec.create(config().get(SDN_PROVIDER_SPEC))
-                    .configure(MesosAttributes.MESOS_CLUSTER, this));
+            EntitySpec entitySpec = EntitySpec.create(config().get(SDN_PROVIDER_SPEC));
+            entitySpec.configure(MesosAttributes.MESOS_CLUSTER, this);
+            Entity sdn = addChild(entitySpec);
             sensors().set(SDN_PROVIDER, sdn);
 
             if (Entities.isManaged(this)) {
@@ -475,7 +476,7 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
 
             // Setup port forwarding
             MarathonPortForwarder portForwarder = new MarathonPortForwarder();
-            portForwarder.injectManagementContext(getManagementContext());
+            portForwarder.setManagementContext(getManagementContext());
 
             EntitySpec<MesosSlave> slaveSpec = EntitySpec.create(MesosSlave.class)
                     .configure(MesosSlave.MESOS_SLAVE_ID, id)

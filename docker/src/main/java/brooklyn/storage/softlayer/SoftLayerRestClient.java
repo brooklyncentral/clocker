@@ -36,7 +36,7 @@ import org.jclouds.http.HttpResponse;
 import org.jclouds.softlayer.SoftLayerApi;
 
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
-import org.apache.brooklyn.util.core.http.HttpToolResponse;
+import org.apache.brooklyn.util.http.HttpToolResponse;
 
 public class SoftLayerRestClient {
 
