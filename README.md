@@ -15,7 +15,7 @@ This repository contains all of the required Brooklyn entities, locations and ex
 [![Latest Builds](http://img.shields.io/badge/version-1.1.0--SNAPSHOT-blue.svg?style=flat)](http://clocker-latest.s3-website-eu-west-1.amazonaws.com/) 
 [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/brooklyncentral/clocker)
 <!--- CLOCKER_VERSION_BELOW release --->
-[![Docker Image](https://badge.imagelayers.io/clockercentral/clocker:1.1.0-PREVIEW.20151205.svg)](https://imagelayers.io/?images=clockercentral/clocker:1.1.0-PREVIEW.20151205)
+[![Docker Image](https://badge.imagelayers.io/clockercentral/clocker:1.1.0-PREVIEW.20160107.svg)](https://imagelayers.io/?images=clockercentral/clocker:1.1.0-PREVIEW.20160107)
 
 ## Getting started
 
@@ -37,7 +37,7 @@ depending on your choice of SDN provider.
 ### Using the latest Clocker release
 
 <!-- CLOCKER_VERSION_BELOW release -->
-The latest version of Clocker is [1.1.0-PREVIEW.20151205](https://github.com/brooklyncentral/clocker/releases/tag/v1.1.0-PREVIEW.20151205).
+The latest version of Clocker is [1.1.0-PREVIEW.20160107](https://github.com/brooklyncentral/clocker/releases/tag/v1.1.0-PREVIEW.20160107).
 You can deploy your own **Docker Cloud** with a Weave SDN by running these commands with the _network_ argument
 st to `weave`, to use Project Calico as your SDN provider, change the last argument to `calico` instead:
 ```Bash
