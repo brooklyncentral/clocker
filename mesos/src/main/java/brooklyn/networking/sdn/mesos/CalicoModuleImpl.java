@@ -86,18 +86,12 @@ public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule
         BasicGroup networks = addChild(EntitySpec.create(BasicGroup.class)
                 .configure(BasicGroup.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .configure(BasicGroup.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
-                .configure(BasicGroup.MEMBER_DELEGATE_CHILDREN, true)
                 .displayName("SDN Managed Networks"));
 
         BasicGroup applications = addChild(EntitySpec.create(BasicGroup.class)
                 .configure(BasicGroup.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .configure(BasicGroup.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .displayName("SDN Networked Applications"));
-
-        if (Entities.isManaged(this)) {
-            Entities.manage(networks);
-            Entities.manage(applications);
-        }
 
         sensors().set(SDN_NETWORKS, networks);
         sensors().set(SDN_APPLICATIONS, applications);
@@ -223,7 +217,7 @@ public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule
     @Override
     public String execCalicoCommand(MesosSlave slave, String command) {
         String etcdUrl = sensors().get(ETCD_CLUSTER_URL);
-        Maybe<SshMachineLocation> machine = Machines.findUniqueSshMachineLocation(slave.getLocations());
+        Maybe<SshMachineLocation> machine = Machines.findUniqueMachineLocation(slave.getLocations(), SshMachineLocation.class);
         TaskWrapper<String> process = SshEffectorTasks.ssh(BashCommands.sudo(command))
                 .environmentVariable("ETCD_AUTHORITY", etcdUrl)
                 .machine(machine.get())
@@ -302,10 +296,8 @@ public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule
                         Predicates.not(Predicates.or(Predicates.instanceOf(MarathonTask.class), Predicates.instanceOf(DelegateEntity.class))),
                         MesosUtils.sameCluster(getMesosCluster()),
                         SdnUtils.attachedToNetwork(networkId)))
-                .configure(DynamicGroup.MEMBER_DELEGATE_CHILDREN, true)
                 .displayName(network.getDisplayName());
         DynamicGroup subnet = sensors().get(SDN_APPLICATIONS).addMemberChild(networkSpec);
-        Entities.manage(subnet);
         subnet.sensors().set(VirtualNetwork.NETWORK_ID, networkId);
         network.sensors().set(VirtualNetwork.NETWORKED_APPLICATIONS, subnet);
 

@@ -81,19 +81,12 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements Dock
         BasicGroup networks = addChild(EntitySpec.create(BasicGroup.class)
                 .configure(BasicGroup.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .configure(BasicGroup.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
-                .configure(BasicGroup.MEMBER_DELEGATE_CHILDREN, true)
                 .displayName("SDN Managed Networks"));
 
         BasicGroup applications = addChild(EntitySpec.create(BasicGroup.class)
                 .configure(BasicGroup.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .configure(BasicGroup.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .displayName("SDN Networked Applications"));
-
-        if (Entities.isManaged(this)) {
-            Entities.manage(agents);
-            Entities.manage(networks);
-            Entities.manage(applications);
-        }
 
         sensors().set(SDN_AGENTS, agents);
         sensors().set(SDN_NETWORKS, networks);
@@ -242,7 +235,7 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements Dock
     protected void addHostTrackerPolicy() {
         Group hosts = getDockerHostCluster();
         if (hosts != null) {
-            MemberTrackingPolicy hostTrackerPolicy = addPolicy(PolicySpec.create(MemberTrackingPolicy.class)
+            MemberTrackingPolicy hostTrackerPolicy = policies().add(PolicySpec.create(MemberTrackingPolicy.class)
                     .displayName("Docker host tracker")
                     .configure("group", hosts));
             LOG.info("Added policy {} to {}, during start", hostTrackerPolicy, this);
@@ -300,10 +293,8 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements Dock
                         Predicates.not(Predicates.or(Predicates.instanceOf(DockerContainer.class), Predicates.instanceOf(DelegateEntity.class))),
                         EntityPredicates.attributeEqualTo(DockerContainer.DOCKER_INFRASTRUCTURE, sensors().get(DOCKER_INFRASTRUCTURE)),
                         SdnUtils.attachedToNetwork(networkId)))
-                .configure(DynamicGroup.MEMBER_DELEGATE_CHILDREN, true)
                 .displayName(network.getDisplayName());
         DynamicGroup subnet = sensors().get(SDN_APPLICATIONS).addMemberChild(networkSpec);
-        Entities.manage(subnet);
         subnet.sensors().set(VirtualNetwork.NETWORK_ID, networkId);
         network.sensors().set(VirtualNetwork.NETWORKED_APPLICATIONS, subnet);
 

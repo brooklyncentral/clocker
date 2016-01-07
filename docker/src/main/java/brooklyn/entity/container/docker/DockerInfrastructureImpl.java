@@ -164,7 +164,6 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
 
         DynamicGroup fabric = addChild(EntitySpec.create(DynamicGroup.class)
                 .configure(DynamicGroup.ENTITY_FILTER, Predicates.and(Predicates.instanceOf(DockerContainer.class), EntityPredicates.attributeEqualTo(DockerContainer.DOCKER_INFRASTRUCTURE, this)))
-                .configure(DynamicGroup.MEMBER_DELEGATE_CHILDREN, true)
                 .displayName("All Docker Containers"));
 
         DynamicMultiGroup buckets = addChild(EntitySpec.create(DynamicMultiGroup.class)
@@ -177,8 +176,7 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
                         return input.getApplication().getDisplayName() + ":" + input.getApplicationId();
                     }
                 })
-                .configure(DynamicMultiGroup.BUCKET_SPEC, EntitySpec.create(BasicGroup.class)
-                        .configure(BasicGroup.MEMBER_DELEGATE_CHILDREN, true))
+                .configure(DynamicMultiGroup.BUCKET_SPEC, EntitySpec.create(BasicGroup.class))
                 .displayName("Docker Applications"));
 
         if (config().get(SDN_ENABLE) && config().get(SDN_PROVIDER_SPEC) != null) {
@@ -186,41 +184,31 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
             entitySpec.configure(DockerAttributes.DOCKER_INFRASTRUCTURE, this);
             Entity sdn = addChild(entitySpec);
             sensors().set(SDN_PROVIDER, sdn);
-
-            if (Entities.isManaged(this)) {
-                Entities.manage(sdn);
-            }
-        }
-
-        if (Entities.isManaged(this)) {
-            Entities.manage(hosts);
-            Entities.manage(fabric);
-            Entities.manage(buckets);
         }
 
         sensors().set(DOCKER_HOST_CLUSTER, hosts);
         sensors().set(DOCKER_CONTAINER_FABRIC, fabric);
         sensors().set(DOCKER_APPLICATIONS, buckets);
 
-        hosts.addEnricher(Enrichers.builder()
+        hosts.enrichers().add(Enrichers.builder()
                 .aggregating(DockerHost.CPU_USAGE)
                 .computingAverage()
                 .fromMembers()
                 .publishing(MachineAttributes.AVERAGE_CPU_USAGE)
                 .valueToReportIfNoSensors(0d)
                 .build());
-        hosts.addEnricher(Enrichers.builder()
+        hosts.enrichers().add(Enrichers.builder()
                 .aggregating(DOCKER_CONTAINER_COUNT)
                 .computingSum()
                 .fromMembers()
                 .publishing(DOCKER_CONTAINER_COUNT)
                 .build());
 
-        addEnricher(Enrichers.builder()
+        enrichers().add(Enrichers.builder()
                 .propagating(DOCKER_CONTAINER_COUNT, MachineAttributes.AVERAGE_CPU_USAGE)
                 .from(hosts)
                 .build());
-        addEnricher(Enrichers.builder()
+        enrichers().add(Enrichers.builder()
                 .propagating(ImmutableMap.of(DynamicCluster.GROUP_SIZE, DOCKER_HOST_COUNT))
                 .from(hosts)
                 .build());
@@ -228,17 +216,17 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
         Integer headroom = config().get(ContainerHeadroomEnricher.CONTAINER_HEADROOM);
         Double headroomPercent = config().get(ContainerHeadroomEnricher.CONTAINER_HEADROOM_PERCENTAGE);
         if ((headroom != null && headroom > 0) || (headroomPercent != null && headroomPercent > 0d)) {
-            addEnricher(EnricherSpec.create(ContainerHeadroomEnricher.class)
+            enrichers().add(EnricherSpec.create(ContainerHeadroomEnricher.class)
                     .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM, headroom)
                     .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM_PERCENTAGE, headroomPercent));
-            hosts.addEnricher(Enrichers.builder()
+            hosts.enrichers().add(Enrichers.builder()
                     .propagating(
                             ContainerHeadroomEnricher.DOCKER_CONTAINER_CLUSTER_COLD,
                             ContainerHeadroomEnricher.DOCKER_CONTAINER_CLUSTER_HOT,
                             ContainerHeadroomEnricher.DOCKER_CONTAINER_CLUSTER_OK)
                     .from(this)
                     .build());
-            hosts.addPolicy(PolicySpec.create(AutoScalerPolicy.class)
+            hosts.policies().add(PolicySpec.create(AutoScalerPolicy.class)
                     .configure(AutoScalerPolicy.POOL_COLD_SENSOR, ContainerHeadroomEnricher.DOCKER_CONTAINER_CLUSTER_COLD)
                     .configure(AutoScalerPolicy.POOL_HOT_SENSOR, ContainerHeadroomEnricher.DOCKER_CONTAINER_CLUSTER_HOT)
                     .configure(AutoScalerPolicy.POOL_OK_SENSOR, ContainerHeadroomEnricher.DOCKER_CONTAINER_CLUSTER_OK)
@@ -414,7 +402,6 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
 
             // TODO Mount volume with images stored on it
             DockerRegistry registry = addChild(spec);
-            Entities.manage(registry);
 
             LOG.debug("Starting a new Docker Registry with spec {}", spec);
             Entities.start(registry, ImmutableList.of(firstEntity.getDynamicLocation()));

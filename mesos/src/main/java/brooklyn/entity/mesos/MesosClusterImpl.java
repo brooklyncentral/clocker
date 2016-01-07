@@ -60,7 +60,6 @@ import org.apache.brooklyn.core.entity.EntityPredicates;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.entity.trait.Startable;
-import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.core.location.BasicLocationDefinition;
 import org.apache.brooklyn.core.location.BasicLocationRegistry;
 import org.apache.brooklyn.core.location.LocationConfigKeys;
@@ -121,7 +120,6 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
                 .configure(DynamicGroup.ENTITY_FILTER, Predicates.and(
                         Predicates.instanceOf(MesosTask.class),
                         EntityPredicates.attributeEqualTo(MesosAttributes.MESOS_CLUSTER, this)))
-                .configure(DynamicGroup.MEMBER_DELEGATE_CHILDREN, true)
                 .displayName("Mesos Tasks"));
 
         DynamicMultiGroup applications = addChild(EntitySpec.create(DynamicMultiGroup.class)
@@ -135,26 +133,14 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
                             return input.getApplication().getDisplayName() + ":" + input.getApplicationId();
                         }
                     })
-                .configure(DynamicMultiGroup.BUCKET_SPEC, EntitySpec.create(BasicGroup.class)
-                        .configure(BasicGroup.MEMBER_DELEGATE_CHILDREN, true))
+                .configure(DynamicMultiGroup.BUCKET_SPEC, EntitySpec.create(BasicGroup.class))
                 .displayName("Mesos Applications"));
-
-        if (Entities.isManaged(this)) {
-            Entities.manage(slaves);
-            Entities.manage(frameworks);
-            Entities.manage(tasks);
-            Entities.manage(applications);
-        }
 
         if (config().get(SDN_ENABLE) && config().get(SDN_PROVIDER_SPEC) != null) {
             EntitySpec entitySpec = EntitySpec.create(config().get(SDN_PROVIDER_SPEC));
             entitySpec.configure(MesosAttributes.MESOS_CLUSTER, this);
             Entity sdn = addChild(entitySpec);
             sensors().set(SDN_PROVIDER, sdn);
-
-            if (Entities.isManaged(this)) {
-                Entities.manage(sdn);
-            }
         }
 
         sensors().set(MESOS_SLAVES, slaves);
@@ -432,7 +418,6 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
                     .configure(MesosFramework.FRAMEWORK_URL, url)
                     .configure(MesosFramework.MESOS_CLUSTER, this);
             MesosFramework added = sensors().get(MESOS_FRAMEWORKS).addMemberChild(frameworkSpec);
-            Entities.manage(added);
             added.start(ImmutableList.<Location>of());
         }
         return frameworkNames;
@@ -484,7 +469,6 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
                     .configure(MesosSlave.MESOS_CLUSTER, this)
                     .displayName("Mesos Slave (" + hostname + ")");
             MesosSlave added = sensors().get(MESOS_SLAVES).addMemberChild(slaveSpec);
-            Entities.manage(added);
             added.sensors().set(MesosSlave.SLAVE_ACTIVE, active);
             added.sensors().set(MesosSlave.HOSTNAME, hostname);
             added.sensors().set(MesosSlave.ADDRESS, hostname);
@@ -496,7 +480,6 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
             SubnetTier subnetTier = added.addChild(EntitySpec.create(SubnetTier.class)
                     .configure(SubnetTier.PORT_FORWARDER, portForwarder)
                     .configure(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL));
-            Entities.manage(subnetTier);
             Entities.start(subnetTier, ImmutableList.of(machine));
             added.sensors().set(MesosSlave.SUBNET_TIER, subnetTier);
         }
