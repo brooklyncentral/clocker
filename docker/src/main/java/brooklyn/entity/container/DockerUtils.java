@@ -224,8 +224,18 @@ public class DockerUtils {
     public static Optional<String> getContainerName(Entity target) {
         return Optional.fromNullable(target.sensors().get(DockerContainer.DOCKER_CONTAINER_NAME))
                 .or(Optional.fromNullable(target.config().get(DockerContainer.DOCKER_CONTAINER_NAME)))
-                .or(Optional.fromNullable(target.config().get(BrooklynCampConstants.PLAN_ID)))
+                .or(Optional.fromNullable(getContainerNameFromPlan(target)))
                 .transform(DockerUtils.ALLOWED);
+    }
+
+    private static String getContainerNameFromPlan(Entity target) {
+        String planId = target.config().get(BrooklynCampConstants.PLAN_ID);
+        if (planId != null) {
+            //Plan IDs are not unique even in a single application
+            return planId + "_" + target.getId();
+        } else {
+            return null;
+        }
     }
 
     /* Generate the address to use to talk to another target entity. */
