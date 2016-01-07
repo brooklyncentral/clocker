@@ -60,6 +60,7 @@ import org.apache.brooklyn.core.entity.EntityPredicates;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.entity.trait.Startable;
+import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.core.location.BasicLocationDefinition;
 import org.apache.brooklyn.core.location.BasicLocationRegistry;
 import org.apache.brooklyn.core.location.LocationConfigKeys;
@@ -159,8 +160,6 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
         sensors().set(MESOS_FRAMEWORKS, frameworks);
         sensors().set(MESOS_TASKS, tasks);
         sensors().set(MESOS_APPLICATIONS, applications);
-
-        sensors().set(Attributes.MAIN_URI, URI.create(config().get(MESOS_URL)));
     }
 
     @Override
@@ -325,6 +324,8 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
     }
 
     public void connectSensors() {
+       sensors().set(Attributes.MAIN_URI, URI.create(config().get(MESOS_URL)));
+
         HttpFeed.Builder httpFeedBuilder = HttpFeed.builder()
                 .entity(this)
                 .period(15, TimeUnit.SECONDS)
