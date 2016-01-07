@@ -14,7 +14,7 @@ This repository contains all of the required Brooklyn entities, locations and ex
 [![Build Status](https://api.travis-ci.org/brooklyncentral/clocker.svg?branch=master)](https://travis-ci.org/brooklyncentral/clocker)
 [![Latest Builds](http://img.shields.io/badge/version-1.1.0--SNAPSHOT-blue.svg?style=flat)](http://clocker-latest.s3-website-eu-west-1.amazonaws.com/) 
 [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/brooklyncentral/clocker)
-<!--- CLOCKER_VERSION_BELOW release --->
+<!-- CLOCKER_VERSION_BELOW -->
 [![Docker Image](https://badge.imagelayers.io/clockercentral/clocker:1.1.0-PREVIEW.20160107.svg)](https://imagelayers.io/?images=clockercentral/clocker:1.1.0-PREVIEW.20160107)
 
 ## Getting started
@@ -36,13 +36,13 @@ depending on your choice of SDN provider.
 
 ### Using the latest Clocker release
 
-<!-- CLOCKER_VERSION_BELOW release -->
+<!-- CLOCKER_VERSION_BELOW -->
 The latest version of Clocker is [1.1.0-PREVIEW.20160107](https://github.com/brooklyncentral/clocker/releases/tag/v1.1.0-PREVIEW.20160107).
 You can deploy your own **Docker Cloud** with a Weave SDN by running these commands with the _network_ argument
 st to `weave`, to use Project Calico as your SDN provider, change the last argument to `calico` instead:
 ```Bash
 % wget --no-check-certificate --quiet \
-    -O brooklyn-clocker-dist.tar.gz http://git.io/vRu1e
+    -O brooklyn-clocker-dist.tar.gz http://git.io/vuiyr
 % tar zxf brooklyn-clocker-dist.tar.gz
 % cd brooklyn-clocker
 % ./bin/clocker.sh location network
@@ -118,20 +118,19 @@ services:
 
 ### Building from source
 
-<!-- CLOCKER_VERSION_BELOW master -->
 The master branch of Clocker is at version [1.1.0-SNAPSHOT](http://github.com/brooklyncentral/clocker/).
 Build and run this version of Clocker from source as follows:
 
 ```Bash
-    % git clone https://github.com/brooklyncentral/clocker.git
-    ...
-    % cd clocker
-    % mvn clean install
-    ...
-    % tar zxf examples/target/brooklyn-clocker-dist.tar.gz
-    % cd brooklyn-clocker
-    % ./bin/clocker.sh location network
-    ...
+% git clone https://github.com/brooklyncentral/clocker.git
+...
+% cd clocker
+% mvn clean install
+...
+% tar zxf examples/target/brooklyn-clocker-dist.tar.gz
+% cd brooklyn-clocker
+% ./bin/clocker.sh location network
+...
 ```
 
 If you just want to test the latest code, then our [Travis CI](https://travis-ci.org/brooklyncentral/clocker)
@@ -151,4 +150,4 @@ community [mailing list](https://brooklyn.incubator.apache.org/community/). We a
 Please visit the [Wiki](https://github.com/brooklyncentral/clocker/wiki) for more details.
 
 ----
-Copyright 2014-2015 by Cloudsoft Corporation Limited.
+Copyright 2014-2016 by Cloudsoft Corporation Limited.
