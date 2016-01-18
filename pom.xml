@@ -50,7 +50,7 @@
 
         <!-- Dependencies -->
         <jclouds.groupId>io.cloudsoft.jclouds</jclouds.groupId> <!-- JCLOUDS_GROUPID_VERSION -->
-        <jclouds.version>1.9.2-ea-cloudsoft.20160113</jclouds.version> <!-- JCLOUDS_VERSION -->
+        <jclouds.version>1.9.2</jclouds.version> <!-- JCLOUDS_VERSION -->
 
         <!-- Testing -->
         <testng.version>6.8</testng.version>
