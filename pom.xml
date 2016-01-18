@@ -49,7 +49,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <!-- Dependencies -->
-        <jclouds.groupId>io.cloudsoft.jclouds</jclouds.groupId> <!-- JCLOUDS_GROUPID_VERSION -->
+        <jclouds.groupId>org.apache.jclouds</jclouds.groupId> <!-- JCLOUDS_GROUPID_VERSION -->
         <jclouds.version>1.9.2</jclouds.version> <!-- JCLOUDS_VERSION -->
 
         <!-- Testing -->
