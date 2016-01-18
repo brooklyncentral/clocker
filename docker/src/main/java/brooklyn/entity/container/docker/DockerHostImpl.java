@@ -672,8 +672,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                     VirtualGuestApi api = ((JcloudsLocation) location).getComputeService().getContext().unwrapApi(SoftLayerApi.class).getVirtualGuestApi();
                     JcloudsSshMachineLocation machine = (JcloudsSshMachineLocation) getDriver().getLocation();
                     Long serverId = Long.parseLong(machine.getNode().getId());
-                    // TODO getVirtualGuestFiltered(serverId, "primaryBackendNetworkComponent;primaryBackendNetworkComponent.networkVlan");
-                    VirtualGuest guest = api.getVirtualGuest(serverId);
+                    VirtualGuest guest = api.getVirtualGuestFiltered(serverId, "primaryBackendNetworkComponent;primaryBackendNetworkComponent.networkVlan");
                     vlanId = guest.getPrimaryBackendNetworkComponent().getNetworkVlan().getId();
                     Integer vlanNumber = guest.getPrimaryBackendNetworkComponent().getNetworkVlan().getVlanNumber();
                     ((EntityInternal) sensors().get(DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.SDN_PROVIDER)).sensors().set(SdnProvider.VLAN_ID, vlanId);
