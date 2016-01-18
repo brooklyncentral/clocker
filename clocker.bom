@@ -13,13 +13,13 @@
 # limitations under the License.
 
 brooklyn.catalog:
-  version: "1.1.0-ea-cloudsoft.20160113" # CLOCKER_VERSION
+  version: "1.1.0-PREVIEW.20160118" # CLOCKER_VERSION
 
   brooklyn.libraries:
 
-  - "http://ccweb.cloudsoftcorp.com/maven/libs-release-local/io/brooklyn/clocker/brooklyn-clocker-patches/1.1.0-ea-cloudsoft.20160113/brooklyn-clocker-patches-1.1.0-ea-cloudsoft.20160113.jar" # CLOCKER_VERSION
-  - "http://ccweb.cloudsoftcorp.com/maven/libs-release-local/io/brooklyn/clocker/brooklyn-clocker-docker/1.1.0-ea-cloudsoft.20160113/brooklyn-clocker-docker-1.1.0-ea-cloudsoft.20160113.jar" # CLOCKER_VERSION
-  - "http://ccweb.cloudsoftcorp.com/maven/libs-release-local/io/brooklyn/clocker/brooklyn-clocker-dist/1.1.0-ea-cloudsoft.20160113/brooklyn-clocker-dist-1.1.0-ea-cloudsoft.20160113.jar" # CLOCKER_VERSION
+  - "http://ccweb.cloudsoftcorp.com/maven/libs-release-local/io/brooklyn/clocker/brooklyn-clocker-patches/1.1.0-PREVIEW.20160118/brooklyn-clocker-patches-1.1.0-PREVIEW.20160118.jar" # CLOCKER_VERSION
+  - "http://ccweb.cloudsoftcorp.com/maven/libs-release-local/io/brooklyn/clocker/brooklyn-clocker-docker/1.1.0-PREVIEW.20160118/brooklyn-clocker-docker-1.1.0-PREVIEW.20160118.jar" # CLOCKER_VERSION
+  - "http://ccweb.cloudsoftcorp.com/maven/libs-release-local/io/brooklyn/clocker/brooklyn-clocker-dist/1.1.0-PREVIEW.20160118/brooklyn-clocker-dist-1.1.0-PREVIEW.20160118.jar" # CLOCKER_VERSION
   - "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/patch-softlayer-clocker-137.jar"
   - "https://oss.sonatype.org/content/repositories/releases/io/brooklyn/networking/brooklyn-networking-portforwarding/0.8.0-incubating/brooklyn-networking-portforwarding-0.8.0-incubating.jar" # ADVANCED_NETWORKING_VERSION
   - "https://oss.sonatype.org/content/repositories/releases/io/brooklyn/networking/brooklyn-networking-common/0.8.0-incubating/brooklyn-networking-common-0.8.0-incubating.jar" # ADVANCED_NETWORKING_VERSION
