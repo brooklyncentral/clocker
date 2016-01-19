@@ -65,6 +65,7 @@ import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.core.location.BasicLocationDefinition;
 import org.apache.brooklyn.core.location.BasicLocationRegistry;
+import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.core.location.dynamic.LocationOwner;
 import org.apache.brooklyn.enricher.stock.Enrichers;
 import org.apache.brooklyn.entity.group.BasicGroup;
@@ -77,6 +78,7 @@ import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess.ChildStartableMode;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
 import org.apache.brooklyn.policy.autoscaling.AutoScalerPolicy;
+import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import org.apache.brooklyn.util.core.ResourceUtils;
@@ -370,7 +372,12 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
     }
 
     @Override
-    public void doStart(Collection<? extends Location> locations) {
+    public void doStart(Collection<? extends Location> locs) {
+        if (locs != null && !locs.isEmpty()) {
+            addLocations(locs);
+        }
+        List<Location> locations = MutableList.copyOf(Locations.getLocationsCheckingAncestors(locs, this));
+
         sensors().set(SERVICE_UP, Boolean.FALSE);
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
 

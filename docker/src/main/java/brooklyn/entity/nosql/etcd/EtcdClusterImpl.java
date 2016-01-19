@@ -19,6 +19,7 @@
 package brooklyn.entity.nosql.etcd;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -45,11 +46,13 @@ import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic.ServiceNotUpLogic;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
+import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.core.sensor.DependentConfiguration;
 import org.apache.brooklyn.entity.group.AbstractMembershipTrackingPolicy;
 import org.apache.brooklyn.entity.group.Cluster;
 import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.group.DynamicClusterImpl;
+import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.time.Duration;
 import org.apache.brooklyn.util.time.Time;
@@ -73,7 +76,12 @@ public class EtcdClusterImpl extends DynamicClusterImpl implements EtcdCluster {
     }
 
     @Override
-    public void start(Collection<? extends Location> locations) {
+    public void start(Collection<? extends Location> locs) {
+        if (locs != null && !locs.isEmpty()) {
+            addLocations(locs);
+        }
+        List<Location> locations = MutableList.copyOf(Locations.getLocationsCheckingAncestors(locs, this));
+
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
 
         connectSensors();

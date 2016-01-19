@@ -43,12 +43,14 @@ import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.location.BasicLocationDefinition;
 import org.apache.brooklyn.core.location.BasicLocationRegistry;
+import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.core.location.dynamic.LocationOwner;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.feed.http.HttpFeed;
 import org.apache.brooklyn.feed.http.HttpPollConfig;
 import org.apache.brooklyn.feed.http.HttpValueFunctions;
 import org.apache.brooklyn.feed.http.JsonFunctions;
+import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.guava.Functionals;
 import org.apache.brooklyn.util.net.Urls;
@@ -163,7 +165,12 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
     }
  
     @Override
-    public void start(Collection<? extends Location> locations) {
+    public void start(Collection<? extends Location> locs) {
+        if (locs != null && !locs.isEmpty()) {
+            addLocations(locs);
+        }
+        List<Location> locations = MutableList.copyOf(Locations.getLocationsCheckingAncestors(locs, this));
+
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
 
         connectSensors();

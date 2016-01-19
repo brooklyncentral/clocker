@@ -43,6 +43,7 @@ import org.apache.brooklyn.core.entity.EntityFunctions;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
+import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.entity.group.Cluster;
 import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.stock.BasicStartableImpl;
@@ -89,7 +90,12 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
     }
 
     @Override
-    public void start(Collection<? extends Location> locations) {
+    public void start(Collection<? extends Location> locs) {
+        if (locs != null && !locs.isEmpty()) {
+            addLocations(locs);
+        }
+        List<Location> locations = MutableList.copyOf(Locations.getLocationsCheckingAncestors(locs, this));
+
         sensors().set(SERVICE_UP, Boolean.FALSE);
 
         connectSensors();
