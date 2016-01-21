@@ -43,6 +43,7 @@ import org.apache.brooklyn.core.effector.ssh.SshEffectorTasks;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityPredicates;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
+import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.core.location.Machines;
 import org.apache.brooklyn.entity.group.BasicGroup;
 import org.apache.brooklyn.entity.group.DynamicGroup;
@@ -184,7 +185,10 @@ public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule
     public Object getNetworkMutex() { return networkMutex; }
 
     @Override
-    public void start(Collection<? extends Location> locations) {
+    public void start(Collection<? extends Location> locs) {
+        addLocations(locs);
+        List<Location> locations = MutableList.copyOf(Locations.getLocationsCheckingAncestors(locs, this));
+
         sensors().set(SERVICE_UP, Boolean.FALSE);
 
         // Add ouserlves as an extension to the Docker location

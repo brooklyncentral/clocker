@@ -63,6 +63,7 @@ import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.location.BasicLocationDefinition;
 import org.apache.brooklyn.core.location.BasicLocationRegistry;
 import org.apache.brooklyn.core.location.LocationConfigKeys;
+import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.core.location.cloud.CloudLocationConfig;
 import org.apache.brooklyn.core.location.dynamic.LocationOwner;
 import org.apache.brooklyn.entity.group.BasicGroup;
@@ -240,7 +241,10 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
     }
 
     @Override
-    public void doStart(Collection<? extends Location> locations) {
+    public void doStart(Collection<? extends Location> locs) {
+        addLocations(locs);
+        List<Location> locations = MutableList.copyOf(Locations.getLocationsCheckingAncestors(locs, this));
+
         sensors().set(SERVICE_UP, Boolean.FALSE);
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
 

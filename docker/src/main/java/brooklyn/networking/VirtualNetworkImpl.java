@@ -16,6 +16,7 @@
 package brooklyn.networking;
 
 import java.util.Collection;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,8 +31,10 @@ import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
+import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.entity.stock.BasicStartableImpl;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
+import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.text.StringFunctions;
@@ -57,7 +60,10 @@ public class VirtualNetworkImpl extends BasicStartableImpl implements VirtualNet
     }
 
     @Override
-    public void start(Collection<? extends Location> locations) {
+    public void start(Collection<? extends Location> locs) {
+        addLocations(locs);
+        List<Location> locations = MutableList.copyOf(Locations.getLocationsCheckingAncestors(locs, this));
+
         sensors().set(SERVICE_UP, Boolean.FALSE);
 
         super.start(locations);

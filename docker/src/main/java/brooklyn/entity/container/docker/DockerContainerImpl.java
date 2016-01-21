@@ -62,6 +62,7 @@ import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.core.location.LocationConfigKeys;
+import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.core.location.cloud.CloudLocationConfig;
 import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
@@ -606,7 +607,10 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     }
 
     @Override
-    public void start(Collection<? extends Location> locations) {
+    public void start(Collection<? extends Location> locs) {
+        addLocations(locs);
+        List<Location> locations = MutableList.copyOf(Locations.getLocationsCheckingAncestors(locs, this));
+
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
         try {
             Boolean started = config().get(SoftwareProcess.ENTITY_STARTED);
