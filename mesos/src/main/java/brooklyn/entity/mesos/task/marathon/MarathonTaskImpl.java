@@ -249,9 +249,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
 
     @Override
     public void start(Collection<? extends Location> locs) {
-        if (locs != null && !locs.isEmpty()) {
-            addLocations(locs);
-        }
+        addLocations(locs);
         List<Location> locations = MutableList.copyOf(Locations.getLocationsCheckingAncestors(locs, this));
 
         super.start(locations);

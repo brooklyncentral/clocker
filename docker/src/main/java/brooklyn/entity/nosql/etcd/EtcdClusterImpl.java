@@ -77,9 +77,7 @@ public class EtcdClusterImpl extends DynamicClusterImpl implements EtcdCluster {
 
     @Override
     public void start(Collection<? extends Location> locs) {
-        if (locs != null && !locs.isEmpty()) {
-            addLocations(locs);
-        }
+        addLocations(locs);
         List<Location> locations = MutableList.copyOf(Locations.getLocationsCheckingAncestors(locs, this));
 
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
@@ -102,7 +100,7 @@ public class EtcdClusterImpl extends DynamicClusterImpl implements EtcdCluster {
     }
 
     protected void connectSensors() {
-        addPolicy(PolicySpec.create(MemberTrackingPolicy.class)
+        policies().add(PolicySpec.create(MemberTrackingPolicy.class)
                 .displayName("EtcdCluster node tracker")
                 .configure("sensorsToTrack", ImmutableSet.of(Attributes.HOSTNAME))
                 .configure("group", this));

@@ -186,9 +186,7 @@ public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule
 
     @Override
     public void start(Collection<? extends Location> locs) {
-        if (locs != null && !locs.isEmpty()) {
-            addLocations(locs);
-        }
+        addLocations(locs);
         List<Location> locations = MutableList.copyOf(Locations.getLocationsCheckingAncestors(locs, this));
 
         sensors().set(SERVICE_UP, Boolean.FALSE);

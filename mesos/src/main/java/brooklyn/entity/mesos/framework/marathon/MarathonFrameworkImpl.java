@@ -166,9 +166,7 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
  
     @Override
     public void start(Collection<? extends Location> locs) {
-        if (locs != null && !locs.isEmpty()) {
-            addLocations(locs);
-        }
+        addLocations(locs);
         List<Location> locations = MutableList.copyOf(Locations.getLocationsCheckingAncestors(locs, this));
 
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);

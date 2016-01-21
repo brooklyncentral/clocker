@@ -242,9 +242,7 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
 
     @Override
     public void doStart(Collection<? extends Location> locs) {
-        if (locs != null && !locs.isEmpty()) {
-            addLocations(locs);
-        }
+        addLocations(locs);
         List<Location> locations = MutableList.copyOf(Locations.getLocationsCheckingAncestors(locs, this));
 
         sensors().set(SERVICE_UP, Boolean.FALSE);
