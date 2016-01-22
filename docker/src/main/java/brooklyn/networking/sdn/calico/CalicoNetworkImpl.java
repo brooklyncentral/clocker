@@ -60,7 +60,7 @@ public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork 
         LOG.info("Starting Calico network id {}", getId());
         super.init();
 
-        EntitySpec<?> etcdNodeSpec = EntitySpec.create(getConfig(EtcdCluster.ETCD_NODE_SPEC, EntitySpec.create(EtcdNode.class)));
+        EntitySpec<?> etcdNodeSpec = EntitySpec.create(config().get(EtcdCluster.ETCD_NODE_SPEC));
         String etcdVersion = config().get(ETCD_VERSION);
         if (Strings.isNonBlank(etcdVersion)) {
             etcdNodeSpec.configure(SoftwareProcess.SUGGESTED_VERSION, etcdVersion);
@@ -76,14 +76,9 @@ public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork 
                 .configure(DynamicCluster.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .configure(DynamicCluster.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .displayName("Calico Etcd Cluster"));
-
-        if (Entities.isManaged(this)) {
-            Entities.manage(etcd);
-        }
-
         sensors().set(ETCD_CLUSTER, etcd);
 
-        EntitySpec<?> agentSpec = EntitySpec.create(getConfig(SDN_AGENT_SPEC, EntitySpec.create(CalicoNode.class)))
+        EntitySpec<?> agentSpec = EntitySpec.create(config().get(CALICO_NODE_SPEC))
                 .configure(CalicoNode.SDN_PROVIDER, this);
         String calicoVersion = config().get(CALICO_VERSION);
         if (Strings.isNonBlank(calicoVersion)) {
@@ -156,7 +151,6 @@ public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork 
                 .configure(CalicoNode.DOCKER_HOST, host)
                 .configure(CalicoNode.ETCD_NODE, node);
         CalicoNode agent = (CalicoNode) getAgents().addChild(spec);
-        Entities.manage(agent);
         getAgents().addMember(agent);
         agent.start(ImmutableList.of(machine));
         if (LOG.isDebugEnabled()) LOG.debug("{} added calico plugin {}", this, agent);
@@ -182,7 +176,7 @@ public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork 
     }
 
     static {
-        RendererHints.register(ETCD_CLUSTER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(ETCD_CLUSTER, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }

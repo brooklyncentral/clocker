@@ -522,7 +522,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         try {
             // Create a new container using jclouds Docker driver
             JcloudsSshMachineLocation container = (JcloudsSshMachineLocation) host.getJcloudsLocation().obtain(dockerFlags);
-            String containerId = container.getNode().getId();
+            String containerId = container.getJcloudsId();
             sensors().set(CONTAINER_ID, containerId);
 
             // Configure the host to allow remote access to bound container ports
@@ -570,7 +570,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 .configure("address", getSshHostAddress())
                 .configure(SshMachineLocation.SSH_HOST, getSshHostAddress().getHostName())
                 .configure(SshTool.PROP_HOST, getSshHostAddress().getHostName())
-                .configure(SshTool.PROP_PORT, container.getNode().getLoginPort())
+                .configure(SshTool.PROP_PORT, container.getSshHostAndPort().getPort())
                 .displayName(getDockerContainerName());
             DockerContainerLocation location = getManagementContext().getLocationManager().createLocation(spec);
 
@@ -693,9 +693,9 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     }
 
     static {
-        RendererHints.register(DOCKER_HOST, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(ENTITY, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(CONTAINER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(DOCKER_HOST, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(ENTITY, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(CONTAINER, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }

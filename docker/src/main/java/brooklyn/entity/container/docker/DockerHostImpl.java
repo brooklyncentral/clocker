@@ -66,7 +66,6 @@ import org.apache.brooklyn.api.policy.PolicySpec;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.effector.ssh.SshEffectorTasks;
-import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityFunctions;
 import org.apache.brooklyn.core.entity.EntityInternal;
@@ -183,14 +182,12 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 .configure(DynamicCluster.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .displayName("Docker Containers"));
         if (config().get(DockerInfrastructure.HA_POLICY_ENABLE)) {
-            containers.addPolicy(PolicySpec.create(ServiceReplacer.class)
+            containers.policies().add(PolicySpec.create(ServiceReplacer.class)
                     .configure(ServiceReplacer.FAILURE_SENSOR_TO_MONITOR, ServiceRestarter.ENTITY_RESTART_FAILED));
         }
         sensors().set(DOCKER_CONTAINER_CLUSTER, containers);
 
-        if (Entities.isManaged(this)) Entities.manage(containers);
-
-        addEnricher(Enrichers.builder()
+        enrichers().add(Enrichers.builder()
                 .propagating(ImmutableMap.of(DynamicCluster.GROUP_SIZE, DockerAttributes.DOCKER_CONTAINER_COUNT))
                 .from(containers)
                 .build());
@@ -519,7 +516,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         Location location = getManagementContext().getLocationRegistry().resolve(definition);
         sensors().set(DYNAMIC_LOCATION, location);
         sensors().set(LOCATION_NAME, location.getId());
-        getManagementContext().getLocationManager().manage(location);
 
         LOG.info("New Docker host location {} created", location);
         return (DockerHostLocation) location;
@@ -671,7 +667,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 if (vlanId == null) {
                     VirtualGuestApi api = ((JcloudsLocation) location).getComputeService().getContext().unwrapApi(SoftLayerApi.class).getVirtualGuestApi();
                     JcloudsSshMachineLocation machine = (JcloudsSshMachineLocation) getDriver().getLocation();
-                    Long serverId = Long.parseLong(machine.getNode().getId());
+                    Long serverId = Long.parseLong(machine.getJcloudsId());
                     VirtualGuest guest = api.getVirtualGuestFiltered(serverId, "primaryBackendNetworkComponent;primaryBackendNetworkComponent.networkVlan");
                     vlanId = guest.getPrimaryBackendNetworkComponent().getNetworkVlan().getId();
                     Integer vlanNumber = guest.getPrimaryBackendNetworkComponent().getNetworkVlan().getVlanNumber();
@@ -697,7 +693,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                     .config().get(WeaveContainer.WEAVE_PROXY_PORT);
             tlsEnabled = true;
         }
-        Maybe<SshMachineLocation> found = Machines.findUniqueSshMachineLocation(getLocations());
+        Maybe<SshMachineLocation> found = Machines.findUniqueMachineLocation(getLocations(), SshMachineLocation.class);
         String dockerLocationSpec = String.format("jclouds:docker:%s://%s:%s",
                 tlsEnabled ? "https" : "http", found.get().getSshHostAndPort().getHostText(), dockerPort);
 
@@ -730,7 +726,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         SubnetTier subnetTier = addChild(EntitySpec.create(SubnetTier.class, SubnetTierImpl.class)
                 .configure(SubnetTier.PORT_FORWARDER, portForwarder)
                 .configure(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL));
-        Entities.manage(subnetTier);
         subnetTier.start(ImmutableList.of(found.get()));
         sensors().set(DOCKER_HOST_SUBNET_TIER, subnetTier);
 
@@ -862,7 +857,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
                     // Create, manage and start the container
                     DockerContainer added = getDockerContainerCluster().addMemberChild(containerSpec);
-                    Entities.manage(added);
                     added.sensors().set(DockerContainer.CONTAINER_ID, containerId);
                     added.start(ImmutableList.of(getDynamicLocation().getMachine()));
                 }
@@ -918,8 +912,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
 
     static {
-        RendererHints.register(DOCKER_INFRASTRUCTURE, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(DOCKER_CONTAINER_CLUSTER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(DOCKER_INFRASTRUCTURE, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(DOCKER_CONTAINER_CLUSTER, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }

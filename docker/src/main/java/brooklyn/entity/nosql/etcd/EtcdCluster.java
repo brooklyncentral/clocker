@@ -50,7 +50,8 @@ public interface EtcdCluster extends DynamicCluster {
 
     @SetFromFlag("etcdNodeSpec")
     AttributeSensorAndConfigKey<EntitySpec<?>,EntitySpec<?>> ETCD_NODE_SPEC = ConfigKeys.newSensorAndConfigKey(
-            new TypeToken<EntitySpec<?>>() { }, "etcd.node.spec", "Etcd node specification");
+            new TypeToken<EntitySpec<?>>() { }, "etcd.node.spec", "Etcd node specification",
+            EntitySpec.create(EtcdNode.class));
 
     AttributeSensor<AtomicInteger> NODE_ID = Sensors.newSensor(AtomicInteger.class, "etcd.cluster.nodeId", "Counter for generating node IDs");
 

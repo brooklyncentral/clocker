@@ -44,7 +44,7 @@ public class CalicoNodeImpl extends SdnAgentImpl implements CalicoNode {
     }
 
     static {
-        RendererHints.register(ETCD_NODE, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(ETCD_NODE, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }

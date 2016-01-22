@@ -46,7 +46,7 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
         LOG.info("Starting Weave network id {}", getId());
         super.init();
 
-        EntitySpec<?> agentSpec = EntitySpec.create(getConfig(SDN_AGENT_SPEC, EntitySpec.create(WeaveContainer.class)))
+        EntitySpec<?> agentSpec = EntitySpec.create(config().get(WEAVE_ROUTER_SPEC))
                 .configure(WeaveContainer.WEAVE_PORT, config().get(WeaveNetwork.WEAVE_PORT))
                 .configure(WeaveContainer.SDN_PROVIDER, this);
         String weaveVersion = config().get(WEAVE_VERSION);
@@ -97,7 +97,6 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
         EntitySpec<?> spec = EntitySpec.create(sensors().get(SDN_AGENT_SPEC))
                 .configure(WeaveContainer.DOCKER_HOST, host);
         WeaveContainer agent = (WeaveContainer) getAgents().addChild(spec);
-        Entities.manage(agent);
         getAgents().addMember(agent);
         agent.start(ImmutableList.of(machine));
         LOG.debug("{} added Weave service {}", this, agent);
