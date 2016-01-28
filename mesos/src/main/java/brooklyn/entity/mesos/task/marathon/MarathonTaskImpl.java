@@ -455,7 +455,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
             for (Entity linked : links) {
                 Map<String, Object> linkVars = DockerUtils.generateLinks(getRunningEntity(), linked);
                 environment.putAll(linkVars);
-                Optional<String> alias = DockerUtils.getContainerName(linked);
+                Optional<String> alias = DockerUtils.getUniqueContainerName(linked);
                 if (alias.isPresent()) {
                     String targetAddress = DockerUtils.getTargetAddress(getRunningEntity(), linked);
                     extraHosts.put(alias.get(), targetAddress);

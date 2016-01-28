@@ -222,6 +222,17 @@ public class DockerUtils {
     }
 
     public static Optional<String> getContainerName(Entity target) {
+        Optional<String> unique = getUniqueContainerName(target);
+        if (unique.isPresent()) {
+            String name = unique.get();
+            int underscore = name.lastIndexOf('_');
+            return Optional.of(name.substring(0, underscore));
+        } else {
+            return Optional.absent();
+        }
+    }
+
+    public static Optional<String> getUniqueContainerName(Entity target) {
         return Optional.fromNullable(target.sensors().get(DockerContainer.DOCKER_CONTAINER_NAME))
                 .or(Optional.fromNullable(target.config().get(DockerContainer.DOCKER_CONTAINER_NAME)))
                 .or(Optional.fromNullable(getContainerNameFromPlan(target)))
