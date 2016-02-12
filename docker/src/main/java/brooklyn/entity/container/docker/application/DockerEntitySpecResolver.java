@@ -18,15 +18,16 @@ package brooklyn.entity.container.docker.application;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.brooklyn.api.entity.EntitySpec;
-import org.apache.brooklyn.api.mgmt.classloading.BrooklynClassLoadingContext;
-import org.apache.brooklyn.core.resolve.entity.AbstractEntitySpecResolver;
-import org.apache.brooklyn.core.resolve.entity.EntitySpecResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
+
+import org.apache.brooklyn.api.entity.EntitySpec;
+import org.apache.brooklyn.api.mgmt.classloading.BrooklynClassLoadingContext;
+import org.apache.brooklyn.core.resolve.entity.AbstractEntitySpecResolver;
+import org.apache.brooklyn.core.resolve.entity.EntitySpecResolver;
 
 import brooklyn.entity.container.DockerAttributes;
 

@@ -16,6 +16,7 @@
 package brooklyn.networking.sdn.calico;
 
 import org.apache.brooklyn.api.catalog.Catalog;
+import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
@@ -36,6 +37,8 @@ public interface CalicoNetwork extends DockerSdnProvider {
 
     @SetFromFlag("calicoVersion")
     ConfigKey<String> CALICO_VERSION = ConfigKeys.newStringConfigKey("calico.version", "The Calico SDN version number", "0.4.9");
+
+    ConfigKey<EntitySpec<?>> CALICO_NODE_SPEC = ConfigKeys.newConfigKeyWithDefault(SDN_AGENT_SPEC.getConfigKey(), EntitySpec.create(CalicoNode.class));
 
     @SetFromFlag("etcdVersion")
     ConfigKey<String> ETCD_VERSION = ConfigKeys.newStringConfigKey("etcd.version", "The Etcd version number", "2.0.11");

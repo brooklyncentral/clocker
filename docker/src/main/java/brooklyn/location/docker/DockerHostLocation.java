@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.api.client.util.Joiner;
+import com.google.common.base.Joiner;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -38,7 +38,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.NoMachinesAvailableException;
 import org.apache.brooklyn.config.ConfigKey;
@@ -247,7 +246,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             if (added == null) {
                 throw new NoMachinesAvailableException(String.format("Failed to create container at %s", dockerHost.getDockerHostName()));
             } else {
-                Entities.invokeEffector((EntityLocal) entity, added, Startable.START,  MutableMap.of("locations", ImmutableList.of(machine))).getUnchecked();
+                Entities.invokeEffector(entity, added, Startable.START,  MutableMap.of("locations", ImmutableList.of(machine))).getUnchecked();
             }
             DockerContainer dockerContainer = (DockerContainer) added;
 

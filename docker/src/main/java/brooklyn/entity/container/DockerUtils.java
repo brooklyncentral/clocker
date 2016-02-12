@@ -184,7 +184,7 @@ public class DockerUtils {
             } else if (sensor.getName().matches("docker\\.port\\.[0-9]+") ||
                     PortAttributeSensorAndConfigKey.class.isAssignableFrom(sensor.getClass())) {
                 AttributeSensor<String> target = DockerUtils.mappedPortSensor(sensor);
-                entity.addEnricher(subnetTier.hostAndPortTransformingEnricher(
+                entity.enrichers().add(subnetTier.hostAndPortTransformingEnricher(
                         EntityAndAttribute.create(entity, sensor), target));
                 LOG.debug("Mapped port sensor: origin={}, mapped={}", sensor.getName(), target.getName());
             }
@@ -409,7 +409,6 @@ public class DockerUtils {
         public void reloaded() {
             Location resolved = context.getLocationRegistry().resolve(definition);
             context.getLocationRegistry().updateDefinedLocation(definition);
-            context.getLocationManager().manage(resolved);
         }
     }
 

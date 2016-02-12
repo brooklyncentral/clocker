@@ -27,7 +27,6 @@ import org.jclouds.domain.Location;
 import org.jclouds.net.domain.IpPermission;
 import org.jclouds.net.domain.IpProtocol;
 
-import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.util.net.Cidr;
 
@@ -74,7 +73,7 @@ public class OpenStackNetworkProvisioner implements NetworkProvisioningExtension
         }
 
         // Use the OpenStack UUID as the virtual network id
-        ((EntityLocal) network).sensors().set(VirtualNetwork.NETWORK_ID, id);
+        network.sensors().set(VirtualNetwork.NETWORK_ID, id);
     }
 
     @Override

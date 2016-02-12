@@ -102,7 +102,7 @@ public class EtcdNodeImpl extends SoftwareProcessImpl implements EtcdNode {
     }
 
     static {
-        RendererHints.register(ETCD_CLUSTER, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(ETCD_CLUSTER, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }

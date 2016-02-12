@@ -113,6 +113,6 @@ public class VirtualNetworkImpl extends BasicStartableImpl implements VirtualNet
     static {
         RendererHints.register(Cidr.class, RendererHints.displayValue(StringFunctions.toStringFunction()));
 
-        RendererHints.register(NETWORKED_APPLICATIONS, new RendererHints.NamedActionWithUrl("Open", DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(NETWORKED_APPLICATIONS, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
     }
 }

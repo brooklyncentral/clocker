@@ -84,7 +84,7 @@ public class HAProxySshDriver extends AbstractSoftwareProcessSshDriver implement
         Map<Entity, String> targets = getEntity().sensors().get(HAProxyController.SERVER_POOL_TARGETS);
         LOG.info("Reconfiguring {} with: {}", getEntity(), targets.values());
         for (Entity server : targets.keySet()) {
-            Maybe<SshMachineLocation> machine = Machines.findUniqueSshMachineLocation(server.getLocations());
+            Maybe<SshMachineLocation> machine = Machines.findUniqueMachineLocation(server.getLocations(), SshMachineLocation.class);
             if (machine.isPresentAndNonNull()) {
             }
         }

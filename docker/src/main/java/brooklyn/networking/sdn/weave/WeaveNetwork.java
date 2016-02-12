@@ -16,6 +16,7 @@
 package brooklyn.networking.sdn.weave;
 
 import org.apache.brooklyn.api.catalog.Catalog;
+import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
@@ -35,5 +36,7 @@ public interface WeaveNetwork extends DockerSdnProvider {
 
     @SetFromFlag("weavePort")
     ConfigKey<Integer> WEAVE_PORT = WeaveContainer.WEAVE_PORT;
+
+    ConfigKey<EntitySpec<?>> WEAVE_ROUTER_SPEC = ConfigKeys.newConfigKeyWithDefault(SDN_AGENT_SPEC.getConfigKey(), EntitySpec.create(WeaveContainer.class));
 
 }

@@ -78,7 +78,6 @@ public class SdnUtils {
 
             // Start and then add this virtual network as a child of SDN_NETWORKS
             network = provider.sensors().get(SdnProvider.SDN_NETWORKS).addChild(networkSpec);
-            Entities.manage(network);
             Entities.start(network, provider.getLocations());
             Entities.waitForServiceUp(network);
         } else {

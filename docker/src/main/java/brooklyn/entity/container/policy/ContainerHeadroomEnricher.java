@@ -105,8 +105,8 @@ public class ContainerHeadroomEnricher extends AbstractEnricher {
             Preconditions.checkArgument(percent > 0d && percent < 1d, "Headroom percentage must be between 0.0 and 1.0: %f", percent);
         }
 
-        subscribe(entity, DockerInfrastructure.DOCKER_CONTAINER_COUNT, new Listener());
-        subscribe(entity, DockerInfrastructure.DOCKER_HOST_COUNT, new Listener());
+        subscriptions().subscribe(entity, DockerInfrastructure.DOCKER_CONTAINER_COUNT, new Listener());
+        subscriptions().subscribe(entity, DockerInfrastructure.DOCKER_HOST_COUNT, new Listener());
     }
 
     private class Listener implements SensorEventListener<Object> {

@@ -53,10 +53,11 @@ public interface DockerRegistry extends VanillaDockerApplication {
     AttributeSensorAndConfigKey<Entity, Entity> DOCKER_HOST = DockerContainer.DOCKER_HOST;
 
     ConfigKey<Map<String, Object>> DOCKER_CONTAINER_ENVIRONMENT = ConfigKeys.newConfigKeyWithDefault(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT.getConfigKey(),
-       ImmutableMap.<String, Object>of(
-                            "REGISTRY_HTTP_TLS_CERTIFICATE", "/certs/repo-cert.pem",
-                            "REGISTRY_HTTP_TLS_KEY", "/certs/repo-key.pem"
-            ));
+       ImmutableMap.<String, Object>builder()
+               .put("REGISTRY_HTTP_TLS_CERTIFICATE", "/certs/repo-cert.pem")
+               .put("REGISTRY_HTTP_TLS_KEY", "/certs/repo-key.pem")
+               .build());
 
-    AttributeSensor<List<String>> DOCKER_REGISTRY_CATALOG = Sensors.newSensor(new TypeToken<List<String>>(){}, "docker.registry.catalog", "The docker registry catalog, which lists all of the available repositories");
+    AttributeSensor<List<String>> DOCKER_REGISTRY_CATALOG = Sensors.newSensor(new TypeToken<List<String>>() { },
+            "docker.registry.catalog", "The docker registry catalog, which lists all of the available repositories");
 }
