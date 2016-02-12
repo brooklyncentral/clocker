@@ -1,12 +1,12 @@
 Clocker
 =======
 
-Clocker creates and manages a **[Docker](http://docker.io/)** cloud infrastructure. Clocker supports
+Clocker creates and manages a **[Docker](https://docker.com/)** cloud infrastructure. Clocker supports
 single-click deployment and runtime management of multi-node applications that can run on
 containers distributed across multiple hosts. Plugins are included for both
 **[Project Calico](https://github.com/Metaswitch/calico-docker/)** and **[Weave](https://github.com/weaveworks/weave/)**
 to provide seamless Software-Defined Networking integration. Application blueprints written for
-**[Apache Brooklyn](https://brooklyn.incubator.apache.org/)** can thus be deployed to a distributed
+**[Apache Brooklyn](https://brooklyn.apache.org/)** can thus be deployed to a distributed
 Docker Cloud infrastructure.
 
 This repository contains all of the required Brooklyn entities, locations and examples.
@@ -26,9 +26,9 @@ more existing machines for running Docker.
 
 If you are keen to peek under the covers, you will find the Docker Cloud infrastructure
 blueprints at either
-[docker-cloud-calico.yaml](https://raw.githubusercontent.com/brooklyncentral/clocker/master/examples/src/main/assembly/files/blueprints/docker-cloud-calico.yaml)
+[docker-cloud-calico.yaml](https://raw.githubusercontent.com/brooklyncentral/clocker/master/dist/src/main/assembly/files/blueprints/docker-cloud-calico.yaml)
 or
-[docker-cloud-weave.yaml](https://raw.githubusercontent.com/brooklyncentral/clocker/master/examples/src/main/assembly/files/blueprints/docker-cloud-weave.yaml)
+[docker-cloud-weave.yaml](https://raw.githubusercontent.com/brooklyncentral/clocker/master/dist/src/main/assembly/files/blueprints/docker-cloud-weave.yaml)
 depending on your choice of SDN provider. 
 
 ### Using the latest Clocker release
