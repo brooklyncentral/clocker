@@ -421,7 +421,8 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
                     .configure(MesosFramework.FRAMEWORK_PID, pid)
                     .configure(MesosFramework.FRAMEWORK_NAME, name)
                     .configure(MesosFramework.FRAMEWORK_URL, url)
-                    .configure(MesosFramework.MESOS_CLUSTER, this);
+                    .configure(MesosFramework.MESOS_CLUSTER, this)
+                    .displayName(String.format("%s Framework", Strings.toInitialCapOnly(name)));
             MesosFramework added = sensors().get(MESOS_FRAMEWORKS).addMemberChild(frameworkSpec);
             added.start(ImmutableList.<Location>of());
         }

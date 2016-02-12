@@ -145,6 +145,9 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
     }
 
     @Override
+    public String getDisplayName() { return String.format("Marathon Task (%s)", sensors().get(APPLICATION_ID)); }
+
+    @Override
     public String getIconUrl() { return "classpath://container.png"; }
 
     private String getMarathonApplicationId() {

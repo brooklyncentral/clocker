@@ -55,6 +55,7 @@ import org.apache.brooklyn.feed.http.JsonFunctions;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import org.apache.brooklyn.util.guava.Functionals;
+import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
 
 import brooklyn.entity.mesos.MesosCluster;
@@ -163,7 +164,8 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
                                 .configure(MesosTask.MANAGED, Boolean.FALSE)
                                 .configure(MesosTask.MESOS_CLUSTER, mesosCluster)
                                 .configure(MesosTask.TASK_NAME, name)
-                                .configure(MesosTask.FRAMEWORK, this);
+                                .configure(MesosTask.FRAMEWORK, this)
+                                .displayName(String.format("Mesos Task (%s)", name));
 
                         task = getTaskCluster().addMemberChild(taskSpec);
                         task.start(ImmutableList.<Location>of());
