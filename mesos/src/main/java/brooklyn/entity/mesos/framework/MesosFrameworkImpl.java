@@ -154,7 +154,7 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
                     String state = json.get("state").getAsString();
 
                     Optional<Entity> entity = Iterables.tryFind(sensors().get(FRAMEWORK_TASKS).getMembers(),
-                              Predicates.compose(Predicates.equalTo(name), EntityFunctions.attribute(MesosTask.TASK_NAME)));
+                              Predicates.compose(Predicates.equalTo(id), EntityFunctions.attribute(MesosTask.TASK_ID)));
                     MesosTask task = null;
                     if (entity.isPresent()) {
                         task = (MesosTask) entity.get();
@@ -166,7 +166,6 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
                                 .configure(MesosTask.FRAMEWORK, this);
 
                         task = getTaskCluster().addMemberChild(taskSpec);
-                        Entities.manage(task);
                         task.start(ImmutableList.<Location>of());
                     }
                     if (task != null) {
