@@ -78,7 +78,7 @@ public class MarathonPortForwarder implements PortForwarder {
         this.cluster = cluster;
         this.portmap = MutableMap.of();
         this.slave = cluster.getMesosSlave(marathonHostname);
-        Maybe<SshMachineLocation> machine = Machines.findUniqueSshMachineLocation(slave.getLocations());
+        Maybe<SshMachineLocation> machine = Machines.findUniqueMachineLocation(slave.getLocations(), SshMachineLocation.class);
         this.host = machine.get();
     }
 

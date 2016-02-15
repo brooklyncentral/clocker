@@ -45,6 +45,7 @@ import com.google.gson.JsonObject;
 import org.apache.brooklyn.api.entity.Application;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
+import org.apache.brooklyn.api.entity.Group;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationDefinition;
 import org.apache.brooklyn.api.location.LocationRegistry;
@@ -420,7 +421,8 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
                     .configure(MesosFramework.FRAMEWORK_PID, pid)
                     .configure(MesosFramework.FRAMEWORK_NAME, name)
                     .configure(MesosFramework.FRAMEWORK_URL, url)
-                    .configure(MesosFramework.MESOS_CLUSTER, this);
+                    .configure(MesosFramework.MESOS_CLUSTER, this)
+                    .displayName(String.format("%s Framework", Strings.toInitialCapOnly(name)));
             MesosFramework added = sensors().get(MESOS_FRAMEWORKS).addMemberChild(frameworkSpec);
             added.start(ImmutableList.<Location>of());
         }
@@ -435,57 +437,72 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
             String id = slave.get("id").getAsString();
             String hostname = slave.get("hostname").getAsString();
             Double registered = slave.get("registered_time").getAsDouble();
-            slaveIds.add(id);
+            Group group = sensors().get(MESOS_SLAVES);
 
-            Optional<Entity> entity = Iterables.tryFind(sensors().get(MESOS_SLAVES).getMembers(),
+            Optional<Entity> entity = Iterables.tryFind(group.getMembers(),
                       Predicates.compose(Predicates.equalTo(id), EntityFunctions.attribute(MesosSlave.MESOS_SLAVE_ID)));
             if (entity.isPresent()) {
-                entity.get().sensors().set(MesosSlave.SLAVE_ACTIVE, active); continue;
+                Entity found = entity.get();
+                found.sensors().set(MesosSlave.SLAVE_ACTIVE, active);
+                if (!active) {
+                    Lifecycle state = found.sensors().get(Attributes.SERVICE_STATE_ACTUAL);
+                    if (Lifecycle.ON_FIRE.equals(state) || Lifecycle.STARTING.equals(state)) {
+                        continue;
+                    } else if (Lifecycle.STOPPING.equals(state) || Lifecycle.STOPPED.equals(state)) {
+                        group.removeMember(found);
+                        group.removeChild(found);
+                        Entities.unmanage(found);
+                    } else {
+                        ServiceStateLogic.setExpectedState(found, Lifecycle.STOPPING);
+                    }
+                }
+            } else if (active) {
+                LocationSpec<SshMachineLocation> spec = LocationSpec.create(SshMachineLocation.class)
+                                .configure(SshMachineLocation.SSH_HOST, hostname)
+                                .configure("address", InetAddress.getByName(hostname))
+                                .displayName(hostname);
+                if (config().get(MESOS_SLAVE_ACCESSIBLE)) {
+                    spec.configure(CloudLocationConfig.WAIT_FOR_SSHABLE, "true")
+                        .configure(SshMachineLocation.DETECT_MACHINE_DETAILS, true)
+                        .configure(SshMachineLocation.SSH_PORT, config().get(MesosSlave.SLAVE_SSH_PORT))
+                        .configure(LocationConfigKeys.USER, config().get(MesosSlave.SLAVE_SSH_USER))
+                        .configure(LocationConfigKeys.PASSWORD, config().get(MesosSlave.SLAVE_SSH_PASSWORD))
+                        .configure(SshTool.PROP_PASSWORD, config().get(MesosSlave.SLAVE_SSH_PASSWORD))
+                        .configure(SshTool.PROP_PORT, config().get(MesosSlave.SLAVE_SSH_PORT))
+                        .configure(LocationConfigKeys.PRIVATE_KEY_DATA, config().get(MesosSlave.SLAVE_SSH_PRIVATE_KEY_DATA))
+                        .configure(LocationConfigKeys.PRIVATE_KEY_FILE, config().get(MesosSlave.SLAVE_SSH_PRIVATE_KEY_FILE));
+                } else {
+                    spec.configure(CloudLocationConfig.WAIT_FOR_SSHABLE, "false")
+                        .configure(SshMachineLocation.DETECT_MACHINE_DETAILS, false);
+                }
+                SshMachineLocation machine = getManagementContext().getLocationManager().createLocation(spec);
+
+                // Setup port forwarding
+                MarathonPortForwarder portForwarder = new MarathonPortForwarder();
+                portForwarder.setManagementContext(getManagementContext());
+
+                EntitySpec<MesosSlave> slaveSpec = EntitySpec.create(MesosSlave.class)
+                        .configure(MesosSlave.MESOS_SLAVE_ID, id)
+                        .configure(MesosSlave.REGISTERED_AT, registered.longValue())
+                        .configure(MesosSlave.MESOS_CLUSTER, this)
+                        .displayName("Mesos Slave (" + hostname + ")");
+                MesosSlave added = sensors().get(MESOS_SLAVES).addMemberChild(slaveSpec);
+                added.sensors().set(MesosSlave.SLAVE_ACTIVE, active);
+                added.sensors().set(MesosSlave.HOSTNAME, hostname);
+                added.sensors().set(MesosSlave.ADDRESS, hostname);
+
+                added.start(ImmutableList.of(machine));
+                portForwarder.init(hostname, this);
+
+                // Setup subnet tier
+                SubnetTier subnetTier = added.addChild(EntitySpec.create(SubnetTier.class)
+                        .configure(SubnetTier.PORT_FORWARDER, portForwarder)
+                        .configure(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL));
+                Entities.start(subnetTier, ImmutableList.of(machine));
+                added.sensors().set(MesosSlave.SUBNET_TIER, subnetTier);
             }
 
-            LocationSpec<SshMachineLocation> spec = LocationSpec.create(SshMachineLocation.class)
-                            .configure(SshMachineLocation.SSH_HOST, hostname)
-                            .configure("address", InetAddress.getByName(hostname))
-                            .displayName(hostname);
-            if (config().get(MESOS_SLAVE_ACCESSIBLE)) {
-                spec.configure(CloudLocationConfig.WAIT_FOR_SSHABLE, "true")
-                    .configure(SshMachineLocation.DETECT_MACHINE_DETAILS, true)
-                    .configure(SshMachineLocation.SSH_PORT, config().get(MesosSlave.SLAVE_SSH_PORT))
-                    .configure(LocationConfigKeys.USER, config().get(MesosSlave.SLAVE_SSH_USER))
-                    .configure(LocationConfigKeys.PASSWORD, config().get(MesosSlave.SLAVE_SSH_PASSWORD))
-                    .configure(SshTool.PROP_PASSWORD, config().get(MesosSlave.SLAVE_SSH_PASSWORD))
-                    .configure(SshTool.PROP_PORT, config().get(MesosSlave.SLAVE_SSH_PORT))
-                    .configure(LocationConfigKeys.PRIVATE_KEY_DATA, config().get(MesosSlave.SLAVE_SSH_PRIVATE_KEY_DATA))
-                    .configure(LocationConfigKeys.PRIVATE_KEY_FILE, config().get(MesosSlave.SLAVE_SSH_PRIVATE_KEY_FILE));
-            } else {
-                spec.configure(CloudLocationConfig.WAIT_FOR_SSHABLE, "false")
-                    .configure(SshMachineLocation.DETECT_MACHINE_DETAILS, false);
-            }
-            SshMachineLocation machine = getManagementContext().getLocationManager().createLocation(spec);
-
-            // Setup port forwarding
-            MarathonPortForwarder portForwarder = new MarathonPortForwarder();
-            portForwarder.setManagementContext(getManagementContext());
-
-            EntitySpec<MesosSlave> slaveSpec = EntitySpec.create(MesosSlave.class)
-                    .configure(MesosSlave.MESOS_SLAVE_ID, id)
-                    .configure(MesosSlave.REGISTERED_AT, registered.longValue())
-                    .configure(MesosSlave.MESOS_CLUSTER, this)
-                    .displayName("Mesos Slave (" + hostname + ")");
-            MesosSlave added = sensors().get(MESOS_SLAVES).addMemberChild(slaveSpec);
-            added.sensors().set(MesosSlave.SLAVE_ACTIVE, active);
-            added.sensors().set(MesosSlave.HOSTNAME, hostname);
-            added.sensors().set(MesosSlave.ADDRESS, hostname);
-
-            added.start(ImmutableList.of(machine));
-            portForwarder.init(hostname, this);
-
-            // Setup subnet tier
-            SubnetTier subnetTier = added.addChild(EntitySpec.create(SubnetTier.class)
-                    .configure(SubnetTier.PORT_FORWARDER, portForwarder)
-                    .configure(SubnetTier.SUBNET_CIDR, Cidr.UNIVERSAL));
-            Entities.start(subnetTier, ImmutableList.of(machine));
-            added.sensors().set(MesosSlave.SUBNET_TIER, subnetTier);
+            if (active) slaveIds.add(id);
         }
         return slaveIds;
     }
