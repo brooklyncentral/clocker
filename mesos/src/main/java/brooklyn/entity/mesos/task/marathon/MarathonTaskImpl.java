@@ -222,6 +222,22 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                                     }
                                 }))
                         .onFailureOrException(Functions.<String>constant(null)))
+                .poll(new HttpPollConfig<String>(TASK_ID)
+                        .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(), JsonFunctions.walk("tasks"),
+                                new Function<JsonElement, String>() {
+                                    @Override
+                                    public String apply(JsonElement input) {
+                                        JsonArray tasks = input.getAsJsonArray();
+                                        for (JsonElement each : tasks) {
+                                            JsonElement id = each.getAsJsonObject().get("id");
+                                            if (id != null && !id.isJsonNull()) {
+                                                return id.getAsString();
+                                            }
+                                        }
+                                        return null;
+                                    }
+                                }))
+                        .onFailureOrException(Functions.<String>constant(null)))
                 .poll(new HttpPollConfig<String>(Attributes.ADDRESS)
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(), JsonFunctions.walk("tasks"),
                                 new Function<JsonElement, String>() {
