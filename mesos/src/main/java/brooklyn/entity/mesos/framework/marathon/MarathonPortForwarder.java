@@ -44,7 +44,6 @@ import org.apache.brooklyn.util.ssh.BashCommands;
 
 import brooklyn.entity.mesos.MesosCluster;
 import brooklyn.entity.mesos.MesosSlave;
-import brooklyn.location.mesos.framework.marathon.MarathonTaskLocation;
 import brooklyn.networking.common.subnet.PortForwarder;
 import brooklyn.networking.sdn.mesos.CalicoModule;
 
@@ -141,20 +140,17 @@ public class MarathonPortForwarder implements PortForwarder {
     @Override
     public HostAndPort openPortForwarding(HasNetworkAddresses targetMachine, int targetPort, Optional<Integer> optionalPublicPort,
             Protocol protocol, Cidr accessingCidr) {
-        if (targetMachine instanceof MarathonTaskLocation) {
-            PortForwardManager pfw = getPortForwardManager();
-            HostAndPort publicSide;
-            if (optionalPublicPort.isPresent()) {
-                int publicPort = optionalPublicPort.get();
-                publicSide = HostAndPort.fromParts(marathonHostname, publicPort);
-            } else {
-                publicSide = HostAndPort.fromParts(marathonHostname, targetPort);
-            }
-            pfw.associate(marathonHostname, publicSide, (MarathonTaskLocation) targetMachine, targetPort);
-            return publicSide;
+        PortForwardManager pfw = getPortForwardManager();
+        HostAndPort publicSide;
+        if (optionalPublicPort.isPresent()) {
+            int publicPort = optionalPublicPort.get();
+            publicSide = HostAndPort.fromParts(marathonHostname, publicPort);
         } else {
-            throw new IllegalArgumentException("Cannot forward ports for a non-Marathon target: " + targetMachine);
+            publicSide = HostAndPort.fromParts(marathonHostname, targetPort);
         }
+        pfw.associate(marathonHostname, publicSide, (Location) targetMachine, targetPort);
+        portmap.put(publicSide, HostAndPort.fromParts(targetMachine.getHostname(), targetPort));
+        return publicSide;
     }
 
     @Override

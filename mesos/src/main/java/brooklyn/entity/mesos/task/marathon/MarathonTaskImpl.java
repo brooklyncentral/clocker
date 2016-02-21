@@ -65,6 +65,7 @@ import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.core.location.LocationConfigKeys;
 import org.apache.brooklyn.core.location.Locations;
+import org.apache.brooklyn.core.location.Machines;
 import org.apache.brooklyn.core.location.cloud.CloudLocationConfig;
 import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.core.sensor.DependentConfiguration;
@@ -80,12 +81,12 @@ import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.collections.MutableSet;
-import org.apache.brooklyn.util.http.HttpTool;
-import org.apache.brooklyn.util.http.HttpToolResponse;
 import org.apache.brooklyn.util.core.internal.ssh.SshTool;
 import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.guava.Functionals;
+import org.apache.brooklyn.util.http.HttpTool;
+import org.apache.brooklyn.util.http.HttpToolResponse;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Protocol;
 import org.apache.brooklyn.util.net.Urls;
@@ -639,7 +640,9 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
     @Override
     public MarathonTaskLocation createLocation(Map<String, ?> flags) {
         Entity entity = getRunningEntity();
-        SubnetTier subnet = getMesosCluster().getMesosSlave(getHostname()).getSubnetTier();
+        MesosSlave slave = getMesosCluster().getMesosSlave(getHostname());
+        SshMachineLocation machine = Machines.findUniqueMachineLocation(slave.getLocations(), SshMachineLocation.class).get();
+        SubnetTier subnet = slave.getSubnetTier();
         Boolean sdn = config().get(MesosCluster.SDN_ENABLE);
 
         // Configure the entity subnet
@@ -666,14 +669,13 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                         for (int i = 0; i < array.size(); i++) {
                             int hostPort = array.get(i).getAsInt();
                             int containerPort = portBindings.get(i).getKey();
-                            String target = (sdn ? sensors().get(Attributes.SUBNET_ADDRESS) : getId()) + ":" + containerPort;
+                            String address = sdn ? sensors().get(Attributes.SUBNET_ADDRESS) : getId();
+                            String target = address + ":" + containerPort;
                             tcpMappings.put(hostPort, target);
                             if (containerPort == 22) { // XXX should be a better way?
                                 sensors().set(DockerAttributes.DOCKER_MAPPED_SSH_PORT,
                                         HostAndPort.fromParts(getHostname(), hostPort).toString());
                             }
-                            subnet.getPortForwarder().openPortForwarding(HostAndPort.fromString(target), Optional.of(hostPort), Protocol.TCP, Cidr.UNIVERSAL);
-                            subnet.getPortForwarder().openFirewallPort(entity, hostPort, Protocol.TCP, Cidr.UNIVERSAL);
                         }
                     }
                 }
@@ -683,16 +685,16 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         }
 
         // Create our wrapper location around the task
+        Boolean useSsh = config().get(DockerAttributes.DOCKER_USE_SSH);
         LocationSpec<MarathonTaskLocation> spec = LocationSpec.create(MarathonTaskLocation.class)
                 .parent(getMarathonFramework().getDynamicLocation())
                 .configure(flags)
                 .configure(DynamicLocation.OWNER, this)
                 .configure("entity", getRunningEntity())
                 .configure(CloudLocationConfig.WAIT_FOR_SSHABLE, "false")
-                .configure(SshMachineLocation.DETECT_MACHINE_DETAILS, false)
+                .configure(SshMachineLocation.DETECT_MACHINE_DETAILS, useSsh)
                 .configure(SshMachineLocation.TCP_PORT_MAPPINGS, tcpMappings)
                 .displayName(getShortName());
-        Boolean useSsh = config().get(DockerAttributes.DOCKER_USE_SSH);
         if (useSsh) {
             spec.configure(SshMachineLocation.SSH_HOST, getHostname())
                 .configure(SshMachineLocation.SSH_PORT, getSshPort())
@@ -713,6 +715,8 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         for (Integer hostPort : tcpMappings.keySet()) {
             HostAndPort target = HostAndPort.fromString(tcpMappings.get(hostPort));
             subnet.getPortForwarder().openPortForwarding(location, target.getPort(), Optional.of(hostPort), Protocol.TCP, Cidr.UNIVERSAL);
+            subnet.getPortForwarder().openFirewallPort(entity, hostPort, Protocol.TCP, Cidr.UNIVERSAL);
+            LOG.debug("Forwarded port: {} => {}", hostPort, target.getPort());
         }
 
         LOG.info("New task location {} created", location);
