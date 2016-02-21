@@ -91,7 +91,7 @@ public interface MesosCluster extends StartableApplication, LocationOwner<MesosL
 
     @SetFromFlag("scanInterval")
     ConfigKey<Duration> SCAN_INTERVAL = ConfigKeys.newConfigKey(Duration.class,
-            "mesos.scanInterval", "Interval between scans of Mesos tasks and frameworks", Duration.TEN_SECONDS);
+            "mesos.scanInterval", "Interval between scans of Mesos tasks and frameworks", Duration.ONE_MINUTE);
 
     AttributeSensor<List<String>> MESOS_FRAMEWORK_LIST = Sensors.newSensor(new TypeToken<List<String>>() { }, "mesos.frameworks.list", "List of Mesos frameworks");
     AttributeSensor<List<String>> MESOS_SLAVE_LIST = Sensors.newSensor(new TypeToken<List<String>>() { }, "mesos.slaves.list", "List of Mesos slaves");
