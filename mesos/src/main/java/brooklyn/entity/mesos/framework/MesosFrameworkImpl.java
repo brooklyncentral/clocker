@@ -55,11 +55,12 @@ import org.apache.brooklyn.feed.http.JsonFunctions;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import org.apache.brooklyn.util.guava.Functionals;
-import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
 
+import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.mesos.MesosCluster;
 import brooklyn.entity.mesos.task.MesosTask;
+import brooklyn.entity.mesos.task.marathon.MarathonTask;
 
 /**
  * Mesos frameworks shared implementation.
@@ -154,11 +155,15 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
                     String name = json.get("name").getAsString();
                     String state = json.get("state").getAsString();
 
-                    Optional<Entity> entity = Iterables.tryFind(sensors().get(FRAMEWORK_TASKS).getMembers(),
+                    Optional<Entity> taskEntity = Iterables.tryFind(sensors().get(FRAMEWORK_TASKS).getMembers(),
                               Predicates.compose(Predicates.equalTo(id), EntityFunctions.attribute(MesosTask.TASK_ID)));
                     MesosTask task = null;
-                    if (entity.isPresent()) {
-                        task = (MesosTask) entity.get();
+                    if (taskEntity.isPresent()) {
+                        task = (MesosTask) taskEntity.get();
+                        Entity runningEntity = taskEntity.get().sensors().get(MarathonTask.ENTITY);
+                        if (runningEntity != null) {
+                            DockerUtils.getContainerPorts(runningEntity);
+                        }
                     } else if (state.equals(MesosTask.TaskState.TASK_RUNNING.name())) {
                         EntitySpec<MesosTask> taskSpec = EntitySpec.create(MesosTask.class)
                                 .configure(MesosTask.MANAGED, Boolean.FALSE)

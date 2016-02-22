@@ -320,7 +320,7 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
 
         HttpFeed.Builder httpFeedBuilder = HttpFeed.builder()
                 .entity(this)
-                .period(15, TimeUnit.SECONDS)
+                .period(1, TimeUnit.MINUTES)
                 .baseUri(sensors().get(Attributes.MAIN_URI))
                 .credentialsIfNotNull(config().get(MESOS_USERNAME), config().get(MESOS_PASSWORD))
                 .poll(new HttpPollConfig<Boolean>(SERVICE_UP)
