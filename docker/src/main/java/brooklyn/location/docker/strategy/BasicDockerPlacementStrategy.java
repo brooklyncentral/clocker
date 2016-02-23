@@ -35,12 +35,15 @@ import brooklyn.location.docker.DockerHostLocation;
 public abstract class BasicDockerPlacementStrategy extends AbstractDockerPlacementStrategy
         implements Predicate<DockerHostLocation>, Comparator<DockerHostLocation> {
 
+    protected Entity entity;
+
     @Override
     public List<DockerHostLocation> filterLocations(List<DockerHostLocation> locations, Entity context) {
         if (locations == null || locations.isEmpty()) {
             return ImmutableList.of();
         }
 
+        entity = context;
         List<DockerHostLocation> available = MutableList.copyOf(locations);
         Collections.sort(available, this);
         return ImmutableList.copyOf(Iterables.filter(available, this));
