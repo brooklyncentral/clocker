@@ -49,6 +49,7 @@
         <!-- Dependencies -->
         <jclouds.groupId>org.apache.jclouds</jclouds.groupId> <!-- JCLOUDS_GROUPID_VERSION -->
         <jclouds.version>1.9.2</jclouds.version> <!-- JCLOUDS_VERSION -->
+        <karaf.version>4.0.4</karaf.version>
 
         <!-- Testing -->
         <testng.version>6.8</testng.version>
