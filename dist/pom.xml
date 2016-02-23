@@ -83,6 +83,25 @@
             <artifactId>brooklyn-rest-client</artifactId>
             <version>${brooklyn.version}</version>
             <scope>test</scope>
+            <!-- Exclusions added due to maven issue.
+                 Whilst this is scope test, maven was still getting the versions from the children.
+                 Excluding these dependencies solves this issue.
+            -->
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-annotations</artifactId>
+                </exclusion>
+            </exclusions>
+
         </dependency>
         <dependency>
             <groupId>org.apache.brooklyn</groupId>
