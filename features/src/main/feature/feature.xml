@@ -18,18 +18,21 @@
 -->
 <features name="${project.artifactId}-${project.version}" xmlns="http://karaf.apache.org/xmlns/features/v1.2.0">
 
-    <repository>mvn:org.apache.brooklyn/brooklyn-features/${brooklyn.version}/xml/features</repository>
+    <repository>mvn:org.apache.karaf.features/framework/${karaf.version}/xml/features</repository>
+    <repository>mvn:org.apache.karaf.features/standard/${karaf.version}/xml/features</repository>
+    <repository>mvn:org.apache.karaf.features/enterprise/${karaf.version}/xml/features</repository>
+    <repository>mvn:org.apache.karaf.features/spring/${karaf.version}/xml/features</repository>
 
-    <feature name='${project.artifactId}' description='${project.name}' version='${project.version}'>
-        <details>${project.description}</details>
-        <!-- <config>foo=bar</config> -->
-    </feature>
+    <repository>mvn:org.apache.brooklyn/brooklyn-features/${brooklyn.version}/xml/features</repository>
 
     <feature name="clocker-jsgui" version="${project.version}" description="Brooklyn Clocker  REST JavaScript Web GUI">
         <details>JavaScript+HTML GUI for interacting with clocker, building on Brooklyn JS GUI and using the Brooklyn REST API</details>
         
         <bundle>mvn:io.brooklyn.clocker/brooklyn-clocker-jsgui/${project.version}/war</bundle>
         <feature>war</feature>
+
+        <!-- FIXME: workaround that avoids validation failure, but messes up feature:uninstall -->
+        <feature dependency="true">framework</feature>
     </feature>
 
     <feature name="clocker-console" version="${project.version}" description="Clocker Web UI">
@@ -37,6 +40,9 @@
 
         <bundle>mvn:io.brooklyn.clocker/brooklyn-clocker-console/${project.version}/war</bundle>
         <feature>war</feature>
+
+        <!-- FIXME: workaround that avoids validation failure, but messes up feature:uninstall -->
+        <feature dependency="true">framework</feature>
     </feature>
 
     <feature name="clocker-docker" version="${project.version}" description="Clocker Docker Integration">
@@ -44,20 +50,28 @@
 
         <bundle>mvn:io.brooklyn.clocker/brooklyn-clocker-docker/${project.version}</bundle>
         <feature version="${brooklyn.version}">brooklyn-core</feature>
+        <feature version="${brooklyn.version}">brooklyn-software-base</feature>
+        <feature version="${brooklyn.version}">brooklyn-locations-jclouds</feature>
+        <bundle dependency="true">mvn:io.brooklyn.networking/brooklyn-networking-common/${brooklyn.version}</bundle>
+        <bundle dependency="true">mvn:io.brooklyn.networking/brooklyn-networking-portforwarding/${brooklyn.version}</bundle>
+
+        <!-- FIXME: workaround that avoids validation failure, but messes up feature:uninstall -->
+        <feature dependency="true">framework</feature>
+        <feature dependency="true">aries-blueprint</feature>
     </feature>
 
     <feature name="clocker-mesos" version="${project.version}" description="Clocker Mesos Integration">
         <details>Clocker Brooklyn entities and locations for Mesos integration.</details>
 
         <bundle>mvn:io.brooklyn.clocker/brooklyn-clocker-mesos/${project.version}</bundle>
-        <feature version="${brooklyn.version}">brooklyn-core</feature>
+        <feature version="${project.version}">clocker-docker</feature>
     </feature>
 
-    <feature name="clocker-all" version="${project.version}" description="Full deployment of Clocker">
-        <feature dependency="true" version="${project.version}">clocker-docker</feature>
-        <feature dependency="true" version="${project.version}">clocker-mesos</feature>
-        <feature dependency="true" version="${project.version}">clocker-jsgui</feature>
-        <feature dependency="true" version="${project.version}">clocker-console</feature>
-    </feature>
+<!--    <feature name="clocker-all" version="${project.version}" description="Full deployment of Clocker">
+        <feature version="${project.version}">clocker-docker</feature>
+        <feature version="${project.version}">clocker-mesos</feature>
+        <feature version="${project.version}">clocker-jsgui</feature>
+        <feature version="${project.version}">clocker-console</feature>
+    </feature>-->
 
 </features>
