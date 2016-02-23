@@ -18,6 +18,10 @@
 
     <!-- Clocker Branding. -->
     <link rel="stylesheet" href="/assets/css/clocker.css">
+    <link rel="stylesheet" href="/assets/css/codemirror.css">
+    <link rel="stylesheet" href="/assets/css/codemirror-brooklyn.css">
+    <link rel="stylesheet" href="/assets/js/libs/font-awesome/css/font-awesome.css">
+    <link rel="stylesheet" href="/assets/css/show-hint.css">
 
     <style>
         body {
@@ -35,39 +39,34 @@
 
 <div class="navbar navbar-fixed-top">
     <div class="navbar-inner">
+        <div class="userName-top"><span id="user"></span> | <a href="/logout" id="logout-link">Log out</a></div>
         <div class="container">
-            <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-            </a>
-            <a class="brand" href="#"></a>
 
             <div class="logo"><!-- added via CSS --></div>
-
-            <div class="nav-collapse menubar-top">
+            <div class="menubar-top">
                 <ul class="nav">
-                    <li><a href="#/v1/home" class="nav1 nav1_home">Home</a></li>
-                    <li><a href="#/v1/applications" class="nav1 nav1_apps">Applications</a></li>
-                    <li><a href="#/v1/catalog" class="nav1 nav1_catalog">Catalog</a></li>
+                    <li><a href="#v1/home" class="nav1 nav1_home">Home</a></li>
+                    <!-- TODO extend API with v1/editor -->
+                    <li><a href="#v1/editor" class="nav1 nav1_editor">Composer</a></li>
+                    <li><a href="#v1/applications" class="nav1 nav1_apps">Applications</a></li>
+                    <li><a href="#v1/catalog" class="nav1 nav1_catalog">Catalog</a></li>
                     <li class="dropdown">
                         <a href="#" class="nav1 nav1_script dropdown-toggle" data-toggle="dropdown">Script</a>
                         <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
-                            <li><a href="#/v1/apidoc" class="nav1 nav1_apidoc">REST API</a></li>
-                            <li><a href="#/v1/script/groovy" class="nav1 nav1_groovy">Groovy</a></li>
+                            <li><a href="/assets/html/swagger-ui.html" target="_blank" class="nav1 nav1_apidoc">REST API</a></li>
+                            <li><a href="#v1/script/groovy" class="nav1 nav1_groovy">Groovy</a></li>
                         </ul>
                     </li>
-                    <li><a href="#/v1/help" class="nav1 nav1_help"><b>?</b></a></li>
+                    <li><a href="#v1/help" class="nav1 nav1_help"><b>?</b></a></li>
                 </ul>
             </div>
-            <!--/.nav-collapse -->
         </div>
     </div>
 </div>
 
 <div id="main-content">
     <div id="application-content"></div>
-    <div id="ha-standby-overlay"></div>
+    <div id="server-caution-overlay"></div>
 </div>
 
 <div id="footer-container">
