@@ -33,6 +33,44 @@
     <name>Clocker Karaf Features</name>
     <description>Clocker features for Karaf deployment.</description>
 
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.karaf</groupId>
+            <artifactId>apache-karaf</artifactId>
+            <type>zip</type>
+            <version>${karaf.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- same as in brooklyn-clocker-dist -->
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>brooklyn-clocker-docker</artifactId>
+            <version>${project.parent.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>brooklyn-clocker-mesos</artifactId>
+            <version>${project.parent.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>brooklyn-clocker-jsgui</artifactId>
+            <version>${project.parent.version}</version>
+            <type>war</type>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>brooklyn-clocker-console</artifactId>
+            <version>${project.parent.version}</version>
+            <type>war</type>
+            <scope>runtime</scope>
+        </dependency>
+    </dependencies>
+
     <build>
         <pluginManagement>
             <plugins>
@@ -48,11 +86,27 @@
             <plugin>
                 <groupId>org.apache.karaf.tooling</groupId>
                 <artifactId>karaf-maven-plugin</artifactId>
-
+                <executions>
+                    <execution>
+                        <id>validate-features</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
                 <configuration>
                     <startLevel>50</startLevel>
-                    <aggregateFeatures>true</aggregateFeatures>
-                    <resolver>(obr)</resolver>
+                    <aggregateFeatures>false</aggregateFeatures>
+                    <addBundlesToPrimaryFeature>false</addBundlesToPrimaryFeature>
+                    <checkDependencyChange>false</checkDependencyChange>
+                    <failOnDependencyChange>false</failOnDependencyChange>
+                    <logDependencyChanges>false</logDependencyChanges>
+                    <overwriteChangedDependencies>true</overwriteChangedDependencies>
+                    <!-- for karaf:verify -->
+                    <descriptors>
+                        <descriptor>file:${project.build.directory}/feature/feature.xml</descriptor>
+                    </descriptors>
                 </configuration>
             </plugin>
         </plugins>
