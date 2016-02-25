@@ -43,7 +43,6 @@ import org.apache.brooklyn.core.entity.EntityFunctions;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
-import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.entity.group.Cluster;
 import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.stock.BasicStartableImpl;
@@ -85,7 +84,6 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
                 .configure(DynamicCluster.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .configure(DynamicCluster.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .displayName("Framework Tasks"));
-        if (Entities.isManaged(this)) Entities.manage(tasks);
         sensors().set(FRAMEWORK_TASKS, tasks);
 
         sensors().set(Attributes.MAIN_URI, URI.create(config().get(FRAMEWORK_URL)));
@@ -93,14 +91,16 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
 
     @Override
     public void start(Collection<? extends Location> locs) {
-        addLocations(locs);
-        List<Location> locations = MutableList.copyOf(Locations.getLocationsCheckingAncestors(locs, this));
+        clearLocations();
 
-        sensors().set(SERVICE_UP, Boolean.FALSE);
+        ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
 
         connectSensors();
 
-        super.start(locations);
+        super.start(ImmutableList.<Location>of());
+
+        sensors().set(Attributes.SERVICE_UP, Boolean.TRUE);
+        ServiceStateLogic.setExpectedState(this, Lifecycle.RUNNING);
     }
 
     @Override

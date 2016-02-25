@@ -109,15 +109,15 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
                 .period(500, TimeUnit.MILLISECONDS)
                 .baseUri(sensors().get(FRAMEWORK_URL))
                 .credentialsIfNotNull(config().get(MesosCluster.MESOS_USERNAME), config().get(MesosCluster.MESOS_PASSWORD))
-                .poll(new HttpPollConfig<List<String>>(MARATHON_APPLICATIONS)
+                .poll(HttpPollConfig.forSensor(MARATHON_APPLICATIONS)
                         .suburl("/v2/apps/")
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(), JsonFunctions.walk("apps"), JsonFunctions.forEach(JsonFunctions.<String>getPath("id"))))
                         .onFailureOrException(Functions.constant(Arrays.asList(new String[0]))))
-                .poll(new HttpPollConfig<String>(MARATHON_VERSION)
+                .poll(HttpPollConfig.forSensor(MARATHON_VERSION)
                         .suburl("/v2/info/")
                         .onSuccess(HttpValueFunctions.jsonContents("version", String.class))
                         .onFailureOrException(Functions.constant("")))
-                .poll(new HttpPollConfig<Boolean>(SERVICE_UP)
+                .poll(HttpPollConfig.forSensor(SERVICE_UP)
                         .suburl("/ping")
                         .onSuccess(HttpValueFunctions.responseCodeEquals(200))
                         .onFailureOrException(Functions.constant(Boolean.FALSE)));
@@ -164,6 +164,8 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
  
     @Override
     public void start(Collection<? extends Location> locs) {
+        clearLocations();
+
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
 
         connectSensors();
@@ -174,7 +176,7 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
                 .build();
         createLocation(flags);
 
-        sensors().set(Attributes.SERVICE_UP, true);
+        sensors().set(Attributes.SERVICE_UP, Boolean.TRUE);
         ServiceStateLogic.setExpectedState(this, Lifecycle.RUNNING);
     }
 

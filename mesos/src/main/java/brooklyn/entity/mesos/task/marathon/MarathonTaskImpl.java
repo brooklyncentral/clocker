@@ -65,7 +65,6 @@ import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.core.location.LocationConfigKeys;
 import org.apache.brooklyn.core.location.Locations;
-import org.apache.brooklyn.core.location.Machines;
 import org.apache.brooklyn.core.location.cloud.CloudLocationConfig;
 import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.core.sensor.DependentConfiguration;
@@ -641,7 +640,6 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
     public MarathonTaskLocation createLocation(Map<String, ?> flags) {
         Entity entity = getRunningEntity();
         MesosSlave slave = getMesosCluster().getMesosSlave(getHostname());
-        SshMachineLocation machine = Machines.findUniqueMachineLocation(slave.getLocations(), SshMachineLocation.class).get();
         SubnetTier subnet = slave.getSubnetTier();
         Boolean sdn = config().get(MesosCluster.SDN_ENABLE);
 

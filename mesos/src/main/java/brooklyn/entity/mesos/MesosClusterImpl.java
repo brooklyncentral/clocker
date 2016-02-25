@@ -64,7 +64,6 @@ import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.location.BasicLocationDefinition;
 import org.apache.brooklyn.core.location.BasicLocationRegistry;
 import org.apache.brooklyn.core.location.LocationConfigKeys;
-import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.core.location.cloud.CloudLocationConfig;
 import org.apache.brooklyn.core.location.dynamic.LocationOwner;
 import org.apache.brooklyn.entity.group.BasicGroup;
@@ -192,7 +191,6 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
         LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
         Location location = getManagementContext().getLocationRegistry().resolve(definition);
         getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
-        getManagementContext().getLocationManager().manage(location);
 
         ManagementContext.PropertiesReloadListener listener = DockerUtils.reloadLocationListener(getManagementContext(), definition);
         getManagementContext().addPropertiesReloadListener(listener);
@@ -243,8 +241,7 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
 
     @Override
     public void doStart(Collection<? extends Location> locs) {
-        addLocations(locs);
-        List<Location> locations = MutableList.copyOf(Locations.getLocationsCheckingAncestors(locs, this));
+        List<Location> locations = MutableList.of();
 
         sensors().set(SERVICE_UP, Boolean.FALSE);
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
@@ -323,43 +320,43 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
                 .period(1, TimeUnit.MINUTES)
                 .baseUri(sensors().get(Attributes.MAIN_URI))
                 .credentialsIfNotNull(config().get(MESOS_USERNAME), config().get(MESOS_PASSWORD))
-                .poll(new HttpPollConfig<Boolean>(SERVICE_UP)
+                .poll(HttpPollConfig.forSensor(SERVICE_UP)
                         .suburl("/master/health")
                         .onSuccess(HttpValueFunctions.responseCodeEquals(200))
                         .onFailureOrException(Functions.constant(Boolean.FALSE)))
-                .poll(new HttpPollConfig<String>(CLUSTER_NAME)
+                .poll(HttpPollConfig.forSensor(CLUSTER_NAME)
                         .suburl("/master/state.json")
                         .onSuccess(HttpValueFunctions.jsonContents("cluster", String.class))
                         .onFailureOrException(Functions.constant("")))
-                .poll(new HttpPollConfig<String>(CLUSTER_ID)
+                .poll(HttpPollConfig.forSensor(CLUSTER_ID)
                         .suburl("/master/state.json")
                         .onSuccess(HttpValueFunctions.jsonContents("id", String.class))
                         .onFailureOrException(Functions.constant("")))
-                .poll(new HttpPollConfig<String>(MESOS_VERSION)
+                .poll(HttpPollConfig.forSensor(MESOS_VERSION)
                         .suburl("/master/state.json")
                         .onSuccess(HttpValueFunctions.jsonContents("version", String.class))
                         .onFailureOrException(Functions.constant("")))
-                .poll(new HttpPollConfig<Integer>(CPUS_TOTAL)
+                .poll(HttpPollConfig.forSensor(CPUS_TOTAL)
                         .suburl("/system/stats.json")
                         .onSuccess(HttpValueFunctions.jsonContents("cpus_total", Integer.class))
                         .onFailureOrException(Functions.constant(-1)))
-                .poll(new HttpPollConfig<Double>(LOAD_1MIN)
+                .poll(HttpPollConfig.forSensor(LOAD_1MIN)
                         .suburl("/system/stats.json")
                         .onSuccess(HttpValueFunctions.jsonContents("avg_load_1min", Double.class))
                         .onFailureOrException(Functions.constant(-1.0d)))
-                .poll(new HttpPollConfig<Double>(LOAD_5MIN)
+                .poll(HttpPollConfig.forSensor(LOAD_5MIN)
                         .suburl("/system/stats.json")
                         .onSuccess(HttpValueFunctions.jsonContents("avg_load_5min", Double.class))
                         .onFailureOrException(Functions.constant(-1.0d)))
-                .poll(new HttpPollConfig<Double>(LOAD_15MIN)
+                .poll(HttpPollConfig.forSensor(LOAD_15MIN)
                         .suburl("/system/stats.json")
                         .onSuccess(HttpValueFunctions.jsonContents("avg_load_15min", Double.class))
                         .onFailureOrException(Functions.constant(-1.0d)))
-                .poll(new HttpPollConfig<Long>(MEMORY_FREE_BYTES)
+                .poll(HttpPollConfig.forSensor(MEMORY_FREE_BYTES)
                         .suburl("/system/stats.json")
                         .onSuccess(HttpValueFunctions.jsonContents("mem_free_bytes", Long.class))
                         .onFailureOrException(Functions.constant(-1L)))
-                .poll(new HttpPollConfig<Long>(MEMORY_TOTAL_BYTES)
+                .poll(HttpPollConfig.forSensor(MEMORY_TOTAL_BYTES)
                         .suburl("/system/stats.json")
                         .onSuccess(HttpValueFunctions.jsonContents("mem_total_bytes", Long.class))
                         .onFailureOrException(Functions.constant(-1L)));

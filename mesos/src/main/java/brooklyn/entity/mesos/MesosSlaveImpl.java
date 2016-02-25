@@ -86,7 +86,7 @@ public class MesosSlaveImpl extends MachineEntityImpl implements MesosSlave {
                 .period(30, TimeUnit.SECONDS)
                 .baseUri(getMesosCluster().sensors().get(Attributes.MAIN_URI))
                 .credentialsIfNotNull(config().get(MesosCluster.MESOS_USERNAME), config().get(MesosCluster.MESOS_PASSWORD))
-                .poll(new HttpPollConfig<Long>(MEMORY_AVAILABLE)
+                .poll(HttpPollConfig.forSensor(MEMORY_AVAILABLE)
                         .suburl("/master/state.json")
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(),
                                 Functions.compose(
@@ -98,7 +98,7 @@ public class MesosSlaveImpl extends MachineEntityImpl implements MesosSlave {
                                 JsonFunctions.walkM("resources", "mem"),
                                 JsonFunctions.castM(Long.class)))
                         .onFailureOrException(Functions.constant(-1L)))
-                .poll(new HttpPollConfig<Double>(CPU_AVAILABLE)
+                .poll(HttpPollConfig.forSensor(CPU_AVAILABLE)
                         .suburl("/master/state.json")
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(),
                                 Functions.compose(
@@ -110,7 +110,7 @@ public class MesosSlaveImpl extends MachineEntityImpl implements MesosSlave {
                                 JsonFunctions.walkM("resources", "cpus"),
                                 JsonFunctions.castM(Double.class)))
                         .onFailureOrException(Functions.constant(-1d)))
-                .poll(new HttpPollConfig<Long>(DISK_AVAILABLE)
+                .poll(HttpPollConfig.forSensor(DISK_AVAILABLE)
                         .suburl("/master/state.json")
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(),
                                 Functions.compose(
@@ -122,7 +122,7 @@ public class MesosSlaveImpl extends MachineEntityImpl implements MesosSlave {
                                 JsonFunctions.walkM("resources", "disk"),
                                 JsonFunctions.castM(Long.class)))
                         .onFailureOrException(Functions.constant(-1L)))
-                .poll(new HttpPollConfig<Long>(MEMORY_USED)
+                .poll(HttpPollConfig.forSensor(MEMORY_USED)
                         .suburl("/master/state.json")
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(),
                                 Functions.compose(
@@ -134,7 +134,7 @@ public class MesosSlaveImpl extends MachineEntityImpl implements MesosSlave {
                                 JsonFunctions.walkM("used_resources", "mem"),
                                 JsonFunctions.castM(Long.class)))
                         .onFailureOrException(Functions.constant(-1L)))
-                .poll(new HttpPollConfig<Double>(CPU_USED)
+                .poll(HttpPollConfig.forSensor(CPU_USED)
                         .suburl("/master/state.json")
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(),
                                 Functions.compose(
@@ -146,7 +146,7 @@ public class MesosSlaveImpl extends MachineEntityImpl implements MesosSlave {
                                 JsonFunctions.walkM("used_resources", "cpus"),
                                 JsonFunctions.castM(Double.class)))
                         .onFailureOrException(Functions.constant(-1d)))
-                .poll(new HttpPollConfig<Long>(DISK_USED)
+                .poll(HttpPollConfig.forSensor(DISK_USED)
                         .suburl("/master/state.json")
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(),
                                 Functions.compose(

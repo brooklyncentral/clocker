@@ -103,11 +103,11 @@ public class MesosLocation extends AbstractLocation implements MachineProvisioni
 
         // Get the available hosts based on placement strategies
         Collection<Entity> frameworks = cluster.sensors().get(MesosCluster.MESOS_FRAMEWORKS).getMembers();
-        Iterable<MesosFrameworkLocation> locations = Iterables.transform(Iterables.filter(frameworks, Predicates.instanceOf(LocationOwner.class)),
-                new Function<Entity, MesosFrameworkLocation>() {
+        Iterable<MesosFrameworkLocation> locations = Iterables.transform(Iterables.filter(frameworks, LocationOwner.class),
+                new Function<LocationOwner, MesosFrameworkLocation>() {
                     @Override
-                    public MesosFrameworkLocation apply(Entity input) {
-                        return (MesosFrameworkLocation) ((LocationOwner) input).getDynamicLocation();
+                    public MesosFrameworkLocation apply(LocationOwner input) {
+                        return (MesosFrameworkLocation) input.getDynamicLocation();
                     }});
         for (MesosFrameworkLocation framework : locations) {
             if (framework instanceof MachineProvisioningLocation && framework.isSupported(entity)) {
