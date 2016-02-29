@@ -20,38 +20,52 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.Group;
+import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.entity.EntityPredicates;
+import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
 import brooklyn.location.docker.DockerHostLocation;
 
 /**
- * Strategy that requires the hostname of the Docker location to match a particular regexp.
+ * Strategy that requires entities with the same parent to use the same host.
+ * Can be configured to require exclusive use of the host with the
+ * {@code exclusive} option.
  */
 public class GroupPlacementStrategy extends BasicDockerPlacementStrategy {
 
     private static final Logger LOG = LoggerFactory.getLogger(GroupPlacementStrategy.class);
 
+    @SetFromFlag("requireEmpty")
+    public static final ConfigKey<Boolean> REQUIRE_EXCLUSIVE = ConfigKeys.newBooleanConfigKey(
+            "docker.constraint.exclusive",
+            "Whether the Docker host must be exclusive to this application; by default other applications can co-exist",
+            Boolean.FALSE);
+
     @Override
     public boolean apply(DockerHostLocation input) {
+        boolean requireExclusive = config().get(REQUIRE_EXCLUSIVE);
         List<Entity> deployed = input.getDockerContainerList();
         Entity parent = entity.getParent();
         String applicationId = entity.getApplicationId();
         Iterable<Entity> sameApplication = Iterables.filter(deployed, EntityPredicates.applicationIdEqualTo(applicationId));
+        if (requireExclusive && Iterables.size(deployed) > Iterables.size(sameApplication)) {
+            LOG.debug("Found entities not in {}; required exclusive. Reject: {}", applicationId, input);
+            return false;
+        }
         if (Iterables.isEmpty(sameApplication)) {
-            // There are no entites from the same app here
+            LOG.debug("No entities present from {}. Accept: {}", applicationId, input);
             return true;
         } else {
             Iterable<Entity> sameParent = Iterables.filter(sameApplication, EntityPredicates.isChildOf(parent));
             if (Iterables.isEmpty(sameParent)) {
-                // There are entites from the same app, but different parent here
+                LOG.debug("All entities from {} have different parent. Reject: {}", applicationId, input);
                 return false;
             } else {
-                // The entites here have the same parent
+                LOG.debug("All entities from {} have same parent. Accept: {}", applicationId, input);
                 return true;
             }
         }
