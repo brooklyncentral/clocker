@@ -192,7 +192,6 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
         LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
         Location location = getManagementContext().getLocationRegistry().resolve(definition);
         getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
-        getManagementContext().getLocationManager().manage(location);
 
         ManagementContext.PropertiesReloadListener listener = DockerUtils.reloadLocationListener(getManagementContext(), definition);
         getManagementContext().addPropertiesReloadListener(listener);

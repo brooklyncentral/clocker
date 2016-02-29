@@ -35,6 +35,7 @@ import com.google.gson.JsonObject;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
+import org.apache.brooklyn.api.entity.Group;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.entity.Attributes;
@@ -43,8 +44,7 @@ import org.apache.brooklyn.core.entity.EntityFunctions;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
-import org.apache.brooklyn.entity.group.Cluster;
-import org.apache.brooklyn.entity.group.DynamicCluster;
+import org.apache.brooklyn.entity.group.BasicGroup;
 import org.apache.brooklyn.entity.stock.BasicStartableImpl;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
 import org.apache.brooklyn.feed.http.HttpFeed;
@@ -77,12 +77,9 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
 
         ConfigToAttributes.apply(this);
 
-        DynamicCluster tasks = addChild(EntitySpec.create(DynamicCluster.class)
-                .configure(Cluster.INITIAL_SIZE, 0)
-                .configure(DynamicCluster.MEMBER_SPEC, config().get(FRAMEWORK_TASK_SPEC))
-                .configure(DynamicCluster.QUARANTINE_FAILED_ENTITIES, true)
-                .configure(DynamicCluster.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
-                .configure(DynamicCluster.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
+        Group tasks = addChild(EntitySpec.create(BasicGroup.class)
+                .configure(BasicGroup.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
+                .configure(BasicGroup.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .displayName("Framework Tasks"));
         sensors().set(FRAMEWORK_TASKS, tasks);
 
@@ -97,8 +94,6 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
 
         connectSensors();
 
-        super.start(ImmutableList.<Location>of());
-
         sensors().set(Attributes.SERVICE_UP, Boolean.TRUE);
         ServiceStateLogic.setExpectedState(this, Lifecycle.RUNNING);
     }
@@ -112,12 +107,6 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
 
     @Override
     public void connectSensors() {
-        // Start task cluster
-        DynamicCluster tasks = getTaskCluster();
-        Entities.start(tasks, ImmutableList.of(getMesosCluster().getDynamicLocation()));
-        ServiceStateLogic.setExpectedState(tasks, Lifecycle.RUNNING);
-        tasks.sensors().set(SERVICE_UP, Boolean.TRUE);
-
         Duration scanInterval = config().get(MesosCluster.SCAN_INTERVAL);
         HttpFeed.Builder taskScanBuilder = HttpFeed.builder()
                 .entity(this)
@@ -165,8 +154,8 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
                             DockerUtils.getContainerPorts(runningEntity);
                         }
                     } else if (state.equals(MesosTask.TaskState.TASK_RUNNING.name())) {
-                        EntitySpec<MesosTask> taskSpec = EntitySpec.create(MesosTask.class)
-                                .configure(MesosTask.MANAGED, Boolean.FALSE)
+                        EntitySpec<MesosTask> taskSpec = EntitySpec.create(config().get(FRAMEWORK_TASK_SPEC));
+                        taskSpec.configure(MesosTask.MANAGED, Boolean.FALSE)
                                 .configure(MesosTask.MESOS_CLUSTER, mesosCluster)
                                 .configure(MesosTask.TASK_NAME, name)
                                 .configure(MesosTask.FRAMEWORK, this)
@@ -228,7 +217,7 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
     }
 
     @Override
-    public DynamicCluster getTaskCluster() {
+    public Group getTaskCluster() {
         return sensors().get(FRAMEWORK_TASKS);
     }
 

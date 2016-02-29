@@ -22,6 +22,7 @@ import com.google.common.reflect.TypeToken;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
+import org.apache.brooklyn.api.entity.Group;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
@@ -29,7 +30,6 @@ import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.effector.MethodEffector;
 import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
-import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.stock.BasicStartable;
 
 import brooklyn.entity.mesos.MesosAttributes;
@@ -42,7 +42,7 @@ import brooklyn.entity.mesos.task.MesosTask;
 @ImplementedBy(MesosFrameworkImpl.class)
 public interface MesosFramework extends BasicStartable {
 
-    AttributeSensor<DynamicCluster> FRAMEWORK_TASKS = Sensors.newSensor(DynamicCluster.class, "mesos.framework.tasks", "Framework tasks");
+    AttributeSensor<Group> FRAMEWORK_TASKS = Sensors.newSensor(Group.class, "mesos.framework.tasks", "Framework tasks");
 
     ConfigKey<EntitySpec> FRAMEWORK_TASK_SPEC = ConfigKeys.newConfigKey(EntitySpec.class, "mesos.framework.tasks.spec", "Framework task spec", EntitySpec.create(MesosTask.class));
 
@@ -80,6 +80,6 @@ public interface MesosFramework extends BasicStartable {
 
     MesosCluster getMesosCluster();
 
-    DynamicCluster getTaskCluster();
+    Group getTaskCluster();
 
 }

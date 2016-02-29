@@ -56,6 +56,7 @@ import org.jclouds.softlayer.reference.SoftLayerConstants;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
+import org.apache.brooklyn.api.entity.Group;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationDefinition;
 import org.apache.brooklyn.api.location.MachineProvisioningLocation;
@@ -78,9 +79,7 @@ import org.apache.brooklyn.core.location.Machines;
 import org.apache.brooklyn.core.location.geo.LocalhostExternalIpLoader;
 import org.apache.brooklyn.core.sensor.DependentConfiguration;
 import org.apache.brooklyn.enricher.stock.Enrichers;
-import org.apache.brooklyn.entity.group.Cluster;
-import org.apache.brooklyn.entity.group.DynamicCluster;
-import org.apache.brooklyn.entity.group.DynamicGroup;
+import org.apache.brooklyn.entity.group.BasicGroup;
 import org.apache.brooklyn.entity.machine.MachineEntityImpl;
 import org.apache.brooklyn.entity.software.base.AbstractSoftwareProcessSshDriver;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
@@ -174,12 +173,9 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         }
         sensors().set(DOCKER_CONTAINER_SPEC, dockerContainerSpec);
 
-        DynamicCluster containers = addChild(EntitySpec.create(DynamicCluster.class)
-                .configure(Cluster.INITIAL_SIZE, 0)
-                .configure(DynamicCluster.QUARANTINE_FAILED_ENTITIES, false)
-                .configure(DynamicCluster.MEMBER_SPEC, dockerContainerSpec)
-                .configure(DynamicCluster.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
-                .configure(DynamicCluster.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
+        Group containers = addChild(EntitySpec.create(BasicGroup.class)
+                .configure(BasicGroup.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
+                .configure(BasicGroup.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .displayName("Docker Containers"));
         if (config().get(DockerInfrastructure.HA_POLICY_ENABLE)) {
             containers.policies().add(PolicySpec.create(ServiceReplacer.class)
@@ -188,7 +184,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         sensors().set(DOCKER_CONTAINER_CLUSTER, containers);
 
         enrichers().add(Enrichers.builder()
-                .propagating(ImmutableMap.of(DynamicCluster.GROUP_SIZE, DockerAttributes.DOCKER_CONTAINER_COUNT))
+                .propagating(ImmutableMap.of(BasicGroup.GROUP_SIZE, DockerAttributes.DOCKER_CONTAINER_COUNT))
                 .from(containers)
                 .build());
     }
@@ -320,7 +316,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 if (vlanId == null) {
                     // If a previous host has been configured, look up the VLAN id
                     int count = sensors().get(DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.DOCKER_HOST_COUNT);
-                    if (count > 1 && !sensors().get(DynamicCluster.FIRST_MEMBER) && sdnProviderAttribute != null) {
+                    if (count > 1 && !sensors().get(BasicGroup.FIRST_MEMBER) && sdnProviderAttribute != null) {
                         Task<Integer> lookup = DependentConfiguration.attributeWhenReady(sdnProviderAttribute, SdnProvider.VLAN_ID);
                         vlanId = DynamicTasks.submit(lookup, this).getUnchecked();
                     }
@@ -338,11 +334,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     private boolean isJcloudsLocation(MachineProvisioningLocation location, String providerName) {
         return location instanceof JcloudsLocation
                 && ((JcloudsLocation) location).getProvider().equals(providerName);
-    }
-
-    @Override
-    public Integer resize(Integer desiredSize) {
-        return getDockerContainerCluster().resize(desiredSize);
     }
 
     @Override
@@ -450,7 +441,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     }
 
     @Override
-    public DynamicCluster getDockerContainerCluster() { return sensors().get(DOCKER_CONTAINER_CLUSTER); }
+    public Group getDockerContainerCluster() { return sensors().get(DOCKER_CONTAINER_CLUSTER); }
 
     @Override
     public JcloudsLocation getJcloudsLocation() { return sensors().get(JCLOUDS_DOCKER_LOCATION); }
@@ -615,7 +606,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 .build();
         permissions.add(dockerPortForwarding);
 
-        if (config().get(DockerInfrastructure.DOCKER_SHOULD_START_REGISTRY) && sensors().get(DynamicGroup.FIRST_MEMBER)) {
+        if (config().get(DockerInfrastructure.DOCKER_SHOULD_START_REGISTRY) && sensors().get(BasicGroup.FIRST_MEMBER)) {
             IpPermission dockerRegistryPort = IpPermission.builder()
                     .ipProtocol(IpProtocol.TCP)
                     .fromPort(config().get(DockerRegistry.DOCKER_REGISTRY_PORT))
