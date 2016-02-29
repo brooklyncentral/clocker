@@ -38,6 +38,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.EntitySpec;
+import org.apache.brooklyn.api.entity.Group;
 import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.NoMachinesAvailableException;
 import org.apache.brooklyn.config.ConfigKey;
@@ -46,7 +48,6 @@ import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.location.AbstractLocation;
 import org.apache.brooklyn.core.location.LocationConfigKeys;
 import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
-import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
@@ -106,8 +107,6 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             init();
         }
     }
-
-
 
     public DockerContainerLocation obtain() throws NoMachinesAvailableException {
         return obtain(Maps.<String,Object>newLinkedHashMap());
@@ -241,8 +240,10 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                     .putIfNotNull("imageTag", imageId == null ? imageTag : null)
                     .putIfNotNull("hardwareId", hardwareId)
                     .build();
-            DynamicCluster cluster = dockerHost.getDockerContainerCluster();
-            Entity added = cluster.addNode(machine, containerFlags);
+            Group cluster = dockerHost.getDockerContainerCluster();
+            EntitySpec<DockerContainer> spec = EntitySpec.create(getOwner().sensors().get(DockerHost.DOCKER_CONTAINER_SPEC));
+            spec.configure(containerFlags);
+            Entity added = cluster.addMemberChild(spec);
             if (added == null) {
                 throw new NoMachinesAvailableException(String.format("Failed to create container at %s", dockerHost.getDockerHostName()));
             } else {
@@ -311,7 +312,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
         try {
             LOG.info("Releasing {}", machine);
 
-            DynamicCluster cluster = dockerHost.getDockerContainerCluster();
+            Group cluster = dockerHost.getDockerContainerCluster();
             DockerContainer container = machine.getOwner();
             if (cluster.removeMember(container)) {
                 LOG.info("Docker Host {}: member {} released", dockerHost.getDockerHostName(), machine);

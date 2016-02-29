@@ -32,7 +32,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.EntityLocal;
+import org.apache.brooklyn.api.entity.EntitySpec;
+import org.apache.brooklyn.api.entity.Group;
 import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.NoMachinesAvailableException;
 import org.apache.brooklyn.camp.brooklyn.BrooklynCampConstants;
@@ -136,13 +137,14 @@ public class MarathonLocation extends MesosFrameworkLocation implements MachineP
                     .putAll(getTaskFlags(entity))
                     .build();
             LOG.info("Starting task {} on framework {}", name, framework);
-            DynamicCluster tasks = framework.sensors().get(MesosFramework.FRAMEWORK_TASKS);
-            Entity added = tasks.addNode(this, taskFlags);
+            Group tasks = framework.sensors().get(MesosFramework.FRAMEWORK_TASKS);
+            EntitySpec<?> spec = EntitySpec.create(getOwner().config().get(MarathonFramework.MARATHON_TASK_SPEC));
+            Entity added = tasks.addMemberChild(spec);
             if (added == null) {
                 throw new NoMachinesAvailableException("Failed to create Marathon task");
             } else {
                 try {
-                    Entities.invokeEffector((EntityLocal) entity, added, Startable.START,  MutableMap.of("locations", ImmutableList.of(this))).getUnchecked();
+                    Entities.invokeEffector(entity, added, Startable.START,  MutableMap.of("locations", ImmutableList.of(this))).getUnchecked();
                 } catch (Exception e) {
                     ServiceStateLogic.setExpectedState(added, Lifecycle.ON_FIRE);
                     throw new NoMachinesAvailableException("Failed to start Marathon task", e);
@@ -175,7 +177,7 @@ public class MarathonLocation extends MesosFrameworkLocation implements MachineP
         try {
             LOG.info("Releasing {}", location);
 
-            DynamicCluster cluster = framework.sensors().get(MesosFramework.FRAMEWORK_TASKS);
+            Group cluster = framework.sensors().get(MesosFramework.FRAMEWORK_TASKS);
             MarathonTask task = location.getOwner();
             if (cluster.removeMember(task)) {
                 LOG.info("Marathon framework {}: member {} released", framework, location);

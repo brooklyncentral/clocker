@@ -26,6 +26,7 @@ import org.jclouds.net.domain.IpPermission;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
+import org.apache.brooklyn.api.entity.Group;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.api.objs.HasShortName;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
@@ -41,7 +42,6 @@ import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.BasicAttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
-import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.machine.MachineEntity;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
@@ -64,7 +64,7 @@ import brooklyn.networking.subnet.SubnetTier;
  * service on this machine.
  */
 @ImplementedBy(DockerHostImpl.class)
-public interface DockerHost extends MachineEntity, Resizable, HasShortName, LocationOwner<DockerHostLocation, DockerHost> {
+public interface DockerHost extends MachineEntity, HasShortName, LocationOwner<DockerHostLocation, DockerHost> {
 
     @SetFromFlag("dockerVersion")
     ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "1.7.1");
@@ -132,7 +132,7 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
             "docker.host.scanInterval", "Interval between scans of Docker containers", Duration.TEN_SECONDS);
     AttributeSensor<Void> SCAN = Sensors.newSensor(Void.class, "docker.host.scan", "Notification of host scan");
 
-    AttributeSensor<DynamicCluster> DOCKER_CONTAINER_CLUSTER = Sensors.newSensor(DynamicCluster.class,
+    AttributeSensor<Group> DOCKER_CONTAINER_CLUSTER = Sensors.newSensor(Group.class,
             "docker.container.cluster", "The cluster of Docker containers");
     AttributeSensor<JcloudsLocation> JCLOUDS_DOCKER_LOCATION = Sensors.newSensor(JcloudsLocation.class,
             "docker.jclouds.location", "The location used for provisioning Docker containers");
@@ -156,9 +156,11 @@ public interface DockerHost extends MachineEntity, Resizable, HasShortName, Loca
 
     String getDockerHostName();
 
-    DynamicCluster getDockerContainerCluster();
+    Group getDockerContainerCluster();
 
     List<Entity> getDockerContainerList();
+
+    Integer getCurrentSize();
 
     DockerInfrastructure getInfrastructure();
 
