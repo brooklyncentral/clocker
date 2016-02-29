@@ -290,7 +290,9 @@ public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule
     public void provisionNetwork(VirtualNetwork network) {
         String networkId = network.sensors().get(VirtualNetwork.NETWORK_ID);
         Cidr subnetCidr = SdnUtils.provisionNetwork(this, network);
-        String addPool = String.format("calicoctl pool add %s", subnetCidr); // XXX  --ipip --nat-outgoing
+        boolean ipip = config().get(CalicoModule.USE_IPIP);
+        boolean nat = config().get(CalicoModule.USE_NAT);
+        String addPool = String.format("calicoctl pool add %s %s %s", subnetCidr, ipip ? "--ipip" : "", nat ? "--nat-outgoing" : "");
         MesosSlave slave = (MesosSlave) getMesosCluster().sensors().get(MesosCluster.MESOS_SLAVES).getMembers().iterator().next();
         execCalicoCommand(slave, addPool);
 

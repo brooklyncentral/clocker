@@ -40,6 +40,9 @@ public interface CalicoNetwork extends DockerSdnProvider {
 
     ConfigKey<EntitySpec<?>> CALICO_NODE_SPEC = ConfigKeys.newConfigKeyWithDefault(SDN_AGENT_SPEC.getConfigKey(), EntitySpec.create(CalicoNode.class));
 
+    ConfigKey<Boolean> USE_IPIP = ConfigKeys.newBooleanConfigKey("calico.ipip", "Use the IPIP protocol for inter-VM traffic", Boolean.TRUE);
+    ConfigKey<Boolean> USE_NAT = ConfigKeys.newBooleanConfigKey("calico.nat", "Use NAT for outgoing traffic", Boolean.TRUE);
+
     @SetFromFlag("etcdVersion")
     ConfigKey<String> ETCD_VERSION = ConfigKeys.newStringConfigKey("etcd.version", "The Etcd version number", "2.0.11");
 
