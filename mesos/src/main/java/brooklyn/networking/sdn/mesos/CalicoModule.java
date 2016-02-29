@@ -19,6 +19,8 @@ import java.net.InetAddress;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.ImplementedBy;
+import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
 
 import brooklyn.entity.mesos.MesosAttributes;
@@ -36,6 +38,9 @@ public interface CalicoModule extends SdnProvider {
     AttributeSensorAndConfigKey<Entity, Entity> MESOS_CLUSTER = MesosAttributes.MESOS_CLUSTER;
 
     AttributeSensorAndConfigKey<String, String> ETCD_CLUSTER_URL = EtcdProxy.ETCD_CLUSTER_URL;
+
+    ConfigKey<Boolean> USE_IPIP = ConfigKeys.newBooleanConfigKey("calico.ipip", "Use the IPIP protocol for inter-VM traffic", Boolean.FALSE);
+    ConfigKey<Boolean> USE_NAT = ConfigKeys.newBooleanConfigKey("calico.nat", "Use NAT for outgoing traffic", Boolean.FALSE);
 
     MesosCluster getMesosCluster();
 
