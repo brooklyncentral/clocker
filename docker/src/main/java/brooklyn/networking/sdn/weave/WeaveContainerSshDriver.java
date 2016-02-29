@@ -153,6 +153,7 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
     public Map<String, String> getShellEnvironment() {
         ImmutableMap.Builder<String, String> builder = ImmutableMap.<String, String> builder()
                 .putAll(super.getShellEnvironment())
+                .put("WEAVE_VERSION", entity.config().get(WeaveContainer.SUGGESTED_VERSION))
                 .put("VERSION", entity.config().get(WeaveContainer.SUGGESTED_VERSION));
         return builder.build();
     }
