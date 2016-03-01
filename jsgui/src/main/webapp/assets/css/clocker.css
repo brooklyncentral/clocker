@@ -128,6 +128,7 @@ textarea { white-space: pre;word-wrap: normal;overflow-x: auto; }
 #effectors-table th { background: #ffffff !important }
 
 .btn-danger,
+.btn-success,
 .btn-info {
     background-color: #7d000a !important;
     *background-color: #7d000a !important;
@@ -140,6 +141,9 @@ textarea { white-space: pre;word-wrap: normal;overflow-x: auto; }
 .btn-danger:hover,
 .btn-danger:active,
 .btn-danger.active,
+.btn-success:hover,
+.btn-success:active,
+.btn-success.active,
 .btn-info:hover,
 .btn-info:active,
 .btn-info.active {
@@ -147,6 +151,8 @@ textarea { white-space: pre;word-wrap: normal;overflow-x: auto; }
 }
 .btn-danger.disabled,
 .btn-danger[disabled],
+.btn-success.disabled,
+.btn-success[disabled],
 .btn-info.disabled,
 .btn-info[disabled] { 
     background-color: #444444 !important;
