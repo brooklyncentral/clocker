@@ -111,10 +111,10 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
         registerLocationResolver();
         super.init();
 
-        DynamicGroup slaves = addChild(EntitySpec.create(DynamicGroup.class)
+        Group slaves = addChild(EntitySpec.create(BasicGroup.class)
                 .displayName("Mesos Slaves"));
 
-        DynamicGroup frameworks = addChild(EntitySpec.create(DynamicGroup.class)
+        Group frameworks = addChild(EntitySpec.create(BasicGroup.class)
                 .displayName("Mesos Frameworks"));
 
         DynamicGroup tasks = addChild(EntitySpec.create(DynamicGroup.class)
@@ -251,7 +251,7 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
 
         // Start frameworks
         try {
-            DynamicGroup frameworks = sensors().get(MESOS_FRAMEWORKS);
+            Group frameworks = sensors().get(MESOS_FRAMEWORKS);
             Entities.invokeEffectorList(this, frameworks.getMembers(), Startable.START, ImmutableMap.of("locations", locations)).getUnchecked();
         } catch (Exception e) {
             LOG.warn("Error starting frameworks", e);
@@ -296,7 +296,7 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
 
         // Stop all framework tasks in parallel
         try {
-            DynamicGroup frameworks = sensors().get(MESOS_FRAMEWORKS);
+            Group frameworks = sensors().get(MESOS_FRAMEWORKS);
             LOG.debug("Stopping framework tasks in: {}", Iterables.toString(frameworks.getMembers()));
             Entities.invokeEffectorList(this, frameworks.getMembers(), Startable.STOP).get(timeout);
         } catch (Exception e) {

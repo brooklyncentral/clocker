@@ -24,6 +24,7 @@ import com.google.common.reflect.TypeToken;
 import org.apache.brooklyn.api.catalog.CatalogConfig;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
+import org.apache.brooklyn.api.entity.Group;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
@@ -72,8 +73,8 @@ public interface MesosCluster extends StartableApplication, LocationOwner<MesosL
 
     AttributeSensor<Entity> SDN_PROVIDER = SdnAttributes.SDN_PROVIDER;
 
-    AttributeSensor<DynamicGroup> MESOS_SLAVES = Sensors.newSensor(DynamicGroup.class, "mesos.slaves", "Mesos slaves");
-    AttributeSensor<DynamicGroup> MESOS_FRAMEWORKS = Sensors.newSensor(DynamicGroup.class, "mesos.frameworks", "Mesos frameworks");
+    AttributeSensor<Group> MESOS_SLAVES = Sensors.newSensor(Group.class, "mesos.slaves", "Mesos slaves");
+    AttributeSensor<Group> MESOS_FRAMEWORKS = Sensors.newSensor(Group.class, "mesos.frameworks", "Mesos frameworks");
     AttributeSensor<DynamicGroup> MESOS_TASKS = Sensors.newSensor(DynamicGroup.class, "mesos.tasks", "Mesos tasks");
     AttributeSensor<DynamicMultiGroup> MESOS_APPLICATIONS = Sensors.newSensor(DynamicMultiGroup.class, "mesos.applications", "Mesos applications");
 
