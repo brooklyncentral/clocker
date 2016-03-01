@@ -56,10 +56,8 @@ import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import org.apache.brooklyn.util.guava.Functionals;
 import org.apache.brooklyn.util.time.Duration;
 
-import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.mesos.MesosCluster;
 import brooklyn.entity.mesos.task.MesosTask;
-import brooklyn.entity.mesos.task.marathon.MarathonTask;
 
 /**
  * Mesos frameworks shared implementation.
@@ -149,10 +147,6 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
                     MesosTask task = null;
                     if (taskEntity.isPresent()) {
                         task = (MesosTask) taskEntity.get();
-                        Entity runningEntity = taskEntity.get().sensors().get(MarathonTask.ENTITY);
-                        if (runningEntity != null) {
-                            DockerUtils.getContainerPorts(runningEntity);
-                        }
                     } else if (state.equals(MesosTask.TaskState.TASK_RUNNING.name())) {
                         EntitySpec<MesosTask> taskSpec = EntitySpec.create(config().get(FRAMEWORK_TASK_SPEC));
                         taskSpec.configure(MesosTask.MANAGED, Boolean.FALSE)

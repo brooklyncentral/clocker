@@ -136,10 +136,17 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
 
         ConfigToAttributes.apply(this, ENTITY);
 
-        String id = getMarathonApplicationId();
-        String name = Joiner.on('.').join(Lists.reverse(Splitter.on('/').omitEmptyStrings().splitToList(id)));
-        sensors().set(APPLICATION_ID, id);
-        sensors().set(TASK_NAME, name);
+        String id = null;
+        if (sensors().get(MANAGED)) {
+            id = getMarathonApplicationId();
+            String name = Joiner.on('.').join(Lists.reverse(Splitter.on('/').omitEmptyStrings().splitToList(id)));
+            sensors().set(APPLICATION_ID, id);
+            sensors().set(TASK_NAME, name);
+        } else {
+            String name = sensors().get(TASK_NAME);
+            id =  "/" + name;
+            sensors().set(APPLICATION_ID, id);
+        }
 
         LOG.info("Marathon task {} for: {}", id, sensors().get(ENTITY));
     }
@@ -275,72 +282,79 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
 
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
 
-        Entity entity = getRunningEntity();
-        entity.sensors().set(DockerContainer.CONTAINER, this);
-        entity.sensors().set(MesosAttributes.MESOS_CLUSTER, getMesosCluster());
+        // Only start new application for managed tasks
+        boolean managed = Optional.fromNullable(sensors().get(MANAGED)).or(true);
+        if (managed) {
+            Entity entity = getRunningEntity();
+            entity.sensors().set(DockerContainer.CONTAINER, this);
+            entity.sensors().set(MesosAttributes.MESOS_CLUSTER, getMesosCluster());
 
-        MarathonFramework marathon = (MarathonFramework) sensors().get(FRAMEWORK);
-        marathon.sensors().get(MesosFramework.FRAMEWORK_TASKS).addMember(this);
+            MarathonFramework marathon = (MarathonFramework) sensors().get(FRAMEWORK);
+            marathon.sensors().get(MesosFramework.FRAMEWORK_TASKS).addMember(this);
 
-        String id = sensors().get(APPLICATION_ID);
-        Map<String, Object> flags = getMarathonFlags(entity);
-        try {
-            LOG.debug("Starting task {} on {} with flags: {}",
-                    new Object[] { id, marathon, Joiner.on(",").withKeyValueSeparator("=").join(flags) });
-            marathon.startApplication(id, flags);
-        } catch (Exception e) {
-            ServiceStateLogic.setExpectedState(this, Lifecycle.ON_FIRE);
-            throw Exceptions.propagate(e);
-        }
-
-        // Waiting for TASK_RUNNING status and get hostname
-        Task<?> running = DependentConfiguration.attributeWhenReady(this, MesosTask.TASK_STATE, Predicates.equalTo(MesosTask.TaskState.TASK_RUNNING.toString()));
-        DynamicTasks.queueIfPossible(running).orSubmitAndBlock(this).asTask().getUnchecked(Duration.FIVE_MINUTES);
-        Task<?> hostname = DependentConfiguration.attributeWhenReady(this, Attributes.HOSTNAME, Predicates.notNull());
-        DynamicTasks.queueIfPossible(hostname).orSubmitAndBlock(this).asTask().getUnchecked(Duration.FIVE_MINUTES);
-        LOG.info("Task {} running on {} successfully", id, getHostname());
-
-        String containerId = null;
-        MesosSlave slave = getMesosCluster().getMesosSlave(getHostname());
-        String ps = slave.execCommand(BashCommands.sudo("docker ps --no-trunc --filter=name=mesos-* -q"));
-        Iterable<String> containers = Iterables.filter(Splitter.on(CharMatcher.anyOf("\r\n")).omitEmptyStrings().split(ps),
-                StringPredicates.matchesRegex("[a-z0-9]{64}"));
-        for (String each : containers) {
-            String env = slave.execCommand(BashCommands.sudo("docker inspect --format='{{range .Config.Env}}{{println .}}{{end}}' " + each));
-            Optional<String> found = Iterables.tryFind(Splitter.on(CharMatcher.anyOf("\r\n")).split(env), Predicates.equalTo("MARATHON_APP_ID=" + sensors().get(APPLICATION_ID)));
-            if (found.isPresent()) {
-                containerId = each;
-                break;
+            String id = sensors().get(APPLICATION_ID);
+            Map<String, Object> flags = getMarathonFlags(entity);
+            try {
+                LOG.debug("Starting task {} on {} with flags: {}",
+                        new Object[] { id, marathon, Joiner.on(",").withKeyValueSeparator("=").join(flags) });
+                marathon.startApplication(id, flags);
+            } catch (Exception e) {
+                ServiceStateLogic.setExpectedState(this, Lifecycle.ON_FIRE);
+                throw Exceptions.propagate(e);
             }
-        }
-        sensors().set(DockerContainer.CONTAINER_ID, containerId);
-        entity.sensors().set(DockerContainer.CONTAINER_ID, containerId);
 
-        // Set network configuration if using Calico SDN
-        if (SdnUtils.isSdnProvider(getMesosCluster(), "CalicoModule")) {
-            CalicoModule provider =  ((CalicoModule) getMesosCluster().sensors().get(MesosCluster.SDN_PROVIDER));
-            List<String> networks = Lists.newArrayList(entity.getApplicationId());
-            Collection<String> extra = entity.config().get(SdnAttributes.NETWORK_LIST);
-            if (extra != null) networks.addAll(extra);
-            sensors().set(SdnAttributes.ATTACHED_NETWORKS, networks);
-            entity.sensors().set(SdnAttributes.ATTACHED_NETWORKS, networks);
-            Set<String> addresses = Sets.newHashSet();
-            for (String networkId : networks) {
-                SdnUtils.createNetwork(provider, networkId);
-                InetAddress address = provider.attachNetwork(slave, entity, containerId, networkId);
-                addresses.add(address.getHostAddress().toString());
-                if (networkId.equals(entity.getApplicationId())) {
-                    sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
-                    sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostAddress());
-                    entity.sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
-                    entity.sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostAddress());
+            // Waiting for TASK_RUNNING status and get hostname
+            Task<?> running = DependentConfiguration.attributeWhenReady(this, MesosTask.TASK_STATE, Predicates.equalTo(MesosTask.TaskState.TASK_RUNNING.toString()));
+            DynamicTasks.queueIfPossible(running).orSubmitAndBlock(this).asTask().getUnchecked(Duration.FIVE_MINUTES);
+            Task<?> hostname = DependentConfiguration.attributeWhenReady(this, Attributes.HOSTNAME, Predicates.notNull());
+            DynamicTasks.queueIfPossible(hostname).orSubmitAndBlock(this).asTask().getUnchecked(Duration.FIVE_MINUTES);
+            LOG.info("Task {} running on {} successfully", id, getHostname());
+
+            String containerId = null;
+            MesosSlave slave = getMesosCluster().getMesosSlave(getHostname());
+            String ps = slave.execCommand(BashCommands.sudo("docker ps --no-trunc --filter=name=mesos-* -q"));
+            Iterable<String> containers = Iterables.filter(Splitter.on(CharMatcher.anyOf("\r\n")).omitEmptyStrings().split(ps),
+                    StringPredicates.matchesRegex("[a-z0-9]{64}"));
+            for (String each : containers) {
+                String env = slave.execCommand(BashCommands.sudo("docker inspect --format='{{range .Config.Env}}{{println .}}{{end}}' " + each));
+                Optional<String> found = Iterables.tryFind(Splitter.on(CharMatcher.anyOf("\r\n")).split(env), Predicates.equalTo("MARATHON_APP_ID=" + sensors().get(APPLICATION_ID)));
+                if (found.isPresent()) {
+                    containerId = each;
+                    break;
                 }
             }
-            sensors().set(DockerContainer.CONTAINER_ADDRESSES, addresses);
-            entity.sensors().set(DockerContainer.CONTAINER_ADDRESSES, addresses);
-        }
+            sensors().set(DockerContainer.CONTAINER_ID, containerId);
+            entity.sensors().set(DockerContainer.CONTAINER_ID, containerId);
 
-        createLocation(flags);
+            // Set network configuration if using Calico SDN
+            if (SdnUtils.isSdnProvider(getMesosCluster(), "CalicoModule")) {
+                CalicoModule provider =  ((CalicoModule) getMesosCluster().sensors().get(MesosCluster.SDN_PROVIDER));
+                List<String> networks = Lists.newArrayList(entity.getApplicationId());
+                Collection<String> extra = entity.config().get(SdnAttributes.NETWORK_LIST);
+                if (extra != null) networks.addAll(extra);
+                sensors().set(SdnAttributes.ATTACHED_NETWORKS, networks);
+                entity.sensors().set(SdnAttributes.ATTACHED_NETWORKS, networks);
+                Set<String> addresses = Sets.newHashSet();
+                for (String networkId : networks) {
+                    SdnUtils.createNetwork(provider, networkId);
+                    InetAddress address = provider.attachNetwork(slave, entity, containerId, networkId);
+                    addresses.add(address.getHostAddress().toString());
+                    if (networkId.equals(entity.getApplicationId())) {
+                        sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
+                        sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostAddress());
+                        entity.sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
+                        entity.sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostAddress());
+                    }
+                }
+                sensors().set(DockerContainer.CONTAINER_ADDRESSES, addresses);
+                entity.sensors().set(DockerContainer.CONTAINER_ADDRESSES, addresses);
+            }
+
+            // Look up mapped ports for entity
+            DockerUtils.getContainerPorts(entity);
+
+            createLocation(flags);
+        }
 
         ServiceStateLogic.setExpectedState(this, Lifecycle.RUNNING);
     }

@@ -139,6 +139,7 @@ public class MarathonLocation extends MesosFrameworkLocation implements MachineP
             LOG.info("Starting task {} on framework {}", name, framework);
             Group tasks = framework.sensors().get(MesosFramework.FRAMEWORK_TASKS);
             EntitySpec<?> spec = EntitySpec.create(getOwner().config().get(MarathonFramework.MARATHON_TASK_SPEC));
+            spec.configure(taskFlags);
             Entity added = tasks.addMemberChild(spec);
             if (added == null) {
                 throw new NoMachinesAvailableException("Failed to create Marathon task");
