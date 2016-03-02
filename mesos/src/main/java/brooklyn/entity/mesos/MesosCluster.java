@@ -18,6 +18,8 @@ package brooklyn.entity.mesos;
 import java.util.List;
 import java.util.Map;
 
+import clocker.docker.networking.entity.sdn.util.SdnAttributes;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
 
@@ -41,7 +43,6 @@ import org.apache.brooklyn.util.time.Duration;
 import brooklyn.entity.mesos.framework.MesosFramework;
 import brooklyn.entity.mesos.framework.marathon.MarathonFramework;
 import brooklyn.location.mesos.MesosLocation;
-import brooklyn.networking.sdn.SdnAttributes;
 
 /**
  * A Mesos cluster entity.

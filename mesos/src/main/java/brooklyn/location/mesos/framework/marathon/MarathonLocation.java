@@ -26,6 +26,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import clocker.docker.entity.container.DockerContainer;
+import clocker.docker.entity.util.DockerAttributes;
+
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -47,8 +50,6 @@ import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 
-import brooklyn.entity.container.DockerAttributes;
-import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.mesos.framework.MesosFramework;
 import brooklyn.entity.mesos.framework.marathon.MarathonFramework;
 import brooklyn.entity.mesos.task.MesosTask;

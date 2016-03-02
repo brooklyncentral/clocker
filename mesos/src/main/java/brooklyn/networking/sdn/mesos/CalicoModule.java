@@ -17,6 +17,8 @@ package brooklyn.networking.sdn.mesos;
 
 import java.net.InetAddress;
 
+import clocker.docker.networking.entity.sdn.SdnProvider;
+
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.config.ConfigKey;
@@ -27,7 +29,6 @@ import brooklyn.entity.mesos.MesosAttributes;
 import brooklyn.entity.mesos.MesosCluster;
 import brooklyn.entity.mesos.MesosSlave;
 import brooklyn.entity.nosql.etcd.EtcdProxy;
-import brooklyn.networking.sdn.SdnProvider;
 
 /**
  * The Calico NetworkModule for Mesos.

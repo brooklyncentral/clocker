@@ -18,6 +18,10 @@ package brooklyn.entity.mesos.task.marathon;
 import java.util.List;
 import java.util.Map;
 
+import clocker.docker.entity.DockerHost;
+import clocker.docker.entity.container.DockerContainer;
+import clocker.docker.entity.util.DockerAttributes;
+
 import com.google.common.reflect.TypeToken;
 
 import org.apache.brooklyn.api.entity.Entity;
@@ -31,9 +35,6 @@ import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.net.HasNetworkAddresses;
 
-import brooklyn.entity.container.DockerAttributes;
-import brooklyn.entity.container.docker.DockerContainer;
-import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.mesos.framework.marathon.MarathonFramework;
 import brooklyn.entity.mesos.task.MesosTask;
 import brooklyn.location.mesos.framework.marathon.MarathonTaskLocation;
