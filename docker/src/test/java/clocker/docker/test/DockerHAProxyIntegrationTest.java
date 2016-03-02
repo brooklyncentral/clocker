@@ -13,15 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.entity.proxy.haproxy;
+package clocker.docker.test;
 
 import static org.apache.brooklyn.test.HttpTestUtils.assertHttpStatusCodeEventuallyEquals;
 
 import org.testng.annotations.Test;
 
 import clocker.docker.entity.DockerInfrastructure;
-import clocker.docker.entity.container.AbstractClockerIntegrationTest;
-import clocker.docker.entity.container.DockerInfrastructureTests;
 import clocker.docker.entity.util.DockerAttributes;
 
 import com.google.common.collect.ImmutableList;
@@ -43,7 +41,9 @@ import org.apache.brooklyn.entity.webapp.tomcat.TomcatServer;
 import org.apache.brooklyn.test.EntityTestUtils;
 import org.apache.brooklyn.test.support.TestResourceUnavailableException;
 
-public class HAProxyIntegrationTest extends AbstractClockerIntegrationTest {
+import brooklyn.entity.proxy.haproxy.HAProxyController;
+
+public class DockerHAProxyIntegrationTest extends AbstractClockerIntegrationTest {
 
     private EntitySpec<HAProxyController> haProxySpec() {
         return EntitySpec.create(HAProxyController.class)
