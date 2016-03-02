@@ -36,8 +36,8 @@ public interface WeaveNetwork extends DockerSdnProvider {
     ConfigKey<String> WEAVE_VERSION = ConfigKeys.newStringConfigKey("weave.version", "The Weave SDN version number", "1.1.2");
 
     @SetFromFlag("weavePort")
-    ConfigKey<Integer> WEAVE_PORT = WeaveContainer.WEAVE_PORT;
+    ConfigKey<Integer> WEAVE_PORT = WeaveRouter.WEAVE_PORT;
 
-    AttributeSensorAndConfigKey<EntitySpec<?>, EntitySpec<?>> WEAVE_ROUTER_SPEC = ConfigKeys.newSensorAndConfigKeyWithDefault(SDN_AGENT_SPEC, EntitySpec.create(WeaveContainer.class));
+    AttributeSensorAndConfigKey<EntitySpec<?>, EntitySpec<?>> WEAVE_ROUTER_SPEC = ConfigKeys.newSensorAndConfigKeyWithDefault(SDN_AGENT_SPEC, EntitySpec.create(WeaveRouter.class));
 
 }

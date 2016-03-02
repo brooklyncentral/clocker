@@ -44,7 +44,7 @@ import clocker.docker.networking.entity.sdn.SdnProvider;
 import clocker.docker.networking.entity.sdn.calico.CalicoNode;
 import clocker.docker.networking.entity.sdn.util.SdnAttributes;
 import clocker.docker.networking.entity.sdn.util.SdnUtils;
-import clocker.docker.networking.entity.sdn.weave.WeaveContainer;
+import clocker.docker.networking.entity.sdn.weave.WeaveRouter;
 import clocker.docker.networking.entity.sdn.weave.WeaveNetwork;
 
 import com.google.common.base.CharMatcher;
@@ -206,7 +206,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             if (SdnUtils.isSdnProvider(getInfrastructure(), "WeaveNetwork")) {
                 Integer weavePort = sdn.config().get(WeaveNetwork.WEAVE_PORT);
                 if (weavePort != null) ports.add(weavePort);
-                Integer proxyPort = sdn.config().get(WeaveContainer.WEAVE_PROXY_PORT);
+                Integer proxyPort = sdn.config().get(WeaveRouter.WEAVE_PROXY_PORT);
                 if (proxyPort != null) ports.add(proxyPort);
             }
             if (SdnUtils.isSdnProvider(getInfrastructure(), "CalicoNetwork")) {
@@ -675,7 +675,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         if (SdnUtils.isSdnProvider(getInfrastructure(), "WeaveNetwork")) {
             dockerPort = sensors().get(DockerHost.DOCKER_INFRASTRUCTURE)
                     .sensors().get(DockerInfrastructure.SDN_PROVIDER)
-                    .config().get(WeaveContainer.WEAVE_PROXY_PORT);
+                    .config().get(WeaveRouter.WEAVE_PROXY_PORT);
             tlsEnabled = true;
         }
         Maybe<SshMachineLocation> found = Machines.findUniqueMachineLocation(getLocations(), SshMachineLocation.class);

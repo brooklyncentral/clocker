@@ -28,13 +28,13 @@ import org.apache.brooklyn.util.collections.MutableSet;
 /**
  * A single Weave router running in a {@link DockerContainer}.
  */
-public class WeaveContainerImpl extends SdnAgentImpl implements WeaveContainer {
+public class WeaveRouterImpl extends SdnAgentImpl implements WeaveRouter {
 
-    private static final Logger LOG = LoggerFactory.getLogger(WeaveContainer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WeaveRouter.class);
 
     @Override
     public Class getDriverInterface() {
-        return WeaveContainerDriver.class;
+        return WeaveRouterDriver.class;
     }
 
     @Override

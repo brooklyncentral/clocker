@@ -43,11 +43,11 @@ import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.os.Os;
 import org.apache.brooklyn.util.ssh.BashCommands;
 
-public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver implements WeaveContainerDriver {
+public class WeaveRouterSshDriver extends AbstractSoftwareProcessSshDriver implements WeaveRouterDriver {
 
-    private static final Logger LOG = LoggerFactory.getLogger(WeaveContainer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WeaveRouter.class);
 
-    public WeaveContainerSshDriver(EntityLocal entity, SshMachineLocation machine) {
+    public WeaveRouterSshDriver(EntityLocal entity, SshMachineLocation machine) {
         super(entity, machine);
     }
 
@@ -73,7 +73,7 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
 
     @Override
     public void launch() {
-        InetAddress address = getEntity().sensors().get(WeaveContainer.SDN_AGENT_ADDRESS);
+        InetAddress address = getEntity().sensors().get(WeaveRouter.SDN_AGENT_ADDRESS);
         Boolean firstMember = getEntity().sensors().get(AbstractGroup.FIRST_MEMBER);
         Entity first = getEntity().sensors().get(AbstractGroup.FIRST);
         LOG.info("Launching {} Weave service at {}", Boolean.TRUE.equals(firstMember) ? "first" : "next", address.getHostAddress());
@@ -97,7 +97,7 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
                                         Boolean.TRUE.equals(firstMember) ? "" : first.sensors().get(Attributes.SUBNET_ADDRESS))),
                                 BashCommands.sudo(String.format("%s launch-proxy -H tcp://[::]:%d --tlsverify --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem --tlscacert=%<s/ca.pem",
                                         getWeaveCommand(),
-                                        entity.config().get(WeaveContainer.WEAVE_PROXY_PORT),
+                                        entity.config().get(WeaveRouter.WEAVE_PROXY_PORT),
                                         getRunDir()))))
                 .failOnNonZeroResultCode()
                 .uniqueSshConnection()
@@ -147,8 +147,8 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
     public Map<String, String> getShellEnvironment() {
         ImmutableMap.Builder<String, String> builder = ImmutableMap.<String, String> builder()
                 .putAll(super.getShellEnvironment())
-                .put("WEAVE_VERSION", entity.config().get(WeaveContainer.SUGGESTED_VERSION))
-                .put("VERSION", entity.config().get(WeaveContainer.SUGGESTED_VERSION));
+                .put("WEAVE_VERSION", entity.config().get(WeaveRouter.SUGGESTED_VERSION))
+                .put("VERSION", entity.config().get(WeaveRouter.SUGGESTED_VERSION));
         return builder.build();
     }
 
