@@ -27,5 +27,5 @@ services:
     install.skip: true
     docker.container.strategies:
     - $brooklyn:object:
-        type: brooklyn.location.docker.strategy.DepthFirstPlacementStrategy
+        type: clocker.docker.location.strategy.DepthFirstPlacementStrategy
     docker.container.nameFormat: "container-%2$02x"
