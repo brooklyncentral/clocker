@@ -19,6 +19,11 @@ import static org.apache.brooklyn.test.HttpTestUtils.assertHttpStatusCodeEventua
 
 import org.testng.annotations.Test;
 
+import clocker.docker.entity.DockerInfrastructure;
+import clocker.docker.entity.container.AbstractClockerIntegrationTest;
+import clocker.docker.entity.container.DockerInfrastructureTests;
+import clocker.docker.entity.util.DockerAttributes;
+
 import com.google.common.collect.ImmutableList;
 
 import org.apache.brooklyn.api.entity.Entity;
@@ -37,11 +42,6 @@ import org.apache.brooklyn.entity.webapp.WebAppService;
 import org.apache.brooklyn.entity.webapp.tomcat.TomcatServer;
 import org.apache.brooklyn.test.EntityTestUtils;
 import org.apache.brooklyn.test.support.TestResourceUnavailableException;
-
-import brooklyn.entity.container.DockerAttributes;
-import brooklyn.entity.container.docker.AbstractClockerIntegrationTest;
-import brooklyn.entity.container.docker.DockerInfrastructure;
-import brooklyn.entity.container.docker.DockerInfrastructureTests;
 
 public class HAProxyIntegrationTest extends AbstractClockerIntegrationTest {
 
