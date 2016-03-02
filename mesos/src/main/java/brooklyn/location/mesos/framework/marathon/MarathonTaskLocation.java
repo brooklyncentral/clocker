@@ -21,6 +21,14 @@ import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import clocker.docker.entity.container.DockerContainer;
+
+import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.base.Optional;
+
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationDefinition;
@@ -31,13 +39,7 @@ import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.exceptions.Exceptions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.base.Optional;
-
-import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.entity.mesos.task.marathon.MarathonTask;
 
 /**

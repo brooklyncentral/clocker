@@ -29,6 +29,8 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import clocker.docker.entity.util.DockerUtils;
+
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
@@ -91,7 +93,6 @@ import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
 import org.apache.brooklyn.util.time.Time;
 
-import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.mesos.framework.MesosFramework;
 import brooklyn.entity.mesos.framework.marathon.MarathonPortForwarder;
 import brooklyn.entity.mesos.task.MesosTask;

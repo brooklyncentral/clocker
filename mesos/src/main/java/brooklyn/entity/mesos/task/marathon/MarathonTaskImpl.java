@@ -25,6 +25,40 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import clocker.docker.entity.DockerHost;
+import clocker.docker.entity.container.DockerContainer;
+import clocker.docker.entity.util.DockerAttributes;
+import clocker.docker.entity.util.DockerUtils;
+import clocker.docker.networking.entity.sdn.util.SdnAttributes;
+import clocker.docker.networking.entity.sdn.util.SdnUtils;
+
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Function;
+import com.google.common.base.Functions;
+import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
+import com.google.common.base.Predicates;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import com.google.common.net.HostAndPort;
+import com.google.common.net.HttpHeaders;
+import com.google.common.primitives.Ints;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+
+import org.jclouds.compute.domain.OsFamily;
+import org.jclouds.compute.domain.Processor;
+import org.jclouds.compute.domain.TemplateBuilder;
+
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationSpec;
@@ -70,36 +104,7 @@ import org.apache.brooklyn.util.text.StringPredicates;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
 import org.apache.brooklyn.util.time.Time;
-import org.jclouds.compute.domain.OsFamily;
-import org.jclouds.compute.domain.Processor;
-import org.jclouds.compute.domain.TemplateBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import com.google.common.base.CharMatcher;
-import com.google.common.base.Function;
-import com.google.common.base.Functions;
-import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
-import com.google.common.base.Predicates;
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import com.google.common.net.HostAndPort;
-import com.google.common.net.HttpHeaders;
-import com.google.common.primitives.Ints;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-
-import brooklyn.entity.container.DockerAttributes;
-import brooklyn.entity.container.DockerUtils;
-import brooklyn.entity.container.docker.DockerContainer;
-import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.mesos.MesosAttributes;
 import brooklyn.entity.mesos.MesosCluster;
 import brooklyn.entity.mesos.MesosSlave;
@@ -109,8 +114,6 @@ import brooklyn.entity.mesos.framework.marathon.MarathonFramework;
 import brooklyn.entity.mesos.task.MesosTask;
 import brooklyn.entity.mesos.task.MesosTaskImpl;
 import brooklyn.location.mesos.framework.marathon.MarathonTaskLocation;
-import brooklyn.networking.sdn.SdnAttributes;
-import brooklyn.networking.sdn.SdnUtils;
 import brooklyn.networking.sdn.mesos.CalicoModule;
 import brooklyn.networking.subnet.SubnetTier;
 

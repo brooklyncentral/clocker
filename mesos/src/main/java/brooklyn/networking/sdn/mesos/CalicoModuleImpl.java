@@ -25,6 +25,11 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import clocker.docker.networking.entity.VirtualNetwork;
+import clocker.docker.networking.entity.sdn.SdnProvider;
+import clocker.docker.networking.entity.sdn.util.SdnUtils;
+import clocker.docker.networking.location.NetworkProvisioningExtension;
+
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicates;
@@ -64,10 +69,6 @@ import brooklyn.entity.mesos.MesosCluster;
 import brooklyn.entity.mesos.MesosSlave;
 import brooklyn.entity.mesos.MesosUtils;
 import brooklyn.entity.mesos.task.marathon.MarathonTask;
-import brooklyn.networking.VirtualNetwork;
-import brooklyn.networking.location.NetworkProvisioningExtension;
-import brooklyn.networking.sdn.SdnProvider;
-import brooklyn.networking.sdn.SdnUtils;
 
 public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule {
 

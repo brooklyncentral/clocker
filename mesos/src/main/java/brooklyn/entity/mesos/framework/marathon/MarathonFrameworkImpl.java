@@ -25,6 +25,9 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import clocker.docker.entity.container.application.VanillaDockerApplication;
+import clocker.docker.entity.util.DockerUtils;
+
 import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
@@ -59,8 +62,6 @@ import org.apache.brooklyn.util.guava.Functionals;
 import org.apache.brooklyn.util.net.Urls;
 import org.apache.brooklyn.util.text.Strings;
 
-import brooklyn.entity.container.DockerUtils;
-import brooklyn.entity.container.docker.application.VanillaDockerApplication;
 import brooklyn.entity.mesos.MesosCluster;
 import brooklyn.entity.mesos.MesosUtils;
 import brooklyn.entity.mesos.framework.MesosFramework;
