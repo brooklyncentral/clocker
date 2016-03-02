@@ -22,7 +22,7 @@ brooklyn.catalog:
   - id: docker-infrastructure
     name: "Docker Infrastructure"
     item:
-      type: brooklyn.entity.container.docker.DockerInfrastructure
+      type: clocker.docker.entity.DockerInfrastructure
       brooklyn.config:
         docker.version: 1.8.1 # DOCKER_VERSION
         entity.dynamicLocation.name: "my-docker-cloud"
@@ -42,7 +42,7 @@ brooklyn.catalog:
   - id: docker-host
     name: "Docker Host"
     item:
-      type: brooklyn.entity.container.docker.DockerHost
+      type: clocker.docker.entity.DockerHost
       brooklyn.config:
         docker.host.driver.storage: overlay
         docker.host.nameFormat: "docker-%2$d"
@@ -58,14 +58,14 @@ brooklyn.catalog:
   - id: docker-container
     name: "Docker Container"
     item:
-      type: brooklyn.entity.container.docker.DockerContainer
+      type: clocker.docker.entity.container.DockerContainer
       brooklyn.config:
         docker.container.nameFormat: "container-%2$02x"
 
   - id: calico-network
     name: "Calico Network"
     item:
-      type: brooklyn.networking.sdn.calico.CalicoNetwork
+      type: clocker.docker.networking.entity.sdn.calico.CalicoNetwork
       brooklyn.config:
         calico.version: 0.4.9
         sdn.agent.spec:
@@ -75,22 +75,12 @@ brooklyn.catalog:
   - id: calico-node
     name: "Calico Node"
     item:
-      type: brooklyn.networking.sdn.calico.CalicoNode
-
-  - id: etcd-cluster
-    name: "Etcd Cluster"
-    item:
-      type: brooklyn.entity.nosql.etcd.EtcdCluster
-      brooklyn.config:
-        etcd.version: 2.0.11
-        etcd.node.spec:
-          $brooklyn:entitySpec:
-            type: etcd-node
+      type: clocker.docker.networking.entity.sdn.calico.CalicoNode
 
   - id: calico-module
     name: "Calico Network Module"
     item:
-      type: brooklyn.networking.sdn.mesos.CalicoModule
+      type: clocker.mesos.networking.entity.sdn.calico.CalicoModule
       brooklyn.config:
         calico.version: 0.8.0
 
@@ -104,10 +94,20 @@ brooklyn.catalog:
     item:
       type: brooklyn.entity.nosql.etcd.EtcdProxy
 
+  - id: etcd-cluster
+    name: "Etcd Cluster"
+    item:
+      type: brooklyn.entity.nosql.etcd.EtcdCluster
+      brooklyn.config:
+        etcd.version: 2.0.11
+        etcd.node.spec:
+          $brooklyn:entitySpec:
+            type: etcd-node
+
   - id: weave-network
     name: "Weave Network"
     item:
-      type: brooklyn.networking.sdn.weave.WeaveNetwork
+      type: clocker.docker.networking.entity.sdn.weave.WeaveNetwork
       brooklyn.config:
         weave.version: 1.1.2
         sdn.agent.spec:
@@ -117,26 +117,26 @@ brooklyn.catalog:
   - id: weave-router
     name: "Weave Router"
     item:
-      type: brooklyn.networking.sdn.weave.WeaveContainer
+      type: clocker.docker.networking.entity.sdn.weave.WeaveRouter
 
   - id: docker-registry
     name: "Docker Registry"
     services:
-    - type: brooklyn.entity.container.docker.registry.DockerRegistry
+    - type: clocker.docker.entity.container.registry.DockerRegistry
       brooklyn.config:
         docker.registry.port: 5000
 
   - id: mesos-cluster
     name: Mesos Cluster
     item:
-      type: brooklyn.entity.mesos.MesosCluster
+      type: clocker.mesos.entity.MesosCluster
       brooklyn.config:
         entity.dynamicLocation.name: "my-mesos-cluster"
 
   - id: marathon-framework
     name: Marathon Framework
     item:
-      type: brooklyn.entity.mesos.framework.marathon.MarathonFramework
+      type: clocker.mesos.entity.framework.marathon.MarathonFramework
 
   - id: docker-cloud
     name: "Clocker"
@@ -152,11 +152,11 @@ brooklyn.catalog:
           docker.container.cluster.headroom.count: 0
           docker.container.strategies:
           - $brooklyn:object:
-              type: brooklyn.location.docker.strategy.MaxContainersPlacementStrategy
+              type: clocker.docker.location.strategy.MaxContainersPlacementStrategy
               brooklyn.config:
                 maxContainers: 32
           - $brooklyn:object:
-              type: brooklyn.location.docker.strategy.DepthFirstPlacementStrategy
+              type: clocker.docker.location.strategy.DepthFirstPlacementStrategy
           sdn.enable: false
 
   - id: docker-cloud-calico
@@ -232,9 +232,9 @@ brooklyn.catalog:
       services:
       - type: org.apache.brooklyn.entity.stock.BasicApplication
         brooklyn.children:
-        - type: brooklyn.networking.VirtualNetwork
+        - type: clocker.docker.networking.entity.VirtualNetwork
           networkId: webapp
-        - type: brooklyn.networking.VirtualNetwork
+        - type: clocker.docker.networking.entity.VirtualNetwork
           networkId: riak
         - type: org.apache.brooklyn.entity.nosql.riak.RiakCluster
           initialSize: 3
