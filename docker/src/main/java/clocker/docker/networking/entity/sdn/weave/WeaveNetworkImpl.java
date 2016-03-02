@@ -47,8 +47,8 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
         super.init();
 
         EntitySpec<?> agentSpec = EntitySpec.create(config().get(WEAVE_ROUTER_SPEC))
-                .configure(WeaveContainer.WEAVE_PORT, config().get(WeaveNetwork.WEAVE_PORT))
-                .configure(WeaveContainer.SDN_PROVIDER, this);
+                .configure(WeaveRouter.WEAVE_PORT, config().get(WeaveNetwork.WEAVE_PORT))
+                .configure(WeaveRouter.SDN_PROVIDER, this);
         String weaveVersion = config().get(WEAVE_VERSION);
         if (Strings.isNonBlank(weaveVersion)) {
             agentSpec.configure(SoftwareProcess.SUGGESTED_VERSION, weaveVersion);
@@ -65,7 +65,7 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
     @Override
     public Collection<IpPermission> getIpPermissions(String source) {
         Collection<IpPermission> permissions = MutableList.of();
-        Integer weavePort = config().get(WeaveContainer.WEAVE_PORT);
+        Integer weavePort = config().get(WeaveRouter.WEAVE_PORT);
         IpPermission weaveTcpPort = IpPermission.builder()
                 .ipProtocol(IpProtocol.TCP)
                 .fromPort(weavePort)
@@ -80,7 +80,7 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
                 .cidrBlock(Cidr.UNIVERSAL.toString()) // TODO could be tighter restricted?
                 .build();
         permissions.add(weaveUdpPort);
-        Integer proxyPort = config().get(WeaveContainer.WEAVE_PROXY_PORT);
+        Integer proxyPort = config().get(WeaveRouter.WEAVE_PROXY_PORT);
         IpPermission proxyTcpPort = IpPermission.builder()
                 .ipProtocol(IpProtocol.TCP)
                 .fromPort(proxyPort)
@@ -95,8 +95,8 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
     public void addHost(DockerHost host) {
         SshMachineLocation machine = host.getDynamicLocation().getMachine();
         EntitySpec<?> spec = EntitySpec.create(sensors().get(SDN_AGENT_SPEC))
-                .configure(WeaveContainer.DOCKER_HOST, host);
-        WeaveContainer agent = (WeaveContainer) getAgents().addChild(spec);
+                .configure(WeaveRouter.DOCKER_HOST, host);
+        WeaveRouter agent = (WeaveRouter) getAgents().addChild(spec);
         getAgents().addMember(agent);
         agent.start(ImmutableList.of(machine));
         LOG.debug("{} added Weave service {}", this, agent);

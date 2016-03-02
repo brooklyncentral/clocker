@@ -27,8 +27,8 @@ import org.apache.brooklyn.util.core.flags.SetFromFlag;
 /**
  * The Weave container.
  */
-@ImplementedBy(WeaveContainerImpl.class)
-public interface WeaveContainer extends SdnAgent {
+@ImplementedBy(WeaveRouterImpl.class)
+public interface WeaveRouter extends SdnAgent {
 
     @SetFromFlag("version")
     ConfigKey<String> SUGGESTED_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "1.1.2");
