@@ -15,17 +15,11 @@
  */
 package brooklyn.entity.proxy.haproxy;
 
-import java.util.List;
-
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
-import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.entity.proxy.AbstractController;
-import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
-
-import brooklyn.entity.container.DockerAttributes;
 
 @ImplementedBy(HAProxyControllerImpl.class)
 public interface HAProxyController extends AbstractController {
@@ -48,8 +42,5 @@ public interface HAProxyController extends AbstractController {
     ConfigKey<String> BIND_ADDRESS = ConfigKeys.newStringConfigKey(
             "haproxy.frontend.bind.address", "The address frontend should bind to. If unset all" +
                     "IPv4 addresses on the server will be listened on.");
-
-    ConfigKey<List<PortAttributeSensorAndConfigKey>> DOCKER_DIRECT_PORTS = ConfigKeys.newConfigKeyWithDefault(DockerAttributes.DOCKER_DIRECT_PORT_CONFIG,
-            MutableList.of(AbstractController.PROXY_HTTP_PORT, AbstractController.PROXY_HTTPS_PORT));
 
 }
