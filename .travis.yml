@@ -51,3 +51,4 @@ notifications:
   - andrew.kennedy@cloudsoft.io
   - andrea.turli@cloudsoft.io
   - graeme.miller@cloudsoft.io
+  slack: clocker:YcGvQVVHfwIzEogvQJzY2Xvi
