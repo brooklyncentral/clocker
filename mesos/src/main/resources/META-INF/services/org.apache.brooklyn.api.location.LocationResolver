@@ -1,2 +1,2 @@
-brooklyn.location.mesos.MesosResolver
-brooklyn.location.mesos.framework.marathon.MarathonResolver
+clocker.mesos.location.MesosResolver
+clocker.mesos.location.framework.marathon.MarathonResolver
