@@ -45,6 +45,16 @@
         <feature dependency="true">framework</feature>
     </feature>
 
+    <feature name="clocker-extras" version="${project.version}" description="Clocker Extra Entities">
+        <details>Extra Brooklyn entities for Clocker.</details>
+
+        <bundle>mvn:io.brooklyn.clocker/brooklyn-clocker-extras/${project.version}</bundle>
+        <feature version="${brooklyn.version}">brooklyn-core</feature>
+        <feature version="${brooklyn.version}">brooklyn-software-base</feature>
+        <feature version="${brooklyn.version}">brooklyn-software-nosql</feature>
+        <feature version="${brooklyn.version}">brooklyn-software-webapp</feature>
+    </feature>
+
     <feature name="clocker-docker" version="${project.version}" description="Clocker Docker Integration">
         <details>Clocker Brooklyn entities and locations for Docker integration.</details>
 
