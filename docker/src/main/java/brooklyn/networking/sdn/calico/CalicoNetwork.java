@@ -38,7 +38,7 @@ public interface CalicoNetwork extends DockerSdnProvider {
     @SetFromFlag("calicoVersion")
     ConfigKey<String> CALICO_VERSION = ConfigKeys.newStringConfigKey("calico.version", "The Calico SDN version number", "0.4.9");
 
-    ConfigKey<EntitySpec<?>> CALICO_NODE_SPEC = ConfigKeys.newConfigKeyWithDefault(SDN_AGENT_SPEC.getConfigKey(), EntitySpec.create(CalicoNode.class));
+    AttributeSensorAndConfigKey<EntitySpec<?>, EntitySpec<?>> CALICO_NODE_SPEC = ConfigKeys.newSensorAndConfigKeyWithDefault(SDN_AGENT_SPEC, EntitySpec.create(CalicoNode.class));
 
     ConfigKey<Boolean> USE_IPIP = ConfigKeys.newBooleanConfigKey("calico.ipip", "Use the IPIP protocol for inter-VM traffic", Boolean.TRUE);
     ConfigKey<Boolean> USE_NAT = ConfigKeys.newBooleanConfigKey("calico.nat", "Use NAT for outgoing traffic", Boolean.TRUE);

@@ -63,11 +63,6 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     @Override
-    public void preInstall() {
-        resolver = Entities.newDownloader(this);
-    }
-
-    @Override
     public void install() {
         List<String> commands = Lists.newLinkedList();
         commands.addAll(BashCommands.commandsToDownloadUrlsAs(resolver.getTargets(), getCalicoCommand()));

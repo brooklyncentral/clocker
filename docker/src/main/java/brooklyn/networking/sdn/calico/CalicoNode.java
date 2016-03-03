@@ -35,7 +35,7 @@ public interface CalicoNode extends SdnAgent {
     ConfigKey<String> SUGGESTED_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "0.4.8");
 
     @SetFromFlag("downloadUrl")
-    ConfigKey<String> DOWNLOAD_URL = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.DOWNLOAD_URL.getConfigKey(),
+    AttributeSensorAndConfigKey<String, String> DOWNLOAD_URL = ConfigKeys.newSensorAndConfigKeyWithDefault(SoftwareProcess.DOWNLOAD_URL,
             "https://github.com/Metaswitch/calico-docker/releases/download/v${version}/calicoctl");
 
     @SetFromFlag("etcdNode")
@@ -44,6 +44,5 @@ public interface CalicoNode extends SdnAgent {
 
     @SetFromFlag("powerstripPort")
     ConfigKey<Integer> POWERSTRIP_PORT = ConfigKeys.newIntegerConfigKey("powerstrip.port", "Powerstrip port", 2377);
-
 
 }

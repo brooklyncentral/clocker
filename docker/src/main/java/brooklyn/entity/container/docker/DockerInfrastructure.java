@@ -57,7 +57,7 @@ public interface DockerInfrastructure extends StartableApplication, Resizable, L
 
     @CatalogConfig(label = "Location Name", priority = 90)
     @SetFromFlag("locationName")
-    ConfigKey<String> LOCATION_NAME = ConfigKeys.newConfigKeyWithDefault(LocationOwner.LOCATION_NAME.getConfigKey(), "my-docker-cloud");
+    AttributeSensorAndConfigKey<String, String> LOCATION_NAME = ConfigKeys.newSensorAndConfigKeyWithDefault(LocationOwner.LOCATION_NAME, "my-docker-cloud");
 
     @CatalogConfig(label = "Docker Version", priority = 10)
     @SetFromFlag("dockerVersion")

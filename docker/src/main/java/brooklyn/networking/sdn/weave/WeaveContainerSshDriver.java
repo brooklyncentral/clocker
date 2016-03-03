@@ -30,7 +30,6 @@ import com.google.common.collect.Lists;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.core.entity.Attributes;
-import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.entity.group.AbstractGroup;
 import org.apache.brooklyn.entity.software.base.AbstractSoftwareProcessSshDriver;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
@@ -54,11 +53,6 @@ public class WeaveContainerSshDriver extends AbstractSoftwareProcessSshDriver im
 
     public String getWeaveCommand() {
         return Os.mergePathsUnix(getInstallDir(), "weave");
-    }
-
-    @Override
-    public void preInstall() {
-        resolver = Entities.newDownloader(this);
     }
 
     @Override

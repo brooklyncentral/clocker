@@ -31,6 +31,7 @@ import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.entity.StartableApplication;
 import org.apache.brooklyn.core.location.dynamic.LocationOwner;
+import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.group.DynamicGroup;
 import org.apache.brooklyn.entity.group.DynamicMultiGroup;
@@ -50,7 +51,7 @@ public interface MesosCluster extends StartableApplication, LocationOwner<MesosL
 
     @CatalogConfig(label = "Location Name", priority = 90)
     @SetFromFlag("locationName")
-    ConfigKey<String> LOCATION_NAME = ConfigKeys.newConfigKeyWithDefault(LocationOwner.LOCATION_NAME.getConfigKey(), "my-mesos-cluster");
+    AttributeSensorAndConfigKey<String, String> LOCATION_NAME = ConfigKeys.newSensorAndConfigKeyWithDefault(LocationOwner.LOCATION_NAME, "my-mesos-cluster");
 
     @CatalogConfig(label = "Mesos URL", priority = 50)
     @SetFromFlag("mesosUrl")

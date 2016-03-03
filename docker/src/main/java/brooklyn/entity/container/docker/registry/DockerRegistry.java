@@ -42,10 +42,10 @@ import brooklyn.entity.container.docker.application.VanillaDockerApplication;
 @ImplementedBy(DockerRegistryImpl.class)
 public interface DockerRegistry extends VanillaDockerApplication {
 
-    ConfigKey<String> IMAGE_NAME = ConfigKeys.newConfigKeyWithDefault(DockerAttributes.DOCKER_IMAGE_NAME.getConfigKey(), "registry");
+    AttributeSensorAndConfigKey<String, String> IMAGE_NAME = ConfigKeys.newSensorAndConfigKeyWithDefault(DockerAttributes.DOCKER_IMAGE_NAME, "registry");
 
     @SetFromFlag("imageTag")
-    ConfigKey<String> IMAGE_TAG = ConfigKeys.newConfigKeyWithDefault(DockerAttributes.DOCKER_IMAGE_TAG.getConfigKey(), "2");
+    AttributeSensorAndConfigKey<String, String> IMAGE_TAG = ConfigKeys.newSensorAndConfigKeyWithDefault(DockerAttributes.DOCKER_IMAGE_TAG, "2");
 
     @SetFromFlag("registryPort")
     AttributeSensorAndConfigKey<Integer, Integer> DOCKER_REGISTRY_PORT = ConfigKeys.newIntegerSensorAndConfigKey("docker.registry.port", "The docker registry port to expose", 50000);
