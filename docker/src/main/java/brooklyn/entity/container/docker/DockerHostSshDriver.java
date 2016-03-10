@@ -36,6 +36,8 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
+import org.jclouds.compute.strategy.GetNodeMetadataStrategy;
+
 import org.apache.brooklyn.api.location.OsDetails;
 import org.apache.brooklyn.api.mgmt.Task;
 import org.apache.brooklyn.core.effector.ssh.SshEffectorTasks;
@@ -170,12 +172,6 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         String path = Os.mergePaths(getRunDir(), volumeId);
         ArchiveUtils.deploy(url, getMachine(), path);
         return path;
-    }
-
-    @Override
-    public void preInstall() {
-        resolver = Entities.newDownloader(this);
-        setExpandedInstallDir(Os.mergePaths(getInstallDir(), resolver.getUnpackedDirectoryName(format("docker-%s", getVersion()))));
     }
 
     @Override

@@ -71,12 +71,6 @@ public class EtcdNodeSshDriver extends AbstractSoftwareProcessSshDriver implemen
     }
 
     @Override
-    public void preInstall() {
-        resolver = Entities.newDownloader(this);
-        setExpandedInstallDir(Os.mergePaths(getInstallDir(), resolver.getUnpackedDirectoryName(format("etcd-v%s-linux-amd64", getVersion()))));
-    }
-
-    @Override
     public void install() {
         OsDetails osDetails = getMachine().getMachineDetails().getOsDetails();
         if (!osDetails.isLinux()) {

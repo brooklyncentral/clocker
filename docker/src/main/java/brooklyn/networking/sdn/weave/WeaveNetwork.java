@@ -20,6 +20,7 @@ import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
 import brooklyn.networking.sdn.DockerSdnProvider;
@@ -37,6 +38,6 @@ public interface WeaveNetwork extends DockerSdnProvider {
     @SetFromFlag("weavePort")
     ConfigKey<Integer> WEAVE_PORT = WeaveContainer.WEAVE_PORT;
 
-    ConfigKey<EntitySpec<?>> WEAVE_ROUTER_SPEC = ConfigKeys.newConfigKeyWithDefault(SDN_AGENT_SPEC.getConfigKey(), EntitySpec.create(WeaveContainer.class));
+    AttributeSensorAndConfigKey<EntitySpec<?>, EntitySpec<?>> WEAVE_ROUTER_SPEC = ConfigKeys.newSensorAndConfigKeyWithDefault(SDN_AGENT_SPEC, EntitySpec.create(WeaveContainer.class));
 
 }
