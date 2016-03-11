@@ -21,6 +21,6 @@ services:
 - type: docker-cloud
   brooklyn.config:
     entity.dynamicLocation.name: "my-docker-cloud"
-    docker.version: 1.7.1
+    docker.version: 1.8.1 # DOCKER_VERSION
     docker.host.cluster.initial.size: 1
-    
+
