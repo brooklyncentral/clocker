@@ -64,9 +64,11 @@ import org.apache.brooklyn.feed.ssh.SshFeed;
 import org.apache.brooklyn.feed.ssh.SshPollConfig;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsLocationConfig;
+import org.apache.brooklyn.location.jclouds.JcloudsLocationCustomizer;
 import org.apache.brooklyn.location.jclouds.JcloudsMachineLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsSshMachineLocation;
 import org.apache.brooklyn.location.jclouds.networking.JcloudsLocationSecurityGroupCustomizer;
+import org.apache.brooklyn.location.jclouds.softlayer.SoftLayerSameVlanLocationCustomizer;
 import org.apache.brooklyn.location.jclouds.templates.PortableTemplateBuilder;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.policy.ha.ServiceFailureDetector;
@@ -304,6 +306,9 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 LOG.debug("Not modifying existing hardware configuration for {}", this);
             }
 
+            // Get list of location customizers
+            List<JcloudsLocationCustomizer> customizers = MutableList.copyOf((List) flags.get(JcloudsLocationConfig.JCLOUDS_LOCATION_CUSTOMIZERS.getName()));
+
             // Configure security groups for host virtual machine
             String securityGroup = config().get(DockerInfrastructure.SECURITY_GROUP);
             if (Strings.isNonBlank(securityGroup)) {
@@ -313,10 +318,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                     flags.put("securityGroups", securityGroup);
                 }
             } else {
-                //if (!isJcloudsLocation(location, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME)) {
-                    flags.put(JcloudsLocationConfig.JCLOUDS_LOCATION_CUSTOMIZERS.getName(),
-                            ImmutableList.of(JcloudsLocationSecurityGroupCustomizer.getInstance(getApplicationId())));
-                //}
+                customizers.add(JcloudsLocationSecurityGroupCustomizer.getInstance(getApplicationId()));
             }
 
             // Setup SoftLayer template options
@@ -324,31 +326,14 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 if (template == null) template = new PortableTemplateBuilder();
                 SoftLayerTemplateOptions options = new SoftLayerTemplateOptions();
                 options.portSpeed(Objects.firstNonNull(options.getPortSpeed(), 1000));
-
-                // Try and determine if we need to set a VLAN for this host (overriding location)
-                Integer vlanOption = options.getPrimaryBackendNetworkComponentNetworkVlanId();
-                Entity sdnProviderAttribute = sensors().get(DOCKER_INFRASTRUCTURE)
-                         .sensors().get(DockerInfrastructure.SDN_PROVIDER);
-                Optional<Integer> vlanConfig = Optional.absent();
-                if (sdnProviderAttribute != null) {
-                    vlanConfig = Optional.fromNullable(sdnProviderAttribute.config().get(SdnProvider.VLAN_ID));
-                }
-
-                Integer vlanId = vlanOption == null ? vlanConfig.orNull() : vlanOption;
-                if (vlanId == null) {
-                    // If a previous host has been configured, look up the VLAN id
-                    int count = sensors().get(DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.DOCKER_HOST_COUNT);
-                    if (count > 1 && !sensors().get(BasicGroup.FIRST_MEMBER) && sdnProviderAttribute != null) {
-                        Task<Integer> lookup = DependentConfiguration.attributeWhenReady(sdnProviderAttribute, SdnProvider.VLAN_ID);
-                        vlanId = DynamicTasks.submit(lookup, this).getUnchecked();
-                    }
-                }
-                if (vlanId != null) {
-                    options.primaryBackendNetworkComponentNetworkVlanId(vlanId);
-                }
                 template.options(options);
                 flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), template);
+
+                customizers.add(SoftLayerSameVlanLocationCustomizer.forScope(getApplicationId()));
             }
+
+            // Save updated customizers list
+            flags.put(JcloudsLocationConfig.JCLOUDS_LOCATION_CUSTOMIZERS.getName(), ImmutableList.copyOf(customizers));
         }
         return flags;
     }
