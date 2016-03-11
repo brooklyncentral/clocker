@@ -15,11 +15,10 @@
  */
 package brooklyn.location.docker.strategy;
 
-import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 
 import org.apache.brooklyn.api.entity.Entity;
@@ -48,7 +47,8 @@ public class GroupPlacementStrategy extends BasicDockerPlacementStrategy {
     @Override
     public boolean apply(DockerHostLocation input) {
         boolean requireExclusive = config().get(REQUIRE_EXCLUSIVE);
-        List<Entity> deployed = input.getDockerContainerList();
+        String dockerApplicationId = input.getOwner().getApplicationId();
+        Iterable<Entity> deployed = Iterables.filter(input.getDockerContainerList(), Predicates.not(EntityPredicates.applicationIdEqualTo(dockerApplicationId)));
         Entity parent = entity.getParent();
         String applicationId = entity.getApplicationId();
         Iterable<Entity> sameApplication = Iterables.filter(deployed, EntityPredicates.applicationIdEqualTo(applicationId));
