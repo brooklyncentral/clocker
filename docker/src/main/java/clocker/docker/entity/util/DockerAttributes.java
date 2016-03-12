@@ -119,7 +119,7 @@ public class DockerAttributes {
 
     public static final ConfigKey<List<String>> DOCKER_CONTAINER_VOLUME_EXPORT = ConfigKeys.newConfigKey(
             new TypeToken<List<String>>() { },
-            "docker.container.volumes", "Container volume export configuration");
+            "docker.container.volumes.export", "Container volume export configuration");
 
     public static final AttributeSensor<Map<String, String>> DOCKER_VOLUME_MAPPING = Sensors.newSensor(
             new TypeToken<Map<String, String>>() { },

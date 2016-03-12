@@ -38,13 +38,10 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
-import org.jclouds.compute.strategy.GetNodeMetadataStrategy;
-
 import org.apache.brooklyn.api.location.OsDetails;
 import org.apache.brooklyn.api.mgmt.Task;
 import org.apache.brooklyn.core.effector.ssh.SshEffectorTasks;
 import org.apache.brooklyn.core.entity.Attributes;
-import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.entity.group.AbstractGroup;
 import org.apache.brooklyn.entity.group.DynamicGroup;
 import org.apache.brooklyn.entity.software.base.AbstractSoftwareProcessSshDriver;

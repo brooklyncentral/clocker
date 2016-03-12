@@ -260,7 +260,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     private void removeContainer() {
         final String dockerContainerName = sensors().get(DockerContainer.DOCKER_CONTAINER_NAME);
         LOG.info("Removing {}", dockerContainerName);
-        getDockerHost().runDockerCommand("rm " + getContainerId());
+        getDockerHost().runDockerCommand("rm " + dockerContainerName);
     }
 
     private DockerTemplateOptions getDockerTemplateOptions() {
@@ -677,7 +677,9 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         }
 
         // Stop and remove the Docker container running on the host
-        shutDown();
+        if (getContainerId() != null) {
+            shutDown();
+        }
         removeContainer();
 
         sensors().set(SSH_MACHINE_LOCATION, null);

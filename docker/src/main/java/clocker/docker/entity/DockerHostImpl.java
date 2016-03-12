@@ -882,8 +882,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         //TODO change to HttpFeed with client certificates at some point in the future
         serviceUpIsRunningFeed = SshFeed.builder()
                 .entity(this)
-                .period(Duration.FIVE_SECONDS)
-                .machine(this.getMachine())
+                .period(Duration.THIRTY_SECONDS)
+                .machine(getMachine())
                 .poll(new SshPollConfig<Boolean>(SERVICE_UP)
                         .command("docker ps")
                         .onSuccess(Functions.constant(true))
