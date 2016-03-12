@@ -15,59 +15,132 @@
  */
 package brooklyn.location.docker.strategy;
 
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Semaphore;
+
+import javax.annotation.concurrent.ThreadSafe;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.annotations.Beta;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
+import com.google.common.reflect.TypeToken;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.entity.EntityPredicates;
+import org.apache.brooklyn.location.jclouds.softlayer.SoftLayerSameVlanLocationCustomizer;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
 import brooklyn.location.docker.DockerHostLocation;
 
 /**
- * Strategy that requires entities with the same parent to use the same host.
+ * A {@link DockerAwarePlacementStrategy strategy} that requires entities with
+ * the same parent to use the same host.
+ *
  * Can be configured to require exclusive use of the host with the
- * {@code exclusive} option.
+ * {@link #REQUIRE_EXCLUSIVE exclusive} ({@code docker.constraint.exclusive})
+ * option set to {@code true}; normally {@code false}.
+ *
+ * @since 1.1.0
  */
+@Beta
+@ThreadSafe
 public class GroupPlacementStrategy extends BasicDockerPlacementStrategy {
 
     private static final Logger LOG = LoggerFactory.getLogger(GroupPlacementStrategy.class);
 
-    @SetFromFlag("requireEmpty")
+    @SetFromFlag("exclusive")
     public static final ConfigKey<Boolean> REQUIRE_EXCLUSIVE = ConfigKeys.newBooleanConfigKey(
             "docker.constraint.exclusive",
             "Whether the Docker host must be exclusive to this application; by default other applications can co-exist",
             Boolean.FALSE);
 
+    @SetFromFlag("semaphoreMap")
+    public static final ConfigKey<ConcurrentMap<String, Semaphore>> SEMAPHORE_MAP = ConfigKeys.newConfigKey(
+            new TypeToken<ConcurrentMap<String, Semaphore>>() { },
+            "groupPlacementStrategy.map.semaphores",
+            "A mapping from application IDs to Semaphores; used to synchronize threads during strategy execution.",
+            Maps.<String, Semaphore>newConcurrentMap());
+
     @Override
     public boolean apply(DockerHostLocation input) {
-        boolean requireExclusive = config().get(REQUIRE_EXCLUSIVE);
-        String dockerApplicationId = input.getOwner().getApplicationId();
-        Iterable<Entity> deployed = Iterables.filter(input.getDockerContainerList(), Predicates.not(EntityPredicates.applicationIdEqualTo(dockerApplicationId)));
-        Entity parent = entity.getParent();
-        String applicationId = entity.getApplicationId();
-        Iterable<Entity> sameApplication = Iterables.filter(deployed, EntityPredicates.applicationIdEqualTo(applicationId));
-        if (requireExclusive && Iterables.size(deployed) > Iterables.size(sameApplication)) {
-            LOG.debug("Found entities not in {}; required exclusive. Reject: {}", applicationId, input);
-            return false;
-        }
-        if (Iterables.isEmpty(sameApplication)) {
-            LOG.debug("No entities present from {}. Accept: {}", applicationId, input);
-            return true;
-        } else {
-            Iterable<Entity> sameParent = Iterables.filter(sameApplication, EntityPredicates.isChildOf(parent));
-            if (Iterables.isEmpty(sameParent)) {
-                LOG.debug("All entities from {} have different parent. Reject: {}", applicationId, input);
-                return false;
-            } else {
-                LOG.debug("All entities from {} have same parent. Accept: {}", applicationId, input);
-                return true;
+        synchronized (GroupPlacementStrategy.class) {
+            Semaphore semaphore = lookupSemaphore(input);
+            try {
+                if (semaphore == null) {
+                    createSemaphore(input);
+                } else {
+                    semaphore.acquireUninterruptibly();
+                }
+    
+                boolean requireExclusive = config().get(REQUIRE_EXCLUSIVE);
+                String dockerApplicationId = input.getOwner().getApplicationId();
+                Iterable<Entity> deployed = Iterables.filter(input.getDockerContainerList(), Predicates.not(EntityPredicates.applicationIdEqualTo(dockerApplicationId)));
+                Entity parent = entity.getParent();
+                String applicationId = entity.getApplicationId();
+
+                Iterable<Entity> sameApplication = Iterables.filter(deployed, EntityPredicates.applicationIdEqualTo(applicationId));
+                if (requireExclusive && Iterables.size(deployed) > Iterables.size(sameApplication)) {
+                    LOG.debug("Found entities not in {}; required exclusive. Reject: {}", applicationId, input);
+                    return false;
+                }
+
+                if (Iterables.isEmpty(sameApplication)) {
+                    LOG.debug("No entities present from {}. Accept: {}", applicationId, input);
+                    return true;
+                } else {
+                    Iterable<Entity> sameParent = Iterables.filter(sameApplication, EntityPredicates.isChildOf(parent));
+                    if (Iterables.isEmpty(sameParent)) {
+                        LOG.debug("All entities from {} have different parent. Reject: {}", applicationId, input);
+                        return false;
+                    } else {
+                        LOG.debug("All entities from {} have same parent. Accept: {}", applicationId, input);
+                        return true;
+                    }
+                }
+            } finally {
+                if (semaphore != null) {
+                    semaphore.release();
+                }
             }
+        }
+    }
+
+    // Methods to manage the configuration map
+
+    /**
+     * Look up the {@link Semaphore} for an application.
+     *
+     * @return {@code null} if the semaphore has not been created yet
+     */
+    protected Semaphore lookupSemaphore(DockerHostLocation location) {
+        synchronized (SoftLayerSameVlanLocationCustomizer.class) {
+            ConcurrentMap<String, Semaphore> map = location.config().get(SEMAPHORE_MAP);
+            return (map != null) ? map.get(entity.getApplicationId()) : null;
+        }
+    }
+
+    /**
+     * Create a new {@link Semaphore} and optionally the {@link #SEMAPHORE_MAP map}
+     * for an application.
+     *
+     * @return The semaphore for the scope that is stored in the {@link ConcurrentMap map}.
+     */
+    protected Semaphore createSemaphore(DockerHostLocation location) {
+        synchronized (SoftLayerSameVlanLocationCustomizer.class) {
+            ConcurrentMap<String, Semaphore> map = location.config().get(SEMAPHORE_MAP);
+            if (map == null) { map = Maps.newConcurrentMap(); }
+
+            map.putIfAbsent(entity.getApplicationId(), new Semaphore(1));
+            Semaphore semaphore = map.get(entity.getApplicationId());
+            location.config().set(SEMAPHORE_MAP, map);
+
+            return semaphore;
         }
     }
 }
