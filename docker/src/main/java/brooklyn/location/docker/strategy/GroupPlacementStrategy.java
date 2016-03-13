@@ -33,8 +33,9 @@ import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.entity.EntityPredicates;
-import org.apache.brooklyn.location.jclouds.softlayer.SoftLayerSameVlanLocationCustomizer;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
+import org.apache.brooklyn.util.core.mutex.SemaphoreWithOwners;
+import org.apache.brooklyn.util.core.mutex.WithMutexes;
 
 import brooklyn.location.docker.DockerHostLocation;
 
@@ -50,7 +51,7 @@ import brooklyn.location.docker.DockerHostLocation;
  */
 @Beta
 @ThreadSafe
-public class GroupPlacementStrategy extends BasicDockerPlacementStrategy {
+public class GroupPlacementStrategy extends BasicDockerPlacementStrategy implements WithMutexes {
 
     private static final Logger LOG = LoggerFactory.getLogger(GroupPlacementStrategy.class);
 
@@ -70,77 +71,101 @@ public class GroupPlacementStrategy extends BasicDockerPlacementStrategy {
     @Override
     public boolean apply(DockerHostLocation input) {
         synchronized (GroupPlacementStrategy.class) {
-            Semaphore semaphore = lookupSemaphore(input);
-            try {
-                if (semaphore == null) {
-                    createSemaphore(input);
-                } else {
-                    semaphore.acquireUninterruptibly();
-                }
-    
-                boolean requireExclusive = config().get(REQUIRE_EXCLUSIVE);
-                String dockerApplicationId = input.getOwner().getApplicationId();
-                Iterable<Entity> deployed = Iterables.filter(input.getDockerContainerList(), Predicates.not(EntityPredicates.applicationIdEqualTo(dockerApplicationId)));
-                Entity parent = entity.getParent();
-                String applicationId = entity.getApplicationId();
+            Semaphore semaphore = lookupSemaphore(entity.getApplicationId());
+            if (semaphore == null) {
+                createSemaphore(entity.getApplicationId());
+            } else {
+                semaphore.acquireUninterruptibly();
+            }
+        }
 
-                Iterable<Entity> sameApplication = Iterables.filter(deployed, EntityPredicates.applicationIdEqualTo(applicationId));
-                if (requireExclusive && Iterables.size(deployed) > Iterables.size(sameApplication)) {
-                    LOG.debug("Found entities not in {}; required exclusive. Reject: {}", applicationId, input);
-                    return false;
-                }
+        boolean requireExclusive = config().get(REQUIRE_EXCLUSIVE);
+        String dockerApplicationId = input.getOwner().getApplicationId();
+        Iterable<Entity> deployed = Iterables.filter(input.getDockerContainerList(), Predicates.not(EntityPredicates.applicationIdEqualTo(dockerApplicationId)));
+        Entity parent = entity.getParent();
+        String applicationId = entity.getApplicationId();
 
-                if (Iterables.isEmpty(sameApplication)) {
-                    LOG.debug("No entities present from {}. Accept: {}", applicationId, input);
-                    return true;
-                } else {
-                    Iterable<Entity> sameParent = Iterables.filter(sameApplication, EntityPredicates.isChildOf(parent));
-                    if (Iterables.isEmpty(sameParent)) {
-                        LOG.debug("All entities from {} have different parent. Reject: {}", applicationId, input);
-                        return false;
-                    } else {
-                        LOG.debug("All entities from {} have same parent. Accept: {}", applicationId, input);
-                        return true;
-                    }
-                }
-            } finally {
-                if (semaphore != null) {
-                    semaphore.release();
-                }
+        Iterable<Entity> sameApplication = Iterables.filter(deployed, EntityPredicates.applicationIdEqualTo(applicationId));
+        if (requireExclusive && Iterables.size(deployed) > Iterables.size(sameApplication)) {
+            LOG.debug("Found entities not in {}; required exclusive. Reject: {}", applicationId, input);
+            return false;
+        }
+
+        if (Iterables.isEmpty(sameApplication)) {
+            LOG.debug("No entities present from {}. Accept: {}", applicationId, input);
+            return true;
+        } else {
+            Iterable<Entity> sameParent = Iterables.filter(sameApplication, EntityPredicates.isChildOf(parent));
+            if (Iterables.isEmpty(sameParent)) {
+                LOG.debug("All entities from {} have different parent. Reject: {}", applicationId, input);
+                return false;
+            } else {
+                LOG.debug("All entities from {} have same parent. Accept: {}", applicationId, input);
+                return true;
             }
         }
     }
-
-    // Methods to manage the configuration map
 
     /**
      * Look up the {@link Semaphore} for an application.
      *
      * @return {@code null} if the semaphore has not been created yet
      */
-    protected Semaphore lookupSemaphore(DockerHostLocation location) {
-        synchronized (SoftLayerSameVlanLocationCustomizer.class) {
-            ConcurrentMap<String, Semaphore> map = location.config().get(SEMAPHORE_MAP);
-            return (map != null) ? map.get(entity.getApplicationId()) : null;
+    protected Semaphore lookupSemaphore(String mutexId) {
+        synchronized (GroupPlacementStrategy.class) {
+            ConcurrentMap<String, Semaphore> map = getDockerInfrastructure().config().get(SEMAPHORE_MAP);
+            return (map != null) ? map.get(mutexId) : null;
         }
     }
 
     /**
      * Create a new {@link Semaphore} and optionally the {@link #SEMAPHORE_MAP map}
-     * for an application.
+     * for an application. Uses existing semaphore if it already exists.
      *
      * @return The semaphore for the scope that is stored in the {@link ConcurrentMap map}.
      */
-    protected Semaphore createSemaphore(DockerHostLocation location) {
-        synchronized (SoftLayerSameVlanLocationCustomizer.class) {
-            ConcurrentMap<String, Semaphore> map = location.config().get(SEMAPHORE_MAP);
+    protected Semaphore createSemaphore(String mutexId) {
+        synchronized (GroupPlacementStrategy.class) {
+            ConcurrentMap<String, Semaphore> map = getDockerInfrastructure().config().get(SEMAPHORE_MAP);
             if (map == null) { map = Maps.newConcurrentMap(); }
 
-            map.putIfAbsent(entity.getApplicationId(), new Semaphore(1));
-            Semaphore semaphore = map.get(entity.getApplicationId());
-            location.config().set(SEMAPHORE_MAP, map);
+            map.putIfAbsent(mutexId, new SemaphoreWithOwners(entity.getApplicationId()));
+            Semaphore semaphore = map.get(mutexId);
+            getDockerInfrastructure().config().set(SEMAPHORE_MAP, map);
 
             return semaphore;
+        }
+    }
+
+    @Override
+    public boolean hasMutex(String mutexId) {
+        synchronized (GroupPlacementStrategy.class) {
+            SemaphoreWithOwners semaphore = (SemaphoreWithOwners) lookupSemaphore(mutexId);
+            return semaphore.isCallingThreadAnOwner();
+        }
+    }
+
+    @Override
+    public void acquireMutex(String mutexId, String description) throws InterruptedException {
+        synchronized (GroupPlacementStrategy.class) {
+            Semaphore semaphore = createSemaphore(mutexId);
+            semaphore.acquire(); 
+        }
+    }
+
+    @Override
+    public boolean tryAcquireMutex(String mutexId, String description) {
+        synchronized (GroupPlacementStrategy.class) {
+            Semaphore semaphore = createSemaphore(mutexId);
+            return semaphore.tryAcquire();
+        }
+    }
+
+    @Override
+    public void releaseMutex(String mutexId) {
+        synchronized (GroupPlacementStrategy.class) {
+            Semaphore semaphore = lookupSemaphore(mutexId);
+            if (semaphore != null) semaphore.release();
         }
     }
 }
