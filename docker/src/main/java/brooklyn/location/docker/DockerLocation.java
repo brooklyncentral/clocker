@@ -19,6 +19,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Semaphore;
@@ -54,6 +55,7 @@ import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
+import org.apache.brooklyn.util.core.mutex.WithMutexes;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 
 import brooklyn.entity.container.DockerAttributes;
@@ -121,27 +123,19 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
         }
         Entity entity = (Entity) context;
 
-        // Get the available hosts based on placement strategies
+        // Get the available hosts
         List<DockerHostLocation> available = getDockerHostLocations();
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Placement for: {}", Iterables.toString(Iterables.transform(available, EntityFunctions.id())));
-        }
-        for (DockerAwarePlacementStrategy strategy : strategies) {
-            available = strategy.filterLocations(available, entity);
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Placement after {}: {}", strategy, Iterables.toString(Iterables.transform(available, EntityFunctions.id())));
-            }
-        }
+        LOG.debug("Placement for: {}", Iterables.toString(Iterables.transform(available, EntityFunctions.id())));
+
+        // Apply placement strategies
         List<DockerAwarePlacementStrategy> entityStrategies = entity.config().get(DockerAttributes.PLACEMENT_STRATEGIES);
-        if (entityStrategies != null && entityStrategies.size() > 0) {
-            for (DockerAwarePlacementStrategy strategy : entityStrategies) {
-                available = strategy.filterLocations(available, entity);
-            }
-        } else {
-            entityStrategies = ImmutableList.of();
+        if (entityStrategies == null) entityStrategies = ImmutableList.of();
+        for (DockerAwarePlacementStrategy strategy : Iterables.concat(strategies, entityStrategies)) {
+            available = strategy.filterLocations(available, entity);
+            LOG.debug("Placement after {}: {}", strategy, Iterables.toString(Iterables.transform(available, EntityFunctions.id())));
         }
 
-        // Use the docker strategy to add a new host
+        // Use the provisioning strategy to add a new host
         DockerHostLocation machine = null;
         DockerHost dockerHost = null;
         if (available.size() > 0) {
@@ -182,13 +176,20 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
         Entities.waitForServiceUp(dockerHost);
 
         // Obtain a new Docker container location, save and return it
-        if (LOG.isDebugEnabled()) {
+        try {
             LOG.debug("Obtain a new container from {} for {}", machine, entity);
+            Map<?,?> hostFlags = MutableMap.copyOf(flags);
+            DockerContainerLocation container = machine.obtain(hostFlags);
+            containers.put(machine, container.getId());
+            return container;
+        } finally {
+            // Release any placement strategy locks
+            for (DockerAwarePlacementStrategy strategy : Iterables.concat(strategies, entityStrategies)) {
+                if (strategy instanceof WithMutexes) {
+                    ((WithMutexes) strategy).releaseMutex(entity.getApplicationId());
+                }
+            }
         }
-        Map<?,?> hostFlags = MutableMap.copyOf(flags);
-        DockerContainerLocation container = machine.obtain(hostFlags);
-        containers.put(machine, container.getId());
-        return container;
     }
 
     @Override
@@ -207,15 +208,11 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
             throw new IllegalArgumentException("Request to release "+machine+", but this machine is not currently allocated");
         }
         DockerHostLocation host = Iterables.getOnlyElement(set);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Request to remove container mapping {} to {}", host, id);
-        }
+        LOG.debug("Request to remove container mapping {} to {}", host, id);
         host.release((DockerContainerLocation) machine);
         if (containers.remove(host, id)) {
             if (containers.get(host).isEmpty()) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Empty Docker host: {}", host);
-                }
+                LOG.debug("Empty Docker host: {}", host);
 
                 // Remove hosts when it has no containers, except for the last one
                 if (getOwner().config().get(DockerInfrastructure.REMOVE_EMPTY_DOCKER_HOSTS) && set.size() > 1) {
