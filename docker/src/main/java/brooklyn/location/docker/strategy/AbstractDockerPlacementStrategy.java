@@ -15,6 +15,8 @@
  */
 package brooklyn.location.docker.strategy;
 
+import com.google.common.base.CaseFormat;
+
 import org.apache.brooklyn.core.objs.BasicConfigurableObject;
 
 import brooklyn.entity.container.docker.DockerInfrastructure;
@@ -29,7 +31,12 @@ public abstract class AbstractDockerPlacementStrategy extends BasicConfigurableO
 
     @Override
     public String toString() {
-        return String.format("DockerAwarePlacementStrategy(%s@%s)", getClass().getSimpleName(), getId());
+        return String.format("DockerAwarePlacementStrategy(%s@%s)", getShortName(), getId());
+    }
+
+    @Override
+    public String getShortName() {
+        return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_HYPHEN, getClass().getSimpleName());
     }
 
 }
