@@ -18,6 +18,7 @@ package brooklyn.location.docker.strategy;
 import java.util.List;
 
 import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.objs.HasShortName;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
@@ -28,7 +29,7 @@ import brooklyn.location.docker.DockerVirtualLocation;
 /**
  * Placement strategy for Docker containers in host clusters.
  */
-public interface DockerAwarePlacementStrategy {
+public interface DockerAwarePlacementStrategy extends HasShortName {
 
     @SetFromFlag("infrastructure")
     ConfigKey<DockerInfrastructure> DOCKER_INFRASTRUCTURE = DockerVirtualLocation.INFRASTRUCTURE;
