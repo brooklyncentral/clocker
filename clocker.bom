@@ -13,13 +13,13 @@
 # limitations under the License.
 
 brooklyn.catalog:
-  version: "1.1.0-SNAPSHOT" # CLOCKER_VERSION
+  version: "1.1.0-TMP.20160314134044" # CLOCKER_VERSION
 
   brooklyn.libraries:
 
-  - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=brooklyn-clocker-patches&v=1.1.0-SNAPSHOT" # CLOCKER_VERSION
-  - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=brooklyn-clocker-docker&v=1.1.0-SNAPSHOT" # CLOCKER_VERSION
-  - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=brooklyn-clocker-dist&v=1.1.0-SNAPSHOT" # CLOCKER_VERSION
+  - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=brooklyn-clocker-patches&v=1.1.0-TMP.20160314134044" # CLOCKER_VERSION
+  - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=brooklyn-clocker-docker&v=1.1.0-TMP.20160314134044" # CLOCKER_VERSION
+  - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=brooklyn-clocker-dist&v=1.1.0-TMP.20160314134044" # CLOCKER_VERSION
   - "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/patch-softlayer-clocker-137.jar"
   - "https://oss.sonatype.org/content/repositories/releases/io/brooklyn/networking/brooklyn-networking-portforwarding/0.8.0-incubating/brooklyn-networking-portforwarding-0.8.0-incubating.jar" # ADVANCED_NETWORKING_VERSION
   - "https://oss.sonatype.org/content/repositories/releases/io/brooklyn/networking/brooklyn-networking-common/0.8.0-incubating/brooklyn-networking-common-0.8.0-incubating.jar" # ADVANCED_NETWORKING_VERSION
