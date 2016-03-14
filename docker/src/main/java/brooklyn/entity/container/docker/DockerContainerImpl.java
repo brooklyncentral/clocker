@@ -430,7 +430,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         LOG.debug("Docker options for {}: {}", entity, options);
 
         // Set login password from the Docker host
-        options.overrideLoginPassword(getDockerHost().getPassword());
+        options.overrideLoginPassword(getDockerHost().getLoginPassword());
 
         return options;
     }
@@ -502,15 +502,18 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         DockerTemplateOptions options = getDockerTemplateOptions();
         DockerUtils.configureEnrichers(subnetTier, entity);
 
+        boolean useSsh = Boolean.TRUE.equals(config().get(DOCKER_USE_SSH))
+                && Boolean.TRUE.equals(entity.config().get(DOCKER_USE_SSH));
+
         // put these fields on the location so it has the info it needs to create the subnet
-        Map<?, ?> dockerFlags = MutableMap.<Object, Object>builder()
+        Map<Object, Object> dockerFlags = MutableMap.<Object, Object>builder()
+                .putAll(flags)
                 .put(JcloudsLocationConfig.TEMPLATE_BUILDER, new PortableTemplateBuilder().options(options))
                 .put(JcloudsLocationConfig.IMAGE_ID, config().get(DOCKER_IMAGE_ID))
                 .put(JcloudsLocationConfig.HARDWARE_ID, config().get(DOCKER_HARDWARE_ID))
-                .put(LocationConfigKeys.USER, "root")
-                .put(LocationConfigKeys.PASSWORD, config().get(DOCKER_PASSWORD))
-                .put(SshTool.PROP_PASSWORD, config().get(DOCKER_PASSWORD))
-                .put(CloudLocationConfig.WAIT_FOR_SSHABLE, false)
+                .put(JcloudsLocationConfig.LOGIN_USER, "root")
+                .put(JcloudsLocationConfig.LOGIN_USER_PASSWORD, config().get(DOCKER_LOGIN_PASSWORD))
+                .put(CloudLocationConfig.WAIT_FOR_SSHABLE, useSsh)
                 .put(JcloudsLocationConfig.INBOUND_PORTS, options.getInboundPorts())
                 .put(JcloudsLocation.USE_PORT_FORWARDING, true)
                 .put(JcloudsLocation.PORT_FORWARDER, subnetTier.getPortForwarderExtension())

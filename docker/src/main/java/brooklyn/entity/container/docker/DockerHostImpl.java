@@ -156,10 +156,10 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         sensors().set(DOCKER_HOST_NAME, dockerHostName);
 
         // Set a password for this host's containers
-        String password = config().get(DOCKER_PASSWORD);
+        String password = config().get(DOCKER_LOGIN_PASSWORD);
         if (Strings.isBlank(password)) {
-            password = Identifiers.makeRandomId(8);
-            config().set(DOCKER_PASSWORD, password);
+            password = Identifiers.makeRandomId(12);
+            config().set(DOCKER_LOGIN_PASSWORD, password);
         }
 
         ConfigToAttributes.apply(this, DOCKER_INFRASTRUCTURE);
@@ -377,8 +377,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     }
 
     @Override
-    public String getPassword() {
-        return config().get(DOCKER_PASSWORD);
+    public String getLoginPassword() {
+        return config().get(DOCKER_LOGIN_PASSWORD);
     }
 
     /** {@inheritDoc} */
@@ -707,7 +707,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 .resolve(dockerLocationSpec, MutableMap.builder()
                         .put("identity", certPath)
                         .put("credential", keyPath)
-                        .put(ComputeServiceProperties.IMAGE_LOGIN_USER, "root:" + getPassword())
+                        .put(ComputeServiceProperties.IMAGE_LOGIN_USER, "root:" + getLoginPassword())
                         .build());
         sensors().set(JCLOUDS_DOCKER_LOCATION, jcloudsLocation);
 

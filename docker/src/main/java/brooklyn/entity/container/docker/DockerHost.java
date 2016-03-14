@@ -120,7 +120,7 @@ public interface DockerHost extends MachineEntity, HasShortName, LocationOwner<D
     AttributeSensorAndConfigKey<Map<String, String>, Map<String, String>> DOCKER_HOST_VOLUME_MAPPING = DockerAttributes.DOCKER_HOST_VOLUME_MAPPING;
 
     @SetFromFlag("password")
-    ConfigKey<String> DOCKER_PASSWORD = DockerAttributes.DOCKER_PASSWORD;
+    ConfigKey<String> DOCKER_LOGIN_PASSWORD = DockerAttributes.DOCKER_LOGIN_PASSWORD;
 
     @SetFromFlag("affinityRules")
     ConfigKey<List<String>> DOCKER_HOST_AFFINITY_RULES = AffinityRules.AFFINITY_RULES;
@@ -150,7 +150,7 @@ public interface DockerHost extends MachineEntity, HasShortName, LocationOwner<D
             "When true, will add the localhost IP address to the docker host as an acceptable ingress address. This is useful when running Clocker in the same network as the hosts will be run in (e.g. same AWS availibility zone).",
             false);
 
-    String getPassword();
+    String getLoginPassword();
 
     Integer getDockerPort();
 

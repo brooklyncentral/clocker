@@ -33,6 +33,7 @@ import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
+import org.apache.brooklyn.location.jclouds.JcloudsLocationConfig;
 import org.apache.brooklyn.util.core.flags.TypeCoercions;
 import org.apache.brooklyn.util.core.internal.ssh.SshTool;
 import org.apache.brooklyn.util.javalang.Reflections;
@@ -85,7 +86,11 @@ public class DockerAttributes {
     public static final AttributeSensorAndConfigKey<String, String> DOCKER_CONTAINER_NAME = ConfigKeys.newStringSensorAndConfigKey(
             "docker.container.name", "The name of the Docker container");
 
-    public static final ConfigKey<String> DOCKER_PASSWORD = ConfigKeys.newConfigKeyWithPrefix("docker.", SshTool.PROP_PASSWORD);
+    public static final ConfigKey<String> DOCKER_LOGIN_USER = ConfigKeys.newConfigKeyWithDefault(
+            ConfigKeys.newConfigKeyWithPrefix("docker.", JcloudsLocationConfig.LOGIN_USER),
+            "root");
+
+    public static final ConfigKey<String> DOCKER_LOGIN_PASSWORD = ConfigKeys.newConfigKeyWithPrefix("docker.", JcloudsLocationConfig.LOGIN_USER_PASSWORD);
 
     public static final ConfigKey<Boolean> DOCKER_USE_HOST_DNS_NAME = ConfigKeys.newBooleanConfigKey(
             "docker.useHostDnsName", "Container uses same DNS hostname as Docker host");

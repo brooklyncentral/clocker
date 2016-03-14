@@ -70,7 +70,7 @@ public interface DockerContainer extends BasicStartable, HasNetworkAddresses, Ha
     ConfigKey<Boolean> MANAGED = DockerAttributes.MANAGED;
 
     @SetFromFlag("password")
-    ConfigKey<String> DOCKER_PASSWORD = DockerAttributes.DOCKER_PASSWORD;
+    ConfigKey<String> DOCKER_LOGIN_PASSWORD = DockerAttributes.DOCKER_LOGIN_PASSWORD;
 
     @SetFromFlag("imageId")
     ConfigKey<String> DOCKER_IMAGE_ID = DockerAttributes.DOCKER_IMAGE_ID.getConfigKey();

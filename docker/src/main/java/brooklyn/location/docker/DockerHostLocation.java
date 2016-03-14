@@ -27,9 +27,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Optional;
@@ -43,7 +40,9 @@ import org.apache.brooklyn.api.entity.Group;
 import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.NoMachinesAvailableException;
 import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.config.Sanitizer;
 import org.apache.brooklyn.core.entity.Entities;
+import org.apache.brooklyn.core.entity.EntityInternal;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.location.AbstractLocation;
 import org.apache.brooklyn.core.location.LocationConfigKeys;
@@ -57,6 +56,8 @@ import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.ssh.BashCommands;
 import org.apache.brooklyn.util.text.Strings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerCallbacks;
@@ -247,6 +248,8 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             if (added == null) {
                 throw new NoMachinesAvailableException(String.format("Failed to create container at %s", dockerHost.getDockerHostName()));
             } else {
+                if (LOG.isDebugEnabled()) LOG.debug("Starting container {} at {}, config {}", 
+                        new Object[] { added, machine, Sanitizer.sanitize(((EntityInternal)added).config().getBag()) });
                 Entities.invokeEffector(entity, added, Startable.START,  MutableMap.of("locations", ImmutableList.of(machine))).getUnchecked();
             }
             DockerContainer dockerContainer = (DockerContainer) added;

@@ -24,7 +24,7 @@ LABEL version="1.1.0-SNAPSHOT"
 RUN type locale-gen ; if [ "$?" -eq "0" ] ; then locale-gen en_US.UTF-8 ; fi
 
 # setup root account
-RUN echo 'root:${entity.password}' | chpasswd
+RUN echo 'root:${entity.loginPassword}' | chpasswd
 
 # install sshd
 RUN if [ -x "$(which apt-get)" ] ; then \
