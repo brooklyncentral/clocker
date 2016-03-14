@@ -37,6 +37,7 @@ import org.apache.brooklyn.location.jclouds.softlayer.SoftLayerSameVlanLocationC
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.core.mutex.SemaphoreWithOwners;
 import org.apache.brooklyn.util.core.mutex.WithMutexes;
+import org.apache.brooklyn.util.core.task.Tasks;
 
 import brooklyn.location.docker.DockerHostLocation;
 
@@ -71,12 +72,16 @@ public class GroupPlacementStrategy extends BasicDockerPlacementStrategy impleme
 
     @Override
     public boolean apply(DockerHostLocation input) {
+        LOG.debug("GPS@{} apply({}) for {}/{}", new Object[] { Tasks.current().getId(), input.getMachine().getHostname(), entity.getId(), entity.getCatalogItemId() });
         synchronized (GroupPlacementStrategy.class) {
             Semaphore semaphore = lookupSemaphore(entity.getApplicationId());
             if (semaphore == null) {
+                LOG.debug("GPS@{} semaphore is null", new Object[] { Tasks.current().getId() });
                 createSemaphore(entity.getApplicationId());
             } else {
+                LOG.debug("GPS@{} semaphore found ({}) acquiring", new Object[] { Tasks.current().getId(), semaphore.availablePermits() });
                 semaphore.acquireUninterruptibly();
+                LOG.debug("GPS@{} semaphore acquired", new Object[] { Tasks.current().getId() });
             }
         }
 
@@ -86,6 +91,7 @@ public class GroupPlacementStrategy extends BasicDockerPlacementStrategy impleme
         Entity parent = entity.getParent();
         String applicationId = entity.getApplicationId();
 
+        try {
         Iterable<Entity> sameApplication = Iterables.filter(deployed, EntityPredicates.applicationIdEqualTo(applicationId));
         if (requireExclusive && Iterables.size(deployed) > Iterables.size(sameApplication)) {
             LOG.debug("Found entities not in {}; required exclusive. Reject: {}", applicationId, input);
@@ -105,6 +111,7 @@ public class GroupPlacementStrategy extends BasicDockerPlacementStrategy impleme
                 return true;
             }
         }
+        } finally { LOG.debug("GPS@{} apply({}) done", new Object[] { Tasks.current().getId(), input.getMachine().getHostname() }); }
     }
 
     /**
