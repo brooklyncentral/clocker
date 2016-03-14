@@ -16,7 +16,7 @@ FROM gliderlabs/alpine:3.1
 MAINTAINER andrew.kennedy@cloudsoft.io
 
 # CLOCKER_VERSION_BELOW
-LABEL version="1.1.0-SNAPSHOT"
+LABEL version="1.1.0-TMP.20160314133807"
 
 RUN apk-install openjdk7-jre-base ; \
     apk-install openjdk7-jre-lib ; \
@@ -29,7 +29,7 @@ RUN bash /tmp/certgen.sh /usr/lib/jvm/java-1.7-openjdk/jre/lib/security/cacerts 
     rm -f /tmp/certgen.sh
 
 # CLOCKER_VERSION_BELOW
-RUN wget --no-check-certificate https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots\&g=io.brooklyn.clocker\&a=brooklyn-clocker-dist\&v=1.1.0-SNAPSHOT\&c=dist\&e=tar.gz -O /brooklyn-clocker-dist.tar.gz ; \
+RUN wget --no-check-certificate https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots\&g=io.brooklyn.clocker\&a=brooklyn-clocker-dist\&v=1.1.0-TMP.20160314133807\&c=dist\&e=tar.gz -O /brooklyn-clocker-dist.tar.gz ; \
     tar zxf brooklyn-clocker-dist.tar.gz ; \
     rm -f brooklyn-clocker-dist.tar.gz
 
