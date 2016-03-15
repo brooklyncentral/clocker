@@ -15,7 +15,7 @@
  */
 package brooklyn.location.docker.strategy;
 
-import java.util.concurrent.ConcurrentMap;
+import java.util.Map;
 import java.util.concurrent.Semaphore;
 
 import javax.annotation.concurrent.ThreadSafe;
@@ -26,13 +26,13 @@ import org.slf4j.LoggerFactory;
 import com.google.common.annotations.Beta;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
 import com.google.common.reflect.TypeToken;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.entity.EntityPredicates;
+import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.core.mutex.SemaphoreWithOwners;
 import org.apache.brooklyn.util.core.mutex.WithMutexes;
@@ -56,6 +56,8 @@ public class GroupPlacementStrategy extends BasicDockerPlacementStrategy impleme
 
     private static final Logger LOG = LoggerFactory.getLogger(GroupPlacementStrategy.class);
 
+    private static final Object lock = new Object[0];
+
     @SetFromFlag("exclusive")
     public static final ConfigKey<Boolean> REQUIRE_EXCLUSIVE = ConfigKeys.newBooleanConfigKey(
             "docker.constraint.exclusive",
@@ -63,16 +65,17 @@ public class GroupPlacementStrategy extends BasicDockerPlacementStrategy impleme
             Boolean.FALSE);
 
     @SetFromFlag("semaphoreMap")
-    public static final ConfigKey<ConcurrentMap<String, Semaphore>> SEMAPHORE_MAP = ConfigKeys.newConfigKey(
-            new TypeToken<ConcurrentMap<String, Semaphore>>() { },
+    public static final ConfigKey<Map<String, Semaphore>> SEMAPHORE_MAP = ConfigKeys.newConfigKey(
+            new TypeToken<Map<String, Semaphore>>() { },
             "groupPlacementStrategy.map.semaphores",
             "A mapping from application IDs to Semaphores; used to synchronize threads during strategy execution.",
-            Maps.<String, Semaphore>newConcurrentMap());
+            MutableMap.<String, Semaphore>of());
 
     @Override
     public boolean apply(DockerHostLocation input) {
+        if (getDockerInfrastructure() == null) config().set(DOCKER_INFRASTRUCTURE, input.getDockerInfrastructure());
         LOG.debug("GPS@{} apply({}) for {}/{}", new Object[] { Tasks.current().getId(), input.getMachine().getHostname(), entity.getId(), entity.getCatalogItemId() });
-        synchronized (GroupPlacementStrategy.class) {
+        synchronized (lock) {
             Semaphore semaphore = lookupSemaphore(entity.getApplicationId());
             if (semaphore == null) {
                 LOG.debug("GPS@{} semaphore is null", new Object[] { Tasks.current().getId() });
@@ -119,8 +122,8 @@ public class GroupPlacementStrategy extends BasicDockerPlacementStrategy impleme
      * @return {@code null} if the semaphore has not been created yet
      */
     protected Semaphore lookupSemaphore(String mutexId) {
-        synchronized (GroupPlacementStrategy.class) {
-            ConcurrentMap<String, Semaphore> map = getDockerInfrastructure().config().get(SEMAPHORE_MAP);
+        synchronized (lock) {
+            Map<String, Semaphore> map = getDockerInfrastructure().config().get(SEMAPHORE_MAP);
             return (map != null) ? map.get(mutexId) : null;
         }
     }
@@ -129,14 +132,18 @@ public class GroupPlacementStrategy extends BasicDockerPlacementStrategy impleme
      * Create a new {@link Semaphore} and optionally the {@link #SEMAPHORE_MAP map}
      * for an application. Uses existing semaphore if it already exists.
      *
-     * @return The semaphore for the scope that is stored in the {@link ConcurrentMap map}.
+     * @return The semaphore for the scope that is stored in the {@link Map map}.
      */
     protected Semaphore createSemaphore(String mutexId) {
-        synchronized (GroupPlacementStrategy.class) {
-            ConcurrentMap<String, Semaphore> map = getDockerInfrastructure().config().get(SEMAPHORE_MAP);
-            if (map == null) { map = Maps.newConcurrentMap(); }
+        synchronized (lock) {
+            Map<String, Semaphore> map = getDockerInfrastructure().config().get(SEMAPHORE_MAP);
+            if (map == null) {
+                map = MutableMap.<String, Semaphore>of();
+            }
 
-            map.putIfAbsent(mutexId, new SemaphoreWithOwners(entity.getApplicationId()));
+            if (!map.containsKey(mutexId)) {
+                map.put(mutexId, new Semaphore(1));
+            }
             Semaphore semaphore = map.get(mutexId);
             getDockerInfrastructure().config().set(SEMAPHORE_MAP, map);
 
@@ -145,16 +152,11 @@ public class GroupPlacementStrategy extends BasicDockerPlacementStrategy impleme
     }
 
     @Override
-    public boolean hasMutex(String mutexId) {
-        synchronized (GroupPlacementStrategy.class) {
-            SemaphoreWithOwners semaphore = (SemaphoreWithOwners) lookupSemaphore(mutexId);
-            return semaphore.isCallingThreadAnOwner();
-        }
-    }
+    public boolean hasMutex(String mutexId) { throw new UnsupportedOperationException(); }
 
     @Override
     public void acquireMutex(String mutexId, String description) throws InterruptedException {
-        synchronized (GroupPlacementStrategy.class) {
+        synchronized (lock) {
             Semaphore semaphore = createSemaphore(mutexId);
             semaphore.acquire(); 
         }
@@ -162,7 +164,7 @@ public class GroupPlacementStrategy extends BasicDockerPlacementStrategy impleme
 
     @Override
     public boolean tryAcquireMutex(String mutexId, String description) {
-        synchronized (GroupPlacementStrategy.class) {
+        synchronized (lock) {
             Semaphore semaphore = createSemaphore(mutexId);
             return semaphore.tryAcquire();
         }
@@ -170,7 +172,7 @@ public class GroupPlacementStrategy extends BasicDockerPlacementStrategy impleme
 
     @Override
     public void releaseMutex(String mutexId) {
-        synchronized (GroupPlacementStrategy.class) {
+        synchronized (lock) {
             Semaphore semaphore = lookupSemaphore(mutexId);
             if (semaphore != null) semaphore.release();
         }

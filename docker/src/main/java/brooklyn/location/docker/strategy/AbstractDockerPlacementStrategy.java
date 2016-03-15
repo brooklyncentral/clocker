@@ -15,6 +15,8 @@
  */
 package brooklyn.location.docker.strategy;
 
+import org.codehaus.groovy.runtime.metaclass.MethodMetaProperty.GetMethodMetaProperty;
+
 import com.google.common.base.CaseFormat;
 
 import org.apache.brooklyn.core.objs.BasicConfigurableObject;
