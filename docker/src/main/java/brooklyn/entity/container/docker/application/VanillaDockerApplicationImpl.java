@@ -21,6 +21,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 
@@ -40,6 +41,11 @@ public class VanillaDockerApplicationImpl extends SoftwareProcessImpl implements
 
     @Override
     public String getIconUrl() { return "classpath://container.png"; }
+
+    public String getDisplayName() {
+        return String.format("Docker Container (%s)",
+                Objects.firstNonNull(config().get(CONTAINER_NAME), config().get(IMAGE_NAME)));
+    }
 
     @Override
     protected void connectSensors() {
