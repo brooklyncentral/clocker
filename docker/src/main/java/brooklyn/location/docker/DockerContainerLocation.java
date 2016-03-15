@@ -19,7 +19,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.format;
 import static org.apache.brooklyn.util.ssh.BashCommands.sudo;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,6 +30,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.api.client.util.Throwables;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Predicates;
@@ -35,6 +38,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.io.Closeables;
 import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.api.entity.Entity;
@@ -50,8 +54,10 @@ import org.apache.brooklyn.location.jclouds.JcloudsUtil;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.io.FileUtil;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Protocol;
+import org.apache.brooklyn.util.net.Urls;
 import org.apache.brooklyn.util.ssh.IptablesCommands;
 import org.apache.brooklyn.util.ssh.IptablesCommands.Chain;
 import org.apache.brooklyn.util.ssh.IptablesCommands.Policy;
@@ -85,9 +91,12 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     @SetFromFlag("owner")
     private DockerContainer dockerContainer;
 
+    private SshMachineLocation hostMachine;
+
     @Override
     public void init() {
         super.init();
+        hostMachine = getOwner().getDockerHost().getDynamicLocation().getMachine();
     }
 
     @Override
@@ -105,16 +114,15 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
      */
     private void addIptablesRule(Integer port) {
         if (getOwner().config().get(DockerHost.OPEN_IPTABLES)) {
-            SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
-            LOG.debug("Using iptables to add access for TCP/{} to {}", port, host);
+            LOG.debug("Using iptables to add access for TCP/{} to {}", port, hostMachine);
             List<String> commands = ImmutableList.of(
                     sudo("iptables -L INPUT -nv | grep -q 'tcp dpt:"+port+"'"),
                     format("if [ $? -eq 0 ]; then ( %s ); else ( %s ); fi",
                             sudo("iptables -C INPUT -s 0/0 -p tcp --dport "+port+" -j ACCEPT"),
                             IptablesCommands.insertIptablesRule(Chain.INPUT, Protocol.TCP, port, Policy.ACCEPT)));
-            int result = host.execCommands(format("Open iptables TCP/%d", port), commands);
+            int result = hostMachine.execCommands(format("Open iptables TCP/%d", port), commands);
             if (result != 0) {
-                String msg = format("Error running iptables update for TCP/%d on %s", port, host);
+                String msg = format("Error running iptables update for TCP/%d on %s", port, hostMachine);
                 LOG.error(msg);
                 throw new RuntimeException(msg);
             }
@@ -181,8 +189,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
             return super.execScript(props, summaryForLogging, commands, env);
         } else {
             Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
-            SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
-            return host.execCommands(nonPortProps, summaryForLogging, getExecScript(commands, env));
+            return hostMachine.execCommands(nonPortProps, summaryForLogging, getExecScript(commands, env));
         }
     }
 
@@ -196,8 +203,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
             return super.execCommands(props, summaryForLogging, commands, env);
         } else {
             Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
-            SshMachineLocation host = getOwner().getDockerHost().getDynamicLocation().getMachine();
-            return host.execCommands(nonPortProps, summaryForLogging, getExecCommands(commands, env));
+            return hostMachine.execCommands(nonPortProps, summaryForLogging, getExecCommands(commands, env));
         }
     }
 
@@ -258,13 +264,72 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     }
 
     @Override
+    public int copyTo(final Map<String,?> props, final InputStream src, final long filesize, final String destination) {
+        return copyTo(props, src, destination);
+    }
+
+    @Override
+    public int copyTo(final Map<String,?> props, final InputStream src, final String destination) {
+        File tmp = null;
+        try {
+            tmp = File.createTempFile(dockerContainer.getContainerId(), Urls.getBasename(destination));
+            FileUtil.copyTo(src, tmp);
+            copyFile(tmp, destination);
+            return 0;
+        } catch (IOException ioe) {
+            throw Throwables.propagate(ioe);
+        } finally {
+            tmp.delete();
+            Closeables.closeQuietly(src);
+        }
+    }
+
+    @Override
+    public int copyTo(Map<String,?> props, File src, String destination) {
+        File tmp = null;
+        try {
+            tmp = File.createTempFile(dockerContainer.getContainerId(), Urls.getBasename(destination));
+            hostMachine.copyTo(props, src, tmp);
+        } catch (IOException ioe) {
+            throw Throwables.propagate(ioe);
+        } finally {
+            tmp.delete();
+        }
+        copyFile(tmp, destination);
+        return 0;
+    }
+
+    private void copyFile(File src, String dst) {
+        String cp = String.format("cp %s %s:%s", src.getAbsolutePath(), dockerContainer.getContainerId(), dst);
+        String output = getOwner().getDockerHost().runDockerCommand(cp);
+        LOG.info("Copying to {}:{} - result: {}", new Object[] { dockerContainer.getContainerId(), dst, output });
+    }
+
+    @Override
+    public int copyFrom(final Map<String,?> props, final String remote, final String local) {
+        File tmp = null;
+        try {
+            tmp = File.createTempFile(dockerContainer.getContainerId(), Urls.getBasename(local));
+            String cp = String.format("cp %s:%s %s", dockerContainer.getContainerId(), remote, tmp.getAbsolutePath());
+            String output = getOwner().getDockerHost().runDockerCommand(cp);
+            hostMachine.copyFrom(props, tmp.getAbsolutePath(), local);
+            LOG.info("Copying from {}:{} to {} - result: {}", new Object[] { dockerContainer.getContainerId(), remote, local, output });
+        } catch (IOException ioe) {
+            throw Throwables.propagate(ioe);
+        } finally {
+            tmp.delete();
+        }
+        return 0;
+    }
+
+    @Override
     public void releasePort(int portNumber) {
         machine.releasePort(portNumber);
     }
 
     @Override
     public InetAddress getAddress() {
-        return getOwner().getDockerHost().getDynamicLocation().getMachine().getAddress();
+        return hostMachine.getAddress();
     }
 
     @Override
