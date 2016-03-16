@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 by Cloudsoft Corporation Limited
+ * Copyright 2014-2016 by Cloudsoft Corporation Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,9 @@ import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.entity.software.base.AbstractSoftwareProcessSshDriver;
+import org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
+import org.apache.brooklyn.util.text.Strings;
 
 /**
  * The SSH implementation of the {@link VanillaDockerApplicationDriver}.
@@ -37,12 +39,17 @@ public class VanillaDockerApplicationSshDriver extends AbstractSoftwareProcessSs
     }
 
     public Entity getOwnerEntity() {
-        return (Entity) ((DynamicLocation) getMachine()).getOwner();
+        return ((DynamicLocation) getMachine()).getOwner();
     }
 
     @Override
     public boolean isRunning() {
-        return getOwnerEntity().sensors().get(Startable.SERVICE_UP);
+        String customCommand = getEntity().config().get(VanillaSoftwareProcess.CHECK_RUNNING_COMMAND);
+        if (Strings.isBlank(customCommand)) {
+            return getOwnerEntity().sensors().get(Startable.SERVICE_UP);
+        } else {
+            return newScript(CHECK_RUNNING).body.append(customCommand).execute() == 0;
+        }
     }
 
     @Override
@@ -56,9 +63,25 @@ public class VanillaDockerApplicationSshDriver extends AbstractSoftwareProcessSs
     }
 
     @Override
-    public void customize() { }
+    public void customize() {
+        String customizeCommand = getEntity().config().get(VanillaSoftwareProcess.CUSTOMIZE_COMMAND);
+        if (Strings.isNonBlank(customizeCommand)) {
+            newScript(CUSTOMIZING)
+                .failOnNonZeroResultCode()
+                .body.append(customizeCommand)
+                .execute();
+        }
+    }
 
     @Override
-    public void launch() { }
+    public void launch() {
+        String launchCommand = getEntity().config().get(VanillaSoftwareProcess.LAUNCH_COMMAND);
+        if (Strings.isNonBlank(launchCommand)) {
+            newScript(LAUNCHING)
+                .failOnNonZeroResultCode()
+                .body.append(launchCommand)
+                .execute();
+        }
+    }
 
 }
