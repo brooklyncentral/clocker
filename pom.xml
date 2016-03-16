@@ -21,8 +21,9 @@
     <modules>
         <module>patches</module>
         <module>docker</module>
-        <module>jsgui</module>
         <module>mesos</module>
+        <module>compose</module>
+        <module>jsgui</module>
         <module>console</module>
         <module>dist</module>
     </modules>
