@@ -565,6 +565,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             LocationSpec<DockerContainerLocation> spec = LocationSpec.create(DockerContainerLocation.class);
             spec.configure(flags)
                 .configure(DynamicLocation.OWNER, this)
+                .configure("entity", entity)
                 .configure("machine", container) // the underlying JcloudsLocation
                 .configure(container.config().getBag().getAllConfig())
                 .configure("address", getSshHostAddress())
