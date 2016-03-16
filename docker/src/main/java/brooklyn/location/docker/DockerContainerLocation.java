@@ -177,7 +177,13 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
         for (String commandString : filtered) {
             parseDockerCallback(commandString);
         }
+<<<<<<< Updated upstream
         if (getOwner().config().get(DockerContainer.DOCKER_USE_SSH)) {
+=======
+        boolean entitySsh = Boolean.TRUE.equals(entity.config().get(DockerContainer.DOCKER_USE_SSH));
+        boolean dockerSsh = Boolean.TRUE.equals(getOwner().config().get(DockerContainer.DOCKER_USE_SSH));
+        if (entitySsh && dockerSsh) {
+>>>>>>> Stashed changes
             return super.execScript(props, summaryForLogging, commands, env);
         } else {
             Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
@@ -192,7 +198,13 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
         for (String commandString : filtered) {
             parseDockerCallback(commandString);
         }
+<<<<<<< Updated upstream
         if (getOwner().config().get(DockerContainer.DOCKER_USE_SSH)) {
+=======
+        boolean entitySsh = Boolean.TRUE.equals(entity.config().get(DockerContainer.DOCKER_USE_SSH));
+        boolean dockerSsh = Boolean.TRUE.equals(getOwner().config().get(DockerContainer.DOCKER_USE_SSH));
+        if (entitySsh && dockerSsh) {
+>>>>>>> Stashed changes
             return super.execCommands(props, summaryForLogging, commands, env);
         } else {
             Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
