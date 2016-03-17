@@ -34,7 +34,6 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -58,8 +57,8 @@ import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityAndAttribute;
 import org.apache.brooklyn.core.location.PortRanges;
-import org.apache.brooklyn.core.mgmt.BrooklynTags;
 import org.apache.brooklyn.core.mgmt.BrooklynTaskTags;
+import org.apache.brooklyn.core.objs.BrooklynObjectInternal.ConfigurationSupportInternal;
 import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.database.DatastoreMixins;
@@ -67,6 +66,7 @@ import org.apache.brooklyn.entity.messaging.MessageBroker;
 import org.apache.brooklyn.entity.nosql.couchbase.CouchbaseCluster;
 import org.apache.brooklyn.entity.nosql.couchbase.CouchbaseNode;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
+import org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess;
 import org.apache.brooklyn.entity.webapp.WebAppServiceConstants;
 import org.apache.brooklyn.location.jclouds.JcloudsLocationConfig;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
@@ -76,12 +76,11 @@ import org.apache.brooklyn.util.collections.MutableSet;
 import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.core.task.ssh.SshTasks;
 import org.apache.brooklyn.util.core.task.system.ProcessTaskWrapper;
+import org.apache.brooklyn.util.guava.Maybe;
 import org.apache.brooklyn.util.text.Identifiers;
 import org.apache.brooklyn.util.text.Strings;
 
 import brooklyn.entity.container.docker.DockerContainer;
-import brooklyn.entity.container.docker.DockerHost;
-import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.location.docker.DockerContainerLocation;
 import brooklyn.networking.sdn.SdnAttributes;
 import brooklyn.networking.subnet.SubnetTier;
@@ -216,11 +215,48 @@ public class DockerUtils {
     public static String imageName(Entity entity, String dockerfile) {
         String simpleName = entity.getEntityType().getSimpleName();
         String version = entity.config().get(SoftwareProcess.SUGGESTED_VERSION);
-
-        String label = Joiner.on(":").skipNulls().join(simpleName, version, dockerfile);
-        return Identifiers.makeIdFromHash(Hashing.md5().hashString(label, Charsets.UTF_8).asLong()).toLowerCase(Locale.ENGLISH);
+        long hash = HashGenerator.builder()
+                .add(simpleName)
+                .add(version)
+                .add(dockerfile)
+                .add(entity, VanillaSoftwareProcess.INSTALL_UNIQUE_LABEL)
+                .add(entity, SoftwareProcess.DOWNLOAD_URL.getConfigKey())
+                .add(entity, SoftwareProcess.PRE_INSTALL_FILES)
+                .add(entity, SoftwareProcess.PRE_INSTALL_TEMPLATES)
+                .add(entity, VanillaSoftwareProcess.PRE_INSTALL_COMMAND)
+                .add(entity, VanillaSoftwareProcess.INSTALL_COMMAND)
+                .add(entity, SoftwareProcess.SHELL_ENVIRONMENT)
+                .build();
+        
+        return Identifiers.makeIdFromHash(hash).toLowerCase(Locale.ENGLISH);
     }
 
+    private static class HashGenerator {
+        private long hash;
+
+        static HashGenerator builder() {
+            return new HashGenerator();
+        }
+        
+        private HashGenerator() {
+        }
+
+        public HashGenerator add(String val) {
+            hash = hash * 31 + (val == null ? 0 : Hashing.md5().hashString(val, Charsets.UTF_8).asLong());
+            return this;
+        }
+        
+        public HashGenerator add(Entity entity, ConfigKey<?> key) {
+            Maybe<?> value = ((ConfigurationSupportInternal)entity.config()).getNonBlocking(key);
+            if (value.isPresent()) hash = hash*31 + (value.get()==null ? 0 : value.get().hashCode());
+            return this;
+        }
+        
+        public long build() {
+            return hash;
+        }
+    }
+    
     public static Optional<String> getContainerName(Entity target) {
         Optional<String> unique = getUniqueContainerName(target);
         if (unique.isPresent()) {
