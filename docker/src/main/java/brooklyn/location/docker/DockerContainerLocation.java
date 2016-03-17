@@ -25,20 +25,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Joiner;
-import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.base.Predicates;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.net.HostAndPort;
-
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.location.LocationDefinition;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.location.HasSubnetHostname;
@@ -58,6 +47,17 @@ import org.apache.brooklyn.util.ssh.IptablesCommands.Policy;
 import org.apache.brooklyn.util.text.StringEscapes.BashStringEscapes;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Joiner;
+import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.net.HostAndPort;
 
 import brooklyn.entity.container.DockerCallbacks;
 import brooklyn.entity.container.DockerUtils;
@@ -88,6 +88,16 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     @Override
     public void init() {
         super.init();
+    }
+
+    @Override
+    public LocationDefinition register() {
+        throw new UnsupportedOperationException("Docker container location type definition cannot be persisted");
+    }
+
+    @Override
+    public void deregister() {
+        // no-op
     }
 
     @Override

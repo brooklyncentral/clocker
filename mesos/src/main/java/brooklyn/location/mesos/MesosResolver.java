@@ -23,25 +23,25 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.brooklyn.api.internal.AbstractBrooklynObjectSpec;
+import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.location.LocationRegistry;
+import org.apache.brooklyn.api.location.LocationResolver;
+import org.apache.brooklyn.api.location.LocationSpec;
+import org.apache.brooklyn.api.mgmt.ManagementContext;
+import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.core.location.BasicLocationRegistry;
+import org.apache.brooklyn.core.objs.proxy.SpecialBrooklynObjectConstructor;
+import org.apache.brooklyn.util.text.KeyValueParser;
+import org.apache.brooklyn.util.text.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.annotations.Beta;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-
-import org.apache.brooklyn.api.location.Location;
-import org.apache.brooklyn.api.location.LocationRegistry;
-import org.apache.brooklyn.api.location.LocationResolver.EnableableLocationResolver;
-import org.apache.brooklyn.api.location.LocationSpec;
-import org.apache.brooklyn.api.mgmt.ManagementContext;
-import org.apache.brooklyn.core.location.BasicLocationRegistry;
-import org.apache.brooklyn.core.location.LocationPropertiesFromBrooklynProperties;
-import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
-import org.apache.brooklyn.core.location.internal.LocationInternal;
-import org.apache.brooklyn.util.collections.MutableMap;
-import org.apache.brooklyn.util.text.KeyValueParser;
-import org.apache.brooklyn.util.text.Strings;
 
 import brooklyn.entity.mesos.MesosCluster;
 
@@ -54,7 +54,7 @@ import brooklyn.entity.mesos.MesosCluster;
  *   <li>{@code mesos:mesosClusterId:(name=mesos-cluster)}
  * </ul>
  */
-public class MesosResolver implements EnableableLocationResolver {
+public class MesosResolver implements LocationResolver {
 
     private static final Logger LOG = LoggerFactory.getLogger(MesosResolver.class);
 
@@ -77,13 +77,19 @@ public class MesosResolver implements EnableableLocationResolver {
     }
 
     @Override
-    public Location newLocationFromString(Map locationFlags, String spec, LocationRegistry registry) {
-        return newLocationFromString(spec, registry, registry.getProperties(), locationFlags);
+    public boolean accepts(String spec, LocationRegistry registry) {
+        return BasicLocationRegistry.isResolverPrefixForSpec(this, spec, true);
     }
 
-    protected Location newLocationFromString(String spec, LocationRegistry registry, Map properties, Map locationFlags) {
+    @Override
+    public boolean isEnabled() {
+        // TODO Could lookup if location exists - should we?
+        return true;
+    }
+
+    @Override
+    public LocationSpec<? extends Location> newLocationSpecFromString(String spec, Map<?, ?> locationFlags, LocationRegistry registry) {
         LOG.debug("Resolving location '" + spec + "' with flags " + Joiner.on(",").withKeyValueSeparator("=").join(locationFlags));
-        String namedLocation = (String) locationFlags.get(LocationInternal.NAMED_SPEC_NAME.getName());
 
         Matcher matcher = PATTERN.matcher(spec);
         if (!matcher.matches()) {
@@ -106,59 +112,31 @@ public class MesosResolver implements EnableableLocationResolver {
             throw new IllegalArgumentException("Invalid location '"+spec+"'; if name supplied then value must be non-empty");
         }
 
-        Map<String, Object> filteredProperties = new LocationPropertiesFromBrooklynProperties().getLocationProperties(MESOS, namedLocation, properties);
-        MutableMap<String, Object> flags = MutableMap.<String, Object>builder().putAll(filteredProperties).putAll(locationFlags).build();
-
-        String mesosClusterId = matcher.group(2);
-        if (Strings.isBlank(mesosClusterId)) {
-            throw new IllegalArgumentException("Invalid location '"+spec+"'; mesos cluster entity id must be non-empty");
+        String mesosLocId = matcher.group(2);
+        if (Strings.isBlank(mesosLocId)) {
+            throw new IllegalArgumentException("Invalid location '"+spec+"'; mesos cluster location id must be non-empty");
         }
 
-        // Build the display name
-        StringBuilder name = new StringBuilder();
-        if (displayNamePart != null) {
-            name.append(displayNamePart);
-        } else {
-            name.append("Mesos Cluster ").append(mesosClusterId);
+        Location mesosLoc = managementContext.getLocationManager().getLocation(mesosLocId);
+        if (mesosLoc == null) {
+            throw new IllegalArgumentException("Unknown Mesos location id "+mesosLocId+", spec "+spec);
+        } else if (!(mesosLoc instanceof MesosLocation)) {
+            throw new IllegalArgumentException("Invalid location id for Mesos, spec "+spec+"; instead matches "+mesosLoc);
         }
-        final String displayName =  name.toString();
 
-        // Build the location name
-        name = new StringBuilder();
-        if (namePart != null) {
-            name.append(namePart);
-        } else {
-            name.append("mesos-");
-            name.append(mesosClusterId);
-        }
-        final String locationName =  name.toString();
-        MesosCluster cluster = (MesosCluster) managementContext.getEntityManager().getEntity(mesosClusterId);
-        Iterable<Location> managedLocations = managementContext.getLocationManager().getLocations();
-
-        for (Location location : managedLocations) {
-            if (location instanceof MesosLocation) {
-                if (((MesosLocation) location).getOwner().getId().equals(mesosClusterId)) {
-                    return location;
-                }
-            }
-        }
-        LocationSpec<MesosLocation> locationSpec = LocationSpec.create(MesosLocation.class)
-                .configure(flags)
-                .configure(DynamicLocation.OWNER, cluster)
-                .configure(LocationInternal.NAMED_SPEC_NAME, locationName)
-                .displayName(displayName);
-        return managementContext.getLocationManager().createLocation(locationSpec);
+        return LocationSpec.create(MesosLocation.class)
+                .configure(LocationConstructor.LOCATION, mesosLoc)
+                .configure(SpecialBrooklynObjectConstructor.Config.SPECIAL_CONSTRUCTOR, LocationConstructor.class);
     }
-
-    @Override
-    public boolean accepts(String spec, LocationRegistry registry) {
-        return BasicLocationRegistry.isResolverPrefixForSpec(this, spec, true);
+    
+    @Beta
+    public static class LocationConstructor implements SpecialBrooklynObjectConstructor {
+        public static ConfigKey<Location> LOCATION = ConfigKeys.newConfigKey(Location.class, "resolver.location");
+        
+        @SuppressWarnings("unchecked")
+        @Override
+        public <T> T create(ManagementContext mgmt, Class<T> type, AbstractBrooklynObjectSpec<?, ?> spec) {
+            return (T) checkNotNull(spec.getConfig().get(LOCATION), LOCATION.getName());
+        }
     }
-
-    @Override
-    public boolean isEnabled() {
-        return true;
-//        return Iterables.tryFind(managementContext.getEntityManager().getEntities(), Predicates.instanceOf(MesosCluster.class)).isPresent();
-    }
-
 }

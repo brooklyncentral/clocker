@@ -15,6 +15,8 @@
  */
 package brooklyn.location.docker;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
@@ -27,24 +29,20 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import com.google.common.base.Joiner;
-import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.entity.Group;
+import org.apache.brooklyn.api.location.LocationDefinition;
 import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.NoMachinesAvailableException;
 import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.config.Sanitizer;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityInternal;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.location.AbstractLocation;
+import org.apache.brooklyn.core.location.BasicLocationDefinition;
 import org.apache.brooklyn.core.location.LocationConfigKeys;
 import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
@@ -58,6 +56,14 @@ import org.apache.brooklyn.util.ssh.BashCommands;
 import org.apache.brooklyn.util.text.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Joiner;
+import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerCallbacks;
@@ -78,19 +84,28 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
     public static final String CONTAINER_MUTEX = "container";
 
+    public static final ConfigKey<String> LOCATION_NAME = ConfigKeys.newStringConfigKey("locationName");
+
+    public static final ConfigKey<SshMachineLocation> MACHINE = ConfigKeys.newConfigKey(
+            SshMachineLocation.class, 
+            "machine");
+
+    public static final ConfigKey<PortForwarder> PORT_FORWARDER = ConfigKeys.newConfigKey(
+            PortForwarder.class, 
+            "portForwarder");
+
+    public static final ConfigKey<JcloudsLocation> JCLOUDS_LOCATION = ConfigKeys.newConfigKey(
+            JcloudsLocation.class, 
+            "jcloudsLocation");
+
+    @SetFromFlag("locationRegistrationId")
+    private String locationRegistrationId;
+
     private transient ReadWriteLock lock = new ReentrantReadWriteLock();
-
-    @SetFromFlag("machine")
-    private SshMachineLocation machine;
-
-    @SetFromFlag("jcloudsLocation")
-    private JcloudsLocation jcloudsLocation;
-
-    @SetFromFlag("portForwarder")
-    private PortForwarder portForwarder;
-
-    @SetFromFlag("owner")
-    private DockerHost dockerHost;
+    private transient DockerHost dockerHost;
+    private transient SshMachineLocation machine;
+    private transient PortForwarder portForwarder;
+    private transient JcloudsLocation jcloudsLocation;
 
     private final ConcurrentMap<String, CountDownLatch> imageLatches = Maps.newConcurrentMap();
 
@@ -106,6 +121,60 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
         }
     }
 
+    @Override
+    public void init() {
+        super.init();
+        dockerHost = (DockerHost) checkNotNull(getConfig(OWNER), "owner");
+        machine = (SshMachineLocation) checkNotNull(getConfig(MACHINE), "machine");
+        portForwarder = (PortForwarder) getConfig(PORT_FORWARDER);
+        jcloudsLocation = (JcloudsLocation) getConfig(JCLOUDS_LOCATION);
+    }
+    
+    @Override
+    public void rebind() {
+        super.rebind();
+
+        dockerHost = (DockerHost) getConfig(OWNER);
+        machine = (SshMachineLocation) getConfig(MACHINE);
+        portForwarder = (PortForwarder) getConfig(PORT_FORWARDER);
+        jcloudsLocation = (JcloudsLocation) getConfig(JCLOUDS_LOCATION);
+        
+        if (getConfig(LOCATION_NAME) != null) {
+            register();
+        }
+    }
+
+    @Override
+    public LocationDefinition register() {
+        String locationName = checkNotNull(getConfig(LOCATION_NAME), "config %s", LOCATION_NAME.getName());
+
+        LocationDefinition check = getManagementContext().getLocationRegistry().getDefinedLocationByName(locationName);
+        if (check != null) {
+            throw new IllegalStateException("Location " + locationName + " is already defined: " + check);
+        }
+
+        String hostLocId = getId();
+        String infraLocId = (getParent() != null) ? getParent().getId() : "";
+        String locationSpec = String.format(DockerResolver.DOCKER_HOST_MACHINE_SPEC, infraLocId, hostLocId) + String.format(":(name=\"%s\")", locationName);
+
+        LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, ImmutableMap.<String, Object>of());
+        getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
+        
+        locationRegistrationId = definition.getId();
+        requestPersist();
+        
+        return definition;
+    }
+    
+    @Override
+    public void deregister() {
+        if (locationRegistrationId != null) {
+            getManagementContext().getLocationRegistry().removeDefinedLocation(locationRegistrationId);
+            locationRegistrationId = null;
+            requestPersist();
+        }
+    }
+    
     public DockerContainerLocation obtain() throws NoMachinesAvailableException {
         return obtain(Maps.<String,Object>newLinkedHashMap());
     }

@@ -64,7 +64,9 @@ import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.location.BasicLocationDefinition;
 import org.apache.brooklyn.core.location.BasicLocationRegistry;
 import org.apache.brooklyn.core.location.LocationConfigKeys;
+import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.core.location.cloud.CloudLocationConfig;
+import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.core.location.dynamic.LocationOwner;
 import org.apache.brooklyn.entity.group.BasicGroup;
 import org.apache.brooklyn.entity.group.DynamicGroup;
@@ -93,6 +95,7 @@ import brooklyn.entity.mesos.framework.marathon.MarathonPortForwarder;
 import brooklyn.entity.mesos.task.MesosTask;
 import brooklyn.location.mesos.MesosLocation;
 import brooklyn.location.mesos.MesosResolver;
+import brooklyn.location.mesos.framework.marathon.MarathonLocation;
 import brooklyn.networking.subnet.SubnetTier;
 
 /**
@@ -181,26 +184,20 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
             String suffix = config().get(LOCATION_NAME_SUFFIX);
             locationName = Joiner.on("-").skipNulls().join(prefix, getId(), suffix);
         }
-        LocationDefinition check = getManagementContext().getLocationRegistry().getDefinedLocationByName(locationName);
-        if (check != null) {
-            throw new IllegalStateException("Location " + locationName + " is already defined: " + check);
-        }
-
-        String locationSpec = String.format(MesosResolver.MESOS_CLUSTER_SPEC, getId()) + String.format(":(name=\"%s\")", locationName);
-        sensors().set(LOCATION_SPEC, locationSpec);
-        LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
-        Location location = getManagementContext().getLocationRegistry().resolve(definition);
-        getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
-
-        ManagementContext.PropertiesReloadListener listener = DockerUtils.reloadLocationListener(getManagementContext(), definition);
-        getManagementContext().addPropertiesReloadListener(listener);
-        sensors().set(Attributes.PROPERTIES_RELOAD_LISTENER, listener);
-
-        sensors().set(LocationOwner.LOCATION_DEFINITION, definition);
+        
+        MesosLocation location = getManagementContext().getLocationManager().createLocation(LocationSpec.create(MesosLocation.class)
+                .displayName("Mesos Cluster("+getId()+")")
+                .configure(flags)
+                .configure(DynamicLocation.OWNER, getProxy())
+                .configure("locationName", locationName));
+        
+        LocationDefinition definition = location.register();
+        
+        sensors().set(LocationOwner.LOCATION_SPEC, definition.getSpec());
         sensors().set(LocationOwner.DYNAMIC_LOCATION, location);
-        sensors().set(LocationOwner.LOCATION_NAME, location.getId());
-
-        LOG.info("New Mesos location {} created", location);
+        sensors().set(LocationOwner.LOCATION_NAME, locationName);
+    
+        LOG.info("New Mesos cluster location {} created for {}", location, this);
         return (MesosLocation) location;
     }
 
@@ -220,21 +217,10 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
         MesosLocation location = getDynamicLocation();
 
         if (location != null) {
-            LocationManager mgr = getManagementContext().getLocationManager();
-            if (mgr.isManaged(location)) {
-                mgr.unmanage(location);
-            }
-            final LocationDefinition definition = sensors().get(LocationOwner.LOCATION_DEFINITION);
-            if (definition != null) {
-                getManagementContext().getLocationRegistry().removeDefinedLocation(definition.getId());
-            }
+            location.deregister();
+            Locations.unmanage(location);
         }
-        ManagementContext.PropertiesReloadListener listener = sensors().get(Attributes.PROPERTIES_RELOAD_LISTENER);
-        if (listener != null) {
-            getManagementContext().removePropertiesReloadListener(listener);
-        }
-
-        sensors().set(LocationOwner.LOCATION_DEFINITION, null);
+    
         sensors().set(LocationOwner.DYNAMIC_LOCATION, null);
         sensors().set(LocationOwner.LOCATION_NAME, null);
     }

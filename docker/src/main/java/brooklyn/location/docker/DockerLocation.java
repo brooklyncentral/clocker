@@ -15,6 +15,8 @@
  */
 package brooklyn.location.docker;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
@@ -23,30 +25,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Semaphore;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.base.Optional;
-import com.google.common.base.Predicates;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Multimaps;
-import com.google.common.collect.SetMultimap;
-
 import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.location.LocationDefinition;
 import org.apache.brooklyn.api.location.MachineLocation;
 import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.NoMachinesAvailableException;
 import org.apache.brooklyn.api.mgmt.rebind.RebindContext;
 import org.apache.brooklyn.api.mgmt.rebind.RebindSupport;
 import org.apache.brooklyn.api.mgmt.rebind.mementos.LocationMemento;
+import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityFunctions;
 import org.apache.brooklyn.core.location.AbstractLocation;
+import org.apache.brooklyn.core.location.BasicLocationDefinition;
 import org.apache.brooklyn.core.location.LocationConfigKeys;
 import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.core.mgmt.rebind.BasicLocationRebindSupport;
@@ -55,6 +47,20 @@ import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.base.Optional;
+import com.google.common.base.Predicates;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.SetMultimap;
 
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.docker.DockerHost;
@@ -68,8 +74,7 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
 
     private static final Logger LOG = LoggerFactory.getLogger(DockerLocation.class);
 
-    @SetFromFlag("owner")
-    private DockerInfrastructure infrastructure;
+    public static final ConfigKey<String> LOCATION_NAME = ConfigKeys.newStringConfigKey("locationName");
 
     @SetFromFlag("strategies")
     private List<DockerAwarePlacementStrategy> strategies;
@@ -80,6 +85,10 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
     @SetFromFlag("machines")
     private final SetMultimap<DockerHostLocation, String> containers = Multimaps.synchronizedSetMultimap(HashMultimap.<DockerHostLocation, String>create());
 
+    @SetFromFlag("locationRegistrationId")
+    private String locationRegistrationId;
+
+    private transient DockerInfrastructure infrastructure;
     private transient Semaphore permit = new Semaphore(1);
 
     public DockerLocation() {
@@ -94,6 +103,52 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
         }
     }
 
+    @Override
+    public void init() {
+        super.init();
+        infrastructure = (DockerInfrastructure) getConfig(OWNER);
+    }
+    
+    @Override
+    public void rebind() {
+        super.rebind();
+        
+        infrastructure = (DockerInfrastructure) getConfig(OWNER);
+        
+        if (getConfig(LOCATION_NAME) != null) {
+            register();
+        }
+    }
+
+    @Override
+    public LocationDefinition register() {
+        String locationName = checkNotNull(getConfig(LOCATION_NAME), "config %s", LOCATION_NAME.getName());
+
+        LocationDefinition check = getManagementContext().getLocationRegistry().getDefinedLocationByName(locationName);
+        if (check != null) {
+            throw new IllegalStateException("Location " + locationName + " is already defined: " + check);
+        }
+
+        String locationSpec = String.format(DockerResolver.DOCKER_INFRASTRUCTURE_SPEC, getId()) + String.format(":(name=\"%s\")", locationName);
+
+        LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, ImmutableMap.<String, Object>of());
+        getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
+        
+        locationRegistrationId = definition.getId();
+        requestPersist();
+        
+        return definition;
+    }
+    
+    @Override
+    public void deregister() {
+        if (locationRegistrationId != null) {
+            getManagementContext().getLocationRegistry().removeDefinedLocation(locationRegistrationId);
+            locationRegistrationId = null;
+            requestPersist();
+        }
+    }
+    
     public MachineProvisioningLocation<SshMachineLocation> getProvisioner() {
         return provisioner;
     }
@@ -218,7 +273,7 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
                 }
 
                 // Remove hosts when it has no containers, except for the last one
-                if (getOwner().config().get(DockerInfrastructure.REMOVE_EMPTY_DOCKER_HOSTS) && set.size() > 1) {
+                if (infrastructure.config().get(DockerInfrastructure.REMOVE_EMPTY_DOCKER_HOSTS) && set.size() > 1) {
                     LOG.info("Removing empty Docker host: {}", host);
                     remove(host);
                 }
@@ -308,5 +363,4 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
                 .add("infrastructure", infrastructure)
                 .add("strategies", strategies);
     }
-
 }

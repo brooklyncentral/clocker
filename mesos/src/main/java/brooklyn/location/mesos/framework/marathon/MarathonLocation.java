@@ -15,6 +15,8 @@
  */
 package brooklyn.location.mesos.framework.marathon;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
@@ -28,41 +30,63 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Optional;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.SetMultimap;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.entity.Group;
+import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.location.LocationDefinition;
 import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.NoMachinesAvailableException;
+import org.apache.brooklyn.api.mgmt.ManagementContext;
 import org.apache.brooklyn.camp.brooklyn.BrooklynCampConstants;
+import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.entity.trait.Startable;
+import org.apache.brooklyn.core.location.BasicLocationDefinition;
 import org.apache.brooklyn.core.location.LocationConfigKeys;
 import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
+import org.apache.brooklyn.core.location.dynamic.LocationOwner;
 import org.apache.brooklyn.entity.group.DynamicCluster;
+import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableMap;
+import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 
 import brooklyn.entity.container.DockerAttributes;
+import brooklyn.entity.container.DockerUtils;
 import brooklyn.entity.container.docker.DockerContainer;
+import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.mesos.framework.MesosFramework;
 import brooklyn.entity.mesos.framework.marathon.MarathonFramework;
 import brooklyn.entity.mesos.task.MesosTask;
 import brooklyn.entity.mesos.task.marathon.MarathonTask;
+import brooklyn.location.docker.DockerHostLocation;
+import brooklyn.location.docker.DockerResolver;
+import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
 import brooklyn.location.mesos.framework.MesosFrameworkLocation;
 
 public class MarathonLocation extends MesosFrameworkLocation implements MachineProvisioningLocation<MarathonTaskLocation>,
         DynamicLocation<MarathonFramework, MarathonLocation> {
 
-    private static final long serialVersionUID = -1453203257759956820L;
-
     private static final Logger LOG = LoggerFactory.getLogger(MarathonLocation.class);
 
     public static final String TASK_MUTEX = "task";
+
+    public static final ConfigKey<String> LOCATION_NAME = ConfigKeys.newStringConfigKey("locationName");
+
+    @SetFromFlag("locationRegistrationId")
+    private String locationRegistrationId;
 
     private transient ReadWriteLock lock = new ReentrantReadWriteLock();
 
@@ -78,6 +102,44 @@ public class MarathonLocation extends MesosFrameworkLocation implements MachineP
         }
     }
 
+    @Override
+    public void rebind() {
+        super.rebind();
+        
+        if (getConfig(LOCATION_NAME) != null) {
+            register();
+        }
+    }
+
+    @Override
+    public LocationDefinition register() {
+        String locationName = checkNotNull(getConfig(LOCATION_NAME), "config %s", LOCATION_NAME.getName());
+
+        LocationDefinition check = getManagementContext().getLocationRegistry().getDefinedLocationByName(locationName);
+        if (check != null) {
+            throw new IllegalStateException("Location " + locationName + " is already defined: " + check);
+        }
+
+        String locationSpec = String.format(MarathonResolver.MARATHON_FRAMEWORK_SPEC, getId()) + String.format(":(name=\"%s\")", locationName);
+
+        LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, ImmutableMap.<String, Object>of());
+        getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
+        
+        locationRegistrationId = definition.getId();
+        requestPersist();
+        
+        return definition;
+    }
+    
+    @Override
+    public void deregister() {
+        if (locationRegistrationId != null) {
+            getManagementContext().getLocationRegistry().removeDefinedLocation(locationRegistrationId);
+            locationRegistrationId = null;
+            requestPersist();
+        }
+    }
+    
     public MarathonTaskLocation obtain() throws NoMachinesAvailableException {
         return obtain(Maps.<String,Object>newLinkedHashMap());
     }

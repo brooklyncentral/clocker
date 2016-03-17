@@ -23,29 +23,9 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.CharMatcher;
-import com.google.common.base.Charsets;
-import com.google.common.base.Function;
-import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.hash.Hashing;
-import com.google.common.net.HostAndPort;
-
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
-import org.apache.brooklyn.api.location.LocationDefinition;
 import org.apache.brooklyn.api.location.PortRange;
-import org.apache.brooklyn.api.mgmt.ManagementContext;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.camp.brooklyn.BrooklynCampConstants;
 import org.apache.brooklyn.config.ConfigKey;
@@ -79,6 +59,23 @@ import org.apache.brooklyn.util.core.task.system.ProcessTaskWrapper;
 import org.apache.brooklyn.util.guava.Maybe;
 import org.apache.brooklyn.util.text.Identifiers;
 import org.apache.brooklyn.util.text.Strings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Charsets;
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.hash.Hashing;
+import com.google.common.net.HostAndPort;
 
 import brooklyn.entity.container.docker.DockerContainer;
 import brooklyn.location.docker.DockerContainerLocation;
@@ -423,27 +420,6 @@ public class DockerUtils {
             }
         }
     };
-
-    public static final ManagementContext.PropertiesReloadListener reloadLocationListener(ManagementContext context, LocationDefinition definition) {
-        return new ReloadDockerLocation(context, definition);
-    }
-
-    public static class ReloadDockerLocation implements ManagementContext.PropertiesReloadListener {
-
-        private final ManagementContext context;
-        private final LocationDefinition definition;
-
-        public ReloadDockerLocation(ManagementContext context, LocationDefinition definition) {
-            this.context = Preconditions.checkNotNull(context, "context");
-            this.definition = Preconditions.checkNotNull(definition, "definition");
-        }
-
-        @Override
-        public void reloaded() {
-            Location resolved = context.getLocationRegistry().resolve(definition);
-            context.getLocationRegistry().updateDefinedLocation(definition);
-        }
-    }
 
     public static void addExtraPublicKeys(Entity entity, SshMachineLocation location) {
         String extraPublicKey = location.config().get(JcloudsLocationConfig.EXTRA_PUBLIC_KEY_DATA_TO_AUTH);
