@@ -32,9 +32,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 import javax.net.ssl.X509TrustManager;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicates;
@@ -61,6 +58,7 @@ import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityPredicates;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
+import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic.ComputeServiceIndicatorsFromChildrenAndMembers;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.core.location.BasicLocationDefinition;
@@ -86,6 +84,8 @@ import org.apache.brooklyn.util.core.crypto.SecureKeys;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
@@ -238,6 +238,15 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
         }
 
         sensors().set(Attributes.MAIN_URI, URI.create("/clocker"));
+
+        // Override the health-check: just interested in the docker infrastructure/SDN, rather than 
+        // the groups that show the apps.
+        Entity sdn = sensors().get(SDN_PROVIDER);
+        enrichers().add(EnricherSpec.create(ComputeServiceIndicatorsFromChildrenAndMembers.class)
+                .uniqueTag(ComputeServiceIndicatorsFromChildrenAndMembers.DEFAULT_UNIQUE_TAG)
+                .configure(ComputeServiceIndicatorsFromChildrenAndMembers.FROM_CHILDREN, true)
+                .configure(ComputeServiceIndicatorsFromChildrenAndMembers.ENTITY_FILTER, Predicates.or(
+                        Predicates.<Entity>equalTo(hosts), (sdn == null ? Predicates.<Entity>alwaysFalse() : Predicates.equalTo(sdn)))));
     }
 
     @Override
