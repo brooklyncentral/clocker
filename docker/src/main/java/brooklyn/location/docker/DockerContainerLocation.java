@@ -39,6 +39,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Closeables;
+import com.google.common.io.Files;
 import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.api.entity.Entity;
@@ -54,7 +55,6 @@ import org.apache.brooklyn.location.jclouds.JcloudsUtil;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.exceptions.Exceptions;
-import org.apache.brooklyn.util.io.FileUtil;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Protocol;
 import org.apache.brooklyn.util.net.Urls;
@@ -214,7 +214,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     private List<String> getExecScript(List<String> commands, Map<String,?> env) {
         StringBuilder target = new StringBuilder("docker exec ")
                 .append(dockerContainer.getContainerId())
-                .append(" '");
+                .append(" /bin/bash -c '");
         Joiner.on(";").appendTo(target, Iterables.concat(getEnvVarCommands(env), commands));
         target.append("'");
         return ImmutableList.of(target.toString());
@@ -223,9 +223,9 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     private List<String> getExecCommands(List<String> commands, Map<String,?> env) {
         List<String> result = Lists.newLinkedList();
         result.addAll(getEnvVarCommands(env));
-        String prefix = "docker exec " + dockerContainer.getContainerId() + " ";
+        String exec = "docker exec %s /bin/bash -c '%s'";
         for (String command : commands) {
-            result.add(prefix + command);
+            result.add(String.format(exec, dockerContainer.getContainerId(), command));
         }
         return result;
     }
@@ -276,12 +276,13 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     public int copyTo(final Map<String,?> props, final InputStream src, final String destination) {
         File tmp = null;
         try {
-            tmp = File.createTempFile(dockerContainer.getContainerId(), Urls.getBasename(destination));
-            FileUtil.copyTo(src, tmp);
+            tmp = File.createTempFile(dockerContainer.getId(), Urls.getBasename(destination));
+            Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
+            hostMachine.copyTo(nonPortProps, src, tmp.getAbsolutePath());
             copyFile(tmp, destination);
             return 0;
         } catch (IOException ioe) {
-            throw Throwables.propagate(ioe);
+            throw Exceptions.propagate(ioe);
         } finally {
             tmp.delete();
             Closeables.closeQuietly(src);
@@ -292,15 +293,16 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     public int copyTo(Map<String,?> props, File src, String destination) {
         File tmp = null;
         try {
-            tmp = File.createTempFile(dockerContainer.getContainerId(), Urls.getBasename(destination));
-            hostMachine.copyTo(props, src, tmp);
+            tmp = File.createTempFile(dockerContainer.getId(), Urls.getBasename(destination));
+            Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
+            hostMachine.copyTo(nonPortProps, src, tmp);
+            copyFile(tmp, destination);
+            return 0;
         } catch (IOException ioe) {
-            throw Throwables.propagate(ioe);
+            throw Exceptions.propagate(ioe);
         } finally {
             tmp.delete();
         }
-        copyFile(tmp, destination);
-        return 0;
     }
 
     private void copyFile(File src, String dst) {
@@ -313,10 +315,11 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     public int copyFrom(final Map<String,?> props, final String remote, final String local) {
         File tmp = null;
         try {
-            tmp = File.createTempFile(dockerContainer.getContainerId(), Urls.getBasename(local));
+            tmp = File.createTempFile(dockerContainer.getId(), Urls.getBasename(local));
             String cp = String.format("cp %s:%s %s", dockerContainer.getContainerId(), remote, tmp.getAbsolutePath());
             String output = getOwner().getDockerHost().runDockerCommand(cp);
-            hostMachine.copyFrom(props, tmp.getAbsolutePath(), local);
+            Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
+            hostMachine.copyFrom(nonPortProps, tmp.getAbsolutePath(), local);
             LOG.info("Copying from {}:{} to {} - result: {}", new Object[] { dockerContainer.getContainerId(), remote, local, output });
         } catch (IOException ioe) {
             throw Throwables.propagate(ioe);

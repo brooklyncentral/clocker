@@ -84,6 +84,9 @@ public interface DockerContainer extends BasicStartable, HasNetworkAddresses, Ha
     @SetFromFlag("entrypoint")
     ConfigKey<List<String>> DOCKER_IMAGE_ENTRYPOINT = DockerAttributes.DOCKER_IMAGE_ENTRYPOINT.getConfigKey();
 
+    @SetFromFlag("commands")
+    ConfigKey<List<String>> DOCKER_IMAGE_COMMANDS = DockerAttributes.DOCKER_IMAGE_COMMANDS.getConfigKey();
+
     @SetFromFlag("hardwareId")
     ConfigKey<String> DOCKER_HARDWARE_ID = DockerAttributes.DOCKER_HARDWARE_ID.getConfigKey();
 

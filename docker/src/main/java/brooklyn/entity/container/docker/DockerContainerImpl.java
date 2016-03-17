@@ -418,12 +418,19 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         }
         options.env(env);
 
-        // Entrypoint
+        // Entrypoint and commands
+        // TODO parse string into list?
         List<String> entrypoint = entity.config().get(DockerContainer.DOCKER_IMAGE_ENTRYPOINT);
         if (entrypoint != null && entrypoint.size() > 0) {
             options.entrypoint(entrypoint);
             sensors().set(DockerAttributes.DOCKER_IMAGE_ENTRYPOINT, entrypoint);
             entity.sensors().set(DockerAttributes.DOCKER_IMAGE_ENTRYPOINT, entrypoint);
+        }
+        List<String> commands = entity.config().get(DockerContainer.DOCKER_IMAGE_COMMANDS);
+        if (commands != null && commands.size() > 0) {
+            options.commands(commands);
+            sensors().set(DockerAttributes.DOCKER_IMAGE_COMMANDS, commands);
+            entity.sensors().set(DockerAttributes.DOCKER_IMAGE_COMMANDS, commands);
         }
 
         // Log for debugging without password

@@ -77,7 +77,11 @@ public class DockerAttributes {
 
     public static final AttributeSensorAndConfigKey<List<String>, List<String>> DOCKER_IMAGE_ENTRYPOINT = ConfigKeys.newSensorAndConfigKey(
             new TypeToken<List<String>>() { },
-            "docker.image.entrypoint", "Optional replacement for the image entrypoint command");
+            "docker.image.entrypoint", "Optional replacement for the image entrypoint command and arguments");
+
+    public static final AttributeSensorAndConfigKey<List<String>, List<String>> DOCKER_IMAGE_COMMANDS = ConfigKeys.newSensorAndConfigKey(
+            new TypeToken<List<String>>() { },
+            "docker.image.commands", "Optional replacement for the image commands");
 
     public static final AttributeSensorAndConfigKey<String, String> DOCKER_HARDWARE_ID = ConfigKeys.newStringSensorAndConfigKey(
             "docker.hardwareId", "The ID of a Docker hardware type to use for a container", "small");

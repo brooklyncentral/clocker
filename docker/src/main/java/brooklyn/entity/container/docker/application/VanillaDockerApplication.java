@@ -57,6 +57,9 @@ public interface VanillaDockerApplication extends VanillaSoftwareProcess {
     @SetFromFlag("entrypoint")
     ConfigKey<List<String>> IMAGE_ENTRYPOINT = DockerAttributes.DOCKER_IMAGE_ENTRYPOINT.getConfigKey();
 
+    @SetFromFlag("commands")
+    ConfigKey<List<String>> IMAGE_COMMANDS = DockerAttributes.DOCKER_IMAGE_COMMANDS.getConfigKey();
+
     @SetFromFlag("useSsh")
     ConfigKey<Boolean> DOCKER_USE_SSH = ConfigKeys.newConfigKeyWithDefault(DockerAttributes.DOCKER_USE_SSH, Boolean.FALSE);
 
