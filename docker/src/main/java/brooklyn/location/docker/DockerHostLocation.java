@@ -94,8 +94,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
     @SetFromFlag("owner")
     private DockerHost dockerHost;
 
-    @SetFromFlag("images")
-    private ConcurrentMap<String, CountDownLatch> images = Maps.newConcurrentMap();
+    private final ConcurrentMap<String, CountDownLatch> imageLatches = Maps.newConcurrentMap();
 
     public DockerHostLocation() {
         this(Maps.newLinkedHashMap());
@@ -216,7 +215,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                 }
 
                 // Tag the image name and create its latch
-                images.putIfAbsent(imageName, new CountDownLatch(1));
+                imageLatches.putIfAbsent(imageName, new CountDownLatch(1));
                 dockerHost.runDockerCommand(String.format("tag -f %s %s:latest", imageId, imageName));
             }
 
@@ -297,7 +296,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
     public void waitForImage(String imageName) {
         try {
-            CountDownLatch latch = images.get(imageName);
+            CountDownLatch latch = imageLatches.get(imageName);
             if (latch != null) latch.await(15, TimeUnit.MINUTES);
         } catch (InterruptedException ie) {
             throw Exceptions.propagate(ie);
@@ -305,7 +304,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
     }
 
     public void markImage(String imageName) {
-        CountDownLatch latch = images.get(imageName);
+        CountDownLatch latch = imageLatches.get(imageName);
         if (latch != null) latch.countDown();
     }
 
