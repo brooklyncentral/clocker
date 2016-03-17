@@ -85,6 +85,8 @@ public interface VanillaDockerApplication extends VanillaSoftwareProcess {
     
     ConfigKey<Boolean> SKIP_ON_BOX_BASE_DIR_RESOLUTION = ConfigKeys.newConfigKeyWithDefault(BrooklynConfigKeys.SKIP_ON_BOX_BASE_DIR_RESOLUTION, Boolean.TRUE);
 
+    ConfigKey<String> LAUNCH_COMMAND = ConfigKeys.newConfigKeyWithDefault(VanillaSoftwareProcess.LAUNCH_COMMAND, null);
+
     DockerContainer getDockerContainer();
 
     DockerHost getDockerHost();
