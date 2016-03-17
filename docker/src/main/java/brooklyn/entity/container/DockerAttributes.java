@@ -132,7 +132,13 @@ public class DockerAttributes {
     public static final AttributeSensorAndConfigKey<Entity, Entity> DOCKER_INFRASTRUCTURE = ConfigKeys.newSensorAndConfigKey(Entity.class,
             "docker.infrastructure", "The Docker infrastructure");
 
-    // These configurations must be set on the specific entity and will not be inherited
+    // These configurations must be set on the specific entity; all but the first will not be
+    // inherited.
+
+    public static final ConfigKey<Boolean> AUTO_CHECKPOINT_DOCKER_IMAGE_POST_INSTALL = ConfigKeys.newBooleanConfigKey(
+            "docker.container.autoCheckpointImage",
+            "Whether to automatically create an image after the entity's install(), and subsequently re-use that image for the entity type",
+            false);
 
     public static final ConfigKey<List<Entity>> DOCKER_LINKS = ConfigKeys.builder(new TypeToken<List<Entity>>() { })
             .name("docker.container.links")

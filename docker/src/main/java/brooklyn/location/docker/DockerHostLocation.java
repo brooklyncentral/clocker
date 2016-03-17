@@ -74,8 +74,6 @@ import brooklyn.networking.subnet.SubnetTier;
 public class DockerHostLocation extends AbstractLocation implements MachineProvisioningLocation<DockerContainerLocation>, DockerVirtualLocation,
         DynamicLocation<DockerHost, DockerHostLocation>, Closeable {
 
-    private static final long serialVersionUID = -1453203257759956820L;
-
     private static final Logger LOG = LoggerFactory.getLogger(DockerHostLocation.class);
 
     public static final String CONTAINER_MUTEX = "container";
@@ -150,14 +148,29 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
             Optional<String> baseImage = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_NAME));
             String imageTag = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_TAG)).or("latest");
-
+            
+            boolean autoCheckpointImagePostInstall = Boolean.TRUE.equals(entity.config().get(DockerAttributes.AUTO_CHECKPOINT_DOCKER_IMAGE_POST_INSTALL));
+            
             // TODO incorporate more info (incl registry?)
-            String imageName = DockerUtils.imageName(entity, dockerfile);
+            String imageName;
+            if (autoCheckpointImagePostInstall) {
+                imageName = DockerUtils.imageName(entity, dockerfile);
+            } else {
+                // Generate a random id, and avoid collisions
+                boolean collision;
+                do {
+                    imageName = DockerUtils.randomImageName();
+                    collision = dockerHost.getImageNamed(imageName, imageTag).isPresent();
+                    if (collision) LOG.info("Random image name collision '{}' on host {}; generating new id", imageName, getOwner());
+                } while (collision);
+            }
 
             // Lookup image ID or build new image from Dockerfile
-            LOG.info("ImageName for entity {}: {}", entity, imageName);
+            LOG.info("ImageName ({}) for entity {}: {}", new Object[] {(autoCheckpointImagePostInstall ? "hash" : "random"), entity, imageName});
 
             if (dockerHost.getImageNamed(imageName, imageTag).isPresent()) {
+                assert autoCheckpointImagePostInstall : "random imageName "+imageName+" collision on host "+getOwner();
+            
                 // Wait until committed before continuing - Brooklyn may be midway through its creation.
                 waitForImage(imageName);
 
@@ -195,12 +208,14 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                 entity.config().set(SoftwareProcess.SKIP_INSTALLATION, true);
             } else {
                 // Push or commit the image, otherwise Clocker will make a new one for the entity once it is installed.
-                if (getDockerInfrastructure().config().get(DockerInfrastructure.DOCKER_IMAGE_REGISTRY_WRITEABLE) &&
-                        (getDockerInfrastructure().config().get(DockerInfrastructure.DOCKER_SHOULD_START_REGISTRY) ||
-                                Strings.isNonBlank(getDockerInfrastructure().sensors().get(DockerInfrastructure.DOCKER_IMAGE_REGISTRY_URL)))) {
-                    insertCallback(entity, SoftwareProcess.POST_INSTALL_COMMAND, DockerCallbacks.push());
-                } else {
-                    insertCallback(entity, SoftwareProcess.POST_INSTALL_COMMAND, DockerCallbacks.commit());
+                if (autoCheckpointImagePostInstall) {
+                    if (getDockerInfrastructure().config().get(DockerInfrastructure.DOCKER_IMAGE_REGISTRY_WRITEABLE) &&
+                            (getDockerInfrastructure().config().get(DockerInfrastructure.DOCKER_SHOULD_START_REGISTRY) ||
+                                    Strings.isNonBlank(getDockerInfrastructure().sensors().get(DockerInfrastructure.DOCKER_IMAGE_REGISTRY_URL)))) {
+                        insertCallback(entity, SoftwareProcess.POST_INSTALL_COMMAND, DockerCallbacks.push());
+                    } else {
+                        insertCallback(entity, SoftwareProcess.POST_INSTALL_COMMAND, DockerCallbacks.commit());
+                    }
                 }
 
                 if (Strings.isNonBlank(dockerfile)) {

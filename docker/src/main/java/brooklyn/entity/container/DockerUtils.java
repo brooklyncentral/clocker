@@ -231,6 +231,10 @@ public class DockerUtils {
         return Identifiers.makeIdFromHash(hash).toLowerCase(Locale.ENGLISH);
     }
 
+    public static String randomImageName() {
+        return Identifiers.makeRandomId(12).toLowerCase(Locale.ENGLISH);
+    }
+    
     private static class HashGenerator {
         private long hash;
 

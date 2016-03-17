@@ -522,6 +522,13 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 .put(SubnetTier.SUBNET_CIDR, Cidr.CLASS_B)
                 .build();
 
+        // TODO If auto-checkpointing to create an image after the install() phase, then that will include
+        // whatever ssh credentials were put into the image (e.g. by JcloudsLocation#createUserStatements()).
+        if (Boolean.TRUE.equals(entity.config().get(DockerAttributes.AUTO_CHECKPOINT_DOCKER_IMAGE_POST_INSTALL))) {
+            dockerFlags.put(JcloudsLocationConfig.USER, "root");
+            dockerFlags.put(JcloudsLocationConfig.PASSWORD, config().get(DOCKER_LOGIN_PASSWORD));
+        }
+
         try {
             // Create a new container using jclouds Docker driver
             JcloudsSshMachineLocation container = (JcloudsSshMachineLocation) host.getJcloudsLocation().obtain(dockerFlags);
