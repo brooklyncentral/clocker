@@ -56,8 +56,7 @@ public class AbstractClockerIntegrationTest extends BrooklynAppLiveTestSupport {
 
     @AfterMethod(alwaysRun = true)
     public void tearDown() throws Exception {
-        if (mgmt != null) Entities.destroyAll(mgmt);
+        super.tearDown();
         if (launcher != null) launcher.terminate();
     }
-
 }

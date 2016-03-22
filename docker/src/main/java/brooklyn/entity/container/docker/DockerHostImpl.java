@@ -28,40 +28,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nullable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.CharMatcher;
-import com.google.common.base.Functions;
-import com.google.common.base.Objects;
-import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-
-import org.jclouds.compute.config.ComputeServiceProperties;
-import org.jclouds.compute.domain.OsFamily;
-import org.jclouds.compute.domain.TemplateBuilder;
-import org.jclouds.net.domain.IpPermission;
-import org.jclouds.net.domain.IpProtocol;
-import org.jclouds.softlayer.SoftLayerApi;
-import org.jclouds.softlayer.compute.options.SoftLayerTemplateOptions;
-import org.jclouds.softlayer.domain.VirtualGuest;
-import org.jclouds.softlayer.features.VirtualGuestApi;
-import org.jclouds.softlayer.reference.SoftLayerConstants;
-
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.entity.Group;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationDefinition;
+import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.PortRange;
-import org.apache.brooklyn.api.mgmt.LocationManager;
 import org.apache.brooklyn.api.mgmt.Task;
 import org.apache.brooklyn.api.policy.PolicySpec;
 import org.apache.brooklyn.config.ConfigKey;
@@ -74,7 +48,7 @@ import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
-import org.apache.brooklyn.core.location.BasicLocationDefinition;
+import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.core.location.Machines;
 import org.apache.brooklyn.core.location.geo.LocalhostExternalIpLoader;
 import org.apache.brooklyn.core.sensor.DependentConfiguration;
@@ -115,6 +89,55 @@ import org.apache.brooklyn.util.text.Identifiers;
 import org.apache.brooklyn.util.text.StringPredicates;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
+import org.jclouds.compute.config.ComputeServiceProperties;
+import org.jclouds.compute.domain.OsFamily;
+import org.jclouds.compute.domain.TemplateBuilder;
+import org.jclouds.net.domain.IpPermission;
+import org.jclouds.net.domain.IpProtocol;
+import org.jclouds.softlayer.SoftLayerApi;
+import org.jclouds.softlayer.compute.options.SoftLayerTemplateOptions;
+import org.jclouds.softlayer.domain.VirtualGuest;
+import org.jclouds.softlayer.features.VirtualGuestApi;
+import org.jclouds.softlayer.reference.SoftLayerConstants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Functions;
+import com.google.common.base.Objects;
+import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+
+import org.jclouds.compute.domain.OsFamily;
+import org.jclouds.compute.domain.TemplateBuilder;
+import org.jclouds.net.domain.IpPermission;
+import org.jclouds.net.domain.IpProtocol;
+import org.jclouds.softlayer.SoftLayerApi;
+import org.jclouds.softlayer.compute.options.SoftLayerTemplateOptions;
+import org.jclouds.softlayer.domain.VirtualGuest;
+import org.jclouds.softlayer.features.VirtualGuestApi;
+import org.jclouds.softlayer.reference.SoftLayerConstants;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Functions;
+import com.google.common.base.Objects;
+import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
@@ -122,7 +145,6 @@ import brooklyn.entity.container.docker.registry.DockerRegistry;
 import brooklyn.entity.nosql.etcd.EtcdNode;
 import brooklyn.location.docker.DockerHostLocation;
 import brooklyn.location.docker.DockerLocation;
-import brooklyn.location.docker.DockerResolver;
 import brooklyn.networking.portforwarding.DockerPortForwarder;
 import brooklyn.networking.sdn.DockerSdnProvider;
 import brooklyn.networking.sdn.SdnAgent;
@@ -156,10 +178,10 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         sensors().set(DOCKER_HOST_NAME, dockerHostName);
 
         // Set a password for this host's containers
-        String password = config().get(DOCKER_PASSWORD);
+        String password = config().get(DOCKER_LOGIN_PASSWORD);
         if (Strings.isBlank(password)) {
-            password = Identifiers.makeRandomId(8);
-            config().set(DOCKER_PASSWORD, password);
+            password = Identifiers.makeRandomId(12);
+            config().set(DOCKER_LOGIN_PASSWORD, password);
         }
 
         ConfigToAttributes.apply(this, DOCKER_INFRASTRUCTURE);
@@ -377,8 +399,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     }
 
     @Override
-    public String getPassword() {
-        return config().get(DOCKER_PASSWORD);
+    public String getLoginPassword() {
+        return config().get(DOCKER_LOGIN_PASSWORD);
     }
 
     /** {@inheritDoc} */
@@ -500,27 +522,33 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         DockerLocation docker = infrastructure.getDynamicLocation();
         String locationName = docker.getId() + "-" + getDockerHostName();
 
-        String locationSpec = String.format(DockerResolver.DOCKER_HOST_MACHINE_SPEC, infrastructure.getId(), getId()) + String.format(":(name=\"%s\")", locationName);
-        sensors().set(LOCATION_SPEC, locationSpec);
+        SshMachineLocation machine = Machines.findUniqueMachineLocation(getLocations(), SshMachineLocation.class).get();
 
-        LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
-        Location location = getManagementContext().getLocationRegistry().resolve(definition);
+        // The 'flags' contains jcloudsLocation and portForwarder already
+        DockerHostLocation location = getManagementContext().getLocationManager().createLocation(LocationSpec.create(DockerHostLocation.class)
+                .parent(infrastructure.getDynamicLocation())
+                .displayName("Docker Host("+getId()+")")
+                .configure(flags)
+                .configure("owner", getProxy())
+                .configure("machine", machine)
+                .configure("locationName", locationName));
+        
+        LocationDefinition definition = location.register();
+
+        sensors().set(LOCATION_SPEC, definition.getSpec());
+        sensors().set(LOCATION_NAME, locationName);
         sensors().set(DYNAMIC_LOCATION, location);
-        sensors().set(LOCATION_NAME, location.getId());
 
-        LOG.info("New Docker host location {} created", location);
-        return (DockerHostLocation) location;
+        LOG.info("New Docker host location {} created for {}", location, this);
+        return location;
     }
 
     @Override
     public void deleteLocation() {
-        DockerHostLocation location = getDynamicLocation();
-
-        if (location != null) {
-            LocationManager mgr = getManagementContext().getLocationManager();
-            if (mgr.isManaged(location)) {
-                mgr.unmanage(location);
-            }
+        DockerHostLocation loc = getDynamicLocation();
+        if (loc != null) {
+            loc.deregister();
+            Locations.unmanage(loc);
         }
 
         sensors().set(DYNAMIC_LOCATION, null);
@@ -707,7 +735,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 .resolve(dockerLocationSpec, MutableMap.builder()
                         .put("identity", certPath)
                         .put("credential", keyPath)
-                        .put(ComputeServiceProperties.IMAGE_LOGIN_USER, "root:" + getPassword())
                         .build());
         sensors().set(JCLOUDS_DOCKER_LOCATION, jcloudsLocation);
 

@@ -31,6 +31,7 @@ import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.effector.MethodEffector;
 import org.apache.brooklyn.core.location.dynamic.LocationOwner;
 import org.apache.brooklyn.core.sensor.Sensors;
+import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
 import brooklyn.entity.mesos.framework.MesosFramework;
 import brooklyn.entity.mesos.task.marathon.MarathonTask;
@@ -43,6 +44,11 @@ import brooklyn.location.mesos.framework.marathon.MarathonLocation;
         description = "Marathon is an open-source PaaS framework for Mesos.")
 @ImplementedBy(MarathonFrameworkImpl.class)
 public interface MarathonFramework extends MesosFramework, LocationOwner<MarathonLocation, MarathonFramework> {
+
+    @SetFromFlag("locationPrefix")
+    ConfigKey<String> LOCATION_NAME_PREFIX = ConfigKeys.newConfigKeyWithDefault(
+            LocationOwner.LOCATION_NAME_PREFIX,
+            "marathon");
 
     ConfigKey<String> MARATHON_URL = ConfigKeys.newConfigKeyWithPrefix("marathon.", FRAMEWORK_URL.getConfigKey());
 

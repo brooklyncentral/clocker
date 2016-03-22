@@ -15,6 +15,8 @@
  */
 package brooklyn.location.mesos;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
@@ -28,17 +30,21 @@ import com.google.common.base.Function;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 
 import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.location.LocationDefinition;
 import org.apache.brooklyn.api.location.MachineLocation;
 import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.NoMachinesAvailableException;
 import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.location.AbstractLocation;
+import org.apache.brooklyn.core.location.BasicLocationDefinition;
 import org.apache.brooklyn.core.location.LocationConfigKeys;
 import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.core.location.dynamic.LocationOwner;
@@ -47,6 +53,7 @@ import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import brooklyn.entity.mesos.MesosAttributes;
 import brooklyn.entity.mesos.MesosCluster;
 import brooklyn.location.mesos.framework.MesosFrameworkLocation;
+import brooklyn.location.mesos.framework.marathon.MarathonResolver;
 
 public class MesosLocation extends AbstractLocation implements MachineProvisioningLocation<MachineLocation>, DynamicLocation<MesosCluster, MesosLocation>, Closeable {
 
@@ -55,8 +62,12 @@ public class MesosLocation extends AbstractLocation implements MachineProvisioni
 
     private static final Logger LOG = LoggerFactory.getLogger(MesosLocation.class);
 
-    @SetFromFlag("owner")
-    private MesosCluster cluster;
+    public static final ConfigKey<String> LOCATION_NAME = ConfigKeys.newStringConfigKey("locationName");
+
+    @SetFromFlag("locationRegistrationId")
+    private String locationRegistrationId;
+
+    private transient MesosCluster cluster;
 
     @SetFromFlag("tasks")
     private final SetMultimap<MachineProvisioningLocation, String> tasks = Multimaps.synchronizedSetMultimap(HashMultimap.<MachineProvisioningLocation, String>create());
@@ -73,6 +84,52 @@ public class MesosLocation extends AbstractLocation implements MachineProvisioni
         }
     }
 
+    @Override
+    public void init() {
+        super.init();
+        cluster = (MesosCluster) checkNotNull(getConfig(OWNER), "owner");
+    }
+    
+    @Override
+    public void rebind() {
+        super.rebind();
+        
+        cluster = (MesosCluster) getConfig(OWNER);
+        
+        if (getConfig(LOCATION_NAME) != null) {
+            register();
+        }
+    }
+
+    @Override
+    public LocationDefinition register() {
+        String locationName = checkNotNull(getConfig(LOCATION_NAME), "config %s", LOCATION_NAME.getName());
+
+        LocationDefinition check = getManagementContext().getLocationRegistry().getDefinedLocationByName(locationName);
+        if (check != null) {
+            throw new IllegalStateException("Location " + locationName + " is already defined: " + check);
+        }
+
+        String locationSpec = String.format(MesosResolver.MESOS_CLUSTER_SPEC, getId()) + String.format(":(name=\"%s\")", locationName);
+
+        LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, ImmutableMap.<String, Object>of());
+        getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
+        
+        locationRegistrationId = definition.getId();
+        requestPersist();
+        
+        return definition;
+    }
+    
+    @Override
+    public void deregister() {
+        if (locationRegistrationId != null) {
+            getManagementContext().getLocationRegistry().removeDefinedLocation(locationRegistrationId);
+            locationRegistrationId = null;
+            requestPersist();
+        }
+    }
+    
     public MesosCluster getMesosCluster() { return cluster; }
 
     @Override

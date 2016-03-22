@@ -32,26 +32,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 import javax.net.ssl.X509TrustManager;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Function;
-import com.google.common.base.Joiner;
-import com.google.common.base.Predicates;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.net.HostAndPort;
-
 import org.apache.brooklyn.api.entity.Application;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationDefinition;
 import org.apache.brooklyn.api.location.LocationRegistry;
-import org.apache.brooklyn.api.mgmt.LocationManager;
-import org.apache.brooklyn.api.mgmt.ManagementContext;
+import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.api.policy.PolicySpec;
 import org.apache.brooklyn.api.sensor.EnricherSpec;
 import org.apache.brooklyn.core.config.render.RendererHints;
@@ -61,9 +48,9 @@ import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityPredicates;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
+import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic.ComputeServiceIndicatorsFromChildrenAndMembers;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
-import org.apache.brooklyn.core.location.BasicLocationDefinition;
 import org.apache.brooklyn.core.location.BasicLocationRegistry;
 import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.core.location.dynamic.LocationOwner;
@@ -86,6 +73,17 @@ import org.apache.brooklyn.util.core.crypto.SecureKeys;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
+import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.net.HostAndPort;
 
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
@@ -238,6 +236,15 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
         }
 
         sensors().set(Attributes.MAIN_URI, URI.create("/clocker"));
+
+        // Override the health-check: just interested in the docker infrastructure/SDN, rather than 
+        // the groups that show the apps.
+        Entity sdn = sensors().get(SDN_PROVIDER);
+        enrichers().add(EnricherSpec.create(ComputeServiceIndicatorsFromChildrenAndMembers.class)
+                .uniqueTag(ComputeServiceIndicatorsFromChildrenAndMembers.DEFAULT_UNIQUE_TAG)
+                .configure(ComputeServiceIndicatorsFromChildrenAndMembers.FROM_CHILDREN, true)
+                .configure(ComputeServiceIndicatorsFromChildrenAndMembers.ENTITY_FILTER, Predicates.or(
+                        Predicates.<Entity>equalTo(hosts), (sdn == null ? Predicates.<Entity>alwaysFalse() : Predicates.equalTo(sdn)))));
     }
 
     @Override
@@ -312,38 +319,21 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
             String suffix = config().get(LOCATION_NAME_SUFFIX);
             locationName = Joiner.on("-").skipNulls().join(prefix, getId(), suffix);
         }
-        LocationDefinition check = getManagementContext().getLocationRegistry().getDefinedLocationByName(locationName);
-        if (check != null) {
-            throw new IllegalStateException("Location " + locationName + " is already defined: " + check);
-        }
 
-        String locationSpec = String.format(DockerResolver.DOCKER_INFRASTRUCTURE_SPEC, getId()) + String.format(":(name=\"%s\")", locationName);
-        sensors().set(LOCATION_SPEC, locationSpec);
-        LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
-        Location location = getManagementContext().getLocationRegistry().resolve(definition);
-        getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
+        DockerLocation location = getManagementContext().getLocationManager().createLocation(LocationSpec.create(DockerLocation.class)
+                .displayName("Docker Infrastructure("+getId()+")")
+                .configure(flags)
+                .configure("owner", getProxy())
+                .configure("locationName", locationName));
+        
+        LocationDefinition definition = location.register();
 
-        ManagementContext.PropertiesReloadListener listener = DockerUtils.reloadLocationListener(getManagementContext(), definition);
-        getManagementContext().addPropertiesReloadListener(listener);
-        sensors().set(Attributes.PROPERTIES_RELOAD_LISTENER, listener);
-
-        sensors().set(LocationOwner.LOCATION_DEFINITION, definition);
+        sensors().set(LocationOwner.LOCATION_SPEC, definition.getSpec());
         sensors().set(LocationOwner.DYNAMIC_LOCATION, location);
-        sensors().set(LocationOwner.LOCATION_NAME, location.getId());
+        sensors().set(LocationOwner.LOCATION_NAME, locationName);
 
-        LOG.info("New Docker location {} created", location);
-        return (DockerLocation) location;
-    }
-
-    @Override
-    public void rebind() {
-        super.rebind();
-
-        // Reload our location definition on rebind
-        ManagementContext.PropertiesReloadListener listener = sensors().get(Attributes.PROPERTIES_RELOAD_LISTENER);
-        if (listener != null) {
-            listener.reloaded();
-        }
+        LOG.info("New Docker location {} created for {}", location, this);
+        return location;
     }
 
     @Override
@@ -351,21 +341,10 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
         DockerLocation location = getDynamicLocation();
 
         if (location != null) {
-            LocationManager mgr = getManagementContext().getLocationManager();
-            if (mgr.isManaged(location)) {
-                mgr.unmanage(location);
-            }
-            final LocationDefinition definition = sensors().get(LocationOwner.LOCATION_DEFINITION);
-            if (definition != null) {
-                getManagementContext().getLocationRegistry().removeDefinedLocation(definition.getId());
-            }
-        }
-        ManagementContext.PropertiesReloadListener listener = sensors().get(Attributes.PROPERTIES_RELOAD_LISTENER);
-        if (listener != null) {
-            getManagementContext().removePropertiesReloadListener(listener);
+            location.deregister();
+            Locations.unmanage(location);
         }
 
-        sensors().set(LocationOwner.LOCATION_DEFINITION, null);
         sensors().set(LocationOwner.DYNAMIC_LOCATION, null);
         sensors().set(LocationOwner.LOCATION_NAME, null);
     }

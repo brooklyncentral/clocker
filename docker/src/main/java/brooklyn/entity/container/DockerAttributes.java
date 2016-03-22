@@ -33,6 +33,7 @@ import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
+import org.apache.brooklyn.location.jclouds.JcloudsLocationConfig;
 import org.apache.brooklyn.util.core.flags.TypeCoercions;
 import org.apache.brooklyn.util.core.internal.ssh.SshTool;
 import org.apache.brooklyn.util.javalang.Reflections;
@@ -85,7 +86,11 @@ public class DockerAttributes {
     public static final AttributeSensorAndConfigKey<String, String> DOCKER_CONTAINER_NAME = ConfigKeys.newStringSensorAndConfigKey(
             "docker.container.name", "The name of the Docker container");
 
-    public static final ConfigKey<String> DOCKER_PASSWORD = ConfigKeys.newConfigKeyWithPrefix("docker.", SshTool.PROP_PASSWORD);
+    public static final ConfigKey<String> DOCKER_LOGIN_USER = ConfigKeys.newConfigKeyWithDefault(
+            ConfigKeys.newConfigKeyWithPrefix("docker.", JcloudsLocationConfig.LOGIN_USER),
+            "root");
+
+    public static final ConfigKey<String> DOCKER_LOGIN_PASSWORD = ConfigKeys.newConfigKeyWithPrefix("docker.", JcloudsLocationConfig.LOGIN_USER_PASSWORD);
 
     public static final ConfigKey<Boolean> DOCKER_USE_HOST_DNS_NAME = ConfigKeys.newBooleanConfigKey(
             "docker.useHostDnsName", "Container uses same DNS hostname as Docker host");
@@ -127,7 +132,13 @@ public class DockerAttributes {
     public static final AttributeSensorAndConfigKey<Entity, Entity> DOCKER_INFRASTRUCTURE = ConfigKeys.newSensorAndConfigKey(Entity.class,
             "docker.infrastructure", "The Docker infrastructure");
 
-    // These configurations must be set on the specific entity and will not be inherited
+    // These configurations must be set on the specific entity; all but the first will not be
+    // inherited.
+
+    public static final ConfigKey<Boolean> AUTO_CHECKPOINT_DOCKER_IMAGE_POST_INSTALL = ConfigKeys.newBooleanConfigKey(
+            "docker.container.autoCheckpointImage",
+            "Whether to automatically create an image after the entity's install(), and subsequently re-use that image for the entity type",
+            false);
 
     public static final ConfigKey<List<Entity>> DOCKER_LINKS = ConfigKeys.builder(new TypeToken<List<Entity>>() { })
             .name("docker.container.links")

@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Functions;
+import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -35,6 +36,7 @@ import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationDefinition;
 import org.apache.brooklyn.api.location.LocationRegistry;
+import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.api.mgmt.LocationManager;
 import org.apache.brooklyn.api.mgmt.ManagementContext;
 import org.apache.brooklyn.core.entity.Attributes;
@@ -43,7 +45,10 @@ import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.location.BasicLocationDefinition;
 import org.apache.brooklyn.core.location.BasicLocationRegistry;
+import org.apache.brooklyn.core.location.Locations;
+import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.core.location.dynamic.LocationOwner;
+import org.apache.brooklyn.core.location.internal.LocationInternal;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.feed.http.HttpFeed;
 import org.apache.brooklyn.feed.http.HttpPollConfig;
@@ -62,6 +67,7 @@ import brooklyn.entity.mesos.framework.MesosFramework;
 import brooklyn.entity.mesos.framework.MesosFrameworkImpl;
 import brooklyn.entity.mesos.task.MesosTask;
 import brooklyn.entity.mesos.task.marathon.MarathonTask;
+import brooklyn.location.docker.DockerLocation;
 import brooklyn.location.mesos.framework.marathon.MarathonLocation;
 import brooklyn.location.mesos.framework.marathon.MarathonResolver;
 
@@ -185,61 +191,42 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
      */
     @Override
     public MarathonLocation createLocation(Map<String, ?> flags) {
-        String locationName = MarathonResolver.MARATHON + "-" + getId();
-        String locationSpec = String.format(MarathonResolver.MARATHON_FRAMEWORK_SPEC, getId());
-        sensors().set(LOCATION_SPEC, locationSpec);
-
-        LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, flags);
-        Location location = getManagementContext().getLocationRegistry().resolve(definition);
-        getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
-
-        ManagementContext.PropertiesReloadListener listener = DockerUtils.reloadLocationListener(getManagementContext(), definition);
-        getManagementContext().addPropertiesReloadListener(listener);
-        sensors().set(Attributes.PROPERTIES_RELOAD_LISTENER, listener);
-
-        sensors().set(LocationOwner.LOCATION_DEFINITION, definition);
-        sensors().set(LocationOwner.DYNAMIC_LOCATION, location);
-        sensors().set(LocationOwner.LOCATION_NAME, location.getId());
-
-        LOG.info("New Marathon framework location {} created", location);
-        return (MarathonLocation) location;
-    }
-
-    @Override
-    public void rebind() {
-        super.rebind();
-
-        // Reload our location definition on rebind
-        ManagementContext.PropertiesReloadListener listener = sensors().get(Attributes.PROPERTIES_RELOAD_LISTENER);
-        if (listener != null) {
-            listener.reloaded();
+        String locationName = config().get(LOCATION_NAME);
+        if (Strings.isBlank(locationName)) {
+            String prefix = config().get(LOCATION_NAME_PREFIX);
+            String suffix = config().get(LOCATION_NAME_SUFFIX);
+            locationName = Joiner.on("-").skipNulls().join(prefix, getId(), suffix);
         }
+    
+        MarathonLocation location = getManagementContext().getLocationManager().createLocation(LocationSpec.create(MarathonLocation.class)
+                .displayName("Marathon Framework("+getId()+")")
+                .configure(flags)
+                .configure(DynamicLocation.OWNER, getProxy())
+                .configure("locationName", locationName));
+        
+        LocationDefinition definition = location.register();
+        
+        sensors().set(LocationOwner.LOCATION_SPEC, definition.getSpec());
+        sensors().set(LocationOwner.DYNAMIC_LOCATION, location);
+        sensors().set(LocationOwner.LOCATION_NAME, locationName);
+    
+        LOG.info("New Marathon framework location {} created for {}", location, this);
+        return location;
     }
-
+    
     @Override
     public void deleteLocation() {
         MarathonLocation location = getDynamicLocation();
-
+    
         if (location != null) {
-            LocationManager mgr = getManagementContext().getLocationManager();
-            if (mgr.isManaged(location)) {
-                mgr.unmanage(location);
-            }
-            final LocationDefinition definition = sensors().get(LocationOwner.LOCATION_DEFINITION);
-            if (definition != null) {
-                getManagementContext().getLocationRegistry().removeDefinedLocation(definition.getId());
-            }
+            location.deregister();
+            Locations.unmanage(location);
         }
-        ManagementContext.PropertiesReloadListener listener = sensors().get(Attributes.PROPERTIES_RELOAD_LISTENER);
-        if (listener != null) {
-            getManagementContext().removePropertiesReloadListener(listener);
-        }
-
-        sensors().set(LocationOwner.LOCATION_DEFINITION, null);
+    
         sensors().set(LocationOwner.DYNAMIC_LOCATION, null);
         sensors().set(LocationOwner.LOCATION_NAME, null);
     }
-
+    
     @Override
     public void stop() {
         super.stop();

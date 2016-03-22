@@ -21,31 +21,29 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.brooklyn.api.internal.AbstractBrooklynObjectSpec;
+import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.location.LocationRegistry;
+import org.apache.brooklyn.api.location.LocationResolver;
+import org.apache.brooklyn.api.location.LocationSpec;
+import org.apache.brooklyn.api.mgmt.ManagementContext;
+import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.core.location.BasicLocationRegistry;
+import org.apache.brooklyn.core.objs.proxy.SpecialBrooklynObjectConstructor;
+import org.apache.brooklyn.util.text.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.annotations.Beta;
 import com.google.common.base.Joiner;
-
-import org.apache.brooklyn.api.location.Location;
-import org.apache.brooklyn.api.location.LocationRegistry;
-import org.apache.brooklyn.api.location.LocationResolver.EnableableLocationResolver;
-import org.apache.brooklyn.api.location.LocationSpec;
-import org.apache.brooklyn.api.mgmt.ManagementContext;
-import org.apache.brooklyn.core.location.BasicLocationRegistry;
-import org.apache.brooklyn.core.location.LocationPropertiesFromBrooklynProperties;
-import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
-import org.apache.brooklyn.core.location.internal.LocationInternal;
-import org.apache.brooklyn.util.collections.MutableMap;
-import org.apache.brooklyn.util.text.Strings;
-
-import brooklyn.entity.mesos.framework.marathon.MarathonFramework;
 
 /**
  * Examples of valid specs:
  *   <ul>
  *     <li>marathon:frameworkId
  */
-public class MarathonResolver implements EnableableLocationResolver {
+public class MarathonResolver implements LocationResolver {
 
     private static final Logger LOG = LoggerFactory.getLogger(MarathonResolver.class);
 
@@ -66,57 +64,50 @@ public class MarathonResolver implements EnableableLocationResolver {
     }
 
     @Override
-    public Location newLocationFromString(Map locationFlags, String spec, LocationRegistry registry) {
-        return newLocationFromString(spec, registry, registry.getProperties(), locationFlags);
-    }
-
-    protected Location newLocationFromString(String spec, LocationRegistry registry, Map properties, Map locationFlags) {
-        LOG.debug("Resolving location '" + spec + "' with flags " + Joiner.on(",").withKeyValueSeparator("=").join(locationFlags));
-        String namedLocation = (String) locationFlags.get(LocationInternal.NAMED_SPEC_NAME.getName());
-
-        Matcher matcher = PATTERN.matcher(spec);
-        if (!matcher.matches()) {
-            throw new IllegalArgumentException("Invalid location '"+spec+"'; must specify something like marathon:entityId");
-        }
-
-        Map<String, Object> filteredProperties = new LocationPropertiesFromBrooklynProperties().getLocationProperties(MARATHON, namedLocation, properties);
-        MutableMap<String, Object> flags = MutableMap.<String, Object>builder().putAll(filteredProperties).putAll(locationFlags).build();
-
-        String frameworkId = matcher.group(2);
-        if (Strings.isBlank(frameworkId)) {
-            throw new IllegalArgumentException("Invalid location '"+spec+"'; Marathon framework entity id must be non-empty");
-        }
-
-        final String displayName = "Marathon Framework";
-        final String locationName = "marathon-" + frameworkId;
-        MarathonFramework framework = (MarathonFramework) managementContext.getEntityManager().getEntity(frameworkId);
-        Iterable<Location> managedLocations = managementContext.getLocationManager().getLocations();
-
-        for (Location location : managedLocations) {
-            if (location instanceof MarathonLocation) {
-                if (((MarathonLocation) location).getOwner().getId().equals(frameworkId)) {
-                    return location;
-                }
-            }
-        }
-
-        LocationSpec<MarathonLocation> locationSpec = LocationSpec.create(MarathonLocation.class)
-                .configure(flags)
-                .configure(DynamicLocation.OWNER, framework)
-                .configure(LocationInternal.NAMED_SPEC_NAME, locationName)
-                .displayName(displayName);
-        return managementContext.getLocationManager().createLocation(locationSpec);
-    }
-
-    @Override
     public boolean accepts(String spec, LocationRegistry registry) {
         return BasicLocationRegistry.isResolverPrefixForSpec(this, spec, true);
     }
 
     @Override
     public boolean isEnabled() {
+        // TODO Could lookup if location exists - should we?
         return true;
-//        return Iterables.tryFind(managementContext.getEntityManager().getEntities(), Predicates.instanceOf(MarathonFramework.class)).isPresent();
     }
 
+    @Override
+    public LocationSpec<? extends Location> newLocationSpecFromString(String spec, Map<?, ?> locationFlags, LocationRegistry registry) {
+        LOG.debug("Resolving location '" + spec + "' with flags " + Joiner.on(",").withKeyValueSeparator("=").join(locationFlags));
+
+        Matcher matcher = PATTERN.matcher(spec);
+        if (!matcher.matches()) {
+            throw new IllegalArgumentException("Invalid location '"+spec+"'; must specify something like marathon:locationId");
+        }
+
+        String marathonLocId = matcher.group(2);
+        if (Strings.isBlank(marathonLocId)) {
+            throw new IllegalArgumentException("Invalid location '"+spec+"'; Marathon framework location id must be non-empty");
+        }
+
+        Location marathonLoc = managementContext.getLocationManager().getLocation(marathonLocId);
+        if (marathonLoc == null) {
+            throw new IllegalArgumentException("Unknown Marathon Framework location id "+marathonLocId+", spec "+spec);
+        } else if (!(marathonLoc instanceof MarathonLocation)) {
+            throw new IllegalArgumentException("Invalid location id for Marathon Framework, spec "+spec+"; instead matches "+marathonLoc);
+        }
+
+        return LocationSpec.create(MarathonLocation.class)
+                .configure(LocationConstructor.LOCATION, marathonLoc)
+                .configure(SpecialBrooklynObjectConstructor.Config.SPECIAL_CONSTRUCTOR, LocationConstructor.class);
+    }
+    
+    @Beta
+    public static class LocationConstructor implements SpecialBrooklynObjectConstructor {
+        public static ConfigKey<Location> LOCATION = ConfigKeys.newConfigKey(Location.class, "resolver.location");
+        
+        @SuppressWarnings("unchecked")
+        @Override
+        public <T> T create(ManagementContext mgmt, Class<T> type, AbstractBrooklynObjectSpec<?, ?> spec) {
+            return (T) checkNotNull(spec.getConfig().get(LOCATION), LOCATION.getName());
+        }
+    }
 }

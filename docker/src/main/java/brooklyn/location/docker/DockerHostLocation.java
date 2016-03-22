@@ -15,6 +15,8 @@
  */
 package brooklyn.location.docker;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
@@ -27,25 +29,20 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Joiner;
-import com.google.common.base.Objects.ToStringHelper;
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.entity.Group;
+import org.apache.brooklyn.api.location.LocationDefinition;
 import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.NoMachinesAvailableException;
 import org.apache.brooklyn.config.ConfigKey;
+import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.core.config.Sanitizer;
 import org.apache.brooklyn.core.entity.Entities;
+import org.apache.brooklyn.core.entity.EntityInternal;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.location.AbstractLocation;
+import org.apache.brooklyn.core.location.BasicLocationDefinition;
 import org.apache.brooklyn.core.location.LocationConfigKeys;
 import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
@@ -57,6 +54,16 @@ import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.ssh.BashCommands;
 import org.apache.brooklyn.util.text.Strings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Joiner;
+import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerCallbacks;
@@ -73,28 +80,34 @@ import brooklyn.networking.subnet.SubnetTier;
 public class DockerHostLocation extends AbstractLocation implements MachineProvisioningLocation<DockerContainerLocation>, DockerVirtualLocation,
         DynamicLocation<DockerHost, DockerHostLocation>, Closeable {
 
-    private static final long serialVersionUID = -1453203257759956820L;
-
     private static final Logger LOG = LoggerFactory.getLogger(DockerHostLocation.class);
 
     public static final String CONTAINER_MUTEX = "container";
 
+    public static final ConfigKey<String> LOCATION_NAME = ConfigKeys.newStringConfigKey("locationName");
+
+    public static final ConfigKey<SshMachineLocation> MACHINE = ConfigKeys.newConfigKey(
+            SshMachineLocation.class, 
+            "machine");
+
+    public static final ConfigKey<PortForwarder> PORT_FORWARDER = ConfigKeys.newConfigKey(
+            PortForwarder.class, 
+            "portForwarder");
+
+    public static final ConfigKey<JcloudsLocation> JCLOUDS_LOCATION = ConfigKeys.newConfigKey(
+            JcloudsLocation.class, 
+            "jcloudsLocation");
+
+    @SetFromFlag("locationRegistrationId")
+    private String locationRegistrationId;
+
     private transient ReadWriteLock lock = new ReentrantReadWriteLock();
+    private transient DockerHost dockerHost;
+    private transient SshMachineLocation machine;
+    private transient PortForwarder portForwarder;
+    private transient JcloudsLocation jcloudsLocation;
 
-    @SetFromFlag("machine")
-    private SshMachineLocation machine;
-
-    @SetFromFlag("jcloudsLocation")
-    private JcloudsLocation jcloudsLocation;
-
-    @SetFromFlag("portForwarder")
-    private PortForwarder portForwarder;
-
-    @SetFromFlag("owner")
-    private DockerHost dockerHost;
-
-    @SetFromFlag("images")
-    private ConcurrentMap<String, CountDownLatch> images = Maps.newConcurrentMap();
+    private final ConcurrentMap<String, CountDownLatch> imageLatches = Maps.newConcurrentMap();
 
     public DockerHostLocation() {
         this(Maps.newLinkedHashMap());
@@ -108,6 +121,60 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
         }
     }
 
+    @Override
+    public void init() {
+        super.init();
+        dockerHost = (DockerHost) checkNotNull(getConfig(OWNER), "owner");
+        machine = (SshMachineLocation) checkNotNull(getConfig(MACHINE), "machine");
+        portForwarder = (PortForwarder) getConfig(PORT_FORWARDER);
+        jcloudsLocation = (JcloudsLocation) getConfig(JCLOUDS_LOCATION);
+    }
+    
+    @Override
+    public void rebind() {
+        super.rebind();
+
+        dockerHost = (DockerHost) getConfig(OWNER);
+        machine = (SshMachineLocation) getConfig(MACHINE);
+        portForwarder = (PortForwarder) getConfig(PORT_FORWARDER);
+        jcloudsLocation = (JcloudsLocation) getConfig(JCLOUDS_LOCATION);
+        
+        if (getConfig(LOCATION_NAME) != null) {
+            register();
+        }
+    }
+
+    @Override
+    public LocationDefinition register() {
+        String locationName = checkNotNull(getConfig(LOCATION_NAME), "config %s", LOCATION_NAME.getName());
+
+        LocationDefinition check = getManagementContext().getLocationRegistry().getDefinedLocationByName(locationName);
+        if (check != null) {
+            throw new IllegalStateException("Location " + locationName + " is already defined: " + check);
+        }
+
+        String hostLocId = getId();
+        String infraLocId = (getParent() != null) ? getParent().getId() : "";
+        String locationSpec = String.format(DockerResolver.DOCKER_HOST_MACHINE_SPEC, infraLocId, hostLocId) + String.format(":(name=\"%s\")", locationName);
+
+        LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, ImmutableMap.<String, Object>of());
+        getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
+        
+        locationRegistrationId = definition.getId();
+        requestPersist();
+        
+        return definition;
+    }
+    
+    @Override
+    public void deregister() {
+        if (locationRegistrationId != null) {
+            getManagementContext().getLocationRegistry().removeDefinedLocation(locationRegistrationId);
+            locationRegistrationId = null;
+            requestPersist();
+        }
+    }
+    
     public DockerContainerLocation obtain() throws NoMachinesAvailableException {
         return obtain(Maps.<String,Object>newLinkedHashMap());
     }
@@ -150,14 +217,29 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
             Optional<String> baseImage = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_NAME));
             String imageTag = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_TAG)).or("latest");
-
+            
+            boolean autoCheckpointImagePostInstall = Boolean.TRUE.equals(entity.config().get(DockerAttributes.AUTO_CHECKPOINT_DOCKER_IMAGE_POST_INSTALL));
+            
             // TODO incorporate more info (incl registry?)
-            String imageName = DockerUtils.imageName(entity, dockerfile);
+            String imageName;
+            if (autoCheckpointImagePostInstall) {
+                imageName = DockerUtils.imageName(entity, dockerfile);
+            } else {
+                // Generate a random id, and avoid collisions
+                boolean collision;
+                do {
+                    imageName = DockerUtils.randomImageName();
+                    collision = dockerHost.getImageNamed(imageName, imageTag).isPresent();
+                    if (collision) LOG.info("Random image name collision '{}' on host {}; generating new id", imageName, getOwner());
+                } while (collision);
+            }
 
             // Lookup image ID or build new image from Dockerfile
-            LOG.info("ImageName for entity {}: {}", entity, imageName);
+            LOG.info("ImageName ({}) for entity {}: {}", new Object[] {(autoCheckpointImagePostInstall ? "hash" : "random"), entity, imageName});
 
             if (dockerHost.getImageNamed(imageName, imageTag).isPresent()) {
+                assert autoCheckpointImagePostInstall : "random imageName "+imageName+" collision on host "+getOwner();
+            
                 // Wait until committed before continuing - Brooklyn may be midway through its creation.
                 waitForImage(imageName);
 
@@ -195,12 +277,14 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                 entity.config().set(SoftwareProcess.SKIP_INSTALLATION, true);
             } else {
                 // Push or commit the image, otherwise Clocker will make a new one for the entity once it is installed.
-                if (getDockerInfrastructure().config().get(DockerInfrastructure.DOCKER_IMAGE_REGISTRY_WRITEABLE) &&
-                        (getDockerInfrastructure().config().get(DockerInfrastructure.DOCKER_SHOULD_START_REGISTRY) ||
-                                Strings.isNonBlank(getDockerInfrastructure().sensors().get(DockerInfrastructure.DOCKER_IMAGE_REGISTRY_URL)))) {
-                    insertCallback(entity, SoftwareProcess.POST_INSTALL_COMMAND, DockerCallbacks.push());
-                } else {
-                    insertCallback(entity, SoftwareProcess.POST_INSTALL_COMMAND, DockerCallbacks.commit());
+                if (autoCheckpointImagePostInstall) {
+                    if (getDockerInfrastructure().config().get(DockerInfrastructure.DOCKER_IMAGE_REGISTRY_WRITEABLE) &&
+                            (getDockerInfrastructure().config().get(DockerInfrastructure.DOCKER_SHOULD_START_REGISTRY) ||
+                                    Strings.isNonBlank(getDockerInfrastructure().sensors().get(DockerInfrastructure.DOCKER_IMAGE_REGISTRY_URL)))) {
+                        insertCallback(entity, SoftwareProcess.POST_INSTALL_COMMAND, DockerCallbacks.push());
+                    } else {
+                        insertCallback(entity, SoftwareProcess.POST_INSTALL_COMMAND, DockerCallbacks.commit());
+                    }
                 }
 
                 if (Strings.isNonBlank(dockerfile)) {
@@ -215,7 +299,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
                 }
 
                 // Tag the image name and create its latch
-                images.putIfAbsent(imageName, new CountDownLatch(1));
+                imageLatches.putIfAbsent(imageName, new CountDownLatch(1));
                 dockerHost.runDockerCommand(String.format("tag -f %s %s:latest", imageId, imageName));
             }
 
@@ -247,6 +331,8 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             if (added == null) {
                 throw new NoMachinesAvailableException(String.format("Failed to create container at %s", dockerHost.getDockerHostName()));
             } else {
+                if (LOG.isDebugEnabled()) LOG.debug("Starting container {} at {}, config {}", 
+                        new Object[] { added, machine, Sanitizer.sanitize(((EntityInternal)added).config().getBag()) });
                 Entities.invokeEffector(entity, added, Startable.START,  MutableMap.of("locations", ImmutableList.of(machine))).getUnchecked();
             }
             DockerContainer dockerContainer = (DockerContainer) added;
@@ -294,7 +380,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
     public void waitForImage(String imageName) {
         try {
-            CountDownLatch latch = images.get(imageName);
+            CountDownLatch latch = imageLatches.get(imageName);
             if (latch != null) latch.await(15, TimeUnit.MINUTES);
         } catch (InterruptedException ie) {
             throw Exceptions.propagate(ie);
@@ -302,7 +388,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
     }
 
     public void markImage(String imageName) {
-        CountDownLatch latch = images.get(imageName);
+        CountDownLatch latch = imageLatches.get(imageName);
         if (latch != null) latch.countDown();
     }
 
