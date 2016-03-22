@@ -1,4 +1,4 @@
-# Copyright 2014 by Cloudsoft Corporation Limited
+# Copyright 2014-2015 by Cloudsoft Corporation Limited
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,18 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-id: test-docker-cloud
-name: "Docker Infrastructure for tests"
-origin: "https://github.com/brooklyncentral/clocker/"
+id: nodejs-todo-application-${id}
+name: "Node.JS Todo Application"
+origin: "https://github.com/amirrajan/nodejs-todo/"
 
-description: >
-  Used in acceptance tests.
-
-location: ${testLocation}
-
+location: ${location}
 services:
-  - type: "docker-infrastructure:1.1.0"
-    brooklyn.config:
-      entity.dynamicLocation.name: my-docker-cloud
-      docker.host.cluster.initial.size: "2"
-      docker.version: 1.7.1
+  - type: "nodejs-demo-application:1.1.0"

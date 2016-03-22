@@ -1,4 +1,4 @@
-# Copyright 2014 by Cloudsoft Corporation Limited
+# Copyright 2014-2015 by Cloudsoft Corporation Limited
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,18 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-id: test-docker-cloud
-name: "Docker Infrastructure for tests"
-origin: "https://github.com/brooklyncentral/clocker/"
-
-description: >
-  Used in acceptance tests.
-
-location: ${testLocation}
+id: docker-cloud-softlayer-calico
+name: "Docker Cloud on Softlayer with Project Calico"
+origin: https://github.com/brooklyncentral/clocker/
+location: named:softlayer-ams01
 
 services:
-  - type: "docker-infrastructure:1.1.0"
+  - type: "docker-cloud-calico:1.1.0"
     brooklyn.config:
-      entity.dynamicLocation.name: my-docker-cloud
-      docker.host.cluster.initial.size: "2"
+      entity.dynamicLocation.name: my-docker-cloud-softlayer-calico
+      docker.host.cluster.initial.size: "1"
       docker.version: 1.7.1

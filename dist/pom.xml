@@ -267,26 +267,6 @@
                             </execution>
                         </executions>
                     </plugin>
-                    <plugin>
-                        <groupId>io.brooklyn.maven</groupId>
-                        <artifactId>brooklyn-maven-plugin</artifactId>
-                        <version>0.2.0-SNAPSHOT</version>
-                        <configuration>
-                            <server>http://localhost:${brooklyn.console}</server>
-                            <blueprint>${project.build.testOutputDirectory}/test-docker-cloud.yaml</blueprint>
-                            <!-- Fifteen minutes for slow clouds to provision. -->
-                            <timeout>15</timeout>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>deploy-docker-cloud</id>
-                                <goals>
-                                    <goal>deploy</goal>
-                                    <goal>stop-brooklyn</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
                 </plugins>
             </build>
         </profile>
