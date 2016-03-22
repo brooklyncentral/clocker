@@ -191,29 +191,26 @@ public class MarathonFrameworkImpl extends MesosFrameworkImpl implements Maratho
      */
     @Override
     public MarathonLocation createLocation(Map<String, ?> flags) {
-        String locationName = config().get(LOCATION_NAME);
-        if (Strings.isBlank(locationName)) {
-            String prefix = config().get(LOCATION_NAME_PREFIX);
-            String suffix = config().get(LOCATION_NAME_SUFFIX);
-            locationName = Joiner.on("-").skipNulls().join(prefix, getId(), suffix);
-        }
+        String prefix = config().get(LOCATION_NAME_PREFIX);
+        String suffix = config().get(LOCATION_NAME_SUFFIX);
+        String locationName = Joiner.on("-").skipNulls().join(prefix, getId(), suffix);
     
         MarathonLocation location = getManagementContext().getLocationManager().createLocation(LocationSpec.create(MarathonLocation.class)
                 .displayName("Marathon Framework("+getId()+")")
                 .configure(flags)
                 .configure(DynamicLocation.OWNER, getProxy())
                 .configure("locationName", locationName));
-        
+
         LocationDefinition definition = location.register();
-        
+
         sensors().set(LocationOwner.LOCATION_SPEC, definition.getSpec());
         sensors().set(LocationOwner.DYNAMIC_LOCATION, location);
         sensors().set(LocationOwner.LOCATION_NAME, locationName);
-    
+
         LOG.info("New Marathon framework location {} created for {}", location, this);
         return location;
     }
-    
+
     @Override
     public void deleteLocation() {
         MarathonLocation location = getDynamicLocation();
