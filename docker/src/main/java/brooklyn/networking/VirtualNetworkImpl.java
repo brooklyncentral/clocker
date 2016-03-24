@@ -105,7 +105,9 @@ public class VirtualNetworkImpl extends BasicStartableImpl implements VirtualNet
         sensors().set(SERVICE_UP, Boolean.FALSE);
 
         NetworkProvisioningExtension provisioner = sensors().get(NETWORK_PROVISIONER);
-        provisioner.deallocateNetwork(this);
+        if (provisioner != null) {
+            provisioner.deallocateNetwork(this);
+        }
 
         super.stop();
     }
