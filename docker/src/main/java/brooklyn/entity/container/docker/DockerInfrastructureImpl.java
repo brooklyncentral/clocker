@@ -32,6 +32,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 import javax.net.ssl.X509TrustManager;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
+import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.net.HostAndPort;
+
 import org.apache.brooklyn.api.entity.Application;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
@@ -74,17 +86,6 @@ import org.apache.brooklyn.util.core.crypto.SecureKeys;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Function;
-import com.google.common.base.Joiner;
-import com.google.common.base.Predicates;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.net.HostAndPort;
 
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
@@ -99,8 +100,6 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
     private static final Logger LOG = LoggerFactory.getLogger(DockerInfrastructure.class);
 
     private transient Object mutex = new Object[0];
-
-    private static final AtomicInteger infrastructureID = new AtomicInteger();
 
     @Override
     public Object getInfrastructureMutex() {
@@ -321,7 +320,7 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
         if (Strings.isBlank(locationName)) {
             String prefix = config().get(LOCATION_NAME_PREFIX);
             String suffix = config().get(LOCATION_NAME_SUFFIX);
-            locationName = Joiner.on("-").skipNulls().join(prefix, getId(), suffix, infrastructureID.incrementAndGet());
+            locationName = Joiner.on("-").skipNulls().join(prefix, getId(), suffix);
         }
 
         DockerLocation location = getManagementContext().getLocationManager().createLocation(LocationSpec.create(DockerLocation.class)
