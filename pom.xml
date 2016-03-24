@@ -13,10 +13,7 @@
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the License for the specific language governing permissions and
     limitations under the License.
--->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+--><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <modules>
         <module>patches</module>
@@ -25,7 +22,8 @@
         <module>mesos</module>
         <module>console</module>
         <module>dist</module>
-    </modules>
+        <module>features</module>
+  </modules>
 
     <parent>
         <groupId>org.apache.brooklyn</groupId>
@@ -51,6 +49,7 @@
         <!-- Dependencies -->
         <jclouds.groupId>org.apache.jclouds</jclouds.groupId> <!-- JCLOUDS_GROUPID_VERSION -->
         <jclouds.version>1.9.2</jclouds.version> <!-- JCLOUDS_VERSION -->
+        <karaf.version>4.0.4</karaf.version>
 
         <!-- Testing -->
         <testng.version>6.8</testng.version>
@@ -59,7 +58,7 @@
         <excludedTestGroups>Integration,Live,WIP</excludedTestGroups>
 
         <!-- Deployment -->
-        <gpg.passphrase />
+        <gpg.passphrase/>
     </properties>
 
     <scm>
@@ -368,7 +367,7 @@
                             <author>false</author>
                             <quiet>true</quiet>
                             <aggregate>false</aggregate>
-                            <detectLinks />
+                            <detectLinks/>
                         </configuration>
                         <executions>
                             <execution>
