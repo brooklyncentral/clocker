@@ -276,23 +276,23 @@ brooklyn.catalog:
                   provisioning.properties:
                     entity.dynamicLocation.flags:
                       user: root
-           brooklyn.enrichers:
-           # publish the mapped URL at the cluster
-           - type: org.apache.brooklyn.enricher.stock.Propagator
-             brooklyn.config:
-               uniqueTag: url-propagator
-               enricher.producer: $brooklyn:component("haproxy")
-               enricher.propagating.inclusions:
-               - mapped.main.uri
-         brooklyn.enrichers:
-         # publish the URL (both mapped and unmapped) at the top-level app
-         - type: org.apache.brooklyn.enricher.stock.Propagator
-           brooklyn.config:
-             uniqueTag: url-propagator
-             enricher.producer: $brooklyn:component("web-cluster")
-             enricher.propagating.inclusions:
-             - main.uri
-             - mapped.main.uri
+          brooklyn.enrichers:
+          # publish the mapped URL at the cluster
+          - type: org.apache.brooklyn.enricher.stock.Propagator
+            brooklyn.config:
+              uniqueTag: url-propagator
+              enricher.producer: $brooklyn:component("haproxy")
+              enricher.propagating.inclusions:
+              - mapped.main.uri
+        brooklyn.enrichers:
+        # publish the URL (both mapped and unmapped) at the top-level app
+        - type: org.apache.brooklyn.enricher.stock.Propagator
+          brooklyn.config:
+            uniqueTag: url-propagator
+            enricher.producer: $brooklyn:component("web-cluster")
+            enricher.propagating.inclusions:
+            - main.uri
+            - mapped.main.uri
 
   - id: nodejs-demo-application
     name: "Node.js Demo Application"
