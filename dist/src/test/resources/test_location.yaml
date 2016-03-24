@@ -1,0 +1,7 @@
+brooklyn.catalog:
+  id: cal1
+  version: 1.0
+  itemType: location
+  name: cal1
+  item:
+    type: localhost

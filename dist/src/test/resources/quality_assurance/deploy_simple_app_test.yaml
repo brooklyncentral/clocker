@@ -1,0 +1,40 @@
+brooklyn.catalog:
+  id: simple-test
+  version: 1.0
+  name: Simple Test
+  itemType: template
+  item:
+    services:
+      - type: org.apache.brooklyn.test.framework.InfrastructureDeploymentTestCase
+        brooklyn.config:
+          infrastructure.deployment.location.sensor: entity.dynamicLocation
+          infrastructure.deployment.spec:
+            $brooklyn:entitySpec:
+              - type: brooklyn.entity.container.docker.DockerInfrastructure
+                id: infrastructure
+#                location: named:softlayer-sea01
+                brooklyn.config:
+                  docker.addLocalhostPermission: true
+                  entity.dynamicLocation.name: my-docker-cloud
+                  docker.host.cluster.initial.size: 1
+                  docker.registry.start: false
+                  docker.version: 1.7.1
+          infrastructure.deployment.entity.specs:
+            - $brooklyn:entitySpec:
+                - type: org.apache.brooklyn.entity.webapp.jboss.JBoss7Server
+                  id: JBoss7Server
+        brooklyn.children:
+          - type: org.apache.brooklyn.test.framework.TestSensor
+            name: Check infrastructure isUp
+            targetId: infrastructure
+            sensor: service.isUp
+            timeout: 10m
+            assert:
+             - equals: true
+          - type: org.apache.brooklyn.test.framework.TestSensor
+            name: Check JBoss isUp
+            targetId: JBoss7Server
+            sensor: service.isUp
+            timeout: 10m
+            assert:
+             - equals: true

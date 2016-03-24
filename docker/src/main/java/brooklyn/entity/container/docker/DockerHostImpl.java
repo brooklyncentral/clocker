@@ -38,6 +38,7 @@ import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.api.mgmt.Task;
 import org.apache.brooklyn.api.policy.PolicySpec;
+import org.apache.brooklyn.camp.brooklyn.BrooklynCampConstants;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.effector.ssh.SshEffectorTasks;
@@ -198,6 +199,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         Group containers = addChild(EntitySpec.create(BasicGroup.class)
                 .configure(BasicGroup.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .configure(BasicGroup.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
+                .configure(BrooklynCampConstants.PLAN_ID, "docker-host-containers")
                 .displayName("Docker Containers"));
         if (config().get(DockerInfrastructure.HA_POLICY_ENABLE)) {
             containers.policies().add(PolicySpec.create(ServiceReplacer.class)

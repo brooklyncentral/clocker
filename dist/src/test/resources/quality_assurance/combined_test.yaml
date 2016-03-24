@@ -1,0 +1,29 @@
+brooklyn.catalog:
+  id: test
+  version: 1.0
+  name: Test
+  itemType: template
+  item:
+    services:
+      - type: TestApp:1.0
+        brooklyn.config:
+          appToTest:
+            $brooklyn:entitySpec:
+              - type: docker-cloud:1.1.0-SNAPSHOT
+                id: infrastructure1
+                brooklyn.config:
+                  docker.host.cluster.initial.size: 2
+                  docker.registry.start: false
+                  docker.version: 1.7.1
+                  entity.dynamicLocation.name: ""
+      - type: TestApp:1.0
+        brooklyn.config:
+          appToTest:
+            $brooklyn:entitySpec:
+              - type: docker-cloud-calico:1.1.0-SNAPSHOT
+                id: infrastructure2
+                brooklyn.config:
+                  docker.host.cluster.initial.size: 2
+                  docker.registry.start: false
+                  docker.version: 1.7.1
+                  entity.dynamicLocation.name: ""

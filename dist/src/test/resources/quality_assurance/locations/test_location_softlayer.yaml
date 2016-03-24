@@ -1,0 +1,7 @@
+brooklyn.catalog:
+  id: soft
+  version: 1.0
+  itemType: location
+  name: soft
+  item:
+    type: jclouds:softlayer:sea01
