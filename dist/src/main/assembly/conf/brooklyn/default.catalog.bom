@@ -273,6 +273,9 @@ brooklyn.catalog:
                   network.list:
                   - webapp
                   member.sensor.hostname: "host.subnet.hostname"
+                  provisioning.properties:
+                    entity.dynamicLocation.flags:
+                      user: root
 
   - id: nodejs-demo-application
     name: "Node.js Demo Application"
