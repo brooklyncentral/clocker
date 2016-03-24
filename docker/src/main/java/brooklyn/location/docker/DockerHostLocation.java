@@ -124,10 +124,20 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
     @Override
     public void init() {
         super.init();
-        dockerHost = (DockerHost) checkNotNull(getConfig(OWNER), "owner");
-        machine = (SshMachineLocation) checkNotNull(getConfig(MACHINE), "machine");
-        portForwarder = (PortForwarder) getConfig(PORT_FORWARDER);
-        jcloudsLocation = (JcloudsLocation) getConfig(JCLOUDS_LOCATION);
+        
+        // TODO BasicLocationRebindsupport.addCustoms currently calls init() unfortunately!
+        // Don't checkNotNull in that situation - it could be this location is orphaned!
+        if (isRebinding()) {
+            dockerHost = (DockerHost) getConfig(OWNER);
+            machine = (SshMachineLocation) getConfig(MACHINE);
+            portForwarder = (PortForwarder) getConfig(PORT_FORWARDER);
+            jcloudsLocation = (JcloudsLocation) getConfig(JCLOUDS_LOCATION);
+        } else {
+            dockerHost = (DockerHost) checkNotNull(getConfig(OWNER), "owner");
+            machine = (SshMachineLocation) checkNotNull(getConfig(MACHINE), "machine");
+            portForwarder = (PortForwarder) getConfig(PORT_FORWARDER);
+            jcloudsLocation = (JcloudsLocation) getConfig(JCLOUDS_LOCATION);
+        }
     }
     
     @Override
@@ -139,7 +149,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
         portForwarder = (PortForwarder) getConfig(PORT_FORWARDER);
         jcloudsLocation = (JcloudsLocation) getConfig(JCLOUDS_LOCATION);
         
-        if (getConfig(LOCATION_NAME) != null) {
+        if (dockerHost != null && getConfig(LOCATION_NAME) != null) {
             register();
         }
     }

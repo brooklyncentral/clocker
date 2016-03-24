@@ -43,6 +43,7 @@ import org.apache.brooklyn.core.location.LocationConfigKeys;
 import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.core.mgmt.rebind.BasicLocationRebindSupport;
 import org.apache.brooklyn.entity.group.DynamicCluster;
+import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
@@ -67,6 +68,7 @@ import brooklyn.entity.container.docker.DockerHost;
 import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.location.docker.strategy.DockerAwarePlacementStrategy;
 import brooklyn.location.docker.strategy.DockerAwareProvisioningStrategy;
+import brooklyn.networking.common.subnet.PortForwarder;
 import brooklyn.networking.location.NetworkProvisioningExtension;
 
 public class DockerLocation extends AbstractLocation implements DockerVirtualLocation, MachineProvisioningLocation<MachineLocation>,
@@ -106,7 +108,14 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
     @Override
     public void init() {
         super.init();
-        infrastructure = (DockerInfrastructure) getConfig(OWNER);
+        
+        // TODO BasicLocationRebindsupport.addCustoms currently calls init() unfortunately!
+        // Don't checkNotNull in that situation - it could be this location is orphaned!
+        if (isRebinding()) {
+            infrastructure = (DockerInfrastructure) getConfig(OWNER);
+        } else {
+            infrastructure = (DockerInfrastructure) checkNotNull(getConfig(OWNER), "owner");
+        }
     }
     
     @Override
@@ -115,7 +124,7 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
         
         infrastructure = (DockerInfrastructure) getConfig(OWNER);
         
-        if (getConfig(LOCATION_NAME) != null) {
+        if (infrastructure != null && getConfig(LOCATION_NAME) != null) {
             register();
         }
     }
