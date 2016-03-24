@@ -52,6 +52,7 @@ import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.core.location.Machines;
 import org.apache.brooklyn.core.location.geo.LocalhostExternalIpLoader;
 import org.apache.brooklyn.core.sensor.DependentConfiguration;
+import org.apache.brooklyn.core.server.BrooklynServerPaths;
 import org.apache.brooklyn.enricher.stock.Enrichers;
 import org.apache.brooklyn.entity.group.BasicGroup;
 import org.apache.brooklyn.entity.machine.MachineEntityImpl;
@@ -723,9 +724,11 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             getMachine().copyTo(ResourceUtils.create().getResourceFromUrl("classpath://brooklyn/entity/container/docker/create-certs.sh"), "create-certs.sh");
             getMachine().execCommands("createCertificates",
                     ImmutableList.of("chmod 755 create-certs.sh", "./create-certs.sh " + sensors().get(ADDRESS)));
-            certPath = Os.mergePaths(Os.tmp(), getId() + "-cert.pem");
+            
+            String localCertsDir = Os.mergePaths(BrooklynServerPaths.getMgmtBaseDir(getManagementContext()), "docker-certs");
+            certPath = Os.mergePaths(localCertsDir, getId() + "-cert.pem");
             getMachine().copyFrom("client-cert.pem", certPath);
-            keyPath = Os.mergePaths(Os.tmp(), getId() + "-key.pem");
+            keyPath = Os.mergePaths(localCertsDir, getId() + "-key.pem");
             getMachine().copyFrom("client-key.pem", keyPath);
         } else {
             certPath = config().get(DockerInfrastructure.DOCKER_CLIENT_CERTIFICATE_PATH);
