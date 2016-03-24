@@ -340,14 +340,14 @@ brooklyn.catalog:
             launch.latch: $brooklyn:component("redis").attributeWhenReady("service.isUp")
             provisioning.properties:
               installDevUrandom: true
-         brooklyn.enrichers:
-         # publish the URL (both mapped and unmapped) at the top-level app
-         - type: org.apache.brooklyn.enricher.stock.Propagator
-           brooklyn.config:
-             uniqueTag: url-propagator
-             enricher.producer: $brooklyn:component("nodejs")
-             enricher.propagating.inclusions:
-             - webapp.url	
-             - mapped.webapp.url	
+        brooklyn.enrichers:
+        # publish the URL (both mapped and unmapped) at the top-level app
+        - type: org.apache.brooklyn.enricher.stock.Propagator
+          brooklyn.config:
+            uniqueTag: url-propagator
+            enricher.producer: $brooklyn:component("nodejs")
+            enricher.propagating.inclusions:
+            - webapp.url	
+            - mapped.webapp.url	
 
 # vim:ts=2:sw=2:ft=yaml:
