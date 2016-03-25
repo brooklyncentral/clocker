@@ -127,6 +127,8 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
     public List<String> scanTasks(JsonArray frameworks) {
         String frameworkId = sensors().get(FRAMEWORK_ID);
         Entity mesosCluster = sensors().get(MESOS_CLUSTER);
+        LOG.debug("Periodic scanning of framework tasks: frameworkId={}, mesosCluster={}", frameworkId, mesosCluster);
+        
         for (int i = 0; i < frameworks.size(); i++) {
             JsonObject framework = frameworks.get(i).getAsJsonObject();
             if (frameworkId.equals(framework.get("id").getAsString())) {

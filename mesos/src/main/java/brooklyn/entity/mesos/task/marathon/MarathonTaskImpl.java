@@ -736,6 +736,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         sensors().set(LOCATION_NAME, location.getId());
 
         // Record port mappings
+        LOG.debug("Recording port mappings for {} at {}: {}", new Object[] {entity, location, tcpMappings});
         for (Integer hostPort : tcpMappings.keySet()) {
             HostAndPort target = HostAndPort.fromString(tcpMappings.get(hostPort));
             subnet.getPortForwarder().openPortForwarding(location, target.getPort(), Optional.of(hostPort), Protocol.TCP, Cidr.UNIVERSAL);

@@ -169,13 +169,13 @@ public class DockerUtils {
                 for (Hint<?> hint : hints) {
                     RendererHints.register(target, (NamedActionWithUrl) hint);
                 }
-                LOG.debug("Mapped URL sensor: origin={}, mapped={}", sensor.getName(), target.getName());
+                LOG.debug("Mapped URL sensor: entity={}, origin={}, mapped={}", new Object[] {entity, sensor.getName(), target.getName()});
             } else if (sensor.getName().matches("docker\\.port\\.[0-9]+") ||
                     PortAttributeSensorAndConfigKey.class.isAssignableFrom(sensor.getClass())) {
                 AttributeSensor<String> target = DockerUtils.mappedPortSensor(sensor);
                 entity.enrichers().add(subnetTier.hostAndPortTransformingEnricher(
                         EntityAndAttribute.create(entity, sensor), target));
-                LOG.debug("Mapped port sensor: origin={}, mapped={}", sensor.getName(), target.getName());
+                LOG.debug("Mapped port sensor: entity={}, origin={}, mapped={}", new Object[] {entity, sensor.getName(), target.getName()});
             }
         }
     }
