@@ -63,6 +63,7 @@ import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
+import org.apache.brooklyn.core.feed.FeedConfig;
 import org.apache.brooklyn.core.location.LocationConfigKeys;
 import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.core.location.cloud.CloudLocationConfig;
@@ -166,6 +167,16 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
 
     @Override
     public void connectSensors() {
+        // TODO If we are not managed, then we are just guessing at the appId. We may get it wrong.
+        // If it's wrong then our uri will always give 404. We should not mark the task as
+        // "serviceUp=false", and we should not clear the TASK_ID (which was correctly set in
+        // MesosFramework.scanTasks, which is where this task came from in the first place).
+        // The new behaviour of showing it as healthy (and not clearing the taskId, which caused 
+        // another instance to be automatically added!) is better than it was, but it definitely  
+        // needs more attention.
+        
+        final boolean managed = Boolean.TRUE.equals(sensors().get(MANAGED));
+            
         String uri = Urls.mergePaths(getFramework().sensors().get(MarathonFramework.FRAMEWORK_URL), "/v2/apps", sensors().get(APPLICATION_ID), "tasks");
         HttpFeed.Builder httpFeedBuilder = HttpFeed.builder()
                 .entity(this)
@@ -182,7 +193,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                                         return tasks.size() == 1;
                                     }
                                 }))
-                        .onFailureOrException(Functions.constant(Boolean.FALSE)))
+                        .onFailureOrException(Functions.constant(managed ? Boolean.FALSE : true)))
                 .poll(new HttpPollConfig<Long>(TASK_STARTED_AT)
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(), JsonFunctions.walk("tasks"),
                                 new Function<JsonElement, Long>() {
@@ -246,7 +257,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                                         return null;
                                     }
                                 }))
-                        .onFailureOrException(Functions.<String>constant(null)))
+                        .onFailureOrException((Function) Functions.<Object>constant(managed ? null : FeedConfig.UNCHANGED)))
                 .poll(new HttpPollConfig<String>(Attributes.ADDRESS)
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(), JsonFunctions.walk("tasks"),
                                 new Function<JsonElement, String>() {
@@ -736,6 +747,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         sensors().set(LOCATION_NAME, location.getId());
 
         // Record port mappings
+        LOG.debug("Recording port mappings for {} at {}: {}", new Object[] {entity, location, tcpMappings});
         for (Integer hostPort : tcpMappings.keySet()) {
             HostAndPort target = HostAndPort.fromString(tcpMappings.get(hostPort));
             subnet.getPortForwarder().openPortForwarding(location, target.getPort(), Optional.of(hostPort), Protocol.TCP, Cidr.UNIVERSAL);

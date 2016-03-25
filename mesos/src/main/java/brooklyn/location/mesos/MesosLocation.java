@@ -50,6 +50,7 @@ import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.core.location.dynamic.LocationOwner;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
+import brooklyn.entity.container.docker.DockerInfrastructure;
 import brooklyn.entity.mesos.MesosAttributes;
 import brooklyn.entity.mesos.MesosCluster;
 import brooklyn.location.mesos.framework.MesosFrameworkLocation;
@@ -87,7 +88,14 @@ public class MesosLocation extends AbstractLocation implements MachineProvisioni
     @Override
     public void init() {
         super.init();
-        cluster = (MesosCluster) checkNotNull(getConfig(OWNER), "owner");
+        
+        // TODO BasicLocationRebindsupport.addCustoms currently calls init() unfortunately!
+        // Don't checkNotNull in that situation - it could be this location is orphaned!
+        if (isRebinding()) {
+            cluster = (MesosCluster) getConfig(OWNER);
+        } else {
+            cluster = (MesosCluster) checkNotNull(getConfig(OWNER), "owner");
+        }
     }
     
     @Override
@@ -96,7 +104,7 @@ public class MesosLocation extends AbstractLocation implements MachineProvisioni
         
         cluster = (MesosCluster) getConfig(OWNER);
         
-        if (getConfig(LOCATION_NAME) != null) {
+        if (cluster != null && getConfig(LOCATION_NAME) != null) {
             register();
         }
     }

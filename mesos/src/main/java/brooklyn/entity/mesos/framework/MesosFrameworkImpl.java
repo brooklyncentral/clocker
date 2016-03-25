@@ -127,6 +127,8 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
     public List<String> scanTasks(JsonArray frameworks) {
         String frameworkId = sensors().get(FRAMEWORK_ID);
         Entity mesosCluster = sensors().get(MESOS_CLUSTER);
+        LOG.debug("Periodic scanning of framework tasks: frameworkId={}, mesosCluster={}", frameworkId, mesosCluster);
+        
         for (int i = 0; i < frameworks.size(); i++) {
             JsonObject framework = frameworks.get(i).getAsJsonObject();
             if (frameworkId.equals(framework.get("id").getAsString())) {
@@ -148,6 +150,8 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
                     if (taskEntity.isPresent()) {
                         task = (MesosTask) taskEntity.get();
                     } else if (state.equals(MesosTask.TaskState.TASK_RUNNING.name())) {
+                        // TODO Race: if we are polling at the same time as the managed task is being created,
+                        // then we might create the task first!
                         EntitySpec<MesosTask> taskSpec = EntitySpec.create(config().get(FRAMEWORK_TASK_SPEC));
                         taskSpec.configure(MesosTask.MANAGED, Boolean.FALSE)
                                 .configure(MesosTask.MESOS_CLUSTER, mesosCluster)
