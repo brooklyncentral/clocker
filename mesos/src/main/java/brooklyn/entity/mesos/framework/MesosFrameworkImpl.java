@@ -150,6 +150,8 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
                     if (taskEntity.isPresent()) {
                         task = (MesosTask) taskEntity.get();
                     } else if (state.equals(MesosTask.TaskState.TASK_RUNNING.name())) {
+                        // TODO Race: if we are polling at the same time as the managed task is being created,
+                        // then we might create the task first!
                         EntitySpec<MesosTask> taskSpec = EntitySpec.create(config().get(FRAMEWORK_TASK_SPEC));
                         taskSpec.configure(MesosTask.MANAGED, Boolean.FALSE)
                                 .configure(MesosTask.MESOS_CLUSTER, mesosCluster)
