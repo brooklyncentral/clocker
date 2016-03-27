@@ -18,6 +18,7 @@ package brooklyn.entity.mesos.framework.marathon;
 import java.util.List;
 import java.util.Map;
 
+import brooklyn.location.mesos.framework.marathon.MarathonTaskLocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -149,7 +150,7 @@ public class MarathonPortForwarder implements PortForwarder {
             publicSide = HostAndPort.fromParts(marathonHostname, targetPort);
         }
         pfw.associate(marathonHostname, publicSide, (Location) targetMachine, targetPort);
-        portmap.put(publicSide, HostAndPort.fromParts(targetMachine.getHostname(), targetPort));
+        portmap.put(publicSide, HostAndPort.fromParts(((MarathonTaskLocation) targetMachine).getSubnetHostname(), targetPort));
         return publicSide;
     }
 
