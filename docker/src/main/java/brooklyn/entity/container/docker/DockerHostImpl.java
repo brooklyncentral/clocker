@@ -15,6 +15,7 @@
  */
 package brooklyn.entity.container.docker;
 
+import java.io.File;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -91,54 +92,50 @@ import org.apache.brooklyn.util.text.Identifiers;
 import org.apache.brooklyn.util.text.StringPredicates;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
-import org.jclouds.compute.config.ComputeServiceProperties;
+import org.jclouds.compute.domain.OsFamily;
 import org.jclouds.compute.domain.OsFamily;
 import org.jclouds.compute.domain.TemplateBuilder;
+import org.jclouds.compute.domain.TemplateBuilder;
+import org.jclouds.net.domain.IpPermission;
 import org.jclouds.net.domain.IpPermission;
 import org.jclouds.net.domain.IpProtocol;
+import org.jclouds.net.domain.IpProtocol;
+import org.jclouds.softlayer.SoftLayerApi;
 import org.jclouds.softlayer.SoftLayerApi;
 import org.jclouds.softlayer.compute.options.SoftLayerTemplateOptions;
+import org.jclouds.softlayer.compute.options.SoftLayerTemplateOptions;
+import org.jclouds.softlayer.domain.VirtualGuest;
 import org.jclouds.softlayer.domain.VirtualGuest;
 import org.jclouds.softlayer.features.VirtualGuestApi;
+import org.jclouds.softlayer.features.VirtualGuestApi;
+import org.jclouds.softlayer.reference.SoftLayerConstants;
 import org.jclouds.softlayer.reference.SoftLayerConstants;
 import org.slf4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.CharMatcher;
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Functions;
 import com.google.common.base.Functions;
 import com.google.common.base.Objects;
+import com.google.common.base.Objects;
+import com.google.common.base.Optional;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.base.Predicates;
 import com.google.common.base.Splitter;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-
-import org.jclouds.compute.domain.OsFamily;
-import org.jclouds.compute.domain.TemplateBuilder;
-import org.jclouds.net.domain.IpPermission;
-import org.jclouds.net.domain.IpProtocol;
-import org.jclouds.softlayer.SoftLayerApi;
-import org.jclouds.softlayer.compute.options.SoftLayerTemplateOptions;
-import org.jclouds.softlayer.domain.VirtualGuest;
-import org.jclouds.softlayer.features.VirtualGuestApi;
-import org.jclouds.softlayer.reference.SoftLayerConstants;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.CharMatcher;
-import com.google.common.base.Functions;
-import com.google.common.base.Objects;
-import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
 import brooklyn.entity.container.DockerAttributes;
@@ -728,6 +725,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                     ImmutableList.of("chmod 755 create-certs.sh", "./create-certs.sh " + sensors().get(ADDRESS)));
             
             String localCertsDir = Os.mergePaths(BrooklynServerPaths.getMgmtBaseDir(getManagementContext()), "docker-certs");
+            Os.mkdirs(new File(localCertsDir));
             certPath = Os.mergePaths(localCertsDir, getId() + "-cert.pem");
             getMachine().copyFrom("client-cert.pem", certPath);
             keyPath = Os.mergePaths(localCertsDir, getId() + "-key.pem");
