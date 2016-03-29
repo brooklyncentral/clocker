@@ -150,7 +150,9 @@ public class MarathonPortForwarder implements PortForwarder {
             publicSide = HostAndPort.fromParts(marathonHostname, targetPort);
         }
         pfw.associate(marathonHostname, publicSide, (Location) targetMachine, targetPort);
-        portmap.put(publicSide, HostAndPort.fromParts(((MarathonTaskLocation) targetMachine).getSubnetHostname(), targetPort));
+        MarathonTaskLocation location = (MarathonTaskLocation) targetMachine;
+        String hostname = Optional.fromNullable(location.getHostname()).or(location.getSubnetHostname());
+        portmap.put(publicSide, HostAndPort.fromParts(hostname, targetPort));
         return publicSide;
     }
 
