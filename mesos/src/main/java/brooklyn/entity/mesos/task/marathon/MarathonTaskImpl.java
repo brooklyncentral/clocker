@@ -180,11 +180,12 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         String uri = Urls.mergePaths(getFramework().sensors().get(MarathonFramework.FRAMEWORK_URL), "/v2/apps", sensors().get(APPLICATION_ID), "tasks");
         HttpFeed.Builder httpFeedBuilder = HttpFeed.builder()
                 .entity(this)
-                .period(500, TimeUnit.MILLISECONDS)
+                .period(2000, TimeUnit.MILLISECONDS)
                 .baseUri(uri)
                 .credentialsIfNotNull(config().get(MesosCluster.MESOS_USERNAME), config().get(MesosCluster.MESOS_PASSWORD))
                 .header("Accept", "application/json")
                 .poll(new HttpPollConfig<Boolean>(SERVICE_UP)
+                        .suppressDuplicates(true)
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(), JsonFunctions.walk("tasks"),
                                 new Function<JsonElement, Boolean>() {
                                     @Override
@@ -195,6 +196,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                                 }))
                         .onFailureOrException(Functions.constant(managed ? Boolean.FALSE : true)))
                 .poll(new HttpPollConfig<Long>(TASK_STARTED_AT)
+                        .suppressDuplicates(true)
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(), JsonFunctions.walk("tasks"),
                                 new Function<JsonElement, Long>() {
                                     @Override
@@ -211,6 +213,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                                 }))
                         .onFailureOrException(Functions.<Long>constant(-1L)))
                 .poll(new HttpPollConfig<Long>(TASK_STAGED_AT)
+                        .suppressDuplicates(true)
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(), JsonFunctions.walk("tasks"),
                                 new Function<JsonElement, Long>() {
                                     @Override
@@ -227,6 +230,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                                 }))
                         .onFailureOrException(Functions.<Long>constant(-1L)))
                 .poll(new HttpPollConfig<String>(Attributes.HOSTNAME)
+                        .suppressDuplicates(true)
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(), JsonFunctions.walk("tasks"),
                                 new Function<JsonElement, String>() {
                                     @Override
@@ -243,6 +247,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                                 }))
                         .onFailureOrException(Functions.<String>constant(null)))
                 .poll(new HttpPollConfig<String>(TASK_ID)
+                        .suppressDuplicates(true)
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(), JsonFunctions.walk("tasks"),
                                 new Function<JsonElement, String>() {
                                     @Override
@@ -259,6 +264,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                                 }))
                         .onFailureOrException((Function) Functions.<Object>constant(managed ? null : FeedConfig.UNCHANGED)))
                 .poll(new HttpPollConfig<String>(Attributes.ADDRESS)
+                        .suppressDuplicates(true)
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(), JsonFunctions.walk("tasks"),
                                 new Function<JsonElement, String>() {
                                     @Override

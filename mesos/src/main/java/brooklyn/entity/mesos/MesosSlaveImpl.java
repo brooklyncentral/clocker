@@ -70,6 +70,7 @@ public class MesosSlaveImpl extends MachineEntityImpl implements MesosSlave {
 
         EnricherSpec<?> serviceUp = Enrichers.builder()
                 .propagating(ImmutableMap.of(SLAVE_ACTIVE, SERVICE_UP))
+                .suppressDuplicates(true)
                 .from(this)
                 .build();
         enrichers().add(serviceUp);
