@@ -163,7 +163,7 @@ public class DockerUtils {
                         URI.class.isAssignableFrom(sensor.getType())) &&
                     !DockerUtils.BLACKLIST_URL_SENSOR_NAMES.contains(sensor.getName())) {
                 AttributeSensor<String> target = DockerUtils.<String>mappedSensor(sensor);
-                entity.addEnricher(subnetTier.uriTransformingEnricher(
+                entity.enrichers().add(subnetTier.uriTransformingEnricher(
                         EntityAndAttribute.create(entity, sensor), target));
                 Set<Hint<?>> hints = RendererHints.getHintsFor(sensor);
                 for (Hint<?> hint : hints) {

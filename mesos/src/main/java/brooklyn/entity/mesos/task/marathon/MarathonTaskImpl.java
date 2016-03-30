@@ -25,33 +25,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.CharMatcher;
-import com.google.common.base.Function;
-import com.google.common.base.Functions;
-import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
-import com.google.common.base.Predicates;
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import com.google.common.net.HostAndPort;
-import com.google.common.net.HttpHeaders;
-import com.google.common.primitives.Ints;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-
-import org.jclouds.compute.domain.OsFamily;
-import org.jclouds.compute.domain.Processor;
-import org.jclouds.compute.domain.TemplateBuilder;
-
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.LocationSpec;
@@ -97,6 +70,31 @@ import org.apache.brooklyn.util.text.StringPredicates;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
 import org.apache.brooklyn.util.time.Time;
+import org.jclouds.compute.domain.OsFamily;
+import org.jclouds.compute.domain.Processor;
+import org.jclouds.compute.domain.TemplateBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Function;
+import com.google.common.base.Functions;
+import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
+import com.google.common.base.Predicates;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import com.google.common.net.HostAndPort;
+import com.google.common.net.HttpHeaders;
+import com.google.common.primitives.Ints;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 
 import brooklyn.entity.container.DockerAttributes;
 import brooklyn.entity.container.DockerUtils;
@@ -155,6 +153,19 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
     }
 
     @Override
+    public void rebind() {
+        super.rebind();
+
+        if (httpFeed == null) {
+            // Normal best-practice would be to use {@code feeds().addFeed(feed)} so that the entity
+            // automatically persists its feed. But that would involve re-writing all the sensor 
+            // functions so they are not anonymous inner classes. Easier and safer for now to just
+            // call connectSensors(), rather than changing all that code and persisting it.
+            connectSensors();
+        }
+    }
+
+    @Override
     public String getDisplayName() { return String.format("Marathon Task (%s)", sensors().get(APPLICATION_ID)); }
 
     @Override
@@ -167,8 +178,8 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
 
     @Override
     public void connectSensors() {
-        // TODO If we are not managed, then we are just guessing at the appId. We may get it wrong.
-        // If it's wrong then our uri will always give 404. We should not mark the task as
+        // TODO If we are not "mesos.task.managed", then we are just guessing at the appId. We may get 
+        // it wrong. If it's wrong then our uri will always give 404. We should not mark the task as
         // "serviceUp=false", and we should not clear the TASK_ID (which was correctly set in
         // MesosFramework.scanTasks, which is where this task came from in the first place).
         // The new behaviour of showing it as healthy (and not clearing the taskId, which caused 
@@ -180,11 +191,12 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         String uri = Urls.mergePaths(getFramework().sensors().get(MarathonFramework.FRAMEWORK_URL), "/v2/apps", sensors().get(APPLICATION_ID), "tasks");
         HttpFeed.Builder httpFeedBuilder = HttpFeed.builder()
                 .entity(this)
-                .period(500, TimeUnit.MILLISECONDS)
+                .period(2000, TimeUnit.MILLISECONDS)
                 .baseUri(uri)
                 .credentialsIfNotNull(config().get(MesosCluster.MESOS_USERNAME), config().get(MesosCluster.MESOS_PASSWORD))
                 .header("Accept", "application/json")
                 .poll(new HttpPollConfig<Boolean>(SERVICE_UP)
+                        .suppressDuplicates(true)
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(), JsonFunctions.walk("tasks"),
                                 new Function<JsonElement, Boolean>() {
                                     @Override
@@ -195,6 +207,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                                 }))
                         .onFailureOrException(Functions.constant(managed ? Boolean.FALSE : true)))
                 .poll(new HttpPollConfig<Long>(TASK_STARTED_AT)
+                        .suppressDuplicates(true)
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(), JsonFunctions.walk("tasks"),
                                 new Function<JsonElement, Long>() {
                                     @Override
@@ -211,6 +224,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                                 }))
                         .onFailureOrException(Functions.<Long>constant(-1L)))
                 .poll(new HttpPollConfig<Long>(TASK_STAGED_AT)
+                        .suppressDuplicates(true)
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(), JsonFunctions.walk("tasks"),
                                 new Function<JsonElement, Long>() {
                                     @Override
@@ -227,6 +241,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                                 }))
                         .onFailureOrException(Functions.<Long>constant(-1L)))
                 .poll(new HttpPollConfig<String>(Attributes.HOSTNAME)
+                        .suppressDuplicates(true)
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(), JsonFunctions.walk("tasks"),
                                 new Function<JsonElement, String>() {
                                     @Override
@@ -243,6 +258,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                                 }))
                         .onFailureOrException(Functions.<String>constant(null)))
                 .poll(new HttpPollConfig<String>(TASK_ID)
+                        .suppressDuplicates(true)
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(), JsonFunctions.walk("tasks"),
                                 new Function<JsonElement, String>() {
                                     @Override
@@ -259,6 +275,7 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                                 }))
                         .onFailureOrException((Function) Functions.<Object>constant(managed ? null : FeedConfig.UNCHANGED)))
                 .poll(new HttpPollConfig<String>(Attributes.ADDRESS)
+                        .suppressDuplicates(true)
                         .onSuccess(Functionals.chain(HttpValueFunctions.jsonContents(), JsonFunctions.walk("tasks"),
                                 new Function<JsonElement, String>() {
                                     @Override
