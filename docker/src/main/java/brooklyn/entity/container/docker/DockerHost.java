@@ -65,7 +65,7 @@ import brooklyn.networking.subnet.SubnetTier;
 public interface DockerHost extends MachineEntity, HasShortName, LocationOwner<DockerHostLocation, DockerHost> {
 
     @SetFromFlag("dockerVersion")
-    ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "1.8.1");
+    ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "1.9.1");
 
     @SetFromFlag("archiveNameFormat")
     ConfigKey<String> ARCHIVE_DIRECTORY_NAME_FORMAT = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.ARCHIVE_DIRECTORY_NAME_FORMAT, "docker-%s");

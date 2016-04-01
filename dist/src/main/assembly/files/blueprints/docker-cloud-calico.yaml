@@ -20,5 +20,5 @@ services:
 - type: docker-cloud-calico
   brooklyn.config:
     entity.dynamicLocation.name: "my-docker-cloud"
-    docker.version: 1.8.1 # DOCKER_VERSION
+    docker.version: 1.9.1 # DOCKER_VERSION
     docker.host.cluster.initial.size: 2
