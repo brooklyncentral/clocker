@@ -78,6 +78,9 @@ public interface VanillaDockerApplication extends VanillaSoftwareProcess {
     @SetFromFlag("volumes")
     ConfigKey<List<String>> DOCKER_CONTAINER_VOLUME_EXPORT = DockerAttributes.DOCKER_CONTAINER_VOLUME_EXPORT;
 
+    @SetFromFlag("volumesFrom")
+    ConfigKey<List<String>> DOCKER_CONTAINER_VOLUMES_FROM = DockerAttributes.DOCKER_CONTAINER_VOLUMES_FROM;
+
     @SetFromFlag("volumeMappings")
     AttributeSensorAndConfigKey<Map<String, String>, Map<String, String>> DOCKER_HOST_VOLUME_MAPPING = DockerAttributes.DOCKER_HOST_VOLUME_MAPPING;
 

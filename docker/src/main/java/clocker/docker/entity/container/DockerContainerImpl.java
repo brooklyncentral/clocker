@@ -351,6 +351,10 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         sensors().set(DockerAttributes.DOCKER_VOLUME_MAPPING, volumes);
         entity.sensors().set(DockerAttributes.DOCKER_VOLUME_MAPPING, volumes);
         options.volumes(volumes);
+        List<String> imports = entity.config().get(DockerContainer.DOCKER_CONTAINER_VOLUMES_FROM);
+        if (imports != null) {
+            options.volumesFrom(imports);
+        }
 
         // Direct port mappings
         Map<Integer, Integer> bindings = MutableMap.copyOf(entity.config().get(DockerAttributes.DOCKER_PORT_BINDINGS));
