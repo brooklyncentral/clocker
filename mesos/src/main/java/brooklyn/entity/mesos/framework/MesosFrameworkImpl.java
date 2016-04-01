@@ -19,19 +19,7 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Function;
-import com.google.common.base.Functions;
-import com.google.common.base.Optional;
-import com.google.common.base.Predicates;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import java.util.Set;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
@@ -55,6 +43,20 @@ import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import org.apache.brooklyn.util.guava.Functionals;
 import org.apache.brooklyn.util.time.Duration;
+import org.apache.brooklyn.util.time.Time;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Function;
+import com.google.common.base.Functions;
+import com.google.common.base.Optional;
+import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import brooklyn.entity.mesos.MesosCluster;
 import brooklyn.entity.mesos.task.MesosTask;
@@ -64,6 +66,12 @@ import brooklyn.entity.mesos.task.MesosTask;
  */
 public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFramework {
 
+    // TODO Rebind is broken: the connectSensors doesn't create a persisted feed
+    // (and its use of an annonymous inner class makes that hard). So when we restart
+    // Brooklyn, we don't rescan.
+    //
+    // Same for MarathonTaskImpl.connectSensors: that isn't called on connectSensors either.
+    
     private static final Logger LOG = LoggerFactory.getLogger(MesosFramework.class);
 
     private transient HttpFeed taskScan;
@@ -82,6 +90,35 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
         sensors().set(FRAMEWORK_TASKS, tasks);
 
         sensors().set(Attributes.MAIN_URI, URI.create(config().get(FRAMEWORK_URL)));
+    }
+
+    @Override
+    public void rebind() {
+        super.rebind();
+
+        if (taskScan == null) {
+            // The feed calls scanTasks, which modifies other entities.That is dangerous during 
+            // rebind, because the rebind-thread may concurrently (or subsequently) be initialising 
+            // those other entities. Similar code (e.g. DynamicMultiGroup) has caused rebind of 
+            // of those other entities to subsequently fail.
+            //
+            // Normal best-practice would be to use {@code feeds().addFeed(feed)} so that the entity
+            // automatically persists its feed, but this is no ordinary feed! Therefore safer (for 
+            // now) to do it this way.
+            
+            getExecutionContext().execute(new Runnable() {
+                @Override public void run() {
+                    LOG.debug("Deferring scanner for {} until management context initialisation complete", MesosFrameworkImpl.this);
+                    while (!isRebindComplete()) {
+                        Time.sleep(100); // avoid thrashing
+                    }
+                    LOG.debug("Connecting scanner for {}", MesosFrameworkImpl.this);
+                    connectSensors();
+                }
+                private boolean isRebindComplete() {
+                    return !getManagementContext().getRebindManager().isAwaitingInitialRebind();
+                }});
+        }
     }
 
     @Override
@@ -124,9 +161,24 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
         taskScan = taskScanBuilder.build();
     }
 
+    @Override
+    public void deleteUnmanagedTasks() {
+        for (Entity member : getTaskCluster().getMembers()) {
+            if (member instanceof MesosTask && Boolean.FALSE.equals(member.config().get(MesosTask.MANAGED))) {
+                // TODO Presumably `unmanage(member)` would be enough, but leaving like this
+                // because that is what Andrew previously used!
+                getTaskCluster().removeMember(member);
+                getTaskCluster().removeChild(member);
+                Entities.unmanage(member);
+            }
+        }
+    }
+    
     public List<String> scanTasks(JsonArray frameworks) {
         String frameworkId = sensors().get(FRAMEWORK_ID);
         Entity mesosCluster = sensors().get(MESOS_CLUSTER);
+        LOG.debug("Periodic scanning of framework tasks: frameworkId={}, mesosCluster={}", frameworkId, mesosCluster);
+        
         for (int i = 0; i < frameworks.size(); i++) {
             JsonObject framework = frameworks.get(i).getAsJsonObject();
             if (frameworkId.equals(framework.get("id").getAsString())) {
@@ -146,17 +198,9 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
                               Predicates.compose(Predicates.equalTo(id), EntityFunctions.attribute(MesosTask.TASK_ID)));
                     MesosTask task = null;
                     if (taskEntity.isPresent()) {
+                        // Only interested in tasks for our own use of Marathon.
+                        // Tasks that other people create we'll ignore.
                         task = (MesosTask) taskEntity.get();
-                    } else if (state.equals(MesosTask.TaskState.TASK_RUNNING.name())) {
-                        EntitySpec<MesosTask> taskSpec = EntitySpec.create(config().get(FRAMEWORK_TASK_SPEC));
-                        taskSpec.configure(MesosTask.MANAGED, Boolean.FALSE)
-                                .configure(MesosTask.MESOS_CLUSTER, mesosCluster)
-                                .configure(MesosTask.TASK_NAME, name)
-                                .configure(MesosTask.FRAMEWORK, this)
-                                .displayName(String.format("Mesos Task (%s)", name));
-
-                        task = getTaskCluster().addMemberChild(taskSpec);
-                        task.start(ImmutableList.<Location>of());
                     }
                     if (task != null) {
                         taskNames.add(name);
@@ -164,14 +208,21 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
                         task.sensors().set(MesosTask.TASK_STATE, state);
                     }
                 }
+                
+                Set<String> taskNamesSet = Sets.newHashSet(taskNames);
                 for (Entity member : ImmutableList.copyOf(getTaskCluster().getMembers())) {
                     final String name = member.sensors().get(MesosTask.TASK_NAME);
                     if (name != null) {
-                        Optional<String> found = Iterables.tryFind(taskNames, Predicates.equalTo(name));
-                        if (found.isPresent()) continue;
+                        boolean found = taskNamesSet.contains(name);
+                        if (found) continue;
                     }
 
                     // Stop and then remove the task as it is no longer running, unless ON_FIRE
+                    //
+                    // TODO Aled worries about this: if task has gone, then MarathonTask polling
+                    // the task's URL will fail, setting the serviceUp to false, setting it 
+                    // on-fire. What will ever remove the task on a graceful shutdown of a container?
+                    // Or is that handled elsewhere?
                     Lifecycle state = member.sensors().get(Attributes.SERVICE_STATE_ACTUAL);
                     if (Lifecycle.ON_FIRE.equals(state) || Lifecycle.STARTING.equals(state)) {
                         continue;
@@ -193,6 +244,7 @@ public class MesosFrameworkImpl extends BasicStartableImpl implements MesosFrame
     @Override
     public void disconnectSensors() {
         if (taskScan  != null && taskScan.isActivated()) taskScan.destroy();
+        taskScan = null;
     }
 
     @Override

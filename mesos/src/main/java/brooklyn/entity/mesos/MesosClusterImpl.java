@@ -52,6 +52,7 @@ import org.apache.brooklyn.api.location.LocationRegistry;
 import org.apache.brooklyn.api.location.LocationSpec;
 import org.apache.brooklyn.api.mgmt.LocationManager;
 import org.apache.brooklyn.api.mgmt.ManagementContext;
+import org.apache.brooklyn.api.sensor.EnricherSpec;
 import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.entity.AbstractApplication;
 import org.apache.brooklyn.core.entity.Attributes;
@@ -60,6 +61,7 @@ import org.apache.brooklyn.core.entity.EntityFunctions;
 import org.apache.brooklyn.core.entity.EntityPredicates;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
+import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic.ComputeServiceIndicatorsFromChildrenAndMembers;
 import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.location.BasicLocationDefinition;
 import org.apache.brooklyn.core.location.BasicLocationRegistry;
@@ -151,6 +153,17 @@ public class MesosClusterImpl extends AbstractApplication implements MesosCluste
         sensors().set(MESOS_FRAMEWORKS, frameworks);
         sensors().set(MESOS_TASKS, tasks);
         sensors().set(MESOS_APPLICATIONS, applications);
+        
+        // Override the health-check: just interested in the slaves, frameworks and sdn (rather than 
+        // the groups that show the tasks or apps).
+        Entity sdn = sensors().get(SDN_PROVIDER);
+        enrichers().add(EnricherSpec.create(ComputeServiceIndicatorsFromChildrenAndMembers.class)
+                .uniqueTag(ComputeServiceIndicatorsFromChildrenAndMembers.DEFAULT_UNIQUE_TAG)
+                .configure(ComputeServiceIndicatorsFromChildrenAndMembers.FROM_CHILDREN, true)
+                .configure(ComputeServiceIndicatorsFromChildrenAndMembers.ENTITY_FILTER, Predicates.or(ImmutableList.of(
+                        Predicates.<Entity>equalTo(slaves), 
+                        Predicates.<Entity>equalTo(frameworks), 
+                        (sdn == null ? Predicates.<Entity>alwaysFalse() : Predicates.equalTo(sdn))))));
     }
 
     @Override

@@ -18,8 +18,6 @@ package brooklyn.entity.mesos.framework;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.reflect.TypeToken;
-
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.entity.Group;
@@ -31,6 +29,8 @@ import org.apache.brooklyn.core.effector.MethodEffector;
 import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.stock.BasicStartable;
+
+import com.google.common.reflect.TypeToken;
 
 import brooklyn.entity.mesos.MesosAttributes;
 import brooklyn.entity.mesos.MesosCluster;
@@ -72,7 +72,11 @@ public interface MesosFramework extends BasicStartable {
 
     MethodEffector<Void> START_TASK = new MethodEffector<Void>(MesosFramework.class, "startTask");
 
+    MethodEffector<Void> DELETE_UNMANAGED_TASKS = new MethodEffector<Void>(MesosFramework.class, "deleteUnmanagedTasks");
+
     MesosTask startTask(Map<String, Object> taskFlags);
+
+    void deleteUnmanagedTasks();
 
     // Methods
  
@@ -81,5 +85,4 @@ public interface MesosFramework extends BasicStartable {
     MesosCluster getMesosCluster();
 
     Group getTaskCluster();
-
 }

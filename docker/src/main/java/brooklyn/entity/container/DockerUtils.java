@@ -163,19 +163,19 @@ public class DockerUtils {
                         URI.class.isAssignableFrom(sensor.getType())) &&
                     !DockerUtils.BLACKLIST_URL_SENSOR_NAMES.contains(sensor.getName())) {
                 AttributeSensor<String> target = DockerUtils.<String>mappedSensor(sensor);
-                entity.addEnricher(subnetTier.uriTransformingEnricher(
+                entity.enrichers().add(subnetTier.uriTransformingEnricher(
                         EntityAndAttribute.create(entity, sensor), target));
                 Set<Hint<?>> hints = RendererHints.getHintsFor(sensor);
                 for (Hint<?> hint : hints) {
                     RendererHints.register(target, (NamedActionWithUrl) hint);
                 }
-                LOG.debug("Mapped URL sensor: origin={}, mapped={}", sensor.getName(), target.getName());
+                LOG.debug("Mapped URL sensor: entity={}, origin={}, mapped={}", new Object[] {entity, sensor.getName(), target.getName()});
             } else if (sensor.getName().matches("docker\\.port\\.[0-9]+") ||
                     PortAttributeSensorAndConfigKey.class.isAssignableFrom(sensor.getClass())) {
                 AttributeSensor<String> target = DockerUtils.mappedPortSensor(sensor);
                 entity.enrichers().add(subnetTier.hostAndPortTransformingEnricher(
                         EntityAndAttribute.create(entity, sensor), target));
-                LOG.debug("Mapped port sensor: origin={}, mapped={}", sensor.getName(), target.getName());
+                LOG.debug("Mapped port sensor: entity={}, origin={}, mapped={}", new Object[] {entity, sensor.getName(), target.getName()});
             }
         }
     }
