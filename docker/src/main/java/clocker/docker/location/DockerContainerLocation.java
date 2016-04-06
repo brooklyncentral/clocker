@@ -277,64 +277,89 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
 
     @Override
     public int copyTo(final Map<String,?> props, final InputStream src, final long filesize, final String destination) {
-        return copyTo(props, src, destination);
+        Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
+        boolean entitySsh = Boolean.TRUE.equals(entity.config().get(DockerContainer.DOCKER_USE_SSH));
+        boolean dockerSsh = Boolean.TRUE.equals(getOwner().config().get(DockerContainer.DOCKER_USE_SSH));
+        if (entitySsh && dockerSsh) {
+            return super.copyTo(nonPortProps, src, filesize, destination);
+        } else {
+            return copyTo(props, src, destination);
+        }
     }
 
     @Override
     public int copyTo(final Map<String,?> props, final InputStream src, final String destination) {
-        File tmp = null;
-        try {
-            tmp = File.createTempFile(dockerContainer.getId(), Urls.getBasename(destination));
-            Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
-            hostMachine.copyTo(nonPortProps, src, tmp.getAbsolutePath());
-            copyFile(tmp, destination);
-            src.close();
-            return 0;
-        } catch (IOException ioe) {
-            throw Exceptions.propagate(ioe);
-        } finally {
-            if (tmp != null) tmp.delete();
+        Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
+        boolean entitySsh = Boolean.TRUE.equals(entity.config().get(DockerContainer.DOCKER_USE_SSH));
+        boolean dockerSsh = Boolean.TRUE.equals(getOwner().config().get(DockerContainer.DOCKER_USE_SSH));
+        if (entitySsh && dockerSsh) {
+            return super.copyTo(nonPortProps, src, destination);
+        } else {
+            File tmp = null;
+            try {
+                tmp = File.createTempFile(dockerContainer.getId(), Urls.getBasename(destination));
+                hostMachine.copyTo(nonPortProps, src, tmp.getAbsolutePath());
+                copyFile(tmp, destination);
+                src.close();
+                return 0;
+            } catch (IOException ioe) {
+                throw Exceptions.propagate(ioe);
+            } finally {
+                if (tmp != null) tmp.delete();
+            }
         }
     }
 
     @Override
     public int copyTo(Map<String,?> props, File src, String destination) {
-        File tmp = null;
-        try {
-            tmp = File.createTempFile(dockerContainer.getId(), Urls.getBasename(destination));
-            Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
-            hostMachine.copyTo(nonPortProps, src, tmp);
-            copyFile(tmp, destination);
-            return 0;
-        } catch (IOException ioe) {
-            throw Exceptions.propagate(ioe);
-        } finally {
-            if (tmp != null) tmp.delete();
+        Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
+        boolean entitySsh = Boolean.TRUE.equals(entity.config().get(DockerContainer.DOCKER_USE_SSH));
+        boolean dockerSsh = Boolean.TRUE.equals(getOwner().config().get(DockerContainer.DOCKER_USE_SSH));
+        if (entitySsh && dockerSsh) {
+            return super.copyTo(nonPortProps, src, destination);
+        } else {
+            File tmp = null;
+            try {
+                tmp = File.createTempFile(dockerContainer.getId(), Urls.getBasename(destination));
+                hostMachine.copyTo(nonPortProps, src, tmp);
+                copyFile(tmp, destination);
+                return 0;
+            } catch (IOException ioe) {
+                throw Exceptions.propagate(ioe);
+            } finally {
+                if (tmp != null) tmp.delete();
+            }
         }
     }
 
     private void copyFile(File src, String dst) {
         String cp = String.format("cp %s %s:%s", src.getAbsolutePath(), dockerContainer.getContainerId(), dst);
         String output = getOwner().getDockerHost().runDockerCommand(cp);
-        LOG.info("Copying to {}:{} - result: {}", new Object[] { dockerContainer.getContainerId(), dst, output });
+        LOG.info("Copied to {}:{} - result: {}", new Object[] { dockerContainer.getContainerId(), dst, output });
     }
 
     @Override
     public int copyFrom(final Map<String,?> props, final String remote, final String local) {
-        File tmp = null;
-        try {
-            tmp = File.createTempFile(dockerContainer.getId(), Urls.getBasename(local));
-            String cp = String.format("cp %s:%s %s", dockerContainer.getContainerId(), remote, tmp.getAbsolutePath());
-            String output = getOwner().getDockerHost().runDockerCommand(cp);
-            Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
-            hostMachine.copyFrom(nonPortProps, tmp.getAbsolutePath(), local);
-            LOG.info("Copying from {}:{} to {} - result: {}", new Object[] { dockerContainer.getContainerId(), remote, local, output });
-        } catch (IOException ioe) {
-            throw Exception.propagate(ioe);
-        } finally {
-            if (tmp != null) tmp.delete();
+        boolean entitySsh = Boolean.TRUE.equals(entity.config().get(DockerContainer.DOCKER_USE_SSH));
+        boolean dockerSsh = Boolean.TRUE.equals(getOwner().config().get(DockerContainer.DOCKER_USE_SSH));
+        if (entitySsh && dockerSsh) {
+            return super.copyFrom(props, remote, local);
+        } else {
+            File tmp = null;
+            try {
+                tmp = File.createTempFile(dockerContainer.getId(), Urls.getBasename(local));
+                String cp = String.format("cp %s:%s %s", dockerContainer.getContainerId(), remote, tmp.getAbsolutePath());
+                String output = getOwner().getDockerHost().runDockerCommand(cp);
+                Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
+                hostMachine.copyFrom(nonPortProps, tmp.getAbsolutePath(), local);
+                LOG.info("Copying from {}:{} to {} - result: {}", new Object[] { dockerContainer.getContainerId(), remote, local, output });
+            } catch (IOException ioe) {
+                throw Exceptions.propagate(ioe);
+            } finally {
+                if (tmp != null) tmp.delete();
+            }
+            return 0;
         }
-        return 0;
     }
 
     @Override

@@ -139,7 +139,7 @@ public class GroupPlacementStrategy extends AbstractDockerPlacementStrategy impl
     }
 
     /**
-     * Look up the {@link monitor} for an application.
+     * Look up the {@link Monitor} for an application.
      *
      * @return {@code null} if the monitor has not been created yet
      */
@@ -151,7 +151,7 @@ public class GroupPlacementStrategy extends AbstractDockerPlacementStrategy impl
     }
 
     /**
-     * Create a new {@link monitor} and optionally the {@link #monitor_MAP map}
+     * Create a new {@link Monitor} and optionally the {@link #MONITOR_MAP map}
      * for an application. Uses existing monitor if it already exists.
      *
      * @return The monitor for the scope that is stored in the {@link Map map}.

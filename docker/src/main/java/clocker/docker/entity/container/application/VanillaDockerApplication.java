@@ -88,7 +88,7 @@ public interface VanillaDockerApplication extends VanillaSoftwareProcess {
     ConfigKey<List<Entity>> DOCKER_LINKS = DockerAttributes.DOCKER_LINKS;
 
     ConfigKey<Boolean> SKIP_ENTITY_INSTALLATION = ConfigKeys.newConfigKeyWithDefault(BrooklynConfigKeys.SKIP_ENTITY_INSTALLATION, Boolean.TRUE);
-    
+
     ConfigKey<Boolean> SKIP_ON_BOX_BASE_DIR_RESOLUTION = ConfigKeys.newConfigKeyWithDefault(BrooklynConfigKeys.SKIP_ON_BOX_BASE_DIR_RESOLUTION, Boolean.TRUE);
 
     ConfigKey<String> LAUNCH_COMMAND = ConfigKeys.newConfigKeyWithDefault(VanillaSoftwareProcess.LAUNCH_COMMAND, null);

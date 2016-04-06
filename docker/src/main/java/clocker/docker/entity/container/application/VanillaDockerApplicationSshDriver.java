@@ -83,5 +83,4 @@ public class VanillaDockerApplicationSshDriver extends AbstractSoftwareProcessSs
                 .execute();
         }
     }
-
 }
