@@ -12,12 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-sudo: false
+sudo: required
 language: java
 jdk:
   - oraclejdk8
 
-script: travis_wait 60 mvn clean install -U --settings dist/target/test-classes/travis_maven_settings.xml -P QA -Ds3-upload.destination=brooklyn-clocker-QA-${TRAVIS_BUILD_NUMBER}-${TRAVIS_COMMIT}-dist.tar.gz -Ds3-upload.accessKey=$AWS_IDENTITY -Ds3-upload.secretKey=$AWS_CREDENTIAL  -Dbrooklyn-test.localPropertiesAdditions="brooklyn.location.jclouds.softlayer.identity=$SOFTLAYER_USERNAME,brooklyn.location.jclouds.softlayer.credential=$SOFTLAYER_KEY,brooklyn.location.jclouds.aws-ec2.identity=$AWS_IDENTITY,brooklyn.location.jclouds.aws-ec2.credential=$AWS_CREDENTIAL" -Dbrooklyn-test.ampTestClusterPassword=$AMP_CLUSTER_PASSWORD -Dbrooklyn-test.distributionUrl=https://s3-eu-west-1.amazonaws.com/clocker-latest/brooklyn-clocker-QA-${TRAVIS_BUILD_NUMBER}-${TRAVIS_COMMIT}-dist.tar.gz
+install: true
+before_script:
+  - ssh-keygen -t rsa -f ~/.ssh/id_rsa -N "" -q
+  - cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+  - echo "Host localhost" >> /home/travis/.ssh/config
+  - echo "    StrictHostKeyChecking no" >> /home/travis/.ssh/config
+  - ssh-keyscan -t rsa localhost >> ~/.ssh/known_hosts
+  - chmod g-rw,o-rw /home/travis/.ssh/*
+  - mkdir -p ~/.brooklyn/docker-certs
+
+script:
+  - export MAVEN_OPTS="-Dmaven.repo.local=$HOME/.m2/repository -Xmx2469m -XX:MaxPermSize=512m"
+  - mkdir -p dist/target/brooklyn-maven-plugin/
+  - touch dist/target/brooklyn-maven-plugin/brooklyn.debug.log
+  - mvn -q clean verify -Pintegration -Dsoftlayer.identity=$SOFTLAYER_IDENTITY -Dsoftlayer.credential=$SOFTLAYER_CREDENTIAL
+  - cat dist/target/brooklyn-maven-plugin/brooklyn.debug.log
 
 after_success:
   - .buildscript/deploy_snapshot.sh
@@ -36,7 +51,11 @@ env:
 #  Softlayer
   - secure: "HDTN8nYiOx+B8Wyvd/fcJGnTLq3zHx+56MhZGtfJN4DANObsLzGO24tO2zz23Gqu94Ivwz5VRKpScY8ZKwML+kcwajUUCtRQAnbJLRYCdZBct5/aaqbRAvfDvxgUPOJsLppInNGP7zSuAZoWkjWkP3cRP1GVgELDY6++wYrNa4+z+qixsm5Is4Df1q/LV+v7xOGZGCL2nd2dIHGdwWbMf+0fNu/IU6i9hi/b6YpmdmTIUi/0Dda3UtquZlnrnmml5FsU+mo+ZykLVrKn0/B+3U6seKTI+vkYtM+qlcX0RwSk3/hudBP0Nj9doZ16NOelVP1r7u9V0MR1Xt6obHKLxYlk/f/Uvzmv/TfhbY8UMEK0HOSSa1SsO5fYwXG1qaOzdRbdrXCJS2yGpn8P8cyN/g5GElSg7KMVFTuvSJ94xmPB6uUm9iXUdepYwfX2YhCBU3wKJkzU1xlTTXBa/rbAYUZ3mY9Le1kaItz4Ce6mPuikFfoWSX6XYEZHAzZoGN1TikA+xGmRSnlOqHsEb1MymWuuWsyfI3Euwh6mlvLTqod2GkzJRt4fAqKyVN2GQCUM7maF2YP0BSGEcGN0+YAdYwrT3NTm3yqcnbXdcxUXeY48O+jm1ObUeH2X6Sz/XTZC/pp4xGNy7oQtHbNPhhcK2i4ZBZpgvjFO7qNN0Ke7HLY="
   - secure: "hPkb8z84KYgPLy6uDSx3gcNgg2jxD6tlSS4nk3j3uEzz5QwJThglPUM1plerHrPFTqTDpZ5mOx+dWMxU6H81Yk2NZzV3JG2Ne0aSk69k6roD3LqGxPrbh3YpFr6go29QNgC971UuJJekM/RodBCE1Vjon4k+FkY1Ash2rKJrovFMhqP51NYqPysXxEDjJhYM7cLaJZV2SQ2jlPYXUAd5J4tgrCI1rOIa5gquiExIB868HDRF2GiFwqHqtYA/Y5npJMvpISvk70L3/6S9bqSw9vOvgFFMxmhKinrpDktN+Bm3kPWnNmx7pMrOFrQ46j6DoOViHpoGrqIDZbQoljCUst76oU82lHQZrkxTCx3bE9dc2atCg9NIWwTO4Pf31mjZ1uytNFNnqXK/UTwXUkJP908g5oDeB2JmbacFKJkPkTjc+diV96bm2YyLASzvKN1fT/7pftySRZ73Ngt2NSjdO62dx6xFZ6egP0P7vsEW+hrxPPjEfyjB2QEWr4EY7v1DZ47PU2mhbjFlaaA7sRuSQ5dO1vsyBz4s9OmsuihzlaxC1mYoOXrIItyD/+58Xyy3s6CpFqbSpaeQK5dFRNnhYeQh/rQIVYuj3CLk8SNIBPfTcnoGRq7rgWDQOlTS7Y0yyF7ZINIx5HmeTP9uLy28cO+8pbhj5Z2H09vDEO8ORwI="
-
+# brooklyn.properties placeholders
+  # SOFTALYER_IDENTITY=identity
+  - secure: "PLv7B8XRUBGTTw+iXJ7H8+4ltThrL8P3Y7M5WKVgwwR2y84lLsqk3gcpPKj2+U3LtsGSg5sWqMXfHSLW79lST6S6JDZ/kXNi78YIfOYobR8at+efO7GoaRp/Qo0ticEvJUz4uSyZ69Nm7gjd0bxd4X/CbpG8wZjgt4RUYW6ny8k="
+  # SOFTALYER_CREDENTIAL=credential
+  - secure: "F/X34P2NlY/Efsmopr9U8E9Ewt3UpQguXZg/XmNYyClgwo3giC/iAkrnlEvwAGx1IeFn+QlYss8tsBn8za5IrquQKEZ2LiU8ommAx3RJdW2p1Pk6X5fhtz6kkJ3cHY/AvrJWs/bMxqQ2JcTWAfUkQKLH/6wxGy36HIZUpThdxIo="
 
 
 cache:
