@@ -258,7 +258,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
      * Should only be called when the container is not running.
      */
     private void removeContainer() {
-        final String dockerContainerName = sensors().get(DockerContainer.DOCKER_CONTAINER_NAME);
+        String dockerContainerName = sensors().get(DockerContainer.DOCKER_CONTAINER_NAME);
         LOG.info("Removing {}", dockerContainerName);
         getDockerHost().runDockerCommand("rm " + dockerContainerName);
     }
