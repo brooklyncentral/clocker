@@ -21,6 +21,7 @@ import static clocker.docker.location.strategy.StrategyPredicates.nonEmpty;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -35,6 +36,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.reflect.TypeToken;
 import com.google.common.util.concurrent.Monitor;
+import com.google.common.util.concurrent.Uninterruptibles;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.config.ConfigKey;
@@ -43,6 +45,8 @@ import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.core.mutex.WithMutexes;
+import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.time.Duration;
 
 /**
  * A {@link DockerAwarePlacementStrategy strategy} that requires entities with
@@ -67,6 +71,12 @@ public class GroupPlacementStrategy extends AbstractDockerPlacementStrategy impl
             "Whether the Docker host must be exclusive to this application; by default other applications can co-exist",
             Boolean.FALSE);
 
+    @SetFromFlag("timeout")
+    public static final ConfigKey<Duration> STRATEGY_TIMEOUT = ConfigKeys.newDurationConfigKey(
+            "docker.strategy.timeout",
+            "How long to wait for other entities using the strategy",
+            Duration.minutes(20));
+
     public static final ConfigKey<Map<String, Monitor>> MONITOR_MAP = ConfigKeys.newConfigKey(
             new TypeToken<Map<String, Monitor>>() { },
             "groupPlacementStrategy.map.monitors",
@@ -81,8 +91,11 @@ public class GroupPlacementStrategy extends AbstractDockerPlacementStrategy impl
         List<DockerHostLocation> available = MutableList.copyOf(locations);
         boolean requireExclusive = config().get(REQUIRE_EXCLUSIVE);
 
-        Monitor monitor = createMonitor(entity.getApplicationId());
-        monitor.enter();
+        try {
+            acquireMutex(entity.getApplicationId(), "Filtering locations for " + entity);
+        } catch (InterruptedException ie) {
+            Exceptions.propagate(ie); // Should never happen...
+        }
 
         // Find hosts with entities from our application deployed there
         Iterable<DockerHostLocation> sameApplication = Iterables.filter(available, hasApplicationId(entity.getApplicationId()));
@@ -143,18 +156,22 @@ public class GroupPlacementStrategy extends AbstractDockerPlacementStrategy impl
 
     @Override
     public void acquireMutex(String mutexId, String description) throws InterruptedException {
+        LOG.debug("Enter monitor {}: {}", mutexId, description);
         Monitor monitor = createMonitor(mutexId);
-        monitor.enter();
+        Duration timeout = config().get(STRATEGY_TIMEOUT);
+        monitor.enter(timeout.toMilliseconds(), TimeUnit.MILLISECONDS);
     }
 
     @Override
     public boolean tryAcquireMutex(String mutexId, String description) {
+        LOG.debug("Try to enter monitor {}: {}", mutexId, description);
         Monitor monitor = createMonitor(mutexId);
         return monitor.tryEnter();
     }
 
     @Override
     public void releaseMutex(String mutexId) {
+        LOG.debug("Leaving monitor {}", mutexId);
         Monitor monitor = lookupMonitor(mutexId);
         if (monitor != null && monitor.isOccupiedByCurrentThread()) {
             monitor.leave();

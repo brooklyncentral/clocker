@@ -18,6 +18,9 @@ package clocker.docker.location.strategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import clocker.docker.entity.container.DockerContainer;
+import clocker.docker.location.DockerHostLocation;
+
 import com.google.common.annotations.Beta;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -26,9 +29,6 @@ import com.google.common.collect.Iterables;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.core.entity.EntityFunctions;
 import org.apache.brooklyn.core.entity.EntityPredicates;
-
-import brooklyn.entity.container.docker.DockerContainer;
-import brooklyn.location.docker.DockerHostLocation;
 
 /**
  * A number of {@link Predicate predicates} that check for properties of

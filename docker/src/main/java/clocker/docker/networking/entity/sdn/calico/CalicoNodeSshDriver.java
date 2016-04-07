@@ -15,6 +15,7 @@
  */
 package clocker.docker.networking.entity.sdn.calico;
 
+import static org.apache.brooklyn.util.ssh.BashCommands.ok;
 import static org.apache.brooklyn.util.ssh.BashCommands.sudo;
 
 import java.net.InetAddress;
@@ -38,7 +39,6 @@ import org.apache.brooklyn.entity.nosql.etcd.EtcdNode;
 import org.apache.brooklyn.entity.software.base.AbstractSoftwareProcessSshDriver;
 import org.apache.brooklyn.entity.software.base.lifecycle.ScriptHelper;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
-import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.os.Os;
@@ -128,6 +128,13 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
         Cidr subnetCidr = getEntity().sensors().get(SdnAgent.SDN_PROVIDER).getSubnetCidr(subnetId);
         InetAddress agentAddress = getEntity().sensors().get(SdnAgent.SDN_AGENT_ADDRESS);
 
+        // Setup namespace
+        newScript("setupNamespace")
+                .body.append( // Idempotent
+                        sudo("mkdir -p /var/run/netns"),
+                        ok(sudo(String.format("ln -s /proc/%s/ns/net /var/run/netns/%s", dockerPid, dockerPid))))
+                .execute();
+
         // Determine whether we are attatching the container to the initial application network
         boolean initial = false;
         for (Entity container : getEntity().sensors().get(SdnAgent.DOCKER_HOST).getDockerContainerList()) {
@@ -161,22 +168,30 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
                             sudo(String.format("%s profile add %s", getCalicoCommand(), subnetId)),
                             sudo(String.format("%s endpoint %s profile append %s", getCalicoCommand(), endpointId, subnetId)))
                     .execute();
-        }
 
-        // Set up the network
-        List<String> commands = MutableList.of();
-        commands.add(sudo("mkdir -p /var/run/netns"));
-        commands.add(BashCommands.ok(sudo(String.format("ln -s /proc/%s/ns/net /var/run/netns/%s", dockerPid, dockerPid))));
-        if (initial) {
-            commands.add(sudo(String.format("ip netns exec %s ip route del default", dockerPid)));
-            commands.add(sudo(String.format("ip netns exec %s ip route add default via %s", dockerPid, dockerIp)));
-            commands.add(sudo(String.format("ip netns exec %s ip route add %s via %s", dockerPid, subnetCidr.toString(), agentAddress.getHostAddress())));
+            // Find router for eth1
+            ScriptHelper getRouterAddress = newScript("getRouterAddress")
+                    .body.append(
+                            sudo(String.format("ip netns exec %s ip route del default", dockerPid)),
+                            sudo(String.format("ip netns exec %s ip route list dev eth1", dockerPid)))
+                    .noExtraOutput()
+                    .gatherOutput();
+            getRouterAddress.execute();
+            String routerAddress = Strings.getFirstWord(getRouterAddress.getResultStdout());
+            LOG.info("Previous eth1 router was: {} agent address: {}", routerAddress, agentAddress.getHostAddress());
+
+            // Add new routes
+            newScript("addRoutes")
+                    .body.append(
+                            sudo(String.format("ip netns exec %s ip route add default via %s", dockerPid, dockerIp)),
+                            sudo(String.format("ip netns exec %s ip route add %s via %s", dockerPid, subnetCidr.toString(), agentAddress.getHostAddress())))
+                    .execute();
         } else {
-            commands.add(sudo(String.format("ip netns exec %s ip addr add %s/%d dev eth1", dockerPid, address.getHostAddress(), subnetCidr.getLength())));
+            // Add extra network address
+            newScript("addAddress")
+                    .body.append(sudo(String.format("ip netns exec %s ip addr add %s/%d dev eth1", dockerPid, address.getHostAddress(), subnetCidr.getLength())))
+                    .execute();
         }
-        newScript("setupNetwork")
-                .body.append(commands)
-                .execute();
 
         return address;
     }

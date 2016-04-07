@@ -50,12 +50,13 @@ public class VanillaDockerApplicationImpl extends SoftwareProcessImpl implements
     @Override
     protected void connectSensors() {
         connectServiceUpIsRunning();
+
         super.connectSensors();
     }
 
     @Override
-    public void preStart() {
-        super.preStart();
+    protected void postStart() {
+        super.postStart();
 
         // Refresh the sensors that will be mapped, since we now have a location for the enricher to use
         for (AttributeSensor sensor : Iterables.filter(getEntityType().getSensors(), AttributeSensor.class)) {

@@ -69,6 +69,7 @@ import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
+import org.apache.brooklyn.core.entity.trait.StartableMethods;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.core.location.cloud.CloudLocationConfig;
@@ -667,6 +668,13 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         if (status == null) {
             connectSensors();
         }
+    }
+
+    @Override
+    public void restart() {
+        StartableMethods.stop(this);
+
+        super.restart();
     }
 
     @Override

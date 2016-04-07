@@ -15,6 +15,8 @@
  */
 package clocker.docker.entity.container.application;
 
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +62,16 @@ public class VanillaDockerApplicationSshDriver extends AbstractSoftwareProcessSs
     @Override
     public void install() {
         LOG.info("Container installed on {}", getOwnerEntity());
+    }
+
+    @Override
+    public void copyRuntimeResources() {
+        Map<String, String> runtimeFiles = entity.getConfig(VanillaSoftwareProcess.RUNTIME_FILES);
+        Map<String, String> runtimeTemplates = entity.getConfig(VanillaSoftwareProcess.RUNTIME_TEMPLATES);
+        if ((runtimeFiles != null && runtimeFiles.size() > 0) ||
+                (runtimeTemplates != null && runtimeTemplates.size() > 0)) {
+            super.copyRuntimeResources();
+        }
     }
 
     @Override
