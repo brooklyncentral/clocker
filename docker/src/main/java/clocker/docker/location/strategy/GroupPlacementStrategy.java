@@ -15,6 +15,10 @@
  */
 package clocker.docker.location.strategy;
 
+import static clocker.docker.location.strategy.StrategyPredicates.childrenOf;
+import static clocker.docker.location.strategy.StrategyPredicates.hasApplicationId;
+import static clocker.docker.location.strategy.StrategyPredicates.nonEmpty;
+
 import java.util.List;
 import java.util.Map;
 
@@ -23,13 +27,10 @@ import javax.annotation.concurrent.ThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import clocker.docker.entity.container.DockerContainer;
 import clocker.docker.location.DockerHostLocation;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.reflect.TypeToken;
@@ -38,8 +39,6 @@ import com.google.common.util.concurrent.Monitor;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
-import org.apache.brooklyn.core.entity.EntityFunctions;
-import org.apache.brooklyn.core.entity.EntityPredicates;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
@@ -84,7 +83,6 @@ public class GroupPlacementStrategy extends AbstractDockerPlacementStrategy impl
 
         Monitor monitor = createMonitor(entity.getApplicationId());
         monitor.enter();
-        LOG.debug("Placing {} from {} with parent {}", new Object[] { entity, entity.getApplicationId(), entity.getParent() });
 
         // Find hosts with entities from our application deployed there
         Iterable<DockerHostLocation> sameApplication = Iterables.filter(available, hasApplicationId(entity.getApplicationId()));
@@ -92,7 +90,7 @@ public class GroupPlacementStrategy extends AbstractDockerPlacementStrategy impl
         // Check if hosts have any deployed entities that share a parent with the input entity
         Optional<DockerHostLocation> sameParent = Iterables.tryFind(sameApplication, childrenOf(entity.getParent()));
         if (sameParent.isPresent()) {
-            LOG.debug("Returning {} for {} placement", sameParent.get(), entity);
+            LOG.debug("Returning {} (same parent) for {} placement", sameParent.get(), entity);
             return ImmutableList.copyOf(sameParent.asSet());
         }
 
@@ -103,85 +101,6 @@ public class GroupPlacementStrategy extends AbstractDockerPlacementStrategy impl
         }
         LOG.debug("Returning {} for {} placement", Iterables.toString(available), entity);
         return available;
-    }
-
-    private static Predicate<DockerHostLocation> childrenOf(Entity parent) {
-        return new ChildrenOfPredicate(parent);
-    }
-
-    private static class ChildrenOfPredicate implements Predicate<DockerHostLocation> {
-        private Entity parent;
-
-        public ChildrenOfPredicate(Entity parent) {
-            this.parent = parent;
-        }
-
-        @Override
-        public boolean apply(DockerHostLocation input) {
-            Iterable<Entity> deployed = Iterables.filter(
-                    Iterables.transform(input.getDockerContainerList(), EntityFunctions.config(DockerContainer.ENTITY.getConfigKey())),
-                    Predicates.notNull());
-
-            Iterable<Entity> sameParent = Iterables.filter(deployed, EntityPredicates.isChildOf(parent));
-            LOG.debug("Found {} deployed to {} with parent {}",
-                    new Object[] { Iterables.toString(sameParent), input, parent });
-
-            if (Iterables.isEmpty(sameParent)) {
-                LOG.debug("No entities with parent {} on {}", parent, input );
-                return false;
-            } else {
-                LOG.debug("Found entities with parent {} on {}", parent, input );
-                return true;
-            }
-        }
-    }
-
-    private Predicate<DockerHostLocation> hasApplicationId(String applicationId) {
-        return new HasApplicationIdPredicate(applicationId);
-    }
-
-    private class HasApplicationIdPredicate implements Predicate<DockerHostLocation> {
-        private String applicationId;
-
-        public HasApplicationIdPredicate(String applicationId) {
-            this.applicationId = applicationId;
-        }
-
-        @Override
-        public boolean apply(DockerHostLocation input) {
-            Iterable<Entity> deployed = Iterables.filter(
-                    Iterables.transform(input.getDockerContainerList(), EntityFunctions.config(DockerContainer.ENTITY.getConfigKey())),
-                    Predicates.notNull());
-            LOG.debug("Found {} containers on {}", Iterables.toString(input.getDockerContainerList()), input);
-            LOG.debug("Found {} entities deployed to {}", Iterables.toString(deployed), input);
-
-            Iterable<Entity> sameApplication = Iterables.filter(deployed, EntityPredicates.applicationIdEqualTo(applicationId));
-            LOG.debug("Found {} deployed to {} with application id {}",
-                    new Object[] { Iterables.toString(sameApplication), input, applicationId });
-
-            if (Iterables.isEmpty(sameApplication)) {
-                LOG.debug("No entities with application id {} on {}", applicationId, input);
-                return false;
-            } else {
-                LOG.debug("Found entities with application id {} on {}", applicationId, input);
-                return true;
-            }
-        }
-    }
-
-    private Predicate<DockerHostLocation> nonEmpty() {
-        return new NonEmptyPredicate();
-    }
-
-    private class NonEmptyPredicate implements Predicate<DockerHostLocation> {
-        @Override
-        public boolean apply(DockerHostLocation input) {
-            Iterable<Entity> deployed = Iterables.filter(
-                    Iterables.transform(input.getDockerContainerList(), EntityFunctions.config(DockerContainer.ENTITY.getConfigKey())),
-                    Predicates.notNull());
-
-            return !Iterables.isEmpty(deployed);
-        }
     }
 
     /**
