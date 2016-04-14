@@ -36,3 +36,14 @@ for full code changes.
 
 This code is part of jclouds-labs _1.9.3-SNAPSHOT_ and _2.0.0-SNAPSHOT_
 but **not** any official jclouds release yet.
+
+## Make DockerTemplateOptions values null safe
+
+Fixes [#276](https://github.com/brooklyncentral/clocker/issues/276) by allowing
+null values in `DockerTemplateOptions` where appropriate.
+
+See [jclouds/jclouds-labs#260](https://github.com/jclouds/jclouds-labs/pull/260)
+for full code changes.
+
+- [`DockerTemplateOptions.java`](./src/main/java/org/jclouds/docker/compute/options/DockerTemplateOptions.java)
+- [`NullSafeCopies.java`](./src/main/java/org/jclouds/docker/internal/NullSafeCopies.java)

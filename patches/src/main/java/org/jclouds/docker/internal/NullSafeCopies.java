@@ -34,6 +34,14 @@ public class NullSafeCopies {
       return list != null ? ImmutableList.copyOf(list) : ImmutableList.<E> of();
    }
 
+   public static <E> List<E> copyOf(@Nullable Iterable<E> list) {
+      return list != null ? ImmutableList.copyOf(list) : ImmutableList.<E> of();
+   }
+
+   public static <E> List<E> copyOf(@Nullable E[] array) {
+      return array != null ? ImmutableList.copyOf(array) : ImmutableList.<E> of();
+   }
+
    /**
     * Copies given List with keeping null value if provided.
     *
