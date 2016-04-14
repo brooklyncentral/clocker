@@ -40,11 +40,11 @@ brooklyn.catalog:
         docker.policy.ha.enable: false
         docker.container.strategies:
         - $brooklyn:object:
-            type: brooklyn.location.docker.strategy.MaxContainersPlacementStrategy
+            type: clocker.docker.location.strategy.MaxContainersPlacementStrategy
             brooklyn.config:
               maxContainers: 16
         - $brooklyn:object:
-            type: brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy
+            type: clocker.docker.location.strategy.BreadthFirstPlacementStrategy
         docker.host.spec:
           $brooklyn:entitySpec:
             type: docker-host

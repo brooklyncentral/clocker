@@ -77,11 +77,12 @@
         <feature version="${project.version}">clocker-docker</feature>
     </feature>
 
-<!--    <feature name="clocker-all" version="${project.version}" description="Full deployment of Clocker">
+    <feature name="clocker-all" version="${project.version}" description="Full deployment of Clocker">
+        <feature version="${project.version}">clocker-extras</feature>
         <feature version="${project.version}">clocker-docker</feature>
         <feature version="${project.version}">clocker-mesos</feature>
         <feature version="${project.version}">clocker-jsgui</feature>
         <feature version="${project.version}">clocker-console</feature>
-    </feature>-->
+    </feature>
 
 </features>

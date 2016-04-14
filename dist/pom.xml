@@ -237,7 +237,7 @@
                                     <goal>stop</goal>
                                 </goals>
                                 <configuration>
-                                    <mainClass>brooklyn.clocker.Main</mainClass>
+                                    <mainClass>clocker.main.Main</mainClass>
                                     <bindPort>${bindPort}</bindPort>
                                     <pollPeriod>${brookyn.pollPeriod}</pollPeriod>
                                     <timeout>30</timeout><!--minutes-->
