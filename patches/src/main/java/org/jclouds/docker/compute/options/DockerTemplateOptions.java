@@ -51,15 +51,15 @@ import org.jclouds.scriptbuilder.domain.Statement;
 public class DockerTemplateOptions extends TemplateOptions implements Cloneable {
 
    protected List<String> dns = ImmutableList.of();
-   protected String hostname;
-   protected Integer memory;
-   protected Integer cpuShares;
-   protected List<String> entrypoint = ImmutableList.of();
-   protected List<String> commands = ImmutableList.of();
+   @Nullable protected String hostname;
+   @Nullable protected Integer memory;
+   @Nullable protected Integer cpuShares;
+   @Nullable List<String> entrypoint;
+   @Nullable List<String> commands;
    protected Map<String, String> volumes = ImmutableMap.of();
-   protected List<String> env = ImmutableList.of();
+   @Nullable protected List<String> env;
    protected Map<Integer, Integer> portBindings = ImmutableMap.of();
-   protected String networkMode;
+   @Nullable protected String networkMode;
    protected Map<String, String> extraHosts = ImmutableMap.of();
    protected List<String> volumesFrom = ImmutableList.of();
 
@@ -138,12 +138,12 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
    }
 
    public DockerTemplateOptions dns(Iterable<String> dns) {
-      this.dns = NullSafeCopies.copyWithNullOf(dns);
+      this.dns = NullSafeCopies.copyOf(dns);
       return this;
    }
 
    public DockerTemplateOptions dns(String...dns) {
-      this.dns = NullSafeCopies.copyWithNullOf(dns);
+      this.dns = NullSafeCopies.copyOf(dns);
       return this;
    }
 
@@ -227,7 +227,7 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
     * @param extraHosts the map of host names to IP addresses
     */
    public DockerTemplateOptions extraHosts(Map<String, String> extraHosts) {
-      this.extraHosts = NullSafeCopies.copyWithNullOf(extraHosts);
+      this.extraHosts = NullSafeCopies.copyOf(extraHosts);
       return this;
    }
 
@@ -237,7 +237,7 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
     * @param volumesFrom the list of container names
     */
    public DockerTemplateOptions volumesFrom(Iterable<String> volumesFrom) {
-      this.volumesFrom = NullSafeCopies.copyWithNullOf(volumesFrom);
+      this.volumesFrom = NullSafeCopies.copyOf(volumesFrom);
       return this;
    }
 
