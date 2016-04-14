@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package clocker.docker.location.strategy;
+package clocker.docker.location.strategy.basic;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import clocker.docker.location.DockerHostLocation;
+import clocker.docker.location.strategy.AbstractDockerPlacementStrategy;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;

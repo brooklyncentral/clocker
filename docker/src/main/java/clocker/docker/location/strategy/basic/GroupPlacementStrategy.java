@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package clocker.docker.location.strategy;
+package clocker.docker.location.strategy.basic;
 
-import static clocker.docker.location.strategy.StrategyPredicates.childrenOf;
-import static clocker.docker.location.strategy.StrategyPredicates.hasApplicationId;
-import static clocker.docker.location.strategy.StrategyPredicates.nonEmpty;
+import static clocker.docker.location.strategy.util.StrategyPredicates.childrenOf;
+import static clocker.docker.location.strategy.util.StrategyPredicates.hasApplicationId;
+import static clocker.docker.location.strategy.util.StrategyPredicates.nonEmpty;
 
 import java.util.List;
 import java.util.Map;
@@ -29,6 +29,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import clocker.docker.location.DockerHostLocation;
+import clocker.docker.location.strategy.AbstractDockerPlacementStrategy;
+import clocker.docker.location.strategy.DockerAwarePlacementStrategy;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Optional;

@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package clocker.docker.location.strategy;
+package clocker.docker.location.strategy.basic;
 
 import clocker.docker.entity.DockerHost;
 import clocker.docker.location.DockerHostLocation;
+import clocker.docker.location.strategy.BasicDockerPlacementStrategy;
 
 /**
  * Placement strategy that selects the Docker host with the lowest CPU usage.
