@@ -46,6 +46,11 @@
     <dependencies>
         <dependency>
             <groupId>io.brooklyn.clocker</groupId>
+            <artifactId>brooklyn-clocker-extras</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.brooklyn.clocker</groupId>
             <artifactId>brooklyn-clocker-patches</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
@@ -232,7 +237,7 @@
                                     <goal>stop</goal>
                                 </goals>
                                 <configuration>
-                                    <mainClass>brooklyn.clocker.Main</mainClass>
+                                    <mainClass>clocker.main.Main</mainClass>
                                     <bindPort>${bindPort}</bindPort>
                                     <pollPeriod>${brookyn.pollPeriod}</pollPeriod>
                                     <timeout>30</timeout><!--minutes-->

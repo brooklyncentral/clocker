@@ -19,9 +19,9 @@ locations:
 - my-docker-cloud
 
 services:
-- type: brooklyn.networking.VirtualNetwork
+- type: clocker.docker.networking.entity.VirtualNetwork
   networkId: public
-- type: brooklyn.networking.VirtualNetwork
+- type: clocker.docker.networking.entity.VirtualNetwork
   networkId: riak
 
 - type: org.apache.brooklyn.entity.nosql.riak.RiakCluster
@@ -51,10 +51,13 @@ services:
               $brooklyn:component("cluster").attributeWhenReady("riak.cluster.nodeList")
     controlleddynamicwebappcluster.controllerSpec:
       $brooklyn:entitySpec:
-        type: brooklyn.entity.proxy.haproxy.HAProxyController
+        type: org.apache.brooklyn.entity.proxy.haproxy.HAProxyController
         brooklyn.config:
           docker.image.name: haproxy
           docker.image.tag: 1.5.9
+          docker.container.directPorts.configKeys:
+          - $brooklyn:sensor("org.apache.brooklyn.entity.proxy.AbstractController", "proxy.http.port")
+          - $brooklyn:sensor("org.apache.brooklyn.entity.proxy.AbstractController", "proxy.https.port")
           install.dir: /usr/local/sbin/
           run.dir: /usr/local/etc/haproxy/
           network.list:
