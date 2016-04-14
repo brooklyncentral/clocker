@@ -1,15 +1,15 @@
 brooklyn.catalog:
   id: simple-test-app
-  version: 1.0
+  version: 1.1.0-SNAPSHOT # CLOCKER_VERSION
   itemType: template
   name: Simple Test App
   license: Apache-2.0
   item:
     services:
-      - type: "docker-cloud:1.1.0-SNAPSHOT"
+      - type: "docker-cloud:1.1.0-SNAPSHOT" # CLOCKER_VERSION
         id: infrastructure1
         brooklyn.config:
           entity.dynamicLocation.name: my-docker-cloud
           docker.host.cluster.initial.size: 2
           docker.registry.start: false
-          docker.version: 1.7.1
+          docker.version: 1.8.1 # DOCKER_VERSION
