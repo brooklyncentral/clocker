@@ -35,6 +35,7 @@ import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.policy.PolicySpec;
 import org.apache.brooklyn.core.entity.Attributes;
+import org.apache.brooklyn.core.entity.BrooklynConfigKeys;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityInternal;
 import org.apache.brooklyn.core.entity.EntityPredicates;
@@ -128,6 +129,7 @@ public class EtcdClusterImpl extends DynamicClusterImpl implements EtcdCluster {
                         .andWaitForSuccess();
 
                 // Check for first node in the cluster.
+                Duration timeout = config().get(BrooklynConfigKeys.START_TIMEOUT);
                 Entity firstNode = sensors().get(DynamicCluster.FIRST);
                 if (member.equals(firstNode)) {
                     nodes.put(member, name);
@@ -141,10 +143,10 @@ public class EtcdClusterImpl extends DynamicClusterImpl implements EtcdCluster {
                                 Predicates.instanceOf(EtcdNode.class),
                                 EntityPredicates.attributeEqualTo(EtcdNode.ETCD_NODE_HAS_JOINED_CLUSTER, Boolean.TRUE)));
                         if (anyNodeInCluster.isPresent()) {
-                            DynamicTasks.queueIfPossible(DependentConfiguration.attributeWhenReady(anyNodeInCluster.get(), Startable.SERVICE_UP))
+                            DynamicTasks.queueIfPossible(DependentConfiguration.builder().attributeWhenReady(anyNodeInCluster.get(), Startable.SERVICE_UP).timeout(timeout).build())
                                     .orSubmitAndBlock(this)
                                     .andWaitForSuccess();
-                            Entities.invokeEffectorWithArgs(this, anyNodeInCluster.get(), EtcdNode.JOIN_ETCD_CLUSTER, name, getNodeAddress(member)).blockUntilEnded();
+                            Entities.invokeEffectorWithArgs(this, anyNodeInCluster.get(), EtcdNode.JOIN_ETCD_CLUSTER, name, getNodeAddress(member)).blockUntilEnded(timeout);
                             nodes.put(member, name);
                             recalculateClusterAddresses(nodes);
                             log.info("Adding node {}: {}; {} to cluster", new Object[] { this, member, name });

@@ -27,10 +27,12 @@ import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.core.entity.BrooklynConfigKeys;
 import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
+import org.apache.brooklyn.util.time.Duration;
 
 @Catalog(name="Etcd Cluster", description="Etcd is an open-source distributed key-value store that serves as "
         + "the backbone of distributed systems by providing a canonical hub for cluster coordination and state management.")
@@ -41,6 +43,9 @@ public interface EtcdCluster extends DynamicCluster {
     AttributeSensor<Map<Entity, String>> ETCD_CLUSTER_NODES = Sensors.newSensor(
             new TypeToken<Map<Entity, String>>() {}, 
             "etcd.cluster.nodes", "Names of all active etcd nodes in the cluster (entity reference to name mapping)");
+
+    @SetFromFlag("startTimeout")
+    ConfigKey<Duration> START_TIMEOUT = ConfigKeys.newConfigKeyWithDefault(BrooklynConfigKeys.START_TIMEOUT, Duration.minutes(10));
 
     @SetFromFlag("clusterName")
     ConfigKey<String> CLUSTER_NAME = ConfigKeys.newStringConfigKey("etcd.cluster.name", "The Etcd cluster name", "brooklyn");
