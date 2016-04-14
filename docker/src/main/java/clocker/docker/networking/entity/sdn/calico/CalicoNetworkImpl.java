@@ -40,6 +40,8 @@ import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.entity.group.Cluster;
 import org.apache.brooklyn.entity.group.DynamicCluster;
+import org.apache.brooklyn.entity.nosql.etcd.EtcdCluster;
+import org.apache.brooklyn.entity.nosql.etcd.EtcdNode;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
@@ -48,9 +50,6 @@ import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.text.Strings;
-
-import brooklyn.entity.nosql.etcd.EtcdCluster;
-import brooklyn.entity.nosql.etcd.EtcdNode;
 
 public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork {
 

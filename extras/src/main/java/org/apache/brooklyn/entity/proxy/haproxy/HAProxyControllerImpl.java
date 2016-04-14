@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.entity.proxy.haproxy;
+package org.apache.brooklyn.entity.proxy.haproxy;
 
 import org.apache.brooklyn.entity.proxy.AbstractControllerImpl;
 

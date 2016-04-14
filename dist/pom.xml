@@ -46,6 +46,11 @@
     <dependencies>
         <dependency>
             <groupId>io.brooklyn.clocker</groupId>
+            <artifactId>brooklyn-clocker-extras</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.brooklyn.clocker</groupId>
             <artifactId>brooklyn-clocker-patches</artifactId>
             <version>${project.parent.version}</version>
         </dependency>

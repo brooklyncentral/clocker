@@ -13,14 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.entity.nosql.etcd;
+package org.apache.brooklyn.entity.nosql.etcd;
 
-import org.apache.brooklyn.entity.software.base.SoftwareProcessDriver;
 
-public interface EtcdNodeDriver extends SoftwareProcessDriver {
-
-    public void joinCluster(String nodeName, String nodeAddress);
-
-    public void leaveCluster(String nodeName);
+public interface EtcdProxyDriver extends EtcdNodeDriver {
 
 }

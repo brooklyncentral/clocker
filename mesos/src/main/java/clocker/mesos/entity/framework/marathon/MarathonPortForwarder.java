@@ -18,12 +18,12 @@ package clocker.mesos.entity.framework.marathon;
 import java.util.List;
 import java.util.Map;
 
-import brooklyn.location.mesos.framework.marathon.MarathonTaskLocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import clocker.mesos.entity.MesosCluster;
 import clocker.mesos.entity.MesosSlave;
+import clocker.mesos.location.framework.marathon.MarathonTaskLocation;
 import clocker.mesos.networking.entity.sdn.calico.CalicoModule;
 
 import com.google.common.base.Optional;

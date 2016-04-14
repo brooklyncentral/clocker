@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.entity.proxy.haproxy;
+package org.apache.brooklyn.entity.nosql.etcd;
 
 import org.apache.brooklyn.entity.software.base.SoftwareProcessDriver;
 
-public interface HAProxyDriver extends SoftwareProcessDriver {
+public interface EtcdNodeDriver extends SoftwareProcessDriver {
 
-    void reconfigureService();
+    public void joinCluster(String nodeName, String nodeAddress);
+
+    public void leaveCluster(String nodeName);
 
 }

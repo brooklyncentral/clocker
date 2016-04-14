@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.entity.proxy.haproxy;
+package org.apache.brooklyn.entity.proxy.haproxy;
 
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.config.ConfigKey;
@@ -28,7 +28,7 @@ public interface HAProxyController extends AbstractController {
     ConfigKey<String> HAPROXY_CONFIG_TEMPLATE_URL = ConfigKeys.newStringConfigKey(
             "haproxy.config.templateUrl",
             "Configuration template file (in freemarker format) for HAProxyController",
-            "classpath://brooklyn/entity/proxy/haproxy/haproxy.cfg");
+            "classpath://org/apache/brooklyn/entity/proxy/haproxy/haproxy.cfg");
 
     @SetFromFlag("backendMode")
     ConfigKey<String> BACKEND_MODE = ConfigKeys.newStringConfigKey(

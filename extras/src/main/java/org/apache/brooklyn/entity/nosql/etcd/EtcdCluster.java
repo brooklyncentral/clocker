@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package brooklyn.entity.nosql.etcd;
+package org.apache.brooklyn.entity.nosql.etcd;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;

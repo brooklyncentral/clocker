@@ -15,8 +15,6 @@
  */
 package clocker.docker.test;
 
-import static org.apache.brooklyn.test.HttpTestUtils.assertHttpStatusCodeEventuallyEquals;
-
 import org.testng.annotations.Test;
 
 import clocker.docker.entity.DockerInfrastructure;
@@ -29,19 +27,18 @@ import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.api.sensor.Sensor;
 import org.apache.brooklyn.core.entity.Attributes;
-import org.apache.brooklyn.core.entity.factory.ApplicationBuilder;
+import org.apache.brooklyn.core.entity.EntityAsserts;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.core.test.entity.TestApplication;
 import org.apache.brooklyn.entity.group.DynamicCluster;
+import org.apache.brooklyn.entity.proxy.haproxy.HAProxyController;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.webapp.JavaWebAppService;
 import org.apache.brooklyn.entity.webapp.WebAppService;
 import org.apache.brooklyn.entity.webapp.tomcat.TomcatServer;
-import org.apache.brooklyn.test.EntityTestUtils;
 import org.apache.brooklyn.test.support.TestResourceUnavailableException;
-
-import brooklyn.entity.proxy.haproxy.HAProxyController;
+import org.apache.brooklyn.util.http.HttpAsserts;
 
 public class DockerHAProxyIntegrationTest extends AbstractClockerIntegrationTest {
 
@@ -76,22 +73,21 @@ public class DockerHAProxyIntegrationTest extends AbstractClockerIntegrationTest
     public void testContainerFromImageName() {
         DockerInfrastructure infrastructure = DockerInfrastructureTests.deployAndWaitForDockerInfrastructure(app, testLocation);
 
-        TestApplication testApp = ApplicationBuilder.newManagedApp(TestApplication.class, app.getManagementContext());
+        TestApplication testApp = app.getManagementContext().getEntityManager().createEntity(EntitySpec.create(TestApplication.class));
         DynamicCluster serverPool = testApp.createAndManageChild(EntitySpec.create(DynamicCluster.class)
                 .configure(DynamicCluster.MEMBER_SPEC, tomcatSpec())
                 .configure(DynamicCluster.INITIAL_SIZE, 1)
                 .configure(JavaWebAppService.ROOT_WAR, getTestWar()));
-
         HAProxyController hap = testApp.createAndManageChild(haProxySpec()
                 .configure(HAProxyController.SERVER_POOL, serverPool)
                 .configure(HAProxyController.HOSTNAME_SENSOR, Attributes.SUBNET_HOSTNAME));
         testApp.start(ImmutableList.of(infrastructure.getDynamicLocation()));
-        EntityTestUtils.assertAttributeEqualsEventually(hap, Attributes.SERVICE_STATE_ACTUAL, Lifecycle.RUNNING);
+        EntityAsserts.assertAttributeEqualsEventually(hap, Attributes.SERVICE_STATE_ACTUAL, Lifecycle.RUNNING);
 
         // URLs reachable
-        assertHttpStatusCodeEventuallyEquals(hap.sensors().get(mappedSensor(HAProxyController.ROOT_URL)), 200);
+        HttpAsserts.assertHttpStatusCodeEventuallyEquals(hap.sensors().get(mappedSensor(HAProxyController.ROOT_URL)), 200);
         for (Entity member : serverPool.getMembers()) {
-            assertHttpStatusCodeEventuallyEquals(member.sensors().get(mappedSensor(WebAppService.ROOT_URL)), 200);
+            HttpAsserts.assertHttpStatusCodeEventuallyEquals(member.sensors().get(mappedSensor(WebAppService.ROOT_URL)), 200);
         }
 
         testApp.stop();

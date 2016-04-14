@@ -25,9 +25,8 @@ import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
+import org.apache.brooklyn.entity.nosql.etcd.EtcdCluster;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
-
-import brooklyn.entity.nosql.etcd.EtcdCluster;
 
 /**
  * A collection of machines running Calico.
