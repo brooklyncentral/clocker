@@ -17,11 +17,14 @@ package org.apache.brooklyn.entity.nosql.etcd;
 
 import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.entity.ImplementedBy;
+import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.core.entity.BrooklynConfigKeys;
 import org.apache.brooklyn.core.location.PortRanges;
 import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
+import org.apache.brooklyn.util.time.Duration;
 
 @Catalog(name="Etcd Proxy")
 @ImplementedBy(EtcdProxyImpl.class)
@@ -29,6 +32,9 @@ public interface EtcdProxy extends EtcdNode {
 
     @SetFromFlag("etcdClientPort")
     PortAttributeSensorAndConfigKey ETCD_CLIENT_PORT = new PortAttributeSensorAndConfigKey("etcd.port.client", "Etcd proxy client port", PortRanges.fromInteger(4001));
+
+    @SetFromFlag("startTimeout")
+    ConfigKey<Duration> START_TIMEOUT = ConfigKeys.newConfigKeyWithDefault(BrooklynConfigKeys.START_TIMEOUT, Duration.minutes(10));
 
     AttributeSensorAndConfigKey<String, String> ETCD_CLUSTER_URL = ConfigKeys.newStringSensorAndConfigKey("etcd.cluster.url", "Returns the Etcd cluster URL");
     AttributeSensorAndConfigKey<String, String> ETCD_CLUSTER_NAME = ConfigKeys.newStringSensorAndConfigKey("etcd.cluster.name", "Returns the Etcd cluster name");
