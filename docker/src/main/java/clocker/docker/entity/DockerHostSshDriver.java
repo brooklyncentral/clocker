@@ -27,13 +27,13 @@ import static org.apache.brooklyn.util.ssh.BashCommands.ifExecutableElse1;
 import static org.apache.brooklyn.util.ssh.BashCommands.installPackage;
 import static org.apache.brooklyn.util.ssh.BashCommands.sudo;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
 import clocker.docker.entity.util.DockerUtils;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
@@ -156,15 +156,6 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         return getEntity().config().get(DockerHost.EPEL_RELEASE);
     }
 
-    public String getStorageOpts() {
-        String driver = getEntity().config().get(DockerHost.DOCKER_STORAGE_DRIVER);
-        if (Strings.isBlank(driver)) {
-            return "";
-        } else {
-            return "-s " + Strings.toLowerCase(driver);
-        }
-    }
-
     @Override
     public String deployArchive(String url) {
         String volumeId = Identifiers.makeIdFromHash(url.hashCode());
@@ -229,7 +220,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     private void executeKernelInstallation(List<String> commands) {
-        newScript(INSTALLING + "kernel")
+        newScript(INSTALLING + "-kernel")
                 .body.append(commands)
                 .body.append(sudo("reboot"))
                 .execute();
@@ -261,11 +252,12 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .orSubmitAndBlock()
                 .andWaitForSuccess();
         if (!result) {
-            throw new IllegalStateException(String.format("The entity %s is not sshable after reboot (waited %s)",
+            throw new IllegalStateException(format("The entity %s is not sshable after reboot (waited %s)",
                     entity, Time.makeTimeStringRounded(stopwatchForReboot)));
         }
+
         if (entity.config().get(JcloudsLocationConfig.MAP_DEV_RANDOM_TO_DEV_URANDOM)) {
-            newScript(INSTALLING + "urandom")
+            newScript(INSTALLING + "-urandom")
             .body.append(
                     sudo("mv /dev/random /dev/random-real"),
                     sudo("ln -s /dev/urandom /dev/random"))
@@ -313,11 +305,16 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 dockerRepoName = "ubuntu-wily";
                 repositoryVersionName = dockerVersion + "-0~wily";
                 break;
+            case "16.04":
+                dockerRepoName = "ubuntu-xenial";
+                repositoryVersionName = dockerVersion + "-0~xenial";
+                break;
             default:
                 throw new IllegalArgumentException("No docker repo found for ubuntu version: " + ubuntuVersion);
         }
 
-        log.debug("Installing Docker version {} on Ubuntu {} with docker repo name {} and repository version number {}", new String[]{dockerVersion, ubuntuVersion, dockerRepoName, repositoryVersionName});
+        log.debug("Installing Docker version {} on Ubuntu {} with docker repo name {} and repository version {}",
+                new Object[] { dockerVersion, ubuntuVersion, dockerRepoName, repositoryVersionName });
         return chainGroup(
                 installPackage("apt-transport-https"),
                 "echo 'deb https://apt.dockerproject.org/repo " + dockerRepoName + " main' | " + sudo("tee -a /etc/apt/sources.list.d/docker.list"),
@@ -335,26 +332,26 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     }
 
     // TODO --registry-mirror
-    private String getDockerRegistryConfig(){
-        StringBuilder config = new StringBuilder();
-
+    private String getDockerRegistryOpts() {
         String registryUrl = entity.config().get(DockerInfrastructure.DOCKER_IMAGE_REGISTRY_URL);
         if (Strings.isNonBlank(registryUrl)) {
-            config.append("--insecure-registry ")
-                  .append(registryUrl);
-        } else {
-            if (entity.config().get(DockerInfrastructure.DOCKER_SHOULD_START_REGISTRY)) {
-                String firstHostname = entity.sensors().get(DynamicGroup.FIRST).sensors().get(Attributes.HOSTNAME);
-                Integer registryPort = entity.config().get(DockerInfrastructure.DOCKER_REGISTRY_PORT);
-                config.append("--insecure-registry ")
-                      .append(firstHostname)
-                      .append(":")
-                      .append(registryPort);
-            }
+            return format("--insecure-registry %s", registryUrl);
         }
+        if (entity.config().get(DockerInfrastructure.DOCKER_SHOULD_START_REGISTRY)) {
+            String firstHostname = entity.sensors().get(DynamicGroup.FIRST).sensors().get(Attributes.HOSTNAME);
+            Integer registryPort = entity.config().get(DockerInfrastructure.DOCKER_REGISTRY_PORT);
+            return format("--insecure-registry %s:%d", firstHostname, registryPort);
+        }
+        return null;
+    }
 
-        log.debug("Registry options: {}", config.toString());
-        return config.toString();
+    private String getStorageOpts() {
+        String driver = getEntity().config().get(DockerHost.DOCKER_STORAGE_DRIVER);
+        if (Strings.isBlank(driver)) {
+            return null;
+        } else {
+            return "-s " + Strings.toLowerCase(driver);
+        }
     }
 
     @Override
@@ -364,69 +361,82 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
             stop();
         }
 
+        // Determine OS
+        String os = getMachine().getMachineDetails().getOsDetails().getName();
+        boolean centos = "centos".equalsIgnoreCase(os);
+        boolean ubuntu = "ubuntu".equalsIgnoreCase(os);
+
         if (entity.config().get(DockerInfrastructure.DOCKER_GENERATE_TLS_CERTIFICATES)) {
             newScript(ImmutableMap.of(NON_STANDARD_LAYOUT, "true"), CUSTOMIZING)
                     .body.append(
-                            String.format("cp ca-cert.pem %s/ca.pem", getRunDir()),
-                            String.format("cp server-cert.pem %s/cert.pem", getRunDir()),
-                            String.format("cp server-key.pem %s/key.pem", getRunDir()))
+                            format("cp ca-cert.pem %s/ca.pem", getRunDir()),
+                            format("cp server-cert.pem %s/cert.pem", getRunDir()),
+                            format("cp server-key.pem %s/key.pem", getRunDir()))
                 .failOnNonZeroResultCode()
                 .execute();
         }
 
-        //Add the CA cert as an authorised docker CA for the first host.
-        //This will be used for docker registry etc.
-        String hostnameOfFirstEntity = entity.sensors().get(AbstractGroup.FIRST).sensors().get(Attributes.HOSTNAME);
-        String repoCAPath = "/etc/docker/certs.d/" + hostnameOfFirstEntity + ":"+ entity.config().get(DockerInfrastructure.DOCKER_REGISTRY_PORT);
+        // Add the CA cert as an authorised docker CA for the first host.
+        // This will be used for docker registry etc.
+        String firstHost = entity.sensors().get(AbstractGroup.FIRST).sensors().get(Attributes.HOSTNAME);
+        String certsPath = "/etc/docker/certs.d/" + firstHost + ":"+ entity.config().get(DockerInfrastructure.DOCKER_REGISTRY_PORT);
 
         newScript(CUSTOMIZING)
                 .body.append(
-                chainGroup(sudo("mkdir -p " + repoCAPath),
-                        sudo("cp ca.pem " + repoCAPath + "/ca.crt")))
+                        chainGroup(
+                                sudo("mkdir -p " + certsPath),
+                                sudo("cp ca.pem " + certsPath + "/ca.crt")))
                 .failOnNonZeroResultCode()
                 .execute();
+
+        // Docker daemon startup arguments
+        List<String> args = MutableList.of(
+                centos ? "--selinux-enabled" : null,
+                "--userland-proxy=false",
+                format("-H tcp://0.0.0.0:%d", getDockerPort()),
+                "-H unix:///var/run/docker.sock",
+                getStorageOpts(),
+                getDockerRegistryOpts(),
+                "--tlsverify",
+                "--tls",
+                format("--tlscert=%s/cert.pem", getRunDir()),
+                format("--tlskey=%s/key.pem", getRunDir()),
+                format("--tlscacert=%s/ca.pem", getRunDir()));
+        String argv = Joiner.on(" ").skipNulls().join(args);
+        log.debug("Docker daemon args: {}", argv);
 
         // Upstart
         newScript(CUSTOMIZING + "-upstart")
                 .body.append(
                         chain(
                                 sudo("mkdir -p /etc/default"),
-                                format("echo 'DOCKER_OPTS=\"-H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock %s %s --tlsverify --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem --tlscacert=%<s/ca.pem\"' | ",
-                                        getDockerPort(), getStorageOpts(), getDockerRegistryConfig(), getRunDir()) + sudo("tee -a /etc/default/docker"),
+                                format("echo 'DOCKER_OPTS=\"%s\"' | ", argv) + sudo("tee -a /etc/default/docker"),
                                 sudo("groupadd -f docker"),
                                 sudo(format("gpasswd -a %s docker", getMachine().getUser())),
-                                sudo("newgrp docker")
-                        ))
+                                sudo("newgrp docker")))
                 .failOnNonZeroResultCode()
                 .execute();
 
         // CentOS
-        newScript(CUSTOMIZING + "-centos")
-                .body.append(
-                        chain(
-                                sudo("mkdir -p /etc/sysconfig"),
-                                format("echo 'other_args=\"--selinux-enabled -H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock -e lxc %s %s --tlsverify --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem --tlscacert=%<s/ca.pem\"' | ",
-                                        getDockerPort(), getStorageOpts(), getDockerRegistryConfig(), getRunDir()) + sudo("tee -a /etc/sysconfig/docker")
-                        ))
-                .failOnNonZeroResultCode()
-                .execute();
+        if (centos) {
+            newScript(CUSTOMIZING + "-sysconfig")
+                    .body.append(
+                            chain(
+                                    sudo("mkdir -p /etc/sysconfig"),
+                                    format("echo 'other_args=\"%s\"' | ", argv) + sudo("tee -a /etc/sysconfig/docker")))
+                    .failOnNonZeroResultCode()
+                    .execute();
+        }
 
         // SystemD
-        String systemDConfigInstallPath = Os.mergePaths(getInstallDir(), "docker.service");
-        copyTemplate("classpath://clocker/docker/entity/container/SystemDTemplate",
-                systemDConfigInstallPath,
-                true,
-                ImmutableMap.of("args",
-                        format("-H tcp://0.0.0.0:%d -H unix:///var/run/docker.sock %s %s --tlsverify --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem --tlscacert=%<s/ca.pem",
-                                getDockerPort(), getStorageOpts(), getDockerRegistryConfig(), getRunDir())));
-
+        String service = Os.mergePaths(getInstallDir(), "docker.service");
+        copyTemplate("classpath://clocker/docker/entity/docker.service", service, true, ImmutableMap.of("args", argv));
         newScript(CUSTOMIZING + "-systemd")
                 .body.append(
                         chain(
                                 sudo("mkdir -p /etc/systemd/system"),
-                                sudo(String.format("cp %s %s", systemDConfigInstallPath, "/etc/systemd/system/docker.service")),
-                                ifExecutableElse0("systemctl", sudo("systemctl daemon-reload"))
-                        ))
+                                sudo(format("cp %s %s", service, "/etc/systemd/system/docker.service")),
+                                ifExecutableElse0("systemctl", sudo("systemctl daemon-reload"))))
                 .failOnNonZeroResultCode()
                 .execute();
 
