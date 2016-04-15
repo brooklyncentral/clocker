@@ -119,6 +119,7 @@ import org.apache.brooklyn.policy.ha.ServiceRestarter;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
+import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.core.ResourceUtils;
 import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.core.task.Tasks;
@@ -298,7 +299,20 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                     flags.put("securityGroups", securityGroup);
                 }
             } else {
-                customizers.add(JcloudsLocationSecurityGroupCustomizer.getInstance(getApplicationId()));
+                // Attempt to extract security group from the provisioning location
+                ConfigBag locationConfig = ((JcloudsLocation) location).getLocalConfigBag();
+
+                // Does not attempt to use ArrayLists or Iterators
+                if (locationConfig.containsKey(JcloudsLocation.SECURITY_GROUPS)
+                        && locationConfig.getStringKey(JcloudsLocation.SECURITY_GROUPS.getName()) instanceof String ){
+                    flags.put("securityGroups", locationConfig.getStringKey(JcloudsLocation.SECURITY_GROUPS.getName()));
+                } else if (isJcloudsLocation(location, "google-compute-engine")
+                        && locationConfig.containsKey(JcloudsLocation.NETWORK_NAME)
+                        && locationConfig.getStringKey(JcloudsLocation.NETWORK_NAME.getName()) instanceof String) {
+                    flags.put("networkName", locationConfig.getStringKey(JcloudsLocation.NETWORK_NAME.getName()));
+                } else {
+                    customizers.add(JcloudsLocationSecurityGroupCustomizer.getInstance(getApplicationId()));
+                }
             }
 
             // Setup SoftLayer template options
