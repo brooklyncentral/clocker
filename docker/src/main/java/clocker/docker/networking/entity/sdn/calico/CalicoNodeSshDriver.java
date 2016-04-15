@@ -166,7 +166,8 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
             newScript("addCalico")
                     .body.append( // Idempotent
                             sudo(String.format("%s profile add %s", getCalicoCommand(), subnetId)),
-                            sudo(String.format("%s endpoint %s profile append %s", getCalicoCommand(), endpointId, subnetId)))
+                            sudo(String.format("%s endpoint %s profile append %s --host=%s --orchestrator=brooklyn-clocker",
+                                    getCalicoCommand(), endpointId, subnetId, agentAddress.getHostAddress())))
                     .execute();
 
             // Find router for eth1
@@ -184,7 +185,7 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
             newScript("addRoutes")
                     .body.append(
                             sudo(String.format("ip netns exec %s ip route add default via %s", dockerPid, dockerIp)),
-                            sudo(String.format("ip netns exec %s ip route add %s via %s", dockerPid, subnetCidr.toString(), agentAddress.getHostAddress())))
+                            sudo(String.format("ip netns exec %s ip route add %s via %s", dockerPid, subnetCidr.toString(), routerAddress)))
                     .execute();
         } else {
             // Add extra network address

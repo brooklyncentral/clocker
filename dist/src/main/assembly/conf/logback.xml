@@ -16,7 +16,9 @@
 -->
 <configuration>
     <property name="logging.basename" scope="context" value="brooklyn-clocker" />
-    <logger name="brooklyn.clocker" level="DEBUG" />
+
+    <logger name="clocker" level="DEBUG" />
+
     <include resource="logback-main.xml" />
     <include resource="brooklyn/logback-logger-debug-jclouds.xml" />
 </configuration>

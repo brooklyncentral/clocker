@@ -40,7 +40,6 @@ import clocker.docker.location.DockerHostLocation;
 import clocker.docker.location.DockerLocation;
 import clocker.docker.networking.entity.sdn.DockerSdnProvider;
 import clocker.docker.networking.entity.sdn.SdnAgent;
-import clocker.docker.networking.entity.sdn.SdnProvider;
 import clocker.docker.networking.entity.sdn.calico.CalicoNode;
 import clocker.docker.networking.entity.sdn.util.SdnAttributes;
 import clocker.docker.networking.entity.sdn.util.SdnUtils;
@@ -63,10 +62,7 @@ import org.jclouds.compute.domain.OsFamily;
 import org.jclouds.compute.domain.TemplateBuilder;
 import org.jclouds.net.domain.IpPermission;
 import org.jclouds.net.domain.IpProtocol;
-import org.jclouds.softlayer.SoftLayerApi;
 import org.jclouds.softlayer.compute.options.SoftLayerTemplateOptions;
-import org.jclouds.softlayer.domain.VirtualGuest;
-import org.jclouds.softlayer.features.VirtualGuestApi;
 import org.jclouds.softlayer.reference.SoftLayerConstants;
 
 import org.apache.brooklyn.api.entity.Entity;
@@ -84,7 +80,6 @@ import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.effector.ssh.SshEffectorTasks;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityFunctions;
-import org.apache.brooklyn.core.entity.EntityInternal;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.entity.trait.Startable;
@@ -310,6 +305,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), template);
 
                 customizers.add(SoftLayerSameVlanLocationCustomizer.forScope(getApplicationId()));
+                customizers.add(SaveHostnameCustomizer.instanceOf());
             }
 
             // Save updated customizers list
@@ -641,27 +637,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     @Override
     protected void preStart() {
         configureSecurityGroups();
-
-        // Save the VLAN id for this machine
-        MachineProvisioningLocation location = getInfrastructure().getDynamicLocation().getProvisioner();
-        if (isJcloudsLocation(location, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME)) {
-            Entity sdnProviderAttribute = sensors().get(DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.SDN_PROVIDER);
-            if (sdnProviderAttribute != null) {
-                Integer vlanId = sdnProviderAttribute.sensors().get(SdnProvider.VLAN_ID);
-                if (vlanId == null) {
-                    VirtualGuestApi api = ((JcloudsLocation) location).getComputeService().getContext().unwrapApi(SoftLayerApi.class).getVirtualGuestApi();
-                    JcloudsSshMachineLocation machine = (JcloudsSshMachineLocation) getDriver().getLocation();
-                    Long serverId = Long.parseLong(machine.getJcloudsId());
-                    VirtualGuest guest = api.getVirtualGuestFiltered(serverId, "primaryBackendNetworkComponent;primaryBackendNetworkComponent.networkVlan");
-                    vlanId = guest.getPrimaryBackendNetworkComponent().getNetworkVlan().getId();
-                    Integer vlanNumber = guest.getPrimaryBackendNetworkComponent().getNetworkVlan().getVlanNumber();
-                    ((EntityInternal) sensors().get(DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.SDN_PROVIDER)).sensors().set(SdnProvider.VLAN_ID, vlanId);
-                    LOG.debug("Recorded VLAN #{} with id {} for server id {}: {}", new Object[] { vlanNumber, vlanId, serverId, this });
-                } else {
-                    LOG.debug("Found VLAN {}: {}", new Object[] { vlanId, this });
-                }
-            }
-        }
 
         Integer dockerPort = getDockerPort();
         boolean tlsEnabled = true;
