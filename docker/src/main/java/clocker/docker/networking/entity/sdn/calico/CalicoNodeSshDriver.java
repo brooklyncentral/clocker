@@ -126,7 +126,7 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
         String dockerIp = Strings.getFirstWordAfter(ipAddrOutput.replace('/', ' '), "inet");
         String dockerPid = Strings.trimEnd(getEntity().sensors().get(SdnAgent.DOCKER_HOST).runDockerCommand("inspect -f '{{.State.Pid}}' " + containerId));
         Cidr subnetCidr = getEntity().sensors().get(SdnAgent.SDN_PROVIDER).getSubnetCidr(subnetId);
-        InetAddress agentAddress = getEntity().sensors().get(SdnAgent.SDN_AGENT_ADDRESS);
+        String subnetAddress = getEntity().sensors().get(SdnAgent.DOCKER_HOST).sensors().get(Attributes.SUBNET_ADDRESS);
 
         // Setup namespace
         newScript("setupNamespace")
@@ -166,7 +166,8 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
             newScript("addCalico")
                     .body.append( // Idempotent
                             sudo(String.format("%s profile add %s", getCalicoCommand(), subnetId)),
-                            sudo(String.format("%s endpoint %s profile append %s", getCalicoCommand(), endpointId, subnetId)))
+                            sudo(String.format("%s endpoint %s profile append %s --host=%s",
+                                    getCalicoCommand(), endpointId, subnetId, subnetAddress)))
                     .execute();
 
             // Find router for eth1
@@ -178,13 +179,12 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
                     .gatherOutput();
             getRouterAddress.execute();
             String routerAddress = Strings.getFirstWord(getRouterAddress.getResultStdout());
-            LOG.info("Previous eth1 router was: {} agent address: {}", routerAddress, agentAddress.getHostAddress());
 
             // Add new routes
             newScript("addRoutes")
                     .body.append(
                             sudo(String.format("ip netns exec %s ip route add default via %s", dockerPid, dockerIp)),
-                            sudo(String.format("ip netns exec %s ip route add %s via %s", dockerPid, subnetCidr.toString(), agentAddress.getHostAddress())))
+                            sudo(String.format("ip netns exec %s ip route add %s via %s", dockerPid, subnetCidr.toString(), routerAddress)))
                     .execute();
         } else {
             // Add extra network address

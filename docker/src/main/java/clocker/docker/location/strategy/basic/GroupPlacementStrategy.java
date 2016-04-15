@@ -52,7 +52,8 @@ import org.apache.brooklyn.util.time.Duration;
 
 /**
  * A {@link DockerAwarePlacementStrategy strategy} that requires entities with
- * the same parent to use the same host.
+ * the <i>same</i> parent to use the same host and entities with a <i>different</i>
+ * parent but in the same app use different hosts.
  *
  * Can be configured to require exclusive use of the host with the
  * {@link #REQUIRE_EXCLUSIVE exclusive} ({@code docker.constraint.exclusive})
@@ -109,7 +110,7 @@ public class GroupPlacementStrategy extends AbstractDockerPlacementStrategy impl
             return ImmutableList.copyOf(sameParent.asSet());
         }
 
-        // Remove hosts if they do not have any entities from our application deployed there
+        // Remove hosts if they have any entities from our application deployed there
         Iterables.removeIf(available, hasApplicationId(entity.getApplicationId()));
         if (requireExclusive) {
             Iterables.removeIf(available, nonEmpty());
