@@ -265,8 +265,8 @@ public class DockerUtils {
         Optional<String> unique = getUniqueContainerName(target);
         if (unique.isPresent()) {
             String name = unique.get();
-            int underscore = name.lastIndexOf('_');
-            return Optional.of(name.substring(0, underscore));
+            String suffix = "_" + target.getId();
+            return Optional.of(Strings.removeFromEnd(name, suffix));
         } else {
             return Optional.absent();
         }
@@ -282,7 +282,7 @@ public class DockerUtils {
     private static String getContainerNameFromPlan(Entity target) {
         String planId = target.config().get(BrooklynCampConstants.PLAN_ID);
         if (planId != null) {
-            //Plan IDs are not unique even in a single application
+            // Plan IDs are not unique even in a single application
             return planId + "_" + target.getId();
         } else {
             return null;

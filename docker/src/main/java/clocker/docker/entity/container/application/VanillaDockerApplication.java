@@ -57,6 +57,9 @@ public interface VanillaDockerApplication extends VanillaSoftwareProcess {
     @SetFromFlag("entrypoint")
     ConfigKey<List<String>> IMAGE_ENTRYPOINT = DockerAttributes.DOCKER_IMAGE_ENTRYPOINT.getConfigKey();
 
+    @SetFromFlag("commands")
+    ConfigKey<List<String>> IMAGE_COMMANDS = DockerAttributes.DOCKER_IMAGE_COMMANDS.getConfigKey();
+
     @SetFromFlag("useSsh")
     ConfigKey<Boolean> DOCKER_USE_SSH = ConfigKeys.newConfigKeyWithDefault(DockerAttributes.DOCKER_USE_SSH, Boolean.FALSE);
 
@@ -75,6 +78,9 @@ public interface VanillaDockerApplication extends VanillaSoftwareProcess {
     @SetFromFlag("volumes")
     ConfigKey<List<String>> DOCKER_CONTAINER_VOLUME_EXPORT = DockerAttributes.DOCKER_CONTAINER_VOLUME_EXPORT;
 
+    @SetFromFlag("volumesFrom")
+    ConfigKey<List<String>> DOCKER_CONTAINER_VOLUMES_FROM = DockerAttributes.DOCKER_CONTAINER_VOLUMES_FROM;
+
     @SetFromFlag("volumeMappings")
     AttributeSensorAndConfigKey<Map<String, String>, Map<String, String>> DOCKER_HOST_VOLUME_MAPPING = DockerAttributes.DOCKER_HOST_VOLUME_MAPPING;
 
@@ -82,7 +88,9 @@ public interface VanillaDockerApplication extends VanillaSoftwareProcess {
     ConfigKey<List<Entity>> DOCKER_LINKS = DockerAttributes.DOCKER_LINKS;
 
     ConfigKey<Boolean> SKIP_ENTITY_INSTALLATION = ConfigKeys.newConfigKeyWithDefault(BrooklynConfigKeys.SKIP_ENTITY_INSTALLATION, Boolean.TRUE);
-    
+
+    ConfigKey<String> ON_BOX_BASE_DIR = ConfigKeys.newConfigKeyWithDefault(BrooklynConfigKeys.ONBOX_BASE_DIR, "/tmp/clocker");
+
     ConfigKey<Boolean> SKIP_ON_BOX_BASE_DIR_RESOLUTION = ConfigKeys.newConfigKeyWithDefault(BrooklynConfigKeys.SKIP_ON_BOX_BASE_DIR_RESOLUTION, Boolean.TRUE);
 
     ConfigKey<String> LAUNCH_COMMAND = ConfigKeys.newConfigKeyWithDefault(VanillaSoftwareProcess.LAUNCH_COMMAND, null);
