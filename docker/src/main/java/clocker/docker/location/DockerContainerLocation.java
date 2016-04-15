@@ -143,10 +143,10 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
         Integer publicPort = mapping.get(portNumber);
         if (publicPort == null) {
             LOG.warn("Unable to map port {} for Container {}. Mappings: {}",
-                    new Object[]{portNumber, containerId, Joiner.on(", ").withKeyValueSeparator("=").join(mapping)});
+                    new Object[]{ portNumber, containerId, Joiner.on(", ").withKeyValueSeparator("=").join(mapping) });
             publicPort = -1;
         } else {
-            LOG.debug("Docker mapped port {} to {} for Container {}", new Object[]{portNumber, publicPort, containerId});
+            LOG.debug("Docker mapped port {} to {} for Container {}", new Object[]{ portNumber, publicPort, containerId });
         }
         return publicPort;
     }
@@ -174,10 +174,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
     private void mapPort(int hostPort, int containerPort) {
         String dockerHost = getAddress().getHostAddress();
         PortForwardManager portForwardManager = getOwner().getDockerHost().getSubnetTier().getPortForwardManager();
-        portForwardManager.recordPublicIpHostname(dockerHost, dockerHost);
-        portForwardManager.acquirePublicPortExplicit(dockerHost, hostPort);
-        portForwardManager.associate(dockerHost, hostPort, this, containerPort);
-        //FIXME portForwardManager.associate(dockerHost, HostAndPort.fromParts(dockerHost, hostPort), this, containerPort);
+        portForwardManager.associate(dockerHost, HostAndPort.fromParts(dockerHost, hostPort), this, containerPort);
     }
 
     @Override

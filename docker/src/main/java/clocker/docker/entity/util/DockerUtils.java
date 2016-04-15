@@ -58,6 +58,7 @@ import org.apache.brooklyn.core.config.render.RendererHints.NamedActionWithUrl;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityAndAttribute;
+import org.apache.brooklyn.core.location.Machines;
 import org.apache.brooklyn.core.location.PortRanges;
 import org.apache.brooklyn.core.mgmt.BrooklynTaskTags;
 import org.apache.brooklyn.core.objs.BrooklynObjectInternal.ConfigurationSupportInternal;
@@ -180,6 +181,16 @@ public class DockerUtils {
                         EntityAndAttribute.create(entity, sensor), target));
                 LOG.debug("Mapped port sensor: entity={}, origin={}, mapped={}", new Object[] {entity, sensor.getName(), target.getName()});
             }
+        }
+    }
+
+    public static void configurePortMappings(Entity entity) {
+        DockerContainer container = (DockerContainer) entity.sensors().get(DockerContainer.CONTAINER);
+        DockerContainerLocation location = (DockerContainerLocation) container.sensors().get(DockerContainer.DYNAMIC_LOCATION);
+
+        Set<Integer> ports = DockerUtils.getContainerPorts(entity);
+        for (Integer portNumber : ports) {
+            location.obtainSpecificPort(portNumber);
         }
     }
 

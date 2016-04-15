@@ -514,7 +514,6 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
         // Configure the container options based on the host and the running entity
         DockerTemplateOptions options = getDockerTemplateOptions();
-        DockerUtils.configureEnrichers(subnetTier, entity);
 
         boolean useSsh = Boolean.TRUE.equals(config().get(DOCKER_USE_SSH))
                 && Boolean.TRUE.equals(entity.config().get(DOCKER_USE_SSH));
@@ -603,6 +602,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             sensors().set(LOCATION_NAME, location.getId());
 
             DockerUtils.addExtraPublicKeys(entity, location);
+            DockerUtils.configurePortMappings(entity);
+            DockerUtils.configureEnrichers(subnetTier, entity);
 
             LOG.info("New Docker container location {} created", location);
             return location;
