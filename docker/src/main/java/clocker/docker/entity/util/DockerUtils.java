@@ -321,7 +321,7 @@ public class DockerUtils {
     }
 
     /* Generate the list of link environment variables. */
-    public static Map<String, Object> generateLinks(Entity source, Entity target) {
+    public static Map<String, Object> generateLinks(Entity source, Entity target, String alias) {
         Entities.waitForServiceUp(target);
         Optional<String> from = DockerUtils.getContainerName(source);
         Optional<String> to = DockerUtils.getContainerName(target);
@@ -344,15 +344,14 @@ public class DockerUtils {
             } else {
                 ports = ImmutableMap.copyOf(DockerUtils.getMappedPorts(target));
             }
-            Map<String, Object> env = MutableMap.of();
             for (Integer port : ports.keySet()) {
                 Integer containerPort = ports.get(port);
-                env.put(String.format("%S_NAME", to.get()), String.format("/%s/%s", from.or(source.getId()), to.get()));
-                env.put(String.format("%S_PORT", to.get()), String.format("tcp://%s:%d", address, port));
-                env.put(String.format("%S_PORT_%d_TCP", to.get(), containerPort), String.format("tcp://%s:%d", address, port));
-                env.put(String.format("%S_PORT_%d_TCP_ADDR", to.get(), containerPort), address);
-                env.put(String.format("%S_PORT_%d_TCP_PORT", to.get(), containerPort), port);
-                env.put(String.format("%S_PORT_%d_TCP_PROTO", to.get(), containerPort), "tcp");
+                env.put(String.format("%S_NAME", alias), String.format("/%s/%s", from.or(source.getId()), alias));
+                env.put(String.format("%S_PORT", alias), String.format("tcp://%s:%d", address, port));
+                env.put(String.format("%S_PORT_%d_TCP", alias, containerPort), String.format("tcp://%s:%d", address, port));
+                env.put(String.format("%S_PORT_%d_TCP_ADDR", alias, containerPort), address);
+                env.put(String.format("%S_PORT_%d_TCP_PORT", alias, containerPort), port);
+                env.put(String.format("%S_PORT_%d_TCP_PROTO", alias, containerPort), "tcp");
             }
             LOG.debug("Links for {}: {}", to, Joiner.on(" ").withKeyValueSeparator("=").join(env));
             return env;

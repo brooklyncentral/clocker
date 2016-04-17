@@ -149,10 +149,10 @@ public class DockerAttributes {
             "Whether to automatically create an image after the entity's install(), and subsequently re-use that image for the entity type",
             false);
 
-    public static final ConfigKey<List<Entity>> DOCKER_LINKS = ConfigKeys.builder(new TypeToken<List<Entity>>() { })
+    public static final ConfigKey<Map<String, Entity>> DOCKER_LINKS = ConfigKeys.builder(new TypeToken<Map<String, Entity>>() { })
             .name("docker.container.links")
             .description("List of linked entities for a container")
-            .defaultValue(ImmutableList.<Entity>of())
+            .defaultValue(ImmutableMap.<String, Entity>of())
             .inheritance(ConfigInheritance.NONE)
             .build();
 

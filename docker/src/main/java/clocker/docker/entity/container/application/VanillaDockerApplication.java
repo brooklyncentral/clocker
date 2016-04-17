@@ -85,7 +85,7 @@ public interface VanillaDockerApplication extends VanillaSoftwareProcess {
     AttributeSensorAndConfigKey<Map<String, String>, Map<String, String>> DOCKER_HOST_VOLUME_MAPPING = DockerAttributes.DOCKER_HOST_VOLUME_MAPPING;
 
     @SetFromFlag("links")
-    ConfigKey<List<Entity>> DOCKER_LINKS = DockerAttributes.DOCKER_LINKS;
+    ConfigKey<Map<String, Entity>> DOCKER_LINKS = DockerAttributes.DOCKER_LINKS;
 
     ConfigKey<Boolean> SKIP_ENTITY_INSTALLATION = ConfigKeys.newConfigKeyWithDefault(BrooklynConfigKeys.SKIP_ENTITY_INSTALLATION, Boolean.TRUE);
 

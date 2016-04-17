@@ -400,18 +400,15 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         MutableMap<String, Object> environment = MutableMap.of();
         environment.add(config().get(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT));
         environment.add(entity.config().get(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT));
-        List<Entity> links = entity.config().get(DockerAttributes.DOCKER_LINKS);
+        Map<String, Entity> links = entity.config().get(DockerAttributes.DOCKER_LINKS);
         if (links != null && links.size() > 0) {
             LOG.debug("Found links: {}", links);
             Map<String, String> extraHosts = MutableMap.of();
-            for (Entity linked : links) {
-                Map<String, Object> linkVars = DockerUtils.generateLinks(getRunningEntity(), linked);
+            for (Map.Entry<String, Entity> linked : links.entrySet()) {
+                Map<String, Object> linkVars = DockerUtils.generateLinks(getRunningEntity(), linked.getValue(), linked.getKey());
                 environment.add(linkVars);
-                Optional<String> alias = DockerUtils.getContainerName(linked);
-                if (alias.isPresent()) {
-                    String targetAddress = DockerUtils.getTargetAddress(getRunningEntity(), linked);
-                    extraHosts.put(alias.get(), targetAddress);
-                }
+                String targetAddress = DockerUtils.getTargetAddress(getRunningEntity(), linked.getValue());
+                extraHosts.put(linked.getKey(), targetAddress);
             }
             options.extraHosts(extraHosts);
         }
