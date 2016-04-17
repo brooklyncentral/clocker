@@ -319,6 +319,15 @@ public class DockerUtils {
         boolean local = source.sensors().get(SoftwareProcess.PROVISIONING_LOCATION).equals(target.sensors().get(SoftwareProcess.PROVISIONING_LOCATION));
         List networks = target.sensors().get(SdnAttributes.ATTACHED_NETWORKS);
         if (to.isPresent()) {
+            // Copy explicitly defined environment variables from target to source
+            Map<String, Object> env = MutableMap.of();
+            MutableMap<String, Object> targetEnvironment = MutableMap.copyOf(target.getConfig(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT.getConfigKey()));
+            if ( target.getConfig(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT.getConfigKey()) != null){
+                for (Map.Entry<String, Object> envvar : targetEnvironment.entrySet()) {
+                    env.put(String.format("%S_ENV_%S", alias, envvar.getKey()), envvar.getValue().toString());
+                }
+            }
+
             String address = DockerUtils.getTargetAddress(source, target);
             Map<Integer, Integer> ports = MutableMap.of();
             Set<Integer> containerPorts = MutableSet.copyOf(target.sensors().get(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS));
