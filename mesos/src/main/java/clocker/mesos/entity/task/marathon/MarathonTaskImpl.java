@@ -514,18 +514,15 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         // Environment variables and Docker links
         Map<String, Object> environment = MutableMap.copyOf(config().get(DOCKER_CONTAINER_ENVIRONMENT));
         environment.putAll(MutableMap.copyOf(entity.config().get(DOCKER_CONTAINER_ENVIRONMENT)));
-        List<Entity> links = entity.config().get(DockerAttributes.DOCKER_LINKS);
+        Map<String, Entity> links = entity.config().get(DockerAttributes.DOCKER_LINKS);
         if (links != null && links.size() > 0) {
             LOG.debug("Found links: {}", links);
             Map<String, String> extraHosts = MutableMap.of();
-            for (Entity linked : links) {
-                Map<String, Object> linkVars = DockerUtils.generateLinks(getRunningEntity(), linked);
+            for (Map.Entry<String, Entity> linked : links.entrySet()) {
+                Map<String, Object> linkVars = DockerUtils.generateLinks(getRunningEntity(), linked.getValue(), linked.getKey());
                 environment.putAll(linkVars);
-                Optional<String> alias = DockerUtils.getUniqueContainerName(linked);
-                if (alias.isPresent()) {
-                    String targetAddress = DockerUtils.getTargetAddress(getRunningEntity(), linked);
-                    extraHosts.put(alias.get(), targetAddress);
-                }
+                String targetAddress = DockerUtils.getTargetAddress(getRunningEntity(), linked.getValue());
+                extraHosts.put(linked.getKey(), targetAddress);
             }
             builder.put("extraHosts", Lists.newArrayList(extraHosts.entrySet()));
         }

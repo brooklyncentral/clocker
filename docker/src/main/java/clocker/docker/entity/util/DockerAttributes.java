@@ -78,7 +78,11 @@ public class DockerAttributes {
 
     public static final AttributeSensorAndConfigKey<List<String>, List<String>> DOCKER_IMAGE_ENTRYPOINT = ConfigKeys.newSensorAndConfigKey(
             new TypeToken<List<String>>() { },
-            "docker.image.entrypoint", "Optional replacement for the image entrypoint command");
+            "docker.image.entrypoint", "Optional replacement for the image entrypoint command and arguments");
+
+    public static final AttributeSensorAndConfigKey<List<String>, List<String>> DOCKER_IMAGE_COMMANDS = ConfigKeys.newSensorAndConfigKey(
+            new TypeToken<List<String>>() { },
+            "docker.image.commands", "Optional replacement for the image commands");
 
     public static final AttributeSensorAndConfigKey<String, String> DOCKER_HARDWARE_ID = ConfigKeys.newStringSensorAndConfigKey(
             "docker.hardwareId", "The ID of a Docker hardware type to use for a container", "small");
@@ -87,8 +91,7 @@ public class DockerAttributes {
             "docker.container.name", "The name of the Docker container");
 
     public static final ConfigKey<String> DOCKER_LOGIN_USER = ConfigKeys.newConfigKeyWithDefault(
-            ConfigKeys.newConfigKeyWithPrefix("docker.", JcloudsLocationConfig.LOGIN_USER),
-            "root");
+            ConfigKeys.newConfigKeyWithPrefix("docker.", JcloudsLocationConfig.LOGIN_USER), "root");
 
     public static final ConfigKey<String> DOCKER_LOGIN_PASSWORD = ConfigKeys.newConfigKeyWithPrefix("docker.", JcloudsLocationConfig.LOGIN_USER_PASSWORD);
 
@@ -108,7 +111,7 @@ public class DockerAttributes {
             "docker.memory", "Container memory configuration");
 
     public static final ConfigKey<Boolean> PRIVILEGED = ConfigKeys.newBooleanConfigKey(
-            "docker.container.privileged", "Set to true if the container is to be provileged", Boolean.TRUE);
+            "docker.container.privileged", "Set to true if the container is to be privileged", Boolean.TRUE);
 
     public static final ConfigKey<Boolean> MANAGED = ConfigKeys.newBooleanConfigKey(
             "docker.container.managed", "Set to false if the container is not managed by Brooklyn and Clocker", Boolean.TRUE);
@@ -119,7 +122,14 @@ public class DockerAttributes {
 
     public static final ConfigKey<List<String>> DOCKER_CONTAINER_VOLUME_EXPORT = ConfigKeys.newConfigKey(
             new TypeToken<List<String>>() { },
-            "docker.container.volumes", "Container volume export configuration");
+            "docker.container.volumes.export", "Container volume export configuration");
+
+    public static final ConfigKey<List<String>> DOCKER_CONTAINER_VOLUMES_FROM = ConfigKeys.builder(new TypeToken<List<String>>() { })
+            .name("docker.container.volumes.import")
+            .description("Container volume import configuration")
+            .defaultValue(ImmutableList.<String>of())
+            .inheritance(ConfigInheritance.NONE)
+            .build();
 
     public static final AttributeSensor<Map<String, String>> DOCKER_VOLUME_MAPPING = Sensors.newSensor(
             new TypeToken<Map<String, String>>() { },
@@ -140,10 +150,10 @@ public class DockerAttributes {
             "Whether to automatically create an image after the entity's install(), and subsequently re-use that image for the entity type",
             false);
 
-    public static final ConfigKey<List<Entity>> DOCKER_LINKS = ConfigKeys.builder(new TypeToken<List<Entity>>() { })
+    public static final ConfigKey<Map<String, Entity>> DOCKER_LINKS = ConfigKeys.builder(new TypeToken<Map<String, Entity>>() { })
             .name("docker.container.links")
             .description("List of linked entities for a container")
-            .defaultValue(ImmutableList.<Entity>of())
+            .defaultValue(ImmutableMap.<String, Entity>of())
             .inheritance(ConfigInheritance.NONE)
             .build();
 

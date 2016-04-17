@@ -27,6 +27,7 @@ import static org.apache.brooklyn.util.ssh.BashCommands.ifExecutableElse1;
 import static org.apache.brooklyn.util.ssh.BashCommands.installPackage;
 import static org.apache.brooklyn.util.ssh.BashCommands.sudo;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -38,17 +39,15 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
-import org.jclouds.compute.strategy.GetNodeMetadataStrategy;
-
 import org.apache.brooklyn.api.location.OsDetails;
 import org.apache.brooklyn.api.mgmt.Task;
 import org.apache.brooklyn.core.effector.ssh.SshEffectorTasks;
 import org.apache.brooklyn.core.entity.Attributes;
-import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.entity.group.AbstractGroup;
 import org.apache.brooklyn.entity.group.DynamicGroup;
 import org.apache.brooklyn.entity.software.base.AbstractSoftwareProcessSshDriver;
 import org.apache.brooklyn.entity.software.base.lifecycle.ScriptHelper;
+import org.apache.brooklyn.location.jclouds.JcloudsLocationConfig;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
@@ -264,6 +263,13 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         if (!result) {
             throw new IllegalStateException(String.format("The entity %s is not sshable after reboot (waited %s)",
                     entity, Time.makeTimeStringRounded(stopwatchForReboot)));
+        }
+        if (entity.config().get(JcloudsLocationConfig.MAP_DEV_RANDOM_TO_DEV_URANDOM)) {
+            newScript(INSTALLING + "urandom")
+            .body.append(
+                    sudo("mv /dev/random /dev/random-real"),
+                    sudo("ln -s /dev/urandom /dev/random"))
+            .execute();
         }
     }
 

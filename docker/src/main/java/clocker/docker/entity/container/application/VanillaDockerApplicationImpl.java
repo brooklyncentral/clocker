@@ -15,7 +15,6 @@
  */
 package clocker.docker.entity.container.application;
 
-import java.net.URI;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -31,8 +30,6 @@ import com.google.common.base.Objects;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 
-import org.apache.brooklyn.api.sensor.AttributeSensor;
-import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.entity.software.base.SoftwareProcessImpl;
 
 public class VanillaDockerApplicationImpl extends SoftwareProcessImpl implements VanillaDockerApplication {
@@ -50,25 +47,16 @@ public class VanillaDockerApplicationImpl extends SoftwareProcessImpl implements
     @Override
     protected void connectSensors() {
         connectServiceUpIsRunning();
+
         super.connectSensors();
     }
 
     @Override
-    public void preStart() {
-        super.preStart();
+    protected void postStart() {
+        super.postStart();
 
-        // Refresh the sensors that will be mapped, since we now have a location for the enricher to use
-        for (AttributeSensor sensor : Iterables.filter(getEntityType().getSensors(), AttributeSensor.class)) {
-            if (((DockerUtils.URL_SENSOR_NAMES.contains(sensor.getName()) ||
-                            sensor.getName().endsWith(".url") ||
-                            URI.class.isAssignableFrom(sensor.getType())) &&
-                        !DockerUtils.BLACKLIST_URL_SENSOR_NAMES.contains(sensor.getName())) ||
-                    (sensor.getName().matches("docker\\.port\\.[0-9]+") ||
-                        PortAttributeSensorAndConfigKey.class.isAssignableFrom(sensor.getClass()))) {
-                Object current = sensors().get(sensor);
-                sensors().set(sensor, current);
-            }
-        }
+        // Refresh (or set) the container port sensors
+        DockerUtils.getContainerPorts(this);
     }
 
     @Override

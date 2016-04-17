@@ -40,7 +40,6 @@ import clocker.docker.location.DockerHostLocation;
 import clocker.docker.location.DockerLocation;
 import clocker.docker.networking.entity.sdn.DockerSdnProvider;
 import clocker.docker.networking.entity.sdn.SdnAgent;
-import clocker.docker.networking.entity.sdn.SdnProvider;
 import clocker.docker.networking.entity.sdn.calico.CalicoNode;
 import clocker.docker.networking.entity.sdn.util.SdnAttributes;
 import clocker.docker.networking.entity.sdn.util.SdnUtils;
@@ -63,10 +62,7 @@ import org.jclouds.compute.domain.OsFamily;
 import org.jclouds.compute.domain.TemplateBuilder;
 import org.jclouds.net.domain.IpPermission;
 import org.jclouds.net.domain.IpProtocol;
-import org.jclouds.softlayer.SoftLayerApi;
 import org.jclouds.softlayer.compute.options.SoftLayerTemplateOptions;
-import org.jclouds.softlayer.domain.VirtualGuest;
-import org.jclouds.softlayer.features.VirtualGuestApi;
 import org.jclouds.softlayer.reference.SoftLayerConstants;
 
 import org.apache.brooklyn.api.entity.Entity;
@@ -84,7 +80,6 @@ import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.effector.ssh.SshEffectorTasks;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityFunctions;
-import org.apache.brooklyn.core.entity.EntityInternal;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.entity.trait.Startable;
@@ -119,6 +114,7 @@ import org.apache.brooklyn.policy.ha.ServiceRestarter;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
+import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.core.ResourceUtils;
 import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.core.task.Tasks;
@@ -298,7 +294,20 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                     flags.put("securityGroups", securityGroup);
                 }
             } else {
-                customizers.add(JcloudsLocationSecurityGroupCustomizer.getInstance(getApplicationId()));
+                // Attempt to extract security group from the provisioning location
+                ConfigBag locationConfig = ((JcloudsLocation) location).getLocalConfigBag();
+
+                // Does not attempt to use ArrayLists or Iterators
+                if (locationConfig.containsKey(JcloudsLocation.SECURITY_GROUPS)
+                        && locationConfig.getStringKey(JcloudsLocation.SECURITY_GROUPS.getName()) instanceof String ){
+                    flags.put("securityGroups", locationConfig.getStringKey(JcloudsLocation.SECURITY_GROUPS.getName()));
+                } else if (isJcloudsLocation(location, "google-compute-engine")
+                        && locationConfig.containsKey(JcloudsLocation.NETWORK_NAME)
+                        && locationConfig.getStringKey(JcloudsLocation.NETWORK_NAME.getName()) instanceof String) {
+                    flags.put("networkName", locationConfig.getStringKey(JcloudsLocation.NETWORK_NAME.getName()));
+                } else {
+                    customizers.add(JcloudsLocationSecurityGroupCustomizer.getInstance(getApplicationId()));
+                }
             }
 
             // Setup SoftLayer template options
@@ -310,6 +319,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), template);
 
                 customizers.add(SoftLayerSameVlanLocationCustomizer.forScope(getApplicationId()));
+                customizers.add(SoftLayerHostnameCustomizer.instanceOf());
             }
 
             // Save updated customizers list
@@ -642,27 +652,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     protected void preStart() {
         configureSecurityGroups();
 
-        // Save the VLAN id for this machine
-        MachineProvisioningLocation location = getInfrastructure().getDynamicLocation().getProvisioner();
-        if (isJcloudsLocation(location, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME)) {
-            Entity sdnProviderAttribute = sensors().get(DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.SDN_PROVIDER);
-            if (sdnProviderAttribute != null) {
-                Integer vlanId = sdnProviderAttribute.sensors().get(SdnProvider.VLAN_ID);
-                if (vlanId == null) {
-                    VirtualGuestApi api = ((JcloudsLocation) location).getComputeService().getContext().unwrapApi(SoftLayerApi.class).getVirtualGuestApi();
-                    JcloudsSshMachineLocation machine = (JcloudsSshMachineLocation) getDriver().getLocation();
-                    Long serverId = Long.parseLong(machine.getJcloudsId());
-                    VirtualGuest guest = api.getVirtualGuestFiltered(serverId, "primaryBackendNetworkComponent;primaryBackendNetworkComponent.networkVlan");
-                    vlanId = guest.getPrimaryBackendNetworkComponent().getNetworkVlan().getId();
-                    Integer vlanNumber = guest.getPrimaryBackendNetworkComponent().getNetworkVlan().getVlanNumber();
-                    ((EntityInternal) sensors().get(DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.SDN_PROVIDER)).sensors().set(SdnProvider.VLAN_ID, vlanId);
-                    LOG.debug("Recorded VLAN #{} with id {} for server id {}: {}", new Object[] { vlanNumber, vlanId, serverId, this });
-                } else {
-                    LOG.debug("Found VLAN {}: {}", new Object[] { vlanId, this });
-                }
-            }
-        }
-
         Integer dockerPort = getDockerPort();
         boolean tlsEnabled = true;
         if (SdnUtils.isSdnProvider(getInfrastructure(), "CalicoNetwork")) {
@@ -882,8 +871,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         //TODO change to HttpFeed with client certificates at some point in the future
         serviceUpIsRunningFeed = SshFeed.builder()
                 .entity(this)
-                .period(Duration.FIVE_SECONDS)
-                .machine(this.getMachine())
+                .period(Duration.THIRTY_SECONDS)
+                .machine(getMachine())
                 .poll(new SshPollConfig<Boolean>(SERVICE_UP)
                         .command("docker ps")
                         .onSuccess(Functions.constant(true))

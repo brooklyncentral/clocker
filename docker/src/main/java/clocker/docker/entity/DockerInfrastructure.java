@@ -22,9 +22,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import clocker.docker.entity.util.DockerAttributes;
 import clocker.docker.entity.util.DockerUtils;
 import clocker.docker.location.DockerLocation;
-import clocker.docker.location.strategy.DepthFirstPlacementStrategy;
 import clocker.docker.location.strategy.DockerAwarePlacementStrategy;
 import clocker.docker.location.strategy.affinity.AffinityRules;
+import clocker.docker.location.strategy.basic.DepthFirstPlacementStrategy;
 import clocker.docker.networking.entity.sdn.util.SdnAttributes;
 
 import com.google.common.reflect.TypeToken;

@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package clocker.docker.location.strategy;
+package clocker.docker.location.strategy.basic;
 
 import java.util.Collections;
 import java.util.List;
 
 import clocker.docker.location.DockerHostLocation;
+import clocker.docker.location.strategy.AbstractDockerPlacementStrategy;
 
 import com.google.common.collect.ImmutableList;
 
