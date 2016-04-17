@@ -304,7 +304,7 @@ public class DockerUtils {
     public static String getTargetAddress(Entity source, Entity target) {
         boolean local = source.sensors().get(SoftwareProcess.PROVISIONING_LOCATION).equals(target.sensors().get(SoftwareProcess.PROVISIONING_LOCATION));
         List networks = target.sensors().get(SdnAttributes.ATTACHED_NETWORKS);
-        if (local && (networks != null && networks.size() > 0)) {
+        if ( local ) {
             return target.sensors().get(Attributes.SUBNET_ADDRESS);
         } else {
             return target.sensors().get(Attributes.ADDRESS);
