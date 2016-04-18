@@ -257,9 +257,9 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             if (overrideImageChoice) {
                 LOG.debug("Customising image choice for {}", this);
                 template = new PortableTemplateBuilder();
-                if (isJcloudsLocation(location, "google-compute-engine")) {
+                if (DockerUtils.isJcloudsLocation(location, "google-compute-engine")) {
                     template.osFamily(OsFamily.CENTOS).osVersionMatches("6");
-                } else if (isJcloudsLocation(location, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME)) {
+                } else if (DockerUtils.isJcloudsLocation(location, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME)) {
                     template.osFamily(OsFamily.UBUNTU).osVersionMatches("14.04");
                 } else {
                     template.osFamily(OsFamily.UBUNTU).osVersionMatches("15.04");
@@ -288,7 +288,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             // Configure security groups for host virtual machine
             String securityGroup = config().get(DockerInfrastructure.SECURITY_GROUP);
             if (Strings.isNonBlank(securityGroup)) {
-                if (isJcloudsLocation(location, "google-compute-engine")) {
+                if (DockerUtils.isJcloudsLocation(location, "google-compute-engine")) {
                     flags.put("networkName", securityGroup);
                 } else {
                     flags.put("securityGroups", securityGroup);
@@ -301,7 +301,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 if (locationConfig.containsKey(JcloudsLocation.SECURITY_GROUPS)
                         && locationConfig.getStringKey(JcloudsLocation.SECURITY_GROUPS.getName()) instanceof String ){
                     flags.put("securityGroups", locationConfig.getStringKey(JcloudsLocation.SECURITY_GROUPS.getName()));
-                } else if (isJcloudsLocation(location, "google-compute-engine")
+                } else if (DockerUtils.isJcloudsLocation(location, "google-compute-engine")
                         && locationConfig.containsKey(JcloudsLocation.NETWORK_NAME)
                         && locationConfig.getStringKey(JcloudsLocation.NETWORK_NAME.getName()) instanceof String) {
                     flags.put("networkName", locationConfig.getStringKey(JcloudsLocation.NETWORK_NAME.getName()));
@@ -311,7 +311,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             }
 
             // Setup SoftLayer template options
-            if (isJcloudsLocation(location, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME)) {
+            if (DockerUtils.isJcloudsLocation(location, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME)) {
                 if (template == null) template = new PortableTemplateBuilder();
                 SoftLayerTemplateOptions options = new SoftLayerTemplateOptions();
                 options.portSpeed(Objects.firstNonNull(options.getPortSpeed(), 1000));
@@ -326,11 +326,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             flags.put(JcloudsLocationConfig.JCLOUDS_LOCATION_CUSTOMIZERS.getName(), ImmutableList.copyOf(customizers));
         }
         return flags;
-    }
-
-    private boolean isJcloudsLocation(MachineProvisioningLocation location, String providerName) {
-        return location instanceof JcloudsLocation
-                && ((JcloudsLocation) location).getProvider().equals(providerName);
     }
 
     @Override

@@ -39,6 +39,10 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
+import org.jclouds.compute.ComputeService;
+import org.jclouds.softlayer.reference.SoftLayerConstants;
+
+import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.OsDetails;
 import org.apache.brooklyn.api.mgmt.Task;
 import org.apache.brooklyn.core.effector.ssh.SshEffectorTasks;
@@ -46,8 +50,11 @@ import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.entity.group.AbstractGroup;
 import org.apache.brooklyn.entity.group.DynamicGroup;
 import org.apache.brooklyn.entity.software.base.AbstractSoftwareProcessSshDriver;
+import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.software.base.lifecycle.ScriptHelper;
+import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsLocationConfig;
+import org.apache.brooklyn.location.jclouds.JcloudsMachineLocation;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
@@ -262,6 +269,12 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                     sudo("mv /dev/random /dev/random-real"),
                     sudo("ln -s /dev/urandom /dev/random"))
             .execute();
+        }
+
+        // Setup SoftLayer hostname after reboot
+        MachineProvisioningLocation<?> provisioner = getEntity().sensors().get(SoftwareProcess.PROVISIONING_LOCATION);
+        if (DockerUtils.isJcloudsLocation(provisioner, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME)) {
+            SoftLayerHostnameCustomizer.instanceOf().customize((JcloudsLocation) provisioner, (ComputeService) null, (JcloudsMachineLocation) location);
         }
     }
 

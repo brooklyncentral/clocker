@@ -52,9 +52,8 @@ public class SoftLayerHostnameCustomizer extends BasicJcloudsLocationCustomizer 
         String name = ssh.getOptionalNode().get().getName();
 
         List<String> commands = ImmutableList.of(
-                BashCommands.sudo("rm -f /etc/hostname"),
-                BashCommands.sudo("touch /etc/hostname"),
-                BashCommands.sudo("sed -i \"/(none)/d\" /etc/hosts"));
+                String.format("echo %s | ( %s )", name, BashCommands.sudo("tee /etc/hostname")),
+                String.format("echo 127.0.0.1 localhost | ( %s )", BashCommands.sudo("tee /etc/hosts")));
         DynamicTasks.queue(SshEffectorTasks.ssh(commands)
                 .machine(ssh)
                 .requiringExitCodeZero()).block();

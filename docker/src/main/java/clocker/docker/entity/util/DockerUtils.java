@@ -47,6 +47,7 @@ import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.camp.brooklyn.BrooklynCampConstants;
@@ -71,6 +72,7 @@ import org.apache.brooklyn.entity.nosql.couchbase.CouchbaseNode;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess;
 import org.apache.brooklyn.entity.webapp.WebAppServiceConstants;
+import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsLocationConfig;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableList;
@@ -247,7 +249,12 @@ public class DockerUtils {
     public static String randomImageName() {
         return Identifiers.makeRandomId(12).toLowerCase(Locale.ENGLISH);
     }
-    
+
+    public static boolean isJcloudsLocation(MachineProvisioningLocation location, String providerName) {
+        return location instanceof JcloudsLocation
+                && ((JcloudsLocation) location).getProvider().equals(providerName);
+    }
+
     private static class HashGenerator {
         private long hash;
 
