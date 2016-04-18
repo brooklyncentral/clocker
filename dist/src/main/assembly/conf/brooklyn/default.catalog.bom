@@ -24,7 +24,7 @@ brooklyn.catalog:
     item:
       type: clocker.docker.entity.DockerInfrastructure
       brooklyn.config:
-        docker.version: 1.8.1 # DOCKER_VERSION
+        docker.version: 1.10.3 # DOCKER_VERSION
         entity.dynamicLocation.name: "my-docker-cloud"
         docker.container.cluster.headroom.count: 4
         docker.policy.ha.enable: false

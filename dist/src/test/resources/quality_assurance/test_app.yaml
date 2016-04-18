@@ -12,4 +12,4 @@ brooklyn.catalog:
           entity.dynamicLocation.name: my-docker-cloud
           docker.host.cluster.initial.size: 2
           docker.registry.start: false
-          docker.version: 1.8.1 # DOCKER_VERSION
+          docker.version: 1.10.3 # DOCKER_VERSION

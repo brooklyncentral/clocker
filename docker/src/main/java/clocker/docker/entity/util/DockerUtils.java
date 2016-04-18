@@ -214,7 +214,9 @@ public class DockerUtils {
 
     /** Parse and return the ID returned from a Docker command. */
     public static String checkId(String input) {
-        String imageId = Strings.trim(input).toLowerCase(Locale.ENGLISH);
+        // Remove hash type from start and convert to lowercase
+        // TODO can this be anyhting other than sha256
+        String imageId = Strings.removeFromStart(Strings.trim(input).toLowerCase(Locale.ENGLISH), "sha256:");
 
         if (imageId.length() == 64 && DOCKERFILE_CHARACTERS.matchesAllOf(imageId)) {
             return imageId;

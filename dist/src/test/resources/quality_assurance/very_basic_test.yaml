@@ -16,7 +16,7 @@ brooklyn.catalog:
                   docker.addLocalhostPermission: true
                   docker.host.cluster.initial.size: 1
                   docker.registry.start: false
-                  docker.version: 1.8.1 # DOCKER_VERSION
+                  docker.version: 1.10.3 # DOCKER_VERSION
           infrastructure.deployment.entity.specs:
             - $brooklyn:entitySpec:
                 type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
