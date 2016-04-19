@@ -319,7 +319,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), template);
 
                 customizers.add(SoftLayerSameVlanLocationCustomizer.forScope(getApplicationId()));
-                customizers.add(SoftLayerHostnameCustomizer.instanceOf());
+                customizers.add(JcloudsHostnameCustomizer.instanceOf());
             }
 
             // Save updated customizers list
@@ -497,7 +497,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         // The 'flags' contains jcloudsLocation and portForwarder already
         DockerHostLocation location = getManagementContext().getLocationManager().createLocation(LocationSpec.create(DockerHostLocation.class)
                 .parent(infrastructure.getDynamicLocation())
-                .displayName("Docker Host("+getId()+")")
+                .displayName("Docker Host ("+getId()+")")
                 .configure(flags)
                 .configure("owner", getProxy())
                 .configure("machine", machine)

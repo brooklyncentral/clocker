@@ -38,12 +38,12 @@ import org.apache.brooklyn.util.ssh.BashCommands;
 /**
  * Fix hostname issues on SoftLayer.
  */
-public class SoftLayerHostnameCustomizer extends BasicJcloudsLocationCustomizer {
+public class JcloudsHostnameCustomizer extends BasicJcloudsLocationCustomizer {
 
-    public static final Logger LOG = LoggerFactory.getLogger(SoftLayerHostnameCustomizer.class);
+    public static final Logger LOG = LoggerFactory.getLogger(JcloudsHostnameCustomizer.class);
 
-    public static SoftLayerHostnameCustomizer instanceOf() {
-        return new SoftLayerHostnameCustomizer();
+    public static JcloudsHostnameCustomizer instanceOf() {
+        return new JcloudsHostnameCustomizer();
     }
 
     @Override

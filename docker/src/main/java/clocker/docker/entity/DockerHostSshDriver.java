@@ -274,7 +274,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         // Setup SoftLayer hostname after reboot
         MachineProvisioningLocation<?> provisioner = getEntity().sensors().get(SoftwareProcess.PROVISIONING_LOCATION);
         if (DockerUtils.isJcloudsLocation(provisioner, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME)) {
-            SoftLayerHostnameCustomizer.instanceOf().customize((JcloudsLocation) provisioner, (ComputeService) null, (JcloudsMachineLocation) location);
+            JcloudsHostnameCustomizer.instanceOf().customize((JcloudsLocation) provisioner, (ComputeService) null, (JcloudsMachineLocation) location);
         }
     }
 

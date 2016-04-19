@@ -88,17 +88,11 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
     public static final ConfigKey<String> LOCATION_NAME = ConfigKeys.newStringConfigKey("locationName");
 
-    public static final ConfigKey<SshMachineLocation> MACHINE = ConfigKeys.newConfigKey(
-            SshMachineLocation.class, 
-            "machine");
+    public static final ConfigKey<SshMachineLocation> MACHINE = ConfigKeys.newConfigKey(SshMachineLocation.class, "machine");
 
-    public static final ConfigKey<PortForwarder> PORT_FORWARDER = ConfigKeys.newConfigKey(
-            PortForwarder.class, 
-            "portForwarder");
+    public static final ConfigKey<PortForwarder> PORT_FORWARDER = ConfigKeys.newConfigKey(PortForwarder.class, "portForwarder");
 
-    public static final ConfigKey<JcloudsLocation> JCLOUDS_LOCATION = ConfigKeys.newConfigKey(
-            JcloudsLocation.class, 
-            "jcloudsLocation");
+    public static final ConfigKey<JcloudsLocation> JCLOUDS_LOCATION = ConfigKeys.newConfigKey(JcloudsLocation.class, "jcloudsLocation");
 
     @SetFromFlag("locationRegistrationId")
     private String locationRegistrationId;
@@ -130,15 +124,15 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
         // TODO BasicLocationRebindsupport.addCustoms currently calls init() unfortunately!
         // Don't checkNotNull in that situation - it could be this location is orphaned!
         if (isRebinding()) {
-            dockerHost = (DockerHost) getConfig(OWNER);
-            machine = (SshMachineLocation) getConfig(MACHINE);
-            portForwarder = (PortForwarder) getConfig(PORT_FORWARDER);
-            jcloudsLocation = (JcloudsLocation) getConfig(JCLOUDS_LOCATION);
+            dockerHost = (DockerHost) config().get(OWNER);
+            machine = config().get(MACHINE);
+            portForwarder = config().get(PORT_FORWARDER);
+            jcloudsLocation = config().get(JCLOUDS_LOCATION);
         } else {
-            dockerHost = (DockerHost) checkNotNull(getConfig(OWNER), "owner");
-            machine = (SshMachineLocation) checkNotNull(getConfig(MACHINE), "machine");
-            portForwarder = (PortForwarder) getConfig(PORT_FORWARDER);
-            jcloudsLocation = (JcloudsLocation) getConfig(JCLOUDS_LOCATION);
+            dockerHost = (DockerHost) checkNotNull(config().get(OWNER), "owner");
+            machine = checkNotNull(config().get(MACHINE), "machine");
+            portForwarder = config().get(PORT_FORWARDER);
+            jcloudsLocation = config().get(JCLOUDS_LOCATION);
         }
     }
     
@@ -146,11 +140,11 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
     public void rebind() {
         super.rebind();
 
-        dockerHost = (DockerHost) getConfig(OWNER);
-        machine = (SshMachineLocation) getConfig(MACHINE);
-        portForwarder = (PortForwarder) getConfig(PORT_FORWARDER);
-        jcloudsLocation = (JcloudsLocation) getConfig(JCLOUDS_LOCATION);
-        
+        dockerHost = (DockerHost) config().get(OWNER);
+        machine = config().get(MACHINE);
+        portForwarder = config().get(PORT_FORWARDER);
+        jcloudsLocation = config().get(JCLOUDS_LOCATION);
+
         if (dockerHost != null && getConfig(LOCATION_NAME) != null) {
             register();
         }
@@ -158,7 +152,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
     @Override
     public LocationDefinition register() {
-        String locationName = checkNotNull(getConfig(LOCATION_NAME), "config %s", LOCATION_NAME.getName());
+        String locationName = checkNotNull(config().get(LOCATION_NAME), "config %s", LOCATION_NAME.getName());
 
         LocationDefinition check = getManagementContext().getLocationRegistry().getDefinedLocationByName(locationName);
         if (check != null) {
@@ -171,13 +165,13 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
         LocationDefinition definition = new BasicLocationDefinition(locationName, locationSpec, ImmutableMap.<String, Object>of());
         getManagementContext().getLocationRegistry().updateDefinedLocation(definition);
-        
+
         locationRegistrationId = definition.getId();
         requestPersist();
-        
+
         return definition;
     }
-    
+
     @Override
     public void deregister() {
         if (locationRegistrationId != null) {
@@ -186,7 +180,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             requestPersist();
         }
     }
-    
+
     public DockerContainerLocation obtain() throws NoMachinesAvailableException {
         return obtain(Maps.<String,Object>newLinkedHashMap());
     }
@@ -229,9 +223,9 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
             Optional<String> baseImage = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_NAME));
             String imageTag = Optional.fromNullable(entity.config().get(DockerAttributes.DOCKER_IMAGE_TAG)).or("latest");
-            
+
             boolean autoCheckpointImagePostInstall = Boolean.TRUE.equals(entity.config().get(DockerAttributes.AUTO_CHECKPOINT_DOCKER_IMAGE_POST_INSTALL));
-            
+
             // TODO incorporate more info (incl registry?)
             String imageName;
             if (autoCheckpointImagePostInstall) {
@@ -251,7 +245,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
 
             if (dockerHost.getImageNamed(imageName, imageTag).isPresent()) {
                 assert autoCheckpointImagePostInstall : "random imageName "+imageName+" collision on host "+getOwner();
-            
+
                 // Wait until committed before continuing - Brooklyn may be midway through its creation.
                 waitForImage(imageName);
 

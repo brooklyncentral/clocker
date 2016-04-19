@@ -24,13 +24,18 @@ import org.slf4j.LoggerFactory;
 import clocker.docker.location.DockerHostLocation;
 import clocker.docker.location.strategy.BasicDockerPlacementStrategy;
 
-import com.google.common.base.Functions;
+import com.google.common.base.Function;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.reflect.TypeToken;
 
+import org.jclouds.compute.domain.NodeMetadata;
+
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.location.jclouds.JcloudsSshMachineLocation;
+import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableSet;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
@@ -51,11 +56,23 @@ public class LabelPlacementStrategy extends BasicDockerPlacementStrategy {
     public boolean apply(DockerHostLocation input) {
         Set<String> labels = MutableSet.copyOf(config().get(LABELS));
         if (labels.isEmpty()) return true;
-        Set<String> tags = MutableSet.copyOf(Iterables.transform(input.getMachine().tags().getTags(), Functions.toStringFunction()));
-        labels.removeAll(tags);
-        LOG.debug("Host {} : Tags {} : Remaining {}",
-                new Object[] { input, Iterables.toString(tags), labels.isEmpty() ? "none" : Iterables.toString(labels) });
-
-        return labels.isEmpty();
+        SshMachineLocation ssh = input.getMachine();
+        if (ssh instanceof JcloudsSshMachineLocation) {
+            JcloudsSshMachineLocation jclouds = (JcloudsSshMachineLocation) ssh;
+            NodeMetadata metadata = jclouds.getOptionalNode().get();
+            Set<String> tags = MutableSet.copyOf(Iterables.transform(metadata.getTags(), new Function<String, String>() {
+                @Override
+                public String apply(String input) {
+                    return Iterables.get(Splitter.on("=").split(input), 0);
+                }
+            }));
+            tags.addAll(metadata.getUserMetadata().keySet());
+            labels.removeAll(tags);
+            LOG.debug("Host {} : Tags {} : Remaining {}",
+                    new Object[] { input, Iterables.toString(tags), labels.isEmpty() ? "none" : Iterables.toString(labels) });
+            return labels.isEmpty();
+        } else {
+            return false;
+        }
     }
 }

@@ -61,6 +61,7 @@ import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Protocol;
 import org.apache.brooklyn.util.net.Urls;
+import org.apache.brooklyn.util.os.Os;
 import org.apache.brooklyn.util.ssh.IptablesCommands;
 import org.apache.brooklyn.util.ssh.IptablesCommands.Chain;
 import org.apache.brooklyn.util.ssh.IptablesCommands.Policy;
@@ -292,17 +293,14 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
         if (entitySsh && dockerSsh) {
             return super.copyTo(nonPortProps, src, destination);
         } else {
-            File tmp = null;
             try {
-                tmp = File.createTempFile(dockerContainer.getId(), Urls.getBasename(destination));
-                hostMachine.copyTo(nonPortProps, src, tmp.getAbsolutePath());
+                String tmp = Os.mergePaths("/tmp", Joiner.on('-').join(dockerContainer.getId(), Urls.getBasename(destination), Strings.makeRandomId(4)));
+                hostMachine.copyTo(nonPortProps, src, tmp);
                 copyFile(tmp, destination);
                 src.close();
                 return 0;
             } catch (IOException ioe) {
                 throw Exceptions.propagate(ioe);
-            } finally {
-                if (tmp != null) tmp.delete();
             }
         }
     }
@@ -315,46 +313,32 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
         if (entitySsh && dockerSsh) {
             return super.copyTo(nonPortProps, src, destination);
         } else {
-            File tmp = null;
-            try {
-                tmp = File.createTempFile(dockerContainer.getId(), Urls.getBasename(destination));
-                hostMachine.copyTo(nonPortProps, src, tmp);
-                copyFile(tmp, destination);
-                return 0;
-            } catch (IOException ioe) {
-                throw Exceptions.propagate(ioe);
-            } finally {
-                if (tmp != null) tmp.delete();
-            }
+            String tmp = Os.mergePaths("/tmp", Joiner.on('-').join(dockerContainer.getId(), Urls.getBasename(destination), Strings.makeRandomId(4)));
+            hostMachine.copyTo(nonPortProps, src, tmp);
+            copyFile(tmp, destination);
+            return 0;
         }
     }
 
-    private void copyFile(File src, String dst) {
-        String cp = String.format("cp %s %s:%s", src.getAbsolutePath(), dockerContainer.getContainerId(), dst);
+    private void copyFile(String src, String dst) {
+        String cp = String.format("cp %s %s:%s", src, dockerContainer.getContainerId(), dst);
         String output = getOwner().getDockerHost().runDockerCommand(cp);
         LOG.info("Copied to {}:{} - result: {}", new Object[] { dockerContainer.getContainerId(), dst, output });
     }
 
     @Override
     public int copyFrom(final Map<String,?> props, final String remote, final String local) {
+        Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
         boolean entitySsh = Boolean.TRUE.equals(entity.config().get(DockerContainer.DOCKER_USE_SSH));
         boolean dockerSsh = Boolean.TRUE.equals(getOwner().config().get(DockerContainer.DOCKER_USE_SSH));
         if (entitySsh && dockerSsh) {
-            return super.copyFrom(props, remote, local);
+            return super.copyFrom(nonPortProps, remote, local);
         } else {
-            File tmp = null;
-            try {
-                tmp = File.createTempFile(dockerContainer.getId(), Urls.getBasename(local));
-                String cp = String.format("cp %s:%s %s", dockerContainer.getContainerId(), remote, tmp.getAbsolutePath());
-                String output = getOwner().getDockerHost().runDockerCommand(cp);
-                Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
-                hostMachine.copyFrom(nonPortProps, tmp.getAbsolutePath(), local);
-                LOG.info("Copying from {}:{} to {} - result: {}", new Object[] { dockerContainer.getContainerId(), remote, local, output });
-            } catch (IOException ioe) {
-                throw Exceptions.propagate(ioe);
-            } finally {
-                if (tmp != null) tmp.delete();
-            }
+            String tmp = Os.mergePaths("/tmp", Joiner.on('-').join(dockerContainer.getId(), Urls.getBasename(local), Strings.makeRandomId(4)));
+            String cp = String.format("cp %s:%s %s", dockerContainer.getContainerId(), remote, tmp);
+            String output = getOwner().getDockerHost().runDockerCommand(cp);
+            hostMachine.copyFrom(nonPortProps, tmp, local);
+            LOG.info("Copying from {}:{} to {} - result: {}", new Object[] { dockerContainer.getContainerId(), remote, local, output });
             return 0;
         }
     }
