@@ -230,8 +230,7 @@ brooklyn.catalog:
     type: org.apache.brooklyn.entity.proxy.haproxy.HAProxyController
     brooklyn.config:
       docker.image.name: haproxy
-      docker.image.tag: 1.5.9
-      docker.container.directPorts.configKeys:
+      docker.container.openPorts.configKeys:
       - $brooklyn:sensor("org.apache.brooklyn.entity.proxy.AbstractController", "proxy.http.port")
       - $brooklyn:sensor("org.apache.brooklyn.entity.proxy.AbstractController", "proxy.https.port")
       install.dir: /usr/local/sbin/
@@ -284,7 +283,9 @@ brooklyn.catalog:
             controlleddynamicwebappcluster.controllerSpec:
               $brooklyn:entitySpec:
                 type: haproxy-controller
+                id: load-balancer
                 brooklyn.config:
+                  docker.image.tag: 1.5.9
                   network.list:
                   - webapp
           brooklyn.enrichers:
@@ -292,7 +293,7 @@ brooklyn.catalog:
           - type: org.apache.brooklyn.enricher.stock.Propagator
             brooklyn.config:
               uniqueTag: url-propagator
-              enricher.producer: $brooklyn:component("haproxy")
+              enricher.producer: $brooklyn:component("load-balancer")
               enricher.propagating.inclusions:
               - mapped.main.uri
         brooklyn.enrichers:
