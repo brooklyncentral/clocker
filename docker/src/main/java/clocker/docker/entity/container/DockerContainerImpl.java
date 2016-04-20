@@ -261,7 +261,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     private void removeContainer() {
         String dockerContainerName = sensors().get(DockerContainer.DOCKER_CONTAINER_NAME);
         LOG.info("Removing {}", dockerContainerName);
-        getDockerHost().runDockerCommand("rm " + dockerContainerName);
+        getDockerHost().runDockerCommand("rm " + getContainerId());
     }
 
     private DockerTemplateOptions getDockerTemplateOptions() {
@@ -569,7 +569,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 Set<String> addresses = Sets.newHashSet();
                 for (String networkId : networks) {
                     InetAddress address = agent.attachNetwork(containerId, networkId);
-                    addresses.add(address.getHostAddress().toString());
+                    addresses.add(address.getHostAddress());
                     if (networkId.equals(entity.getApplicationId())) {
                         sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
                         sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostName());
@@ -670,9 +670,9 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
     @Override
     public void restart() {
-        StartableMethods.stop(this);
+        stop();
 
-        super.restart();
+        start(getLocations());
     }
 
     @Override
@@ -680,7 +680,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         Lifecycle state = sensors().get(SERVICE_STATE_ACTUAL);
         if (Lifecycle.STOPPING.equals(state) || Lifecycle.STOPPED.equals(state)) {
             LOG.debug("Ignoring request to stop {} when it is already {}", this, state);
-            LOG.trace("Duplicate stop came from: \n" + Joiner.on("\n").join(Thread.getAllStackTraces().get(Thread.currentThread())));
+            LOG.debug("Duplicate stop came from: \n" + Joiner.on("\n").join(Thread.getAllStackTraces().get(Thread.currentThread())));
             return;
         }
         LOG.info("Stopping {} when its state is {}", this, sensors().get(SERVICE_STATE_ACTUAL));
