@@ -87,14 +87,8 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements Dock
                 .configure(BasicGroup.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .displayName("SDN Managed Networks"));
 
-        BasicGroup applications = addChild(EntitySpec.create(BasicGroup.class)
-                .configure(BasicGroup.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
-                .configure(BasicGroup.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
-                .displayName("SDN Networked Applications"));
-
         sensors().set(SDN_AGENTS, agents);
         sensors().set(SDN_NETWORKS, networks);
-        sensors().set(SDN_APPLICATIONS, applications);
 
         synchronized (addressMutex) {
             sensors().set(ALLOCATED_IPS, 0);
@@ -290,45 +284,23 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements Dock
 
     @Override
     public void provisionNetwork(VirtualNetwork network) {
-        // Call provisionNetwork on one of the agents to create it
         SdnAgent agent = (SdnAgent) (getAgents().getMembers().iterator().next());
         String networkId = agent.provisionNetwork(network);
-
-        // Create a DynamicGroup with all attached entities
-        EntitySpec<DynamicGroup> networkSpec = EntitySpec.create(DynamicGroup.class)
-                .configure(DynamicGroup.ENTITY_FILTER, Predicates.and(
-                        Predicates.not(Predicates.or(Predicates.instanceOf(DockerContainer.class), Predicates.instanceOf(DelegateEntity.class))),
-                        EntityPredicates.attributeEqualTo(DockerContainer.DOCKER_INFRASTRUCTURE, sensors().get(DOCKER_INFRASTRUCTURE)),
-                        SdnUtils.attachedToNetwork(networkId)))
-                .displayName(network.getDisplayName());
-        DynamicGroup subnet = sensors().get(SDN_APPLICATIONS).addMemberChild(networkSpec);
-        subnet.sensors().set(VirtualNetwork.NETWORK_ID, networkId);
-        network.sensors().set(VirtualNetwork.NETWORKED_APPLICATIONS, subnet);
-
+        LOG.info("Provisioned network {} at {}", networkId, agent);
         sensors().get(SDN_NETWORKS).addMember(network);
     }
 
     @Override
     public void deallocateNetwork(VirtualNetwork network) {
-        String networkId = network.sensors().get(VirtualNetwork.NETWORK_ID);
-        Optional<Entity> found = Iterables.tryFind(sensors().get(SDN_APPLICATIONS).getMembers(), EntityPredicates.attributeEqualTo(VirtualNetwork.NETWORK_ID, networkId));
-        if (found.isPresent()) {
-            Entity group = found.get();
-            sensors().get(SDN_APPLICATIONS).removeMember(group);
-            sensors().get(SDN_APPLICATIONS).removeChild(group);
-            Entities.unmanage(group);
-        } else {
-            LOG.warn("Cannot find group containing {} network entities", networkId);
-        }
         sensors().get(SDN_NETWORKS).removeMember(network);
-
+        network.stop();
+        Entities.unmanage(network);
         // TODO actually deprovision the network if possible?
     }
 
     static {
         RendererHints.register(SDN_AGENTS, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(SDN_NETWORKS, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(SDN_APPLICATIONS, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(DOCKER_INFRASTRUCTURE, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
     }
 

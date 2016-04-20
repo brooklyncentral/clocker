@@ -31,12 +31,9 @@ import clocker.docker.networking.entity.sdn.util.SdnUtils;
 import clocker.docker.networking.location.NetworkProvisioningExtension;
 import clocker.mesos.entity.MesosCluster;
 import clocker.mesos.entity.MesosSlave;
-import clocker.mesos.entity.MesosUtils;
-import clocker.mesos.entity.task.marathon.MarathonTask;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Optional;
-import com.google.common.base.Predicates;
 import com.google.common.base.Splitter;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -50,12 +47,10 @@ import org.apache.brooklyn.api.mgmt.TaskWrapper;
 import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.effector.ssh.SshEffectorTasks;
 import org.apache.brooklyn.core.entity.Entities;
-import org.apache.brooklyn.core.entity.EntityPredicates;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.core.location.Machines;
 import org.apache.brooklyn.entity.group.BasicGroup;
-import org.apache.brooklyn.entity.group.DynamicGroup;
 import org.apache.brooklyn.entity.stock.BasicStartableImpl;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
@@ -89,13 +84,7 @@ public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule
                 .configure(BasicGroup.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .displayName("SDN Managed Networks"));
 
-        BasicGroup applications = addChild(EntitySpec.create(BasicGroup.class)
-                .configure(BasicGroup.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
-                .configure(BasicGroup.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
-                .displayName("SDN Networked Applications"));
-
         sensors().set(SDN_NETWORKS, networks);
-        sensors().set(SDN_APPLICATIONS, applications);
 
         synchronized (addressMutex) {
             sensors().set(SUBNET_ADDRESS_ALLOCATIONS, Maps.<String, Integer>newConcurrentMap());
@@ -288,7 +277,6 @@ public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule
 
     @Override
     public void provisionNetwork(VirtualNetwork network) {
-        String networkId = network.sensors().get(VirtualNetwork.NETWORK_ID);
         Cidr subnetCidr = SdnUtils.provisionNetwork(this, network);
         boolean ipip = config().get(CalicoModule.USE_IPIP);
         boolean nat = config().get(CalicoModule.USE_NAT);
@@ -296,34 +284,14 @@ public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule
         MesosSlave slave = (MesosSlave) getMesosCluster().sensors().get(MesosCluster.MESOS_SLAVES).getMembers().iterator().next();
         execCalicoCommand(slave, addPool);
 
-        // Create a DynamicGroup with all attached entities
-        EntitySpec<DynamicGroup> networkSpec = EntitySpec.create(DynamicGroup.class)
-                .configure(DynamicGroup.ENTITY_FILTER, Predicates.and(
-                        Predicates.not(Predicates.or(Predicates.instanceOf(MarathonTask.class), Predicates.instanceOf(DelegateEntity.class))),
-                        MesosUtils.sameCluster(getMesosCluster()),
-                        SdnUtils.attachedToNetwork(networkId)))
-                .displayName(network.getDisplayName());
-        DynamicGroup subnet = sensors().get(SDN_APPLICATIONS).addMemberChild(networkSpec);
-        subnet.sensors().set(VirtualNetwork.NETWORK_ID, networkId);
-        network.sensors().set(VirtualNetwork.NETWORKED_APPLICATIONS, subnet);
-
         sensors().get(SDN_NETWORKS).addMember(network);
     }
 
     @Override
     public void deallocateNetwork(VirtualNetwork network) {
-        String networkId = network.sensors().get(VirtualNetwork.NETWORK_ID);
-        Optional<Entity> found = Iterables.tryFind(sensors().get(SDN_APPLICATIONS).getMembers(), EntityPredicates.attributeEqualTo(VirtualNetwork.NETWORK_ID, networkId));
-        if (found.isPresent()) {
-            Entity group = found.get();
-            sensors().get(SDN_APPLICATIONS).removeMember(group);
-            sensors().get(SDN_APPLICATIONS).removeChild(group);
-            Entities.unmanage(group);
-        } else {
-            LOG.warn("Cannot find group containing {} network entities", networkId);
-        }
         sensors().get(SDN_NETWORKS).removeMember(network);
-
+        network.stop();
+        Entities.unmanage(network);
         // TODO actually deprovision the network if possible?
     }
 
@@ -334,7 +302,6 @@ public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule
 
     static {
         RendererHints.register(SDN_NETWORKS, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(SDN_APPLICATIONS, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(MESOS_CLUSTER, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
     }
 
