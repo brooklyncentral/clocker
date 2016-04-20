@@ -24,7 +24,7 @@ services:
   location: my-openstack-cloud
   id: redis
   name: "Redis Store"
-  install.version: 3.0.0
+  install.version: 3.0.3
   start.timeout: 10m
 
 - type: docker:clockercentral/dnmonster:1.0
@@ -43,8 +43,8 @@ services:
   openPorts:
   - 9091
   links:
-  - $brooklyn:component("redis")
-  - $brooklyn:component("dnmonster")
+    redis: $brooklyn:component("redis")
+    dnmonster: $brooklyn:component("dnmonster")
   brooklyn.enrichers:
   - type: org.apache.brooklyn.enricher.stock.Transformer
     brooklyn.config:

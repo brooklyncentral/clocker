@@ -111,14 +111,6 @@ public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork 
                 .cidrBlock(Cidr.UNIVERSAL.toString()) // TODO could be tighter restricted?
                 .build();
         permissions.add(etcdPeerTcpPort);
-        Integer powerstripPort = config().get(CalicoNode.POWERSTRIP_PORT);
-        IpPermission powerstripTcpPort = IpPermission.builder()
-                .ipProtocol(IpProtocol.TCP)
-                .fromPort(powerstripPort)
-                .toPort(powerstripPort)
-                .cidrBlock(source)
-                .build();
-        permissions.add(powerstripTcpPort);
         return permissions;
     }
 

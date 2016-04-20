@@ -40,7 +40,6 @@ import clocker.docker.location.DockerHostLocation;
 import clocker.docker.location.DockerLocation;
 import clocker.docker.networking.entity.sdn.DockerSdnProvider;
 import clocker.docker.networking.entity.sdn.SdnAgent;
-import clocker.docker.networking.entity.sdn.calico.CalicoNode;
 import clocker.docker.networking.entity.sdn.util.SdnAttributes;
 import clocker.docker.networking.entity.sdn.util.SdnUtils;
 import clocker.docker.networking.entity.sdn.weave.WeaveNetwork;
@@ -114,8 +113,8 @@ import org.apache.brooklyn.policy.ha.ServiceRestarter;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
-import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.core.ResourceUtils;
+import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.core.task.Tasks;
 import org.apache.brooklyn.util.core.task.system.ProcessTaskStub.ScriptReturnType;
@@ -207,8 +206,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             if (SdnUtils.isSdnProvider(getInfrastructure(), "CalicoNetwork")) {
                 PortRange etcdPort = sdn.config().get(EtcdNode.ETCD_CLIENT_PORT);
                 if (etcdPort != null) ports.add(etcdPort.iterator().next());
-                Integer powerstripPort = sdn.config().get(CalicoNode.POWERSTRIP_PORT);
-                if (powerstripPort != null) ports.add(powerstripPort);
             }
         }
         return ports;
@@ -649,12 +646,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
         Integer dockerPort = getDockerPort();
         boolean tlsEnabled = true;
-        if (SdnUtils.isSdnProvider(getInfrastructure(), "CalicoNetwork")) {
-            dockerPort = sensors().get(DockerHost.DOCKER_INFRASTRUCTURE)
-                    .sensors().get(DockerInfrastructure.SDN_PROVIDER)
-                    .config().get(CalicoNode.POWERSTRIP_PORT);
-            tlsEnabled = false;
-        }
         if (SdnUtils.isSdnProvider(getInfrastructure(), "WeaveNetwork")) {
             dockerPort = sensors().get(DockerHost.DOCKER_INFRASTRUCTURE)
                     .sensors().get(DockerInfrastructure.SDN_PROVIDER)
@@ -672,7 +663,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             getMachine().copyTo(ResourceUtils.create().getResourceFromUrl("classpath://clocker/docker/entity/container/create-certs.sh"), "create-certs.sh");
             getMachine().execCommands("createCertificates",
                     ImmutableList.of("chmod 755 create-certs.sh", "./create-certs.sh " + sensors().get(ADDRESS)));
-            
+
             String localCertsDir = Os.mergePaths(BrooklynServerPaths.getMgmtBaseDir(getManagementContext()), "docker-certs");
             Os.mkdirs(new File(localCertsDir));
             certPath = Os.mergePaths(localCertsDir, getId() + "-cert.pem");
@@ -684,7 +675,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             keyPath = config().get(DockerInfrastructure.DOCKER_CLIENT_KEY_PATH);
         }
         JcloudsLocation jcloudsLocation = (JcloudsLocation) getManagementContext().getLocationRegistry()
-                .resolve(dockerLocationSpec, MutableMap.builder()
+                .getLocationManaged(dockerLocationSpec, MutableMap.builder()
                         .put("identity", certPath)
                         .put("credential", keyPath)
                         .build());

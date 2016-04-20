@@ -21,7 +21,7 @@ services:
 - type: org.apache.brooklyn.entity.nosql.redis.RedisStore
   location: jclouds:softlayer:lon02
   id: redis
-  install.version: 3.0.0
+  install.version: 3.0.3
   start.timeout: 10m
 
 - type: docker:clockercentral/dnmonster:1.0
@@ -36,7 +36,7 @@ services:
   portBindings:
     80: 9090
   links:
-  - $brooklyn:component("redis")
-  - $brooklyn:component("dnmonster")
+    redis: $brooklyn:component("redis")
+    dnminster: $brooklyn:component("dnmonster")
 
 # vim:ts=2:sw=2:ft=yaml:

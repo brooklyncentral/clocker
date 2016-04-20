@@ -36,7 +36,7 @@ import org.apache.brooklyn.util.core.flags.SetFromFlag;
 public interface CalicoNetwork extends DockerSdnProvider {
 
     @SetFromFlag("calicoVersion")
-    ConfigKey<String> CALICO_VERSION = ConfigKeys.newStringConfigKey("calico.version", "The Calico SDN version number", "0.4.9");
+    ConfigKey<String> CALICO_VERSION = ConfigKeys.newStringConfigKey("calico.version", "The Calico SDN version number", "0.19.0");
 
     AttributeSensorAndConfigKey<EntitySpec<?>, EntitySpec<?>> CALICO_NODE_SPEC = ConfigKeys.newSensorAndConfigKeyWithDefault(SDN_AGENT_SPEC, EntitySpec.create(CalicoNode.class));
 
@@ -44,7 +44,7 @@ public interface CalicoNetwork extends DockerSdnProvider {
     ConfigKey<Boolean> USE_NAT = ConfigKeys.newBooleanConfigKey("calico.nat", "Use NAT for outgoing traffic", Boolean.TRUE);
 
     @SetFromFlag("etcdVersion")
-    ConfigKey<String> ETCD_VERSION = ConfigKeys.newStringConfigKey("etcd.version", "The Etcd version number", "2.0.11");
+    ConfigKey<String> ETCD_VERSION = ConfigKeys.newStringConfigKey("etcd.version", "The Etcd version number", "2.3.1");
 
     ConfigKey<Boolean> EXTERNAL_ETCD_CLUSTER = ConfigKeys.newBooleanConfigKey("calico.etcd.external", "Whether to use an external Etcd cluster", Boolean.FALSE);
     ConfigKey<Integer> EXTERNAL_ETCD_INITIAL_SIZE = ConfigKeys.newIntegerConfigKey("calico.etcd.external.initialSize", "The initial size of the external Etcd cluster");

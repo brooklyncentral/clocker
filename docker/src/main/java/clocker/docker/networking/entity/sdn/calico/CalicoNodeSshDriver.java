@@ -25,9 +25,11 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import clocker.docker.entity.container.DockerContainer;
 import clocker.docker.networking.entity.sdn.SdnAgent;
 
+import com.google.common.base.Optional;
+import com.google.common.base.Splitter;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.net.HostAndPort;
 
@@ -43,7 +45,9 @@ import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.os.Os;
 import org.apache.brooklyn.util.ssh.BashCommands;
+import org.apache.brooklyn.util.text.StringPredicates;
 import org.apache.brooklyn.util.text.Strings;
+import org.apache.brooklyn.util.text.VersionComparator;
 
 public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implements CalicoNodeDriver {
 
@@ -135,32 +139,33 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
                         ok(sudo(String.format("ln -s /proc/%s/ns/net /var/run/netns/%s", dockerPid, dockerPid))))
                 .execute();
 
-        // Determine whether we are attatching the container to the initial application network
-        boolean initial = false;
-        for (Entity container : getEntity().sensors().get(SdnAgent.DOCKER_HOST).getDockerContainerList()) {
-            if (containerId.equals(container.sensors().get(DockerContainer.CONTAINER_ID))) {
-                Entity running = container.sensors().get(DockerContainer.ENTITY);
-                String applicationId = running.getApplicationId();
-                if (subnetId.equals(applicationId)) {
-                    initial = true;
-                }
-                break;
-            }
-        }
+        // Try and find out if the container has already been added to Calico
+        ScriptHelper checkEndpointId = newScript("checkEndpointId")
+                .body.append(sudo(String.format("%s container %s %s show", getCalicoCommand(), containerId, isVersionAbove("0.4.9") ? "endpoint" : "endpoint-id")))
+                .noExtraOutput()
+                .gatherOutput();
+        checkEndpointId.execute();
+        String stdout = checkEndpointId.getResultStdout();
+        boolean containerAdded = stdout.contains(containerId);
 
-        // Add the container if we have not yet done so
-        if (initial) {
+        if (!containerAdded) {
+            // Add the container
             newScript("addContainer")
                     .body.append(sudo(String.format("%s container add %s %s", getCalicoCommand(), containerId, address.getHostAddress())))
                     .execute();
 
-            // Return its endpoint ID
+            // Determine its endpoint ID
             ScriptHelper getEndpointId = newScript("getEndpointId")
-                    .body.append(sudo(String.format("%s container %s endpoint-id show", getCalicoCommand(), containerId)))
+                    .body.append(sudo(String.format("%s container %s %s show", getCalicoCommand(), containerId, isVersionAbove("0.4.9") ? "endpoint" : "endpoint-id")))
                     .noExtraOutput()
                     .gatherOutput();
             getEndpointId.execute();
-            String endpointId = Strings.getFirstWord(getEndpointId.getResultStdout());
+            Optional<String> endpointDetails = Iterables.tryFind(Splitter.on('\n').split(getEndpointId.getResultStdout()), StringPredicates.containsLiteral(containerId));
+            if (!endpointDetails.isPresent()) {
+                throw new IllegalStateException(String.format("Error setting up Calico for %s", containerId));
+            }
+            String endpointId = Iterables.get(Splitter.on('|').trimResults().split(endpointDetails.get()), 4);
+            LOG.warn("Endpoint is {} from: {}", endpointId, endpointDetails.get());
 
             // Add to the application profile
             newScript("addCalico")
@@ -177,13 +182,20 @@ public class CalicoNodeSshDriver extends AbstractSoftwareProcessSshDriver implem
                             sudo(String.format("ip netns exec %s ip route add %s via %s", dockerPid, subnetCidr.toString(), agentAddress.getHostAddress())))
                     .execute();
         } else {
-            // Add extra network address
+            // Add extra network and address
             newScript("addAddress")
-                    .body.append(sudo(String.format("ip netns exec %s ip addr add %s/%d dev eth1", dockerPid, address.getHostAddress(), subnetCidr.getLength())))
+                    .body.append(
+                            sudo(String.format("%s container %s ip add %s --interface=eth1", getCalicoCommand(), containerId, address.getHostAddress())),
+                            sudo(String.format("ip netns exec %s ip route add %s via %s", dockerPid, subnetCidr.toString(), agentAddress.getHostAddress())))
                     .execute();
         }
 
         return address;
+    }
+
+    private boolean isVersionAbove(String target) {
+        int result = VersionComparator.getInstance().compare(getVersion(), target);
+        return result > 0;
     }
 
     @Override

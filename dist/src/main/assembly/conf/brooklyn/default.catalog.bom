@@ -67,7 +67,7 @@ brooklyn.catalog:
     item:
       type: clocker.docker.networking.entity.sdn.calico.CalicoNetwork
       brooklyn.config:
-        calico.version: 0.4.9
+        calico.version: 0.19.0
         sdn.agent.spec:
           $brooklyn:entitySpec:
             type: calico-node
@@ -99,7 +99,7 @@ brooklyn.catalog:
     item:
       type: org.apache.brooklyn.entity.nosql.etcd.EtcdCluster
       brooklyn.config:
-        etcd.version: 2.0.11
+        etcd.version: 2.3.1
         etcd.node.spec:
           $brooklyn:entitySpec:
             type: etcd-node
