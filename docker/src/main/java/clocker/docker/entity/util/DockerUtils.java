@@ -411,6 +411,18 @@ public class DockerUtils {
         List<Integer> entityOpenPorts = MutableList.of();
         List<Integer> openPorts = entity.config().get(DockerAttributes.DOCKER_OPEN_PORTS);
         if (openPorts != null) entityOpenPorts.addAll(openPorts);
+        List<PortAttributeSensorAndConfigKey> entityPortConfig = entity.config().get(DockerAttributes.DOCKER_OPEN_PORT_CONFIG);
+        if (entityPortConfig != null) {
+            for (PortAttributeSensorAndConfigKey key : entityPortConfig) {
+                PortRange range = entity.config().get(key);
+                if (range != null && !range.isEmpty()) {
+                    Integer port = range.iterator().next();
+                    if (port != null) {
+                        openPorts.add(port);
+                    }
+                }
+            }
+        }
         Map<Integer, Integer> portBindings = entity.sensors().get(DockerAttributes.DOCKER_CONTAINER_PORT_BINDINGS);
         if (portBindings != null) entityOpenPorts.addAll(portBindings.values());
         if (entityOpenPorts.size() > 0) {

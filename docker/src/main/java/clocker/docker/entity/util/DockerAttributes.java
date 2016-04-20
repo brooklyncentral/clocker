@@ -177,6 +177,13 @@ public class DockerAttributes {
             .inheritance(ConfigInheritance.NONE)
             .build();
 
+    public static final ConfigKey<List<PortAttributeSensorAndConfigKey>> DOCKER_OPEN_PORT_CONFIG = ConfigKeys.builder(new TypeToken<List<PortAttributeSensorAndConfigKey>>() { })
+            .name("docker.container.openPorts.configKeys")
+            .description("List of configration keys for ports to open on the container for forwarding")
+            .defaultValue(ImmutableList.<PortAttributeSensorAndConfigKey>of())
+            .inheritance(ConfigInheritance.NONE)
+            .build();
+
     public static final ConfigKey<Map<Integer, Integer>> DOCKER_PORT_BINDINGS = ConfigKeys.builder(new TypeToken<Map<Integer, Integer>>() { })
             .name("docker.container.portBindings")
             .description("Map of port bindings from the host to the container")
