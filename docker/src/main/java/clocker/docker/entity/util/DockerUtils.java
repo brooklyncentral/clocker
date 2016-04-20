@@ -105,6 +105,8 @@ public class DockerUtils {
     public static final String ENDPOINT = "endpoint";
     public static final String PORT = "port";
 
+    public static final String SHA_256 = "sha256:";
+
     public static final Set<String> URL_SENSOR_NAMES = ImmutableSet.<String>of(
             WebAppServiceConstants.ROOT_URL.getName(),
             DatastoreMixins.DATASTORE_URL.getName(),
@@ -217,11 +219,11 @@ public class DockerUtils {
     /** Parse and return the ID returned from a Docker command. */
     public static String checkId(String input) {
         // Remove hash type from start and convert to lowercase
-        // TODO can this be anyhting other than sha256
-        String imageId = Strings.removeFromStart(Strings.trim(input).toLowerCase(Locale.ENGLISH), "sha256:");
+        String imageId = Strings.removeFromStart(Strings.trim(input).toLowerCase(Locale.ENGLISH), SHA_256);
+        boolean prefix = input.startsWith(SHA_256);
 
         if (imageId.length() == 64 && DOCKERFILE_CHARACTERS.matchesAllOf(imageId)) {
-            return imageId;
+            return (prefix ? SHA_256 : "") + imageId;
         } else {
             throw new IllegalStateException("Invalid image ID returned: " + imageId);
         }
