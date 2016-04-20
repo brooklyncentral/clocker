@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import clocker.docker.entity.DockerInfrastructure;
 import clocker.docker.location.strategy.DockerAwarePlacementStrategy;
-import clocker.docker.location.strategy.MaxContainersPlacementStrategy;
+import clocker.docker.location.strategy.basic.MaxContainersPlacementStrategy;
 import clocker.docker.policy.ContainerHeadroomEnricher;
 
 import com.google.common.base.Optional;
@@ -89,9 +89,10 @@ public class ContainerHeadroomEnricher extends AbstractEnricher {
     static {
         RendererHints.register(DOCKER_CONTAINER_UTILISATION, RendererHints.displayValue(MathFunctions.percent(3)));
     }
-    
+
     private BasicNotificationSensor lastPublished = null;
 
+    @Override
     public void setEntity(EntityLocal entity) {
         Preconditions.checkArgument(entity instanceof DockerInfrastructure, "Entity must be a DockerInfrastructure: %s", entity);
         super.setEntity(entity);
@@ -155,10 +156,10 @@ public class ContainerHeadroomEnricher extends AbstractEnricher {
 
         double lowThreshold = (double) (possible - (headroom + maxContainers)) / (double) possible;
         lowThreshold = Math.max(0d, lowThreshold);
-        
+
         double highThreshold = (double) (possible - headroom) / (double) possible;
         highThreshold = Math.max(0, highThreshold);
-        
+
         // Emit current status of the pool as sensor data
         emit(CONTAINERS_NEEDED, needed);
         emit(DOCKER_CONTAINER_UTILISATION, utilisation);

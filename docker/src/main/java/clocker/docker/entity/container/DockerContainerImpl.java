@@ -69,6 +69,7 @@ import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
+import org.apache.brooklyn.core.entity.trait.StartableMethods;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.core.location.cloud.CloudLocationConfig;
@@ -258,9 +259,9 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
      * Should only be called when the container is not running.
      */
     private void removeContainer() {
-        final String dockerContainerName = sensors().get(DockerContainer.DOCKER_CONTAINER_NAME);
+        String dockerContainerName = sensors().get(DockerContainer.DOCKER_CONTAINER_NAME);
         LOG.info("Removing {}", dockerContainerName);
-        getDockerHost().runDockerCommand("rm " + getContainerId());
+        getDockerHost().runDockerCommand("rm " + dockerContainerName);
     }
 
     private DockerTemplateOptions getDockerTemplateOptions() {
@@ -351,6 +352,10 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         sensors().set(DockerAttributes.DOCKER_VOLUME_MAPPING, volumes);
         entity.sensors().set(DockerAttributes.DOCKER_VOLUME_MAPPING, volumes);
         options.volumes(volumes);
+        List<String> imports = entity.config().get(DockerContainer.DOCKER_CONTAINER_VOLUMES_FROM);
+        if (imports != null) {
+            options.volumesFrom(imports);
+        }
 
         // Direct port mappings
         Map<Integer, Integer> bindings = MutableMap.copyOf(entity.config().get(DockerAttributes.DOCKER_PORT_BINDINGS));
@@ -395,18 +400,15 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         MutableMap<String, Object> environment = MutableMap.of();
         environment.add(config().get(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT));
         environment.add(entity.config().get(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT));
-        List<Entity> links = entity.config().get(DockerAttributes.DOCKER_LINKS);
+        Map<String, Entity> links = entity.config().get(DockerAttributes.DOCKER_LINKS);
         if (links != null && links.size() > 0) {
             LOG.debug("Found links: {}", links);
             Map<String, String> extraHosts = MutableMap.of();
-            for (Entity linked : links) {
-                Map<String, Object> linkVars = DockerUtils.generateLinks(getRunningEntity(), linked);
+            for (Map.Entry<String, Entity> linked : links.entrySet()) {
+                Map<String, Object> linkVars = DockerUtils.generateLinks(getRunningEntity(), linked.getValue(), linked.getKey());
                 environment.add(linkVars);
-                Optional<String> alias = DockerUtils.getContainerName(linked);
-                if (alias.isPresent()) {
-                    String targetAddress = DockerUtils.getTargetAddress(getRunningEntity(), linked);
-                    extraHosts.put(alias.get(), targetAddress);
-                }
+                String targetAddress = DockerUtils.getTargetAddress(getRunningEntity(), linked.getValue());
+                extraHosts.put(linked.getKey(), targetAddress);
             }
             options.extraHosts(extraHosts);
         }
@@ -420,12 +422,19 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         }
         options.env(env);
 
-        // Entrypoint
+        // Entrypoint and commands
+        // TODO parse string into list?
         List<String> entrypoint = entity.config().get(DockerContainer.DOCKER_IMAGE_ENTRYPOINT);
         if (entrypoint != null && entrypoint.size() > 0) {
             options.entrypoint(entrypoint);
             sensors().set(DockerAttributes.DOCKER_IMAGE_ENTRYPOINT, entrypoint);
             entity.sensors().set(DockerAttributes.DOCKER_IMAGE_ENTRYPOINT, entrypoint);
+        }
+        List<String> commands = entity.config().get(DockerContainer.DOCKER_IMAGE_COMMANDS);
+        if (commands != null && commands.size() > 0) {
+            options.commands(commands);
+            sensors().set(DockerAttributes.DOCKER_IMAGE_COMMANDS, commands);
+            entity.sensors().set(DockerAttributes.DOCKER_IMAGE_COMMANDS, commands);
         }
 
         // Log for debugging without password
@@ -502,7 +511,6 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
         // Configure the container options based on the host and the running entity
         DockerTemplateOptions options = getDockerTemplateOptions();
-        DockerUtils.configureEnrichers(subnetTier, entity);
 
         boolean useSsh = Boolean.TRUE.equals(config().get(DOCKER_USE_SSH))
                 && Boolean.TRUE.equals(entity.config().get(DOCKER_USE_SSH));
@@ -577,6 +585,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             LocationSpec<DockerContainerLocation> spec = LocationSpec.create(DockerContainerLocation.class);
             spec.configure(flags)
                 .configure(DynamicLocation.OWNER, this)
+                .configure("entity", entity)
                 .configure("machine", container) // the underlying JcloudsLocation
                 .configure(container.config().getBag().getAllConfig())
                 .configure("address", getSshHostAddress())
@@ -590,6 +599,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             sensors().set(LOCATION_NAME, location.getId());
 
             DockerUtils.addExtraPublicKeys(entity, location);
+            DockerUtils.configurePortMappings(entity);
+            DockerUtils.configureEnrichers(subnetTier, entity);
 
             LOG.info("New Docker container location {} created", location);
             return location;
@@ -658,6 +669,13 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     }
 
     @Override
+    public void restart() {
+        StartableMethods.stop(this);
+
+        super.restart();
+    }
+
+    @Override
     public void stop() {
         Lifecycle state = sensors().get(SERVICE_STATE_ACTUAL);
         if (Lifecycle.STOPPING.equals(state) || Lifecycle.STOPPED.equals(state)) {
@@ -677,7 +695,9 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         }
 
         // Stop and remove the Docker container running on the host
-        shutDown();
+        if (getContainerId() != null) {
+            shutDown();
+        }
         removeContainer();
 
         sensors().set(SSH_MACHINE_LOCATION, null);

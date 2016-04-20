@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package clocker.docker.location.strategy;
+package clocker.docker.location.strategy.host;
 
 import java.util.List;
 import java.util.Map;
@@ -22,6 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import clocker.docker.location.DockerHostLocation;
+import clocker.docker.location.strategy.AbstractDockerPlacementStrategy;
+import clocker.docker.location.strategy.DockerAwareProvisioningStrategy;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
@@ -36,7 +38,8 @@ import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 
 /**
- * Placement strategy that selects the Docker host with the lowest CPU usage.
+ * Placement strategy that selects the Docker host with appropriate properties, or
+ * configures the flags for provisioning a new host.
  */
 public class ProvisioningFlagsPlacementStrategy extends AbstractDockerPlacementStrategy implements DockerAwareProvisioningStrategy {
 

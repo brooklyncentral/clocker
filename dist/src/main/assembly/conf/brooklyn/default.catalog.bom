@@ -24,17 +24,17 @@ brooklyn.catalog:
     item:
       type: clocker.docker.entity.DockerInfrastructure
       brooklyn.config:
-        docker.version: 1.8.1 # DOCKER_VERSION
+        docker.version: 1.10.3 # DOCKER_VERSION
         entity.dynamicLocation.name: "my-docker-cloud"
         docker.container.cluster.headroom.count: 4
         docker.policy.ha.enable: false
         docker.container.strategies:
         - $brooklyn:object:
-            type: clocker.docker.location.strategy.MaxContainersPlacementStrategy
+            type: clocker.docker.location.strategy.basic.MaxContainersPlacementStrategy
             brooklyn.config:
               maxContainers: 16
         - $brooklyn:object:
-            type: clocker.docker.location.strategy.BreadthFirstPlacementStrategy
+            type: clocker.docker.location.strategy.basic.BreadthFirstPlacementStrategy
         docker.host.spec:
           $brooklyn:entitySpec:
             type: docker-host
@@ -152,11 +152,11 @@ brooklyn.catalog:
           docker.container.cluster.headroom.count: 0
           docker.container.strategies:
           - $brooklyn:object:
-              type: clocker.docker.location.strategy.MaxContainersPlacementStrategy
+              type: clocker.docker.location.strategy.basic.MaxContainersPlacementStrategy
               brooklyn.config:
                 maxContainers: 32
           - $brooklyn:object:
-              type: clocker.docker.location.strategy.DepthFirstPlacementStrategy
+              type: clocker.docker.location.strategy.basic.DepthFirstPlacementStrategy
           sdn.enable: false
 
   - id: docker-cloud-calico

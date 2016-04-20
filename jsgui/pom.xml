@@ -6,7 +6,7 @@
 
     <artifactId>brooklyn-clocker-jsgui</artifactId>
 
-    <name>Brooklyn Clocker  REST JavaScript Web GUI</name>
+    <name>Clocker REST JavaScript Web GUI</name>
 
     <description>
         JavaScript+HTML GUI for interacting with clocker, building on Brooklyn JS GUI and using the Brooklyn REST API

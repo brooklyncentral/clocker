@@ -24,7 +24,6 @@ import com.google.common.collect.Maps;
 import com.google.common.reflect.TypeToken;
 
 import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.Group;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
@@ -59,6 +58,5 @@ public interface VirtualNetwork extends BasicStartable {
     AttributeSensor<Integer> ALLOCATED_ADDRESSES = Sensors.newIntegerSensor("network.allocated", "Allocated IP addresses");
 
     AttributeSensor<NetworkProvisioningExtension> NETWORK_PROVISIONER = Sensors.newSensor(NetworkProvisioningExtension.class, "network.provsioner", "Location extension for provisioning networks");
-    AttributeSensor<Group> NETWORKED_APPLICATIONS = Sensors.newSensor(Group.class, "network.aplications", "Group containing entiities attached to the network");
 
 }

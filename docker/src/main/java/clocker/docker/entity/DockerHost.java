@@ -67,7 +67,7 @@ import brooklyn.networking.subnet.SubnetTier;
 public interface DockerHost extends MachineEntity, HasShortName, LocationOwner<DockerHostLocation, DockerHost> {
 
     @SetFromFlag("dockerVersion")
-    ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "1.8.1");
+    ConfigKey<String> DOCKER_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "1.10.3");
 
     @SetFromFlag("archiveNameFormat")
     ConfigKey<String> ARCHIVE_DIRECTORY_NAME_FORMAT = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.ARCHIVE_DIRECTORY_NAME_FORMAT, "docker-%s");
@@ -133,7 +133,7 @@ public interface DockerHost extends MachineEntity, HasShortName, LocationOwner<D
 
     @SetFromFlag("scanInterval")
     ConfigKey<Duration> SCAN_INTERVAL = ConfigKeys.newConfigKey(Duration.class,
-            "docker.host.scanInterval", "Interval between scans of Docker containers", Duration.TEN_SECONDS);
+            "docker.host.scanInterval", "Interval between scans of Docker containers", Duration.THIRTY_SECONDS);
     AttributeSensor<Void> SCAN = Sensors.newSensor(Void.class, "docker.host.scan", "Notification of host scan");
 
     AttributeSensor<Group> DOCKER_CONTAINER_CLUSTER = Sensors.newSensor(Group.class,

@@ -35,7 +35,6 @@ import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.entity.stock.BasicStartableImpl;
-import org.apache.brooklyn.entity.stock.DelegateEntity;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.net.Cidr;
@@ -114,7 +113,5 @@ public class VirtualNetworkImpl extends BasicStartableImpl implements VirtualNet
 
     static {
         RendererHints.register(Cidr.class, RendererHints.displayValue(StringFunctions.toStringFunction()));
-
-        RendererHints.register(NETWORKED_APPLICATIONS, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
     }
 }

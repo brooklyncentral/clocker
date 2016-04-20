@@ -14,7 +14,7 @@ brooklyn.catalog:
                 brooklyn.config:
                   docker.host.cluster.initial.size: 2
                   docker.registry.start: false
-                  docker.version: 1.8.1 # DOCKER_VERSION
+                  docker.version: 1.10.3 # DOCKER_VERSION
                   entity.dynamicLocation.name: ""
       - type: "TestApp:1.1.0-SNAPSHOT" # CLOCKER_VERSION
         brooklyn.config:
@@ -25,5 +25,5 @@ brooklyn.catalog:
                 brooklyn.config:
                   docker.host.cluster.initial.size: 2
                   docker.registry.start: false
-                  docker.version: 1.8.1 # DOCKER_VERSION
+                  docker.version: 1.10.3 # DOCKER_VERSION
                   entity.dynamicLocation.name: ""

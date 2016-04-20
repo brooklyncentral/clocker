@@ -86,6 +86,9 @@ public interface DockerContainer extends BasicStartable, HasNetworkAddresses, Ha
     @SetFromFlag("entrypoint")
     ConfigKey<List<String>> DOCKER_IMAGE_ENTRYPOINT = DockerAttributes.DOCKER_IMAGE_ENTRYPOINT.getConfigKey();
 
+    @SetFromFlag("commands")
+    ConfigKey<List<String>> DOCKER_IMAGE_COMMANDS = DockerAttributes.DOCKER_IMAGE_COMMANDS.getConfigKey();
+
     @SetFromFlag("hardwareId")
     ConfigKey<String> DOCKER_HARDWARE_ID = DockerAttributes.DOCKER_HARDWARE_ID.getConfigKey();
 
@@ -103,6 +106,9 @@ public interface DockerContainer extends BasicStartable, HasNetworkAddresses, Ha
 
     @SetFromFlag("volumes")
     ConfigKey<List<String>> DOCKER_CONTAINER_VOLUME_EXPORT = DockerAttributes.DOCKER_CONTAINER_VOLUME_EXPORT;
+
+    @SetFromFlag("volumesFrom")
+    ConfigKey<List<String>> DOCKER_CONTAINER_VOLUMES_FROM = DockerAttributes.DOCKER_CONTAINER_VOLUMES_FROM;
 
     @SetFromFlag("env")
     AttributeSensorAndConfigKey<Map<String, Object>, Map<String, Object>> DOCKER_CONTAINER_ENVIRONMENT = ConfigKeys.newSensorAndConfigKey(

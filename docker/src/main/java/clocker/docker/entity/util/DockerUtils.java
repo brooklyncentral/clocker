@@ -47,6 +47,7 @@ import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.camp.brooklyn.BrooklynCampConstants;
@@ -58,6 +59,7 @@ import org.apache.brooklyn.core.config.render.RendererHints.NamedActionWithUrl;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityAndAttribute;
+import org.apache.brooklyn.core.location.Machines;
 import org.apache.brooklyn.core.location.PortRanges;
 import org.apache.brooklyn.core.mgmt.BrooklynTaskTags;
 import org.apache.brooklyn.core.objs.BrooklynObjectInternal.ConfigurationSupportInternal;
@@ -70,6 +72,7 @@ import org.apache.brooklyn.entity.nosql.couchbase.CouchbaseNode;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess;
 import org.apache.brooklyn.entity.webapp.WebAppServiceConstants;
+import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsLocationConfig;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableList;
@@ -183,6 +186,16 @@ public class DockerUtils {
         }
     }
 
+    public static void configurePortMappings(Entity entity) {
+        DockerContainer container = (DockerContainer) entity.sensors().get(DockerContainer.CONTAINER);
+        DockerContainerLocation location = (DockerContainerLocation) container.sensors().get(DockerContainer.DYNAMIC_LOCATION);
+
+        Set<Integer> ports = DockerUtils.getContainerPorts(entity);
+        for (Integer portNumber : ports) {
+            location.obtainSpecificPort(portNumber);
+        }
+    }
+
     /**
      * Transforms the input to contain only valid characters.
      *
@@ -203,7 +216,9 @@ public class DockerUtils {
 
     /** Parse and return the ID returned from a Docker command. */
     public static String checkId(String input) {
-        String imageId = Strings.trim(input).toLowerCase(Locale.ENGLISH);
+        // Remove hash type from start and convert to lowercase
+        // TODO can this be anyhting other than sha256
+        String imageId = Strings.removeFromStart(Strings.trim(input).toLowerCase(Locale.ENGLISH), "sha256:");
 
         if (imageId.length() == 64 && DOCKERFILE_CHARACTERS.matchesAllOf(imageId)) {
             return imageId;
@@ -234,7 +249,12 @@ public class DockerUtils {
     public static String randomImageName() {
         return Identifiers.makeRandomId(12).toLowerCase(Locale.ENGLISH);
     }
-    
+
+    public static boolean isJcloudsLocation(MachineProvisioningLocation location, String providerName) {
+        return location instanceof JcloudsLocation
+                && ((JcloudsLocation) location).getProvider().equals(providerName);
+    }
+
     private static class HashGenerator {
         private long hash;
 
@@ -265,8 +285,8 @@ public class DockerUtils {
         Optional<String> unique = getUniqueContainerName(target);
         if (unique.isPresent()) {
             String name = unique.get();
-            int underscore = name.lastIndexOf('_');
-            return Optional.of(name.substring(0, underscore));
+            String suffix = "_" + target.getId();
+            return Optional.of(Strings.removeFromEnd(name, suffix));
         } else {
             return Optional.absent();
         }
@@ -282,7 +302,7 @@ public class DockerUtils {
     private static String getContainerNameFromPlan(Entity target) {
         String planId = target.config().get(BrooklynCampConstants.PLAN_ID);
         if (planId != null) {
-            //Plan IDs are not unique even in a single application
+            // Plan IDs are not unique even in a single application
             return planId + "_" + target.getId();
         } else {
             return null;
@@ -293,7 +313,7 @@ public class DockerUtils {
     public static String getTargetAddress(Entity source, Entity target) {
         boolean local = source.sensors().get(SoftwareProcess.PROVISIONING_LOCATION).equals(target.sensors().get(SoftwareProcess.PROVISIONING_LOCATION));
         List networks = target.sensors().get(SdnAttributes.ATTACHED_NETWORKS);
-        if (local && (networks != null && networks.size() > 0)) {
+        if ( local ) {
             return target.sensors().get(Attributes.SUBNET_ADDRESS);
         } else {
             return target.sensors().get(Attributes.ADDRESS);
@@ -301,13 +321,22 @@ public class DockerUtils {
     }
 
     /* Generate the list of link environment variables. */
-    public static Map<String, Object> generateLinks(Entity source, Entity target) {
+    public static Map<String, Object> generateLinks(Entity source, Entity target, String alias) {
         Entities.waitForServiceUp(target);
         Optional<String> from = DockerUtils.getContainerName(source);
         Optional<String> to = DockerUtils.getContainerName(target);
         boolean local = source.sensors().get(SoftwareProcess.PROVISIONING_LOCATION).equals(target.sensors().get(SoftwareProcess.PROVISIONING_LOCATION));
         List networks = target.sensors().get(SdnAttributes.ATTACHED_NETWORKS);
         if (to.isPresent()) {
+            // Copy explicitly defined environment variables from target to source
+            Map<String, Object> env = MutableMap.of();
+            MutableMap<String, Object> targetEnvironment = MutableMap.copyOf(target.getConfig(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT.getConfigKey()));
+            if ( target.getConfig(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT.getConfigKey()) != null){
+                for (Map.Entry<String, Object> envvar : targetEnvironment.entrySet()) {
+                    env.put(String.format("%S_ENV_%S", alias, envvar.getKey()), envvar.getValue().toString());
+                }
+            }
+
             String address = DockerUtils.getTargetAddress(source, target);
             Map<Integer, Integer> ports = MutableMap.of();
             Set<Integer> containerPorts = MutableSet.copyOf(target.sensors().get(DockerAttributes.DOCKER_CONTAINER_OPEN_PORTS));
@@ -324,15 +353,14 @@ public class DockerUtils {
             } else {
                 ports = ImmutableMap.copyOf(DockerUtils.getMappedPorts(target));
             }
-            Map<String, Object> env = MutableMap.of();
             for (Integer port : ports.keySet()) {
                 Integer containerPort = ports.get(port);
-                env.put(String.format("%S_NAME", to.get()), String.format("/%s/%s", from.or(source.getId()), to.get()));
-                env.put(String.format("%S_PORT", to.get()), String.format("tcp://%s:%d", address, port));
-                env.put(String.format("%S_PORT_%d_TCP", to.get(), containerPort), String.format("tcp://%s:%d", address, port));
-                env.put(String.format("%S_PORT_%d_TCP_ADDR", to.get(), containerPort), address);
-                env.put(String.format("%S_PORT_%d_TCP_PORT", to.get(), containerPort), port);
-                env.put(String.format("%S_PORT_%d_TCP_PROTO", to.get(), containerPort), "tcp");
+                env.put(String.format("%S_NAME", alias), String.format("/%s/%s", from.or(source.getId()), alias));
+                env.put(String.format("%S_PORT", alias), String.format("tcp://%s:%d", address, port));
+                env.put(String.format("%S_PORT_%d_TCP", alias, containerPort), String.format("tcp://%s:%d", address, port));
+                env.put(String.format("%S_PORT_%d_TCP_ADDR", alias, containerPort), address);
+                env.put(String.format("%S_PORT_%d_TCP_PORT", alias, containerPort), port);
+                env.put(String.format("%S_PORT_%d_TCP_PROTO", alias, containerPort), "tcp");
             }
             LOG.debug("Links for {}: {}", to, Joiner.on(" ").withKeyValueSeparator("=").join(env));
             return env;

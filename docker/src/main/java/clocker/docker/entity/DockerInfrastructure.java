@@ -22,9 +22,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import clocker.docker.entity.util.DockerAttributes;
 import clocker.docker.entity.util.DockerUtils;
 import clocker.docker.location.DockerLocation;
-import clocker.docker.location.strategy.DepthFirstPlacementStrategy;
 import clocker.docker.location.strategy.DockerAwarePlacementStrategy;
 import clocker.docker.location.strategy.affinity.AffinityRules;
+import clocker.docker.location.strategy.basic.DepthFirstPlacementStrategy;
 import clocker.docker.networking.entity.sdn.util.SdnAttributes;
 
 import com.google.common.reflect.TypeToken;
@@ -62,7 +62,7 @@ public interface DockerInfrastructure extends StartableApplication, Resizable, L
 
     @CatalogConfig(label = "Docker Version", priority = 10)
     @SetFromFlag("dockerVersion")
-    ConfigKey<String> DOCKER_VERSION = ConfigKeys.newStringConfigKey("docker.version", "The Docker Engine version number", "1.8.1");
+    ConfigKey<String> DOCKER_VERSION = ConfigKeys.newStringConfigKey("docker.version", "The Docker Engine version number", "1.10.3");
 
     @SetFromFlag("securityGroup")
     ConfigKey<String> SECURITY_GROUP = ConfigKeys.newStringConfigKey(

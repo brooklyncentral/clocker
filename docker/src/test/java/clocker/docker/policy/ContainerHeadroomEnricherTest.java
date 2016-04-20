@@ -26,7 +26,7 @@ import org.testng.annotations.Test;
 
 import clocker.docker.entity.DockerInfrastructure;
 import clocker.docker.location.DockerLocation;
-import clocker.docker.location.strategy.MaxContainersPlacementStrategy;
+import clocker.docker.location.strategy.basic.MaxContainersPlacementStrategy;
 import clocker.docker.policy.ContainerHeadroomEnricher;
 
 import com.google.common.collect.ImmutableList;

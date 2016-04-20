@@ -36,7 +36,6 @@ import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.mgmt.Task;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityPredicates;
-import org.apache.brooklyn.entity.group.DynamicGroup;
 import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.core.task.TaskBuilder;
 import org.apache.brooklyn.util.net.Cidr;
@@ -110,11 +109,6 @@ public class SdnUtils {
             network = (VirtualNetwork) Iterables.find(provider.sensors().get(SdnProvider.SDN_NETWORKS).getMembers(),
                     EntityPredicates.attributeEqualTo(VirtualNetwork.NETWORK_ID, networkId));
         }
-
-        // Rescan SDN network groups for containers
-        DynamicGroup group = (DynamicGroup) Iterables.find(provider.sensors().get(SdnProvider.SDN_APPLICATIONS).getMembers(),
-                EntityPredicates.attributeEqualTo(VirtualNetwork.NETWORK_ID, networkId));
-        group.rescanEntities();
 
         return network;
     }
