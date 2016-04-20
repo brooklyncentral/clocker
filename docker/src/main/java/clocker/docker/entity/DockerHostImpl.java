@@ -408,7 +408,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         // FIXME Set DOCKER_OPTS values in command-line for when running on localhost
         String stdout = execCommandTimeout(BashCommands.sudo(String.format("docker %s", command)), timeout);
         LOG.debug("Successfully executed Docker {}: {}", Strings.getFirstWord(command), Strings.getFirstLine(stdout));
-        return stdout;
+        return Strings.trim(stdout);
     }
 
     /** {@inheritDoc} */
