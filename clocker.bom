@@ -236,18 +236,18 @@ brooklyn.catalog:
     name: "HAProxy"
     description: |
       HAProxy load balancer entity.
-    itemType: template
-    type: org.apache.brooklyn.entity.proxy.haproxy.HAProxyController
-    brooklyn.config:
-      docker.image.name: haproxy
-      docker.container.openPorts.configKeys:
-      - $brooklyn:sensor("org.apache.brooklyn.entity.proxy.AbstractController", "proxy.http.port")
-      - $brooklyn:sensor("org.apache.brooklyn.entity.proxy.AbstractController", "proxy.https.port")
-      install.dir: /usr/local/sbin/
-      run.dir: /usr/local/etc/haproxy/
-      member.sensor.hostname: "host.subnet.hostname"
-      provisioning.properties:
-        entity.dynamicLocation.flags:
-          user: root
+    item:
+      type: org.apache.brooklyn.entity.proxy.haproxy.HAProxyController
+      brooklyn.config:
+        docker.image.name: haproxy
+        docker.container.openPorts.configKeys:
+        - $brooklyn:sensor("org.apache.brooklyn.entity.proxy.AbstractController", "proxy.http.port")
+        - $brooklyn:sensor("org.apache.brooklyn.entity.proxy.AbstractController", "proxy.https.port")
+        install.dir: /usr/local/sbin/
+        run.dir: /usr/local/etc/haproxy/
+        member.sensor.hostname: "host.subnet.hostname"
+        provisioning.properties:
+          entity.dynamicLocation.flags:
+            user: root
 
 # vim:ts=2:sw=2:ft=yaml:
