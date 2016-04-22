@@ -30,7 +30,7 @@ services:
   openPorts:
   - 8080
 
-- type: docker:clockercentral/identidock:1.1
+- type: docker:clockercentral/identidock:1.9
   id: identidock
   portBindings:
     80: 9090

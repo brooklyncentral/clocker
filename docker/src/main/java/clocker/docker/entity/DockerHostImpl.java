@@ -56,6 +56,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 
 import org.jclouds.compute.domain.OsFamily;
 import org.jclouds.compute.domain.TemplateBuilder;
@@ -90,6 +91,7 @@ import org.apache.brooklyn.core.server.BrooklynServerPaths;
 import org.apache.brooklyn.enricher.stock.Enrichers;
 import org.apache.brooklyn.entity.group.BasicGroup;
 import org.apache.brooklyn.entity.machine.MachineEntityImpl;
+import org.apache.brooklyn.entity.nosql.etcd.EtcdCluster;
 import org.apache.brooklyn.entity.nosql.etcd.EtcdNode;
 import org.apache.brooklyn.entity.software.base.AbstractSoftwareProcessSshDriver;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
@@ -622,14 +624,33 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 .toPort(sensors().get(DockerHost.DOCKER_PORT))
                 .cidrBlock(cidr)
                 .build();
+        permissions.add(dockerPort);
         IpPermission dockerSslPort = IpPermission.builder()
                 .ipProtocol(IpProtocol.TCP)
                 .fromPort(sensors().get(DockerHost.DOCKER_SSL_PORT))
                 .toPort(sensors().get(DockerHost.DOCKER_SSL_PORT))
                 .cidrBlock(cidr)
                 .build();
-        permissions.add(dockerPort);
         permissions.add(dockerSslPort);
+
+        PortRange etcdClientPortConfig = config().get(EtcdNode.ETCD_CLIENT_PORT);
+        Integer etcdClientPort = etcdClientPortConfig.iterator().next();
+        IpPermission etcdClientTcpPort = IpPermission.builder()
+                .ipProtocol(IpProtocol.TCP)
+                .fromPort(etcdClientPort)
+                .toPort(etcdClientPort)
+                .cidrBlock(cidr)
+                .build();
+        permissions.add(etcdClientTcpPort);
+        PortRange etcdPeerPortConfig = config().get(EtcdNode.ETCD_PEER_PORT);
+        Integer etcdPeerPort = etcdPeerPortConfig.iterator().next();
+        IpPermission etcdPeerTcpPort = IpPermission.builder()
+                .ipProtocol(IpProtocol.TCP)
+                .fromPort(etcdPeerPort)
+                .toPort(etcdPeerPort)
+                .cidrBlock(cidr)
+                .build();
+        permissions.add(etcdPeerTcpPort);
 
         if (config().get(SdnAttributes.SDN_ENABLE)) {
             DockerSdnProvider provider = (DockerSdnProvider) (sensors().get(DockerHost.DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.SDN_PROVIDER));
@@ -653,6 +674,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             tlsEnabled = true;
         }
         Maybe<SshMachineLocation> found = Machines.findUniqueMachineLocation(getLocations(), SshMachineLocation.class);
+
+
         String dockerLocationSpec = String.format("jclouds:docker:%s://%s:%s",
                 tlsEnabled ? "https" : "http", found.get().getSshHostAndPort().getHostText(), dockerPort);
 
@@ -781,6 +804,11 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             }
         }
 
+        EtcdCluster etcd = getInfrastructure().sensors().get(DockerInfrastructure.ETCD_CLUSTER);
+        EtcdNode node = sensors().get(ETCD_NODE);
+        etcd.removeMember(node);
+        node.stop();
+
         super.preStop();
     }
 
@@ -875,6 +903,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     static {
         RendererHints.register(DOCKER_INFRASTRUCTURE, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(DOCKER_CONTAINER_CLUSTER, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(ETCD_NODE, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }

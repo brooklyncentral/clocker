@@ -259,7 +259,7 @@ brooklyn.catalog:
           id: riak-cluster
           name: "Riak Cluster"
           brooklyn.config:
-            install.version: 2.1.1
+            install.version: 2.1.4
             riak.networking.optimize: false
             network.list:
             - riak

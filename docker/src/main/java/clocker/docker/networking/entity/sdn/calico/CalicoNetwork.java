@@ -20,12 +20,9 @@ import clocker.docker.networking.entity.sdn.DockerSdnProvider;
 import org.apache.brooklyn.api.catalog.Catalog;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.entity.ImplementedBy;
-import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
-import org.apache.brooklyn.core.sensor.Sensors;
-import org.apache.brooklyn.entity.nosql.etcd.EtcdCluster;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
 /**
@@ -42,14 +39,5 @@ public interface CalicoNetwork extends DockerSdnProvider {
 
     ConfigKey<Boolean> USE_IPIP = ConfigKeys.newBooleanConfigKey("calico.ipip", "Use the IPIP protocol for inter-VM traffic", Boolean.TRUE);
     ConfigKey<Boolean> USE_NAT = ConfigKeys.newBooleanConfigKey("calico.nat", "Use NAT for outgoing traffic", Boolean.TRUE);
-
-    @SetFromFlag("etcdVersion")
-    ConfigKey<String> ETCD_VERSION = ConfigKeys.newStringConfigKey("etcd.version", "The Etcd version number", "2.3.1");
-
-    ConfigKey<Boolean> EXTERNAL_ETCD_CLUSTER = ConfigKeys.newBooleanConfigKey("calico.etcd.external", "Whether to use an external Etcd cluster", Boolean.FALSE);
-    ConfigKey<Integer> EXTERNAL_ETCD_INITIAL_SIZE = ConfigKeys.newIntegerConfigKey("calico.etcd.external.initialSize", "The initial size of the external Etcd cluster");
-    AttributeSensorAndConfigKey<String, String> EXTERNAL_ETCD_URL = ConfigKeys.newStringSensorAndConfigKey("calico.etcd.external.url", "The URL for the external Etcd cluster (if configured, no cluster will be provisioned)");
-
-    AttributeSensor<EtcdCluster> ETCD_CLUSTER = Sensors.newSensor(EtcdCluster.class, "etcd.cluster", "The EtcdCluster entity for storing state");
 
 }

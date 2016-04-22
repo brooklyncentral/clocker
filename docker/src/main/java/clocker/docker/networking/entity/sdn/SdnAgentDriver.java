@@ -22,7 +22,9 @@ import org.apache.brooklyn.util.net.Cidr;
 
 public interface SdnAgentDriver extends SoftwareProcessDriver {
 
-    void createSubnet(String virtualNetworkId, String subnetId, Cidr subnetCidr);
+    void createSubnet(String subnetId, Cidr subnetCidr);
+
+    void deleteSubnet(String subnetId);
 
     InetAddress attachNetwork(String containerId, String subnetId);
 

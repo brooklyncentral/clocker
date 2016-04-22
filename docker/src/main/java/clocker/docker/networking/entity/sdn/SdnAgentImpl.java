@@ -85,10 +85,14 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
     }
 
     @Override
-    public InetAddress attachNetwork(String containerId, final String networkId) {
+    public VirtualNetwork createNetwork(String networkId) {
         final SdnProvider provider = sensors().get(SDN_PROVIDER);
         VirtualNetwork network = SdnUtils.createNetwork(provider, networkId);
+        return network;
+    }
 
+    @Override
+    public InetAddress attachNetwork(String containerId, final String networkId) {
         InetAddress address = getDriver().attachNetwork(containerId, networkId);
         LOG.info("Attached container ID {} to {}: {}", new Object[] { containerId, networkId,  address.getHostAddress() });
 
@@ -103,9 +107,17 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
         Cidr subnetCidr = SdnUtils.provisionNetwork(provider, network);
 
         // Create the network using the SDN driver
-        getDriver().createSubnet(network.getId(), networkId, subnetCidr);
+        getDriver().createSubnet(networkId, subnetCidr);
 
         return networkId;
+    }
+
+    @Override
+    public void deallocateNetwork(VirtualNetwork network) {
+        String networkId = network.sensors().get(VirtualNetwork.NETWORK_ID);
+
+        // Delete the network using the SDN driver
+        getDriver().deleteSubnet(networkId);
     }
 
     static {

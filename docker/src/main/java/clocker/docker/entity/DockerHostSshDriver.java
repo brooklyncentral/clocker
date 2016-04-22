@@ -32,23 +32,32 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 import clocker.docker.entity.util.DockerUtils;
+import clocker.docker.networking.entity.sdn.calico.CalicoNode;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.net.HostAndPort;
 
 import org.jclouds.compute.ComputeService;
 import org.jclouds.softlayer.reference.SoftLayerConstants;
 
+import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.OsDetails;
 import org.apache.brooklyn.api.mgmt.Task;
 import org.apache.brooklyn.core.effector.ssh.SshEffectorTasks;
 import org.apache.brooklyn.core.entity.Attributes;
+import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.entity.group.AbstractGroup;
 import org.apache.brooklyn.entity.group.DynamicGroup;
+import org.apache.brooklyn.entity.nosql.etcd.EtcdCluster;
+import org.apache.brooklyn.entity.nosql.etcd.EtcdNode;
 import org.apache.brooklyn.entity.software.base.AbstractSoftwareProcessSshDriver;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.software.base.lifecycle.ScriptHelper;
@@ -277,6 +286,13 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         if (DockerUtils.isJcloudsLocation(provisioner, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME)) {
             JcloudsHostnameCustomizer.instanceOf().customize((JcloudsLocation) provisioner, (ComputeService) null, (JcloudsMachineLocation) location);
         }
+
+        // Create EtcdNode for this host
+        EtcdCluster etcd = ((DockerHost) getEntity()).getInfrastructure().sensors().get(DockerInfrastructure.ETCD_CLUSTER);
+        EtcdNode node = (EtcdNode) etcd.addNode(getMachine(), Maps.newHashMap());
+        node.start(ImmutableList.of(getMachine()));
+        getEntity().sensors().set(DockerHost.ETCD_NODE, node);
+        Entities.waitForServiceUp(node);
     }
 
     private String useYum(String osVersion, String arch, String epelRelease) {
@@ -401,11 +417,16 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .execute();
 
         // Docker daemon startup arguments
+        EtcdNode etcdNode = getEntity().sensors().get(DockerHost.ETCD_NODE);
+        HostAndPort etcdAuthority = HostAndPort.fromParts(etcdNode.sensors().get(Attributes.SUBNET_ADDRESS), etcdNode.sensors().get(EtcdNode.ETCD_CLIENT_PORT));
+
         List<String> args = MutableList.of(
                 centos ? "--selinux-enabled" : null,
                 "--userland-proxy=false",
                 format("-H tcp://0.0.0.0:%d", getDockerPort()),
                 "-H unix:///var/run/docker.sock",
+                format("--cluster-store=etcd://%s", etcdAuthority.toString()),
+                format("--cluster-advertise=%s:%d", getEntity().sensors().get(Attributes.SUBNET_ADDRESS), getDockerPort()),
                 getStorageOpts(),
                 getDockerRegistryOpts(),
                 "--tlsverify",

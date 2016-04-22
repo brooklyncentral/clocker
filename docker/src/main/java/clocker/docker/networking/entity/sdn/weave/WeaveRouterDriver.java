@@ -15,8 +15,8 @@
  */
 package clocker.docker.networking.entity.sdn.weave;
 
-import clocker.docker.networking.entity.sdn.SdnAgentDriver;
+import clocker.docker.networking.entity.sdn.DockerNetworkAgentDriver;
 
-public interface WeaveRouterDriver extends SdnAgentDriver {
+public interface WeaveRouterDriver extends DockerNetworkAgentDriver {
 
 }

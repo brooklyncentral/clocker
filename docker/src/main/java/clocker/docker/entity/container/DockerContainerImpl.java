@@ -47,7 +47,6 @@ import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
 
@@ -69,7 +68,6 @@ import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
-import org.apache.brooklyn.core.entity.trait.StartableMethods;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.core.location.cloud.CloudLocationConfig;
@@ -540,6 +538,29 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         }
 
         try {
+            // If SDN is enabled, create networks
+            if (config().get(SdnAttributes.SDN_ENABLE)) {
+                // Determine list of networks for the entity
+                List<String> networks = MutableList.of();
+                Collection<String> extra = entity.config().get(SdnAttributes.NETWORK_LIST);
+                if (entity.config().get(SdnAttributes.CREATE_APPLICATION_NETWORK)) {
+                    networks.add(entity.getApplicationId());
+                }
+                if (extra != null && extra.size() > 0) {
+                    networks.addAll(extra);
+                }
+                if (networks.isEmpty()) {
+                    throw new IllegalStateException("No networks configured for container");
+                }
+
+                // Save attached network list
+                sensors().set(SdnAttributes.INITIAL_ATTACHED_NETWORK, networks.get(0));
+                entity.sensors().set(SdnAttributes.INITIAL_ATTACHED_NETWORK, networks.get(0));
+                sensors().set(SdnAttributes.ATTACHED_NETWORKS, networks);
+                entity.sensors().set(SdnAttributes.ATTACHED_NETWORKS, networks);
+            }
+            options.networkMode(SdnAttributes.DEFAULT_NETWORK); // For port forwarding
+
             // Create a new container using jclouds Docker driver
             JcloudsSshMachineLocation container = (JcloudsSshMachineLocation) host.getJcloudsLocation().obtain(dockerFlags);
             String containerId = container.getJcloudsId();
@@ -557,26 +578,24 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             // If SDN is enabled, attach networks
             if (config().get(SdnAttributes.SDN_ENABLE)) {
                 SdnAgent agent = Entities.attributeSupplierWhenReady(dockerHost, SdnAgent.SDN_AGENT).get();
-
-                // Save attached network list
-                List<String> networks = Lists.newArrayList(entity.getApplicationId());
-                Collection<String> extra = entity.config().get(SdnAttributes.NETWORK_LIST);
-                if (extra != null) networks.addAll(extra);
-                sensors().set(SdnAttributes.ATTACHED_NETWORKS, networks);
-                entity.sensors().set(SdnAttributes.ATTACHED_NETWORKS, networks);
-
-                // Save container addresses
+                String initialNetwork = sensors().get(SdnAttributes.INITIAL_ATTACHED_NETWORK);
+                List<String> networks = sensors().get(SdnAttributes.ATTACHED_NETWORKS);
                 Set<String> addresses = Sets.newHashSet();
+
+                // Create and attach networks
                 for (String networkId : networks) {
+                    agent.createNetwork(networkId);
                     InetAddress address = agent.attachNetwork(containerId, networkId);
                     addresses.add(address.getHostAddress());
-                    if (networkId.equals(entity.getApplicationId())) {
+                    if (networkId.equals(initialNetwork)) {
                         sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
                         sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostName());
                         entity.sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
                         entity.sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostName());
                     }
                 }
+
+                // Save container addresses
                 sensors().set(CONTAINER_ADDRESSES, addresses);
                 entity.sensors().set(CONTAINER_ADDRESSES, addresses);
             }

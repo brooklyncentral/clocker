@@ -34,7 +34,7 @@ services:
   openPorts:
   - 8080
 
-- type: docker:clockercentral/identidock:1.1
+- type: docker:clockercentral/identidock:1.9
   location: my-docker-cloud
   id: identidock
   name: "Identidock Web Application"

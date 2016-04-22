@@ -83,6 +83,7 @@ import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.group.DynamicGroup;
 import org.apache.brooklyn.entity.group.DynamicMultiGroup;
 import org.apache.brooklyn.entity.machine.MachineAttributes;
+import org.apache.brooklyn.entity.nosql.etcd.EtcdCluster;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess.ChildStartableMode;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
@@ -94,6 +95,7 @@ import org.apache.brooklyn.util.core.ResourceUtils;
 import org.apache.brooklyn.util.core.crypto.SecureKeys;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.text.Strings;
+import org.apache.brooklyn.util.text.VersionComparator;
 import org.apache.brooklyn.util.time.Duration;
 
 public class DockerInfrastructureImpl extends AbstractApplication implements DockerInfrastructure {
@@ -109,6 +111,11 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
 
     @Override
     public void init() {
+        String version = config().get(DOCKER_VERSION);
+        if (VersionComparator.getInstance().compare("1.9", version) > 1) {
+            throw new IllegalStateException("Requires libnetwork capable Docker > 1.9");
+        }
+
         LOG.info("Starting Docker infrastructure id {}", getId());
         registerLocationResolver();
         super.init();
@@ -165,6 +172,24 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
                 .configure(DynamicCluster.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
                 .configure(BrooklynCampConstants.PLAN_ID, "docker-hosts")
                 .displayName("Docker Hosts"));
+
+        EntitySpec<?> etcdNodeSpec = EntitySpec.create(config().get(EtcdCluster.ETCD_NODE_SPEC));
+        String etcdVersion = config().get(ETCD_VERSION);
+        if (Strings.isNonBlank(etcdVersion)) {
+            etcdNodeSpec.configure(SoftwareProcess.SUGGESTED_VERSION, etcdVersion);
+        }
+        sensors().set(EtcdCluster.ETCD_NODE_SPEC, etcdNodeSpec);
+
+        EtcdCluster etcd = addChild(EntitySpec.create(EtcdCluster.class)
+                .configure(Cluster.INITIAL_SIZE, 0)
+                .configure(EtcdCluster.ETCD_NODE_SPEC, etcdNodeSpec)
+                .configure(EtcdCluster.CLUSTER_NAME, "docker")
+                .configure(EtcdCluster.CLUSTER_TOKEN, "etcd-docker")
+                .configure(DynamicCluster.QUARANTINE_FAILED_ENTITIES, true)
+                .configure(DynamicCluster.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
+                .configure(DynamicCluster.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
+                .displayName("Etcd Cluster"));
+        sensors().set(ETCD_CLUSTER, etcd);
 
         DynamicGroup fabric = addChild(EntitySpec.create(DynamicGroup.class)
                 .configure(DynamicGroup.ENTITY_FILTER, Predicates.and(Predicates.instanceOf(DockerContainer.class), EntityPredicates.attributeEqualTo(DockerContainer.DOCKER_INFRASTRUCTURE, this)))
@@ -473,6 +498,7 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
         RendererHints.register(DOCKER_CONTAINER_FABRIC, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(DOCKER_APPLICATIONS, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(SDN_PROVIDER, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(ETCD_CLUSTER, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }

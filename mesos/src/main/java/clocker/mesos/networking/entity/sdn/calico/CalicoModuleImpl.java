@@ -39,6 +39,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
@@ -87,7 +88,7 @@ public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule
         sensors().set(SDN_NETWORKS, networks);
 
         synchronized (addressMutex) {
-            sensors().set(SUBNET_ADDRESS_ALLOCATIONS, Maps.<String, Integer>newConcurrentMap());
+            sensors().set(SUBNET_ADDRESS_ALLOCATIONS, Maps.<String, List<InetAddress>>newConcurrentMap());
         }
 
         synchronized (networkMutex) {
@@ -110,13 +111,44 @@ public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule
         Cidr cidr = getSubnetCidr(subnetId);
 
         synchronized (addressMutex) {
-            Map<String, Integer> allocations = sensors().get(SUBNET_ADDRESS_ALLOCATIONS);
-            Integer allocated = allocations.get(subnetId);
-            if (allocated == null) allocated = 1;
-            InetAddress next = cidr.addressAtOffset(allocated + 1);
-            allocations.put(subnetId, allocated + 1);
+            Map<String, List<InetAddress>> allocations = sensors().get(SUBNET_ADDRESS_ALLOCATIONS);
+            List<InetAddress> allocated = allocations.get(subnetId);
+            if (allocated == null) allocated = MutableList.of();
+            int size = 1 << (32 - cidr.getLength());
+            int next = allocated.size();
+            do {
+                InetAddress addr = cidr.addressAtOffset(next + 1);
+                if (allocated.contains(addr)) {
+                    next++;
+                } else {
+                    allocated.add(addr);
+                    allocations.put(subnetId, allocated);
+                    sensors().set(SUBNET_ADDRESS_ALLOCATIONS, allocations);
+                    return addr;
+                }
+            } while (next < size);
+            throw new IllegalStateException("No more addresses in subnet: " + subnetId);
+        }
+    }
+
+    @Override
+    public void recordContainerAddress(String subnetId, InetAddress address) {
+        synchronized (addressMutex) {
+            Map<String, List<InetAddress>> allocations = sensors().get(SUBNET_ADDRESS_ALLOCATIONS);
+            List<InetAddress> allocated = allocations.get(subnetId);
+            if (allocated == null) allocated = MutableList.of();
+            allocated.add(address);
+            allocations.put(subnetId, allocated);
             sensors().set(SUBNET_ADDRESS_ALLOCATIONS, allocations);
-            return next;
+        }
+    }
+
+    @Override
+    public void associateContainerAddress(String containerId, InetAddress address) {
+        synchronized (addressMutex) {
+            Multimap<String, InetAddress> allocations = sensors().get(CONTAINER_ADDRESSES);
+            allocations.put(containerId, address);
+            sensors().set(CONTAINER_ADDRESSES, allocations);
         }
     }
 
@@ -149,16 +181,6 @@ public class CalicoModuleImpl extends BasicStartableImpl implements CalicoModule
             Map<String, Cidr> subnets = sensors().get(SdnProvider.SUBNETS);
             subnets.put(networkId, subnetCidr);
             sensors().set(SdnProvider.SUBNETS, subnets);
-        }
-    }
-
-    @Override
-    public void recordSubnetCidr(String networkId, Cidr subnetCidr, int allocated) {
-        synchronized (networkMutex) {
-            recordSubnetCidr(networkId, subnetCidr);
-            Map<String, Integer> allocations = sensors().get(SUBNET_ADDRESS_ALLOCATIONS);
-            allocations.put(networkId, allocated);
-            sensors().set(SUBNET_ADDRESS_ALLOCATIONS, allocations);
         }
     }
 

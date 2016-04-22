@@ -16,6 +16,7 @@
 package clocker.docker.networking.entity.sdn;
 
 import java.net.InetAddress;
+import java.util.List;
 import java.util.Map;
 
 import clocker.docker.networking.entity.VirtualNetwork;
@@ -28,10 +29,8 @@ import org.apache.brooklyn.api.entity.Group;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
-import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.stock.BasicStartable;
-import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.net.Cidr;
 
 /**
@@ -50,8 +49,8 @@ public interface SdnProvider extends BasicStartable, NetworkProvisioningExtensio
             new TypeToken<Map<String, Cidr>>() { }, "sdn.networks.addresses", "Map of network subnets that have been created");
     AttributeSensor<Map<String, VirtualNetwork>> SUBNET_ENTITIES = Sensors.newSensor(
             new TypeToken<Map<String, VirtualNetwork>>() { }, "sdn.networks.entities", "Map of managed network entities that have been created by this SDN");
-    AttributeSensor<Map<String, Integer>> SUBNET_ADDRESS_ALLOCATIONS = Sensors.newSensor(
-            new TypeToken<Map<String, Integer>>() { }, "sdn.networks.addresses.allocated", "Map of allocated address count on network subnets");
+    AttributeSensor<Map<String, List<InetAddress>>> SUBNET_ADDRESS_ALLOCATIONS = Sensors.newSensor(
+            new TypeToken<Map<String, List<InetAddress>>>() { }, "sdn.networks.addresses.allocated", "Map of allocated address count on network subnets");
 
     AttributeSensor<Multimap<String, InetAddress>> CONTAINER_ADDRESSES = Sensors.newSensor(
             new TypeToken<Multimap<String, InetAddress>>() { }, "sdn.container.addresses", "Map of container ID to IP addresses on network");
@@ -61,19 +60,21 @@ public interface SdnProvider extends BasicStartable, NetworkProvisioningExtensio
 
     /* IP address management. */
 
-    InetAddress getNextContainerAddress(String networkId);
+    InetAddress getNextContainerAddress(String subnetId);
+
+    void recordContainerAddress(String subnetId, InetAddress address);
+
+    void associateContainerAddress(String containerId, InetAddress address);
 
     /* Access for network subnet CIDRs this SDN provder manages. */
 
-    Cidr getNextSubnetCidr(String networkId);
+    Cidr getNextSubnetCidr(String subnetId);
 
     Cidr getNextSubnetCidr();
 
-    void recordSubnetCidr(String networkId, Cidr subnetCidr);
+    void recordSubnetCidr(String subnetId, Cidr subnetCidr);
 
-    void recordSubnetCidr(String networkId, Cidr subnetCidr, int allocated);
-
-    Cidr getSubnetCidr(String networkId);
+    Cidr getSubnetCidr(String subnetId);
 
     Object getNetworkMutex();
 
