@@ -21,8 +21,6 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import clocker.docker.networking.entity.sdn.util.SdnAttributes;
-
 import com.google.api.client.util.Joiner;
 import com.google.common.collect.Iterables;
 
@@ -64,11 +62,9 @@ public abstract class DockerNetworkAgentrSshDriver extends AbstractSoftwareProce
 
     @Override
     public InetAddress attachNetwork(String containerId, String subnetId) {
-        // Attach the container to the network if it is not the default
-        if (!subnetId.equals(SdnAttributes.DEFAULT_NETWORK)) {
-            getEntity().sensors().get(SdnAgent.DOCKER_HOST).runDockerCommand(
-                    String.format("network connect %s %s", subnetId, containerId));
-        }
+        // Attach the container to the network
+        getEntity().sensors().get(SdnAgent.DOCKER_HOST).runDockerCommand(
+                String.format("network connect %s %s", subnetId, containerId));
 
         // Look up the container address on the network
         String ip = getEntity().sensors().get(SdnAgent.DOCKER_HOST).runDockerCommand(

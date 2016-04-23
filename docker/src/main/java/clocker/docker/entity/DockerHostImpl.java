@@ -124,6 +124,7 @@ import org.apache.brooklyn.util.core.task.system.ProcessTaskWrapper;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.guava.Maybe;
 import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.Networking;
 import org.apache.brooklyn.util.os.Os;
 import org.apache.brooklyn.util.ssh.BashCommands;
 import org.apache.brooklyn.util.text.Identifiers;
@@ -583,13 +584,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         permissions.addAll(getClockerPermisionsForCIDR(publicIpCidr));
 
         if (config().get(ADD_LOCALHOST_PERMISSION)) {
-            String localhostAddress = null;
-            try {
-                localhostAddress = InetAddress.getLocalHost().getHostAddress();
-            } catch (UnknownHostException e) {
-                throw Exceptions.propagate(e);
-            }
-
+            String localhostAddress = Networking.getLocalHost().getHostAddress();
             String localhostCIDR = localhostAddress + "/32";
             if (Strings.isNonEmpty(localhostAddress) && !publicIpCidr.equals(localhostCIDR)) {
                 permissions.addAll(getClockerPermisionsForCIDR(localhostCIDR));
@@ -632,6 +627,28 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 .cidrBlock(cidr)
                 .build();
         permissions.add(dockerSslPort);
+
+        IpPermission dockerControlTcpPort = IpPermission.builder()
+                .ipProtocol(IpProtocol.TCP)
+                .fromPort(config().get(DockerHost.DOCKER_CONTROL_PLANE_PORT))
+                .toPort(config().get(DockerHost.DOCKER_CONTROL_PLANE_PORT))
+                .cidrBlock(cidr)
+                .build();
+        permissions.add(dockerControlTcpPort);
+        IpPermission dockerControlUdpPort = IpPermission.builder()
+                .ipProtocol(IpProtocol.UDP)
+                .fromPort(config().get(DockerHost.DOCKER_CONTROL_PLANE_PORT))
+                .toPort(config().get(DockerHost.DOCKER_CONTROL_PLANE_PORT))
+                .cidrBlock(cidr)
+                .build();
+        permissions.add(dockerControlUdpPort);
+        IpPermission dockerDataUdpPort = IpPermission.builder()
+                .ipProtocol(IpProtocol.UDP)
+                .fromPort(config().get(DockerHost.DOCKER_DATA_PLANE_PORT))
+                .toPort(config().get(DockerHost.DOCKER_DATA_PLANE_PORT))
+                .cidrBlock(cidr)
+                .build();
+        permissions.add(dockerDataUdpPort);
 
         PortRange etcdClientPortConfig = config().get(EtcdNode.ETCD_CLIENT_PORT);
         Integer etcdClientPort = etcdClientPortConfig.iterator().next();

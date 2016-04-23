@@ -86,7 +86,13 @@ public interface DockerHost extends MachineEntity, HasShortName, LocationOwner<D
 
     @SetFromFlag("dockerSslPort")
     PortAttributeSensorAndConfigKey DOCKER_SSL_PORT = ConfigKeys.newPortSensorAndConfigKey("docker.ssl.port",
-            "Docker port", PortRanges.fromInteger(2376));
+            "Docker SSL port", PortRanges.fromInteger(2376));
+
+    ConfigKey<Integer> DOCKER_CONTROL_PLANE_PORT = ConfigKeys.newIntegerConfigKey("docker.control.port",
+            "Docker control plane port (TCP and UDP)", 7946);
+
+    ConfigKey<Integer> DOCKER_DATA_PLANE_PORT = ConfigKeys.newIntegerConfigKey("docker.data.port",
+            "Docker data plane port (UDP)", 4789);
 
     @SetFromFlag("openIptables")
     ConfigKey<Boolean> OPEN_IPTABLES = ConfigKeys.newConfigKeyWithPrefix("docker.host.", SoftwareProcess.OPEN_IPTABLES);

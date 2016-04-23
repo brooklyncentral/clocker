@@ -59,7 +59,6 @@ import org.apache.brooklyn.core.config.render.RendererHints.NamedActionWithUrl;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityAndAttribute;
-import org.apache.brooklyn.core.location.Machines;
 import org.apache.brooklyn.core.location.PortRanges;
 import org.apache.brooklyn.core.mgmt.BrooklynTaskTags;
 import org.apache.brooklyn.core.objs.BrooklynObjectInternal.ConfigurationSupportInternal;
@@ -97,6 +96,8 @@ public class DockerUtils {
     /*
      * Configuration and constants.
      */
+
+    public static final String BRIDGE_NETWORK = "bridge";
 
     public static final String DOCKERFILE = "Dockerfile";
     public static final String ENTRYPOINT = "entrypoint.sh";

@@ -34,8 +34,6 @@ import org.apache.brooklyn.core.sensor.Sensors;
  */
 public class SdnAttributes {
 
-    public static final String DEFAULT_NETWORK = "bridge";
-
     public static final ConfigKey<Collection<String>> NETWORK_LIST = ConfigKeys.newConfigKey(
             new TypeToken<Collection<String>>() { }, "network.list", "Collection of extra networks to create for an entity", Collections.<String>emptyList());
 

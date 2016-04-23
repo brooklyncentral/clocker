@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 import clocker.docker.entity.util.DockerUtils;
-import clocker.docker.networking.entity.sdn.calico.CalicoNode;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
@@ -46,8 +45,6 @@ import com.google.common.net.HostAndPort;
 import org.jclouds.compute.ComputeService;
 import org.jclouds.softlayer.reference.SoftLayerConstants;
 
-import org.apache.brooklyn.api.entity.Entity;
-import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.OsDetails;
 import org.apache.brooklyn.api.mgmt.Task;
