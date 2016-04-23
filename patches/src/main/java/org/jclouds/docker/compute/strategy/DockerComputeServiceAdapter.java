@@ -28,11 +28,20 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+
 import org.jclouds.compute.ComputeServiceAdapter;
 import org.jclouds.compute.domain.Hardware;
 import org.jclouds.compute.domain.HardwareBuilder;
 import org.jclouds.compute.domain.Processor;
 import org.jclouds.compute.domain.Template;
+import org.jclouds.compute.options.TemplateOptions;
 import org.jclouds.compute.reference.ComputeServiceConstants;
 import org.jclouds.docker.DockerApi;
 import org.jclouds.docker.compute.options.DockerTemplateOptions;
@@ -47,14 +56,6 @@ import org.jclouds.docker.options.RemoveContainerOptions;
 import org.jclouds.domain.Location;
 import org.jclouds.domain.LoginCredentials;
 import org.jclouds.logging.Logger;
-
-import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 /**
  * defines the connection between the {@link org.jclouds.docker.DockerApi} implementation and
@@ -75,87 +76,102 @@ public class DockerComputeServiceAdapter implements
       this.api = checkNotNull(api, "api");
    }
 
+   @SuppressWarnings({ "rawtypes", "unchecked" })
    @Override
    public NodeAndInitialCredentials<Container> createNodeWithGroupEncodedIntoName(String group, String name,
                                                                                   Template template) {
       checkNotNull(template, "template was null");
-      checkNotNull(template.getOptions(), "template options was null");
+      TemplateOptions options = template.getOptions();
+      checkNotNull(options, "template options was null");
 
       String imageId = checkNotNull(template.getImage().getId(), "template image id must not be null");
       String loginUser = template.getImage().getDefaultCredentials().getUser();
       String loginUserPassword = template.getImage().getDefaultCredentials().getOptionalPassword().or("password");
 
-      DockerTemplateOptions templateOptions = DockerTemplateOptions.class.cast(template.getOptions());
-      int[] inboundPorts = templateOptions.getInboundPorts();
+      DockerTemplateOptions templateOptions = DockerTemplateOptions.class.cast(options);
+      Config.Builder containerConfigBuilder = templateOptions.getConfigBuilder();
+      if (containerConfigBuilder == null) {
+         containerConfigBuilder = Config.builder();
 
-      Map<String, Object> exposedPorts = Maps.newHashMap();
-      for (int inboundPort : inboundPorts) {
-         exposedPorts.put(inboundPort + "/tcp", Maps.newHashMap());
-      }
+         containerConfigBuilder.entrypoint(templateOptions.getEntrypoint());
+         containerConfigBuilder.cmd(templateOptions.getCommands());
+         containerConfigBuilder.memory(templateOptions.getMemory());
+         containerConfigBuilder.hostname(templateOptions.getHostname());
+         containerConfigBuilder.cpuShares(templateOptions.getCpuShares());
+         containerConfigBuilder.env(templateOptions.getEnv());
 
-      Config.Builder containerConfigBuilder = Config.builder()
-              .image(imageId)
-              .exposedPorts(exposedPorts);
-
-      containerConfigBuilder.entrypoint(templateOptions.getEntrypoint());
-      containerConfigBuilder.cmd(templateOptions.getCommands());
-      containerConfigBuilder.memory(templateOptions.getMemory());
-      containerConfigBuilder.hostname(templateOptions.getHostname());
-      containerConfigBuilder.cpuShares(templateOptions.getCpuShares());
-      containerConfigBuilder.env(templateOptions.getEnv());
-
-      if (!templateOptions.getVolumes().isEmpty()) {
-         Map<String, Object> volumes = Maps.newLinkedHashMap();
-         for (String containerDir : templateOptions.getVolumes().values()) {
-            volumes.put(containerDir, Maps.newHashMap());
+         if (!templateOptions.getVolumes().isEmpty()) {
+            Map<String, Object> volumes = Maps.newLinkedHashMap();
+            for (String containerDir : templateOptions.getVolumes().values()) {
+               volumes.put(containerDir, Maps.newHashMap());
+            }
+            containerConfigBuilder.volumes(volumes);
          }
-         containerConfigBuilder.volumes(volumes);
+
+         HostConfig.Builder hostConfigBuilder = HostConfig.builder()
+                 .publishAllPorts(true)
+                 .privileged( templateOptions.getPrivileged() );
+
+         if (!templateOptions.getPortBindings().isEmpty()) {
+            Map<String, List<Map<String, String>>> portBindings = Maps.newHashMap();
+            for (Map.Entry<Integer, Integer> entry : templateOptions.getPortBindings().entrySet()) {
+               portBindings.put(entry.getValue() + "/tcp",
+                       Lists.<Map<String, String>>newArrayList(ImmutableMap.of("HostPort", Integer.toString(entry.getKey()))));
+            }
+            hostConfigBuilder.portBindings(portBindings);
+         }
+
+         if (!templateOptions.getDns().isEmpty()) {
+            hostConfigBuilder.dns(templateOptions.getDns());
+         }
+
+         if (!templateOptions.getExtraHosts().isEmpty()) {
+            List<String> extraHosts = Lists.newArrayList();
+            for (Map.Entry<String, String> entry : templateOptions.getExtraHosts().entrySet()) {
+               extraHosts.add(entry.getKey() + ":" + entry.getValue());
+            }
+            hostConfigBuilder.extraHosts(extraHosts);
+         }
+
+         if (!templateOptions.getVolumes().isEmpty()) {
+            for (Map.Entry<String, String> entry : templateOptions.getVolumes().entrySet()) {
+               hostConfigBuilder.binds(ImmutableList.of(entry.getKey() + ":" + entry.getValue()));
+            }
+         }
+
+         if (!templateOptions.getVolumesFrom().isEmpty()) {
+            hostConfigBuilder.volumesFrom(templateOptions.getVolumesFrom());
+         }
+
+         hostConfigBuilder.networkMode(templateOptions.getNetworkMode());
+
+         containerConfigBuilder.hostConfig(hostConfigBuilder.build());
       }
 
+      containerConfigBuilder.image(imageId);
+
+      // add the inbound ports into exposed ports map
       Config containerConfig = containerConfigBuilder.build();
+      Map<String, Object> exposedPorts = Maps.newHashMap();
+      if (containerConfig.exposedPorts() == null) {
+         exposedPorts.putAll(containerConfig.exposedPorts());
+      }
+      for (int inboundPort : templateOptions.getInboundPorts()) {
+         String portKey = inboundPort + "/tcp";
+         if (!exposedPorts.containsKey(portKey)) {
+            exposedPorts.put(portKey, Maps.newHashMap());
+         }
+      }
+      containerConfigBuilder.exposedPorts(exposedPorts);
+
+      // build once more after setting inboundPorts
+      containerConfig = containerConfigBuilder.build();
 
       logger.debug(">> creating new container with containerConfig(%s)", containerConfig);
       Container container = api.getContainerApi().createContainer(name, containerConfig);
       logger.trace("<< container(%s)", container.id());
 
-      HostConfig.Builder hostConfigBuilder = HostConfig.builder()
-              .publishAllPorts(true)
-              .privileged(true);
-
-      if (!templateOptions.getPortBindings().isEmpty()) {
-         Map<String, List<Map<String, String>>> portBindings = Maps.newHashMap();
-         for (Map.Entry<Integer, Integer> entry : templateOptions.getPortBindings().entrySet()) {
-            portBindings.put(entry.getValue() + "/tcp",
-                  Lists.<Map<String, String>>newArrayList(ImmutableMap.of("HostPort", Integer.toString(entry.getKey()))));
-         }
-         hostConfigBuilder.portBindings(portBindings);
-      }
-
-      if (!templateOptions.getDns().isEmpty()) {
-         hostConfigBuilder.dns(templateOptions.getDns());
-      }
-
-      if (!templateOptions.getExtraHosts().isEmpty()) {
-         List<String> extraHosts = Lists.newArrayList();
-         for (Map.Entry<String, String> entry : templateOptions.getExtraHosts().entrySet()) {
-            extraHosts.add(entry.getKey() + ":" + entry.getValue());
-         }
-         hostConfigBuilder.extraHosts(extraHosts);
-      }
-
-      if (!templateOptions.getVolumes().isEmpty()) {
-         for (Map.Entry<String, String> entry : templateOptions.getVolumes().entrySet()) {
-             hostConfigBuilder.binds(ImmutableList.of(entry.getKey() + ":" + entry.getValue()));
-         }
-      }
-
-      if (!templateOptions.getVolumesFrom().isEmpty()) {
-          hostConfigBuilder.volumesFrom(templateOptions.getVolumesFrom());
-      }
-
-      hostConfigBuilder.networkMode(templateOptions.getNetworkMode());
-
-      HostConfig hostConfig = hostConfigBuilder.build();
+      HostConfig hostConfig = containerConfig.hostConfig();
 
       api.getContainerApi().startContainer(container.id(), hostConfig);
       container = api.getContainerApi().inspectContainer(container.id());
