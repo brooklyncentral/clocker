@@ -435,6 +435,10 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             entity.sensors().set(DockerAttributes.DOCKER_IMAGE_COMMANDS, commands);
         }
 
+        // Privileged container
+        Boolean privileged = entity.config().get(DockerContainer.PRIVILEGED);
+        options.privileged(privileged);
+
         // Log for debugging without password
         LOG.debug("Docker options for {}: {}", entity, options);
 

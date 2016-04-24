@@ -119,6 +119,20 @@ brooklyn.catalog:
     item:
       type: clocker.docker.networking.entity.sdn.weave.WeaveRouter
 
+  - id: overlay-network
+    name: "Docker Overlay Network"
+    item:
+      type: clocker.docker.networking.entity.sdn.overlay.OverlayNetwork
+      brooklyn.config:
+        sdn.agent.spec:
+          $brooklyn:entitySpec:
+            type: overlay-plugin
+
+  - id: overlay-plugin
+    name: "Docker Overlay Plugin"
+    item:
+      type: clocker.docker.networking.entity.sdn.overlay.OverlayPlugin
+
   - id: docker-registry
     name: "Docker Registry"
     services:
@@ -138,10 +152,10 @@ brooklyn.catalog:
     item:
       type: clocker.mesos.entity.framework.marathon.MarathonFramework
 
-  - id: docker-cloud
+  - id: docker-single
     name: "Clocker"
     description: |
-      Docker Cloud infrastructure
+      Single Docker host without networking
     iconUrl: classpath://docker-logo.png
     itemType: template
     item:
@@ -209,6 +223,30 @@ brooklyn.catalog:
                     type: docker-container
                     brooklyn.config:
                       docker.container.nameFormat: "weave-%2$02x"
+
+  - id: docker-cloud-overlay
+    name: "Clocker with Docker Overlay"
+    description: |
+      Docker Cloud infrastructure with Docker overlay networking
+    iconUrl: classpath://docker-logo.png
+    itemType: template
+    item:
+      services:
+      - type: docker-infrastructure
+        brooklyn.config:
+          sdn.enable: true
+          sdn.provider.spec:
+            $brooklyn:entitySpec:
+              type: overlay-network
+          docker.host.spec:
+            $brooklyn:entitySpec:
+              type: docker-host
+              brooklyn.config:
+                docker.container.spec:
+                  $brooklyn:entitySpec:
+                    type: docker-container
+                    brooklyn.config:
+                      docker.container.nameFormat: "docker-%2$02x"
 
   - id: external-mesos-cluster
     name: "External Mesos Cluster"

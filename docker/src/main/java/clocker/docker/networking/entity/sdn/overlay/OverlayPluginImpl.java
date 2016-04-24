@@ -13,38 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package clocker.docker.networking.entity.sdn.calico;
+package clocker.docker.networking.entity.sdn.overlay;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import clocker.docker.entity.container.DockerContainer;
 import clocker.docker.networking.entity.sdn.SdnAgentImpl;
 
-import org.apache.brooklyn.core.config.render.RendererHints;
-import org.apache.brooklyn.core.feed.ConfigToAttributes;
-import org.apache.brooklyn.entity.stock.DelegateEntity;
-
 /**
- * Calico node services running in {@link DockerContainer containers}.
+ * The Docker engine running the overlay network plugin.
  */
-public class CalicoNodeImpl extends SdnAgentImpl implements CalicoNode {
+public class OverlayPluginImpl extends SdnAgentImpl implements OverlayPlugin {
 
-    private static final Logger LOG = LoggerFactory.getLogger(CalicoNode.class);
-
-    public void init() {
-        super.init();
-
-        ConfigToAttributes.apply(this, ETCD_NODE);
-    }
+    private static final Logger LOG = LoggerFactory.getLogger(OverlayPlugin.class);
 
     @Override
     public Class getDriverInterface() {
-        return CalicoNodeDriver.class;
-    }
-
-    static {
-        RendererHints.register(ETCD_NODE, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
+        return OverlayPluginDriver.class;
     }
 
 }
