@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.annotation.Nullable;
 import javax.net.ssl.X509TrustManager;
 
 import org.slf4j.Logger;
@@ -77,11 +76,9 @@ import org.apache.brooklyn.core.location.BasicLocationRegistry;
 import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.core.location.dynamic.LocationOwner;
 import org.apache.brooklyn.enricher.stock.Enrichers;
-import org.apache.brooklyn.entity.group.BasicGroup;
 import org.apache.brooklyn.entity.group.Cluster;
 import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.group.DynamicGroup;
-import org.apache.brooklyn.entity.group.DynamicMultiGroup;
 import org.apache.brooklyn.entity.machine.MachineAttributes;
 import org.apache.brooklyn.entity.nosql.etcd.EtcdCluster;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
@@ -195,19 +192,6 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
                 .configure(DynamicGroup.ENTITY_FILTER, Predicates.and(Predicates.instanceOf(DockerContainer.class), EntityPredicates.attributeEqualTo(DockerContainer.DOCKER_INFRASTRUCTURE, this)))
                 .displayName("All Docker Containers"));
 
-        DynamicMultiGroup buckets = addChild(EntitySpec.create(DynamicMultiGroup.class)
-                .configure(DynamicMultiGroup.ENTITY_FILTER,
-                        Predicates.and(DockerUtils.sameInfrastructure(this), Predicates.not(EntityPredicates.applicationIdEqualTo(getApplicationId()))))
-                .configure(DynamicMultiGroup.RESCAN_INTERVAL, 15L)
-                .configure(DynamicMultiGroup.BUCKET_FUNCTION, new Function<Entity, String>() {
-                    @Override
-                    public String apply(@Nullable Entity input) {
-                        return input.getApplication().getDisplayName() + ":" + input.getApplicationId();
-                    }
-                })
-                .configure(DynamicMultiGroup.BUCKET_SPEC, EntitySpec.create(BasicGroup.class))
-                .displayName("Docker Applications"));
-
         if (config().get(SDN_ENABLE) && config().get(SDN_PROVIDER_SPEC) != null) {
             EntitySpec entitySpec = EntitySpec.create(config().get(SDN_PROVIDER_SPEC));
             entitySpec.configure(DockerAttributes.DOCKER_INFRASTRUCTURE, this);
@@ -217,7 +201,6 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
 
         sensors().set(DOCKER_HOST_CLUSTER, hosts);
         sensors().set(DOCKER_CONTAINER_FABRIC, fabric);
-        sensors().set(DOCKER_APPLICATIONS, buckets);
 
         hosts.enrichers().add(Enrichers.builder()
                 .aggregating(DockerHost.CPU_USAGE)
@@ -496,7 +479,6 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
 
         RendererHints.register(DOCKER_HOST_CLUSTER, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(DOCKER_CONTAINER_FABRIC, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(DOCKER_APPLICATIONS, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(SDN_PROVIDER, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(ETCD_CLUSTER, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
     }
