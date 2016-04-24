@@ -278,6 +278,10 @@ brooklyn.catalog:
       type: org.apache.brooklyn.entity.proxy.haproxy.HAProxyController
       brooklyn.config:
         docker.image.name: haproxy
+        docker.useSsh: false
+        docker.image.commands:
+        - "/bin/bash"
+        docker.container.interactive: true
         docker.container.openPorts.configKeys:
         - $brooklyn:sensor("org.apache.brooklyn.entity.proxy.AbstractController", "proxy.http.port")
         - $brooklyn:sensor("org.apache.brooklyn.entity.proxy.AbstractController", "proxy.https.port")

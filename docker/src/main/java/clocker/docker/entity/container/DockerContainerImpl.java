@@ -439,6 +439,9 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         Boolean privileged = entity.config().get(DockerContainer.PRIVILEGED);
         options.privileged(privileged);
 
+        Boolean openStdin = entity.config().get(DockerContainer.INTERACTIVE);
+        options.openStdin(openStdin);
+
         // Log for debugging without password
         LOG.debug("Docker options for {}: {}", entity, options);
 
