@@ -60,6 +60,7 @@ import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.file.ArchiveUtils;
 import org.apache.brooklyn.util.core.file.ArchiveUtils.ArchiveType;
+import org.apache.brooklyn.util.core.internal.ssh.sshj.SshjTool;
 import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.core.task.TaskBuilder;
 import org.apache.brooklyn.util.core.task.system.ProcessTaskWrapper;
@@ -265,10 +266,10 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
         if (entity.config().get(JcloudsLocationConfig.MAP_DEV_RANDOM_TO_DEV_URANDOM)) {
             newScript(INSTALLING + "-urandom")
-            .body.append(
-                    sudo("mv /dev/random /dev/random-real"),
-                    sudo("ln -s /dev/urandom /dev/random"))
-            .execute();
+                    .body.append(
+                            sudo("mv /dev/random /dev/random-real"),
+                            sudo("ln -s /dev/urandom /dev/random"))
+                    .execute();
         }
 
         // Setup SoftLayer hostname after reboot
@@ -419,16 +420,18 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         log.debug("Docker daemon args: {}", argv);
 
         // Upstart
-        newScript(CUSTOMIZING + "-upstart")
-                .body.append(
-                        chain(
-                                sudo("mkdir -p /etc/default"),
-                                format("echo 'DOCKER_OPTS=\"%s\"' | ", argv) + sudo("tee -a /etc/default/docker"),
-                                sudo("groupadd -f docker"),
-                                sudo(format("gpasswd -a %s docker", getMachine().getUser())),
-                                sudo("newgrp docker")))
-                .failOnNonZeroResultCode()
-                .execute();
+        if (ubuntu) {
+            newScript(CUSTOMIZING + "-upstart")
+                    .body.append(
+                            chain(
+                                    sudo("mkdir -p /etc/default"),
+                                    format("echo 'DOCKER_OPTS=\"%s\"' | ", argv) + sudo("tee -a /etc/default/docker")),
+                                    sudo("groupadd -f docker"),
+                                    sudo(format("gpasswd -a %s docker", getMachine().getUser())),
+                                    sudo("newgrp docker"))
+                    .failOnNonZeroResultCode()
+                    .execute();
+        }
 
         // CentOS
         if (centos) {
@@ -477,6 +480,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                                 ifExecutableElse1("boot2docker", "boot2docker status"),
                                 ifExecutableElse1("service", sudo("service docker status"))))
                 .noExtraOutput() // otherwise Brooklyn appends 'check-running' and the method always returns true.
+                .uniqueSshConnection()
                 .gatherOutput();
         helper.execute();
         return helper.getResultStdout().contains("running");
@@ -490,6 +494,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                                 ifExecutableElse1("boot2docker", "boot2docker down"),
                                 ifExecutableElse1("service", sudo("service docker stop"))))
                 .failOnNonZeroResultCode()
+                .uniqueSshConnection()
                 .execute();
     }
 
