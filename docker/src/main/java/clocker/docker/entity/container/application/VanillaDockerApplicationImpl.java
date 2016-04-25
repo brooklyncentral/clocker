@@ -40,8 +40,8 @@ public class VanillaDockerApplicationImpl extends SoftwareProcessImpl implements
     public String getIconUrl() { return "classpath://container.png"; }
 
     public String getDisplayName() {
-        return String.format("Docker Container (%s)",
-                Objects.firstNonNull(config().get(CONTAINER_NAME), config().get(IMAGE_NAME)));
+        return String.format("Container (%s)",
+                Objects.firstNonNull(sensors().get(DockerContainer.DOCKER_CONTAINER_NAME), config().get(IMAGE_NAME)));
     }
 
     @Override
