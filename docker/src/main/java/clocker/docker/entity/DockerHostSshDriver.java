@@ -312,9 +312,6 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 repositoryVersionName = dockerVersion + "-0~trusty";
                 break;
             case "15.04":
-                dockerRepoName = "ubuntu-vivid";
-                repositoryVersionName = dockerVersion + "-0~vivid";
-                break;
             case "15.10":
                 dockerRepoName = "ubuntu-wily";
                 repositoryVersionName = dockerVersion + "-0~wily";
