@@ -184,7 +184,9 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         String osVersion = osDetails.getVersion();
         String arch = osDetails.getArch();
         if (!osDetails.is64bit()) throw new IllegalStateException("Docker supports only 64bit OS");
-        if (osDetails.isWindows()) throw new IllegalStateException("Windows operating system not yet supported by Docker");
+        if (osDetails.isWindows() || osDetails.isMac()) {
+            throw new IllegalStateException("Clocker does not support Windows or OSX currently");
+        }
         log.debug("Installing Docker on {} version {}", osDetails.getName(), osVersion);
 
         // Generate Linux kernel upgrade commands
@@ -210,11 +212,6 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
         // Generate Docker install commands
         List<String> commands = Lists.newArrayList();
-        if (osDetails.isMac()) {
-            commands.add(alternatives(
-                    ifExecutableElse1("boot2docker", "boot2docker status || boot2docker init"),
-                    fail("Mac OSX install requires Boot2Docker preinstalled", 1)));
-        }
         if (osDetails.isLinux()) {
             commands.add(INSTALL_CURL);
             if ("ubuntu".equalsIgnoreCase(osDetails.getName())) {
@@ -490,25 +487,16 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     @Override
     public boolean isRunning() {
-        ScriptHelper helper = newScript(CHECK_RUNNING)
-                .body.append(
-                        alternatives(
-                                ifExecutableElse1("boot2docker", "boot2docker status"),
-                                ifExecutableElse1("service", sudo("service docker status"))))
-                .noExtraOutput() // otherwise Brooklyn appends 'check-running' and the method always returns true.
-                .uniqueSshConnection()
-                .gatherOutput();
-        helper.execute();
-        return helper.getResultStdout().contains("running");
+        return newScript(CHECK_RUNNING)
+                .body.append(sudo("docker version"))
+                .failOnNonZeroResultCode()
+                .execute() == 0;
     }
 
     @Override
     public void stop() {
         newScript(STOPPING)
-                .body.append(
-                        alternatives(
-                                ifExecutableElse1("boot2docker", "boot2docker down"),
-                                ifExecutableElse1("service", sudo("service docker stop"))))
+                .body.append(sudo("service docker stop"))
                 .failOnNonZeroResultCode()
                 .uniqueSshConnection()
                 .execute();
@@ -517,23 +505,10 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     @Override
     public void launch() {
         newScript(LAUNCHING)
-                .body.append(
-                        alternatives(
-                                ifExecutableElse1("boot2docker", "boot2docker up"),
-                                ifExecutableElse1("service", sudo("service docker start"))))
+                .body.append(sudo("service docker start"))
                 .failOnNonZeroResultCode()
                 .uniqueSshConnection()
                 .execute();
-    }
-
-    @Override
-    public Map<String, String> getShellEnvironment() {
-        ImmutableMap.Builder<String, String> builder = ImmutableMap.<String, String> builder()
-                .putAll(super.getShellEnvironment());
-        if (getMachine().getMachineDetails().getOsDetails().isMac()) {
-            builder.put("DOCKER_HOST", format("tcp://%s:%d", getSubnetAddress(), getDockerPort()));
-        }
-        return builder.build();
     }
 
 }
