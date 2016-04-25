@@ -152,7 +152,7 @@ brooklyn.catalog:
     item:
       type: clocker.mesos.entity.framework.marathon.MarathonFramework
 
-  - id: docker-single
+  - id: docker-cloud-single
     name: "Clocker"
     description: |
       Single Docker host without networking

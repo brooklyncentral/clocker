@@ -9,7 +9,7 @@ brooklyn.catalog:
         brooklyn.config:
           appToTest:
             $brooklyn:entitySpec:
-              - type: "docker-cloud:1.1.0-SNAPSHOT" # CLOCKER_VERSION
+              - type: "docker-cloud-single:1.1.0-SNAPSHOT" # CLOCKER_VERSION
                 id: infrastructure1
                 brooklyn.config:
                   docker.host.cluster.initial.size: 2

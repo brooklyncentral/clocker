@@ -319,6 +319,12 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), template);
 
                 customizers.add(SoftLayerSameVlanLocationCustomizer.forScope(getApplicationId()));
+
+                config().set(DockerInfrastructure.USE_JCLOUDS_HOSTNAME_CUSTOMIZER, true);
+            }
+
+            // Set hostname customizer if configured
+            if (config().get(DockerInfrastructure.USE_JCLOUDS_HOSTNAME_CUSTOMIZER)) {
                 customizers.add(JcloudsHostnameCustomizer.instanceOf());
             }
 

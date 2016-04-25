@@ -152,6 +152,8 @@ public interface DockerInfrastructure extends StartableApplication, Resizable, L
 
     AttributeSensor<Entity> DOCKER_IMAGE_REGISTRY = DockerAttributes.DOCKER_IMAGE_REGISTRY;
 
+    ConfigKey<Boolean> USE_JCLOUDS_HOSTNAME_CUSTOMIZER = ConfigKeys.newBooleanConfigKey("docker.hostname.customizer", "Fix issues with hostname in some clouds", Boolean.FALSE);
+
     @SetFromFlag("etcdVersion")
     ConfigKey<String> ETCD_VERSION = ConfigKeys.newStringConfigKey("etcd.version", "The Etcd version number", "2.3.1");
 
