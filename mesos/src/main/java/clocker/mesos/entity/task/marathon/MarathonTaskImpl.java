@@ -383,10 +383,8 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                 entity.sensors().set(DockerContainer.CONTAINER_ADDRESSES, addresses);
             }
 
-            // Look up mapped ports for entity
-            DockerUtils.getContainerPorts(entity);
-
             createLocation(flags);
+
         }
 
         ServiceStateLogic.setExpectedState(this, Lifecycle.RUNNING);
@@ -763,19 +761,16 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
         sensors().set(DYNAMIC_LOCATION, location);
         sensors().set(LOCATION_NAME, location.getId());
 
-        // Record port mappings
-        LOG.debug("Recording port mappings for {} at {}: {}", new Object[] {entity, location, tcpMappings});
-        for (Integer hostPort : tcpMappings.keySet()) {
-            HostAndPort target = HostAndPort.fromString(tcpMappings.get(hostPort));
-            subnet.getPortForwarder().openPortForwarding(location, target.getPort(), Optional.of(hostPort), Protocol.TCP, Cidr.UNIVERSAL);
-            subnet.getPortForwarder().openFirewallPort(entity, hostPort, Protocol.TCP, Cidr.UNIVERSAL);
-            LOG.debug("Forwarded port: {} => {}", hostPort, target.getPort());
-        }
-
-        LOG.info("New task location {} created", location);
         if (useSsh) {
             DockerUtils.addExtraPublicKeys(entity, location);
         }
+
+        // Refresh (or set) the container port sensors
+        DockerUtils.getContainerPorts(entity);
+        DockerUtils.configurePortMappings(entity);
+        DockerUtils.configureEnrichers(subnet, entity);
+
+        LOG.info("New task location {} created", location);
         return location;
     }
 
