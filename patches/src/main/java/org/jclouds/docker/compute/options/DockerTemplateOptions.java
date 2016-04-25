@@ -95,6 +95,7 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
    protected Map<String, String> extraHosts = ImmutableMap.of();
    protected List<String> volumesFrom = ImmutableList.of();
    protected boolean privileged;
+   protected boolean openStdin;
    protected Config.Builder configBuilder;
 
    @Override
@@ -122,6 +123,7 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
          eTo.extraHosts(extraHosts);
          eTo.volumesFrom(volumesFrom);
          eTo.privileged(privileged);
+         eTo.openStdin(openStdin);
          eTo.configBuilder(configBuilder);
       }
    }
@@ -147,6 +149,7 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
               equal(this.extraHosts, that.extraHosts) &&
               equal(this.volumesFrom, that.volumesFrom) &&
               equal(this.privileged, that.privileged) &&
+              equal(this.openStdin, that.openStdin) &&
               buildersEqual(this.configBuilder, that.configBuilder);
    }
 
@@ -161,7 +164,7 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
    @Override
    public int hashCode() {
       return Objects.hashCode(super.hashCode(), volumes, hostname, dns, memory, entrypoint, commands, cpuShares, env,
-            portBindings, extraHosts, configBuilder);
+            portBindings, extraHosts, volumesFrom, privileged, openStdin, configBuilder);
    }
 
    @Override
@@ -179,6 +182,8 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
               .add("networkMode", networkMode)
               .add("extraHosts", extraHosts)
               .add("volumesFrom", volumesFrom)
+              .add("privileged", privileged)
+              .add("openStdin", openStdin)
               .add("configBuilder", configBuilder)
               .toString();
    }
@@ -305,6 +310,17 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
    }
 
    /**
+    * Keep {@code STDIN} open when running interactive workloads in the container.
+    *
+    * @param openStdin Whether the container should keep STDIN open
+    * @return this instance
+    */
+   public DockerTemplateOptions openStdin(boolean openStdin) {
+      this.openStdin = openStdin;
+      return this;
+   }
+
+   /**
     * This method sets Config.Builder configuration object, which can be used as
     * a replacement for all the other settings from this class. Some values in
     * the provided Config.Builder instance (the image name for instance) can be
@@ -346,6 +362,8 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
    public Map<String, String> getExtraHosts() { return extraHosts; }
 
    public boolean getPrivileged() { return privileged; }
+
+   public boolean getOpenStdin() { return openStdin; }
 
    public Config.Builder getConfigBuilder() { return configBuilder; }
 
@@ -477,6 +495,14 @@ public class DockerTemplateOptions extends TemplateOptions implements Cloneable 
       public static DockerTemplateOptions privileged(boolean privileged) {
          DockerTemplateOptions options = new DockerTemplateOptions();
          return options.privileged(privileged);
+      }
+
+      /**
+       * @see DockerTemplateOptions#openStdin(boolean)
+       */
+      public static DockerTemplateOptions openStdin(boolean openStdin) {
+         DockerTemplateOptions options = new DockerTemplateOptions();
+         return options.openStdin(openStdin);
       }
 
       /**
