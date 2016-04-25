@@ -43,7 +43,6 @@ import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
 
 import org.jclouds.compute.ComputeService;
-import org.jclouds.softlayer.reference.SoftLayerConstants;
 
 import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.OsDetails;
@@ -72,6 +71,7 @@ import org.apache.brooklyn.util.core.task.system.ProcessTaskWrapper;
 import org.apache.brooklyn.util.net.Urls;
 import org.apache.brooklyn.util.os.Os;
 import org.apache.brooklyn.util.repeat.Repeater;
+import org.apache.brooklyn.util.ssh.BashCommands;
 import org.apache.brooklyn.util.text.Identifiers;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.text.VersionComparator;
@@ -191,11 +191,20 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
         // Generate Linux kernel upgrade commands
         if (osDetails.isLinux()) {
-            String kernelVersion = Strings.getFirstWord(((DockerHost) getEntity()).execCommand("uname -r"));
             String storage = Strings.toLowerCase(entity.config().get(DockerHost.DOCKER_STORAGE_DRIVER));
             if (!"devicemapper".equals(storage)) { // No kernel changes needed for devicemapper sadness as a servive
-                int present = ((DockerHost) getEntity()).execCommandStatus("modprobe " + storage);
-                if (present != 0) {
+                int present = ((DockerHost) getEntity()).execCommandStatus(BashCommands.sudo("modprobe " + storage));
+
+                ScriptHelper uname = newScript("check-kernel-version")
+                        .body.append("uname -r")
+                        .failOnNonZeroResultCode()
+                        .uniqueSshConnection()
+                        .gatherOutput()
+                        .noExtraOutput();
+                uname.execute();
+                String kernelVersion = Strings.getFirstWord(uname.getResultStdout());
+
+                if (VersionComparator.getInstance().compare("3.19", kernelVersion) > 0 || present != 0) {
                     List<String> commands = MutableList.of();
                     if ("ubuntu".equalsIgnoreCase(osDetails.getName())) {
                         commands.add(installPackage("software-properties-common linux-generic-lts-vivid"));
@@ -208,6 +217,13 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                     }
                 }
             }
+
+            // Create EtcdNode for this host
+            EtcdCluster etcd = ((DockerHost) getEntity()).getInfrastructure().sensors().get(DockerInfrastructure.ETCD_CLUSTER);
+            EtcdNode node = (EtcdNode) etcd.addNode(getMachine(), Maps.newHashMap());
+            node.start(ImmutableList.of(getMachine()));
+            getEntity().sensors().set(DockerHost.ETCD_NODE, node);
+            Entities.waitForServiceUp(node);
         }
 
         // Generate Docker install commands
@@ -280,13 +296,6 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         if (getEntity().config().get(DockerInfrastructure.USE_JCLOUDS_HOSTNAME_CUSTOMIZER)) {
             JcloudsHostnameCustomizer.instanceOf().customize((JcloudsLocation) provisioner, (ComputeService) null, (JcloudsMachineLocation) location);
         }
-
-        // Create EtcdNode for this host
-        EtcdCluster etcd = ((DockerHost) getEntity()).getInfrastructure().sensors().get(DockerInfrastructure.ETCD_CLUSTER);
-        EtcdNode node = (EtcdNode) etcd.addNode(getMachine(), Maps.newHashMap());
-        node.start(ImmutableList.of(getMachine()));
-        getEntity().sensors().set(DockerHost.ETCD_NODE, node);
-        Entities.waitForServiceUp(node);
     }
 
     private String useYum(String osVersion, String arch, String epelRelease) {
