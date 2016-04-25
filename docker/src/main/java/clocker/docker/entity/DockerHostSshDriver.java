@@ -60,7 +60,6 @@ import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.file.ArchiveUtils;
 import org.apache.brooklyn.util.core.file.ArchiveUtils.ArchiveType;
-import org.apache.brooklyn.util.core.internal.ssh.sshj.SshjTool;
 import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.core.task.TaskBuilder;
 import org.apache.brooklyn.util.core.task.system.ProcessTaskWrapper;
@@ -69,6 +68,7 @@ import org.apache.brooklyn.util.os.Os;
 import org.apache.brooklyn.util.repeat.Repeater;
 import org.apache.brooklyn.util.text.Identifiers;
 import org.apache.brooklyn.util.text.Strings;
+import org.apache.brooklyn.util.text.VersionComparator;
 import org.apache.brooklyn.util.time.Duration;
 import org.apache.brooklyn.util.time.Time;
 
@@ -442,8 +442,9 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         }
 
         // SystemD
+        boolean dockerTen = VersionComparator.getInstance().compare(getVersion(), "1.10") >= 0;
         String service = Os.mergePaths(getInstallDir(), "docker.service");
-        copyTemplate("classpath://clocker/docker/entity/docker.service", service, true, ImmutableMap.of("args", argv));
+        copyTemplate("classpath://clocker/docker/entity/docker.service", service, true, ImmutableMap.of("args", argv, "daemon", dockerTen ? "daemon" : "-d"));
         newScript(CUSTOMIZING + "-systemd")
                 .body.append(
                         chain(
