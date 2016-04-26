@@ -66,6 +66,7 @@ import org.apache.brooklyn.util.ssh.IptablesCommands;
 import org.apache.brooklyn.util.ssh.IptablesCommands.Chain;
 import org.apache.brooklyn.util.ssh.IptablesCommands.Policy;
 import org.apache.brooklyn.util.text.StringEscapes.BashStringEscapes;
+import org.apache.brooklyn.util.text.StringFunctions;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
 
@@ -197,7 +198,7 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
             return super.execScript(props, summaryForLogging, commands, env);
         } else {
             Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
-            return hostMachine.execCommands(nonPortProps, summaryForLogging, getExecScript(commands, env));
+            return hostMachine.execCommands(nonPortProps, summaryForLogging, getDockerExecCommand(commands, env));
         }
     }
 
@@ -213,30 +214,20 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
             return super.execCommands(props, summaryForLogging, commands, env);
         } else {
             Map<String,?> nonPortProps = Maps.filterKeys(props, Predicates.not(Predicates.containsPattern("port")));
-            return hostMachine.execCommands(nonPortProps, summaryForLogging, getExecCommands(commands, env));
+            return hostMachine.execCommands(nonPortProps, summaryForLogging, getDockerExecCommand(commands, env));
         }
     }
 
-    private List<String> getExecScript(List<String> commands, Map<String,?> env) {
+    private List<String> getDockerExecCommand(List<String> commands, Map<String,?> env) {
         StringBuilder target = new StringBuilder("docker exec ")
                 .append(dockerContainer.getContainerId())
                 .append(" /bin/bash -c '");
-        Joiner.on(";").appendTo(target, Iterables.concat(getEnvVarCommands(env), commands));
+        Joiner.on(";").appendTo(target, Iterables.concat(getEnvironemnt(env), Iterables.transform(commands, StringFunctions.trim())));
         target.append("'");
         return ImmutableList.of(target.toString());
     }
 
-    private List<String> getExecCommands(List<String> commands, Map<String,?> env) {
-        List<String> result = Lists.newLinkedList();
-        result.addAll(getEnvVarCommands(env));
-        String exec = "docker exec %s /bin/bash -c '%s'";
-        for (String command : commands) {
-            result.add(String.format(exec, dockerContainer.getContainerId(), command));
-        }
-        return result;
-    }
-
-    private List<String> getEnvVarCommands(Map<String,?> env) {
+    private List<String> getEnvironemnt(Map<String,?> env) {
         List<String> result = new LinkedList<String>();
         for (Map.Entry<String, ?> entry : env.entrySet()) {
             String escaped = BashStringEscapes.escapeLiteralForDoubleQuotedBash(entry.getValue().toString());
