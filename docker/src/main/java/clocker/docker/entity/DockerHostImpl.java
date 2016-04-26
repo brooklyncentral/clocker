@@ -141,7 +141,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     private static final Logger LOG = LoggerFactory.getLogger(DockerHost.class);
 
-    private transient SshFeed serviceUpIsRunningFeed;
+    private transient FunctionFeed serviceUpIsRunningFeed;
     private transient FunctionFeed scan;
 
     @Override
@@ -903,15 +903,17 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     protected void connectServiceUpIsRunning() {
-        //TODO change to HttpFeed with client certificates at some point in the future
-        serviceUpIsRunningFeed = SshFeed.builder()
+        serviceUpIsRunningFeed = FunctionFeed.builder()
                 .entity(this)
                 .period(Duration.THIRTY_SECONDS)
-                .machine(getMachine())
-                .poll(new SshPollConfig<Boolean>(SERVICE_UP)
-                        .command("docker ps")
-                        .onSuccess(Functions.constant(true))
-                        .onFailureOrException(Functions.constant(false)))
+                .poll(new FunctionPollConfig<Boolean, Boolean>(SERVICE_PROCESS_IS_RUNNING)
+                        .suppressDuplicates(true)
+                        .onException(Functions.constant(Boolean.FALSE))
+                        .callable(new Callable<Boolean>() {
+                            public Boolean call() {
+                                return getDriver().isRunning();
+                            }
+                        }))
                 .build();
     }
 

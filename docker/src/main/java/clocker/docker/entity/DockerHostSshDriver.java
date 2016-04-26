@@ -499,6 +499,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         return newScript(CHECK_RUNNING)
                 .body.append(sudo("docker version"))
                 .failOnNonZeroResultCode()
+                .uniqueSshConnection()
                 .execute() == 0;
     }
 
