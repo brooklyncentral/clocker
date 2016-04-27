@@ -19,6 +19,15 @@ for full code changes.
 This code is part of brooklyn-server _0.10.0-SNAPSHOT_ but **not** any official
 Brooklyn release yet.
 
+## Add configuration option to SSH sensor to trim output
+
+Removes surrounding whitespace which makes further transformation simpler.
+
+See [apache/brooklyn-server#127](https://github.com/apache/brooklyn-server/pull/127)
+for full code changes.
+
+- [`SshCommandSensor.java`](./src/main/java/org/apache/brooklyn/core/sensor/ssh/SshCommandSensor.java)
+
 ## Added volumesFrom to Docker template options
 
 This adds the `VolumesFrom` configuration to the API request to create a
