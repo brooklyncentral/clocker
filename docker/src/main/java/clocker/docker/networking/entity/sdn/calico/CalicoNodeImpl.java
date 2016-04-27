@@ -26,7 +26,7 @@ import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
 
 /**
- * A single Weave router running in a {@link DockerContainer}.
+ * Calico node services running in {@link DockerContainer containers}.
  */
 public class CalicoNodeImpl extends SdnAgentImpl implements CalicoNode {
 

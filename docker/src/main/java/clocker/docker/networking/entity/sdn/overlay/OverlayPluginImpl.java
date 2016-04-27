@@ -13,10 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package clocker.docker.networking.entity.sdn.calico;
+package clocker.docker.networking.entity.sdn.overlay;
 
-import clocker.docker.networking.entity.sdn.DockerNetworkAgentDriver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public interface CalicoNodeDriver extends DockerNetworkAgentDriver {
+import clocker.docker.networking.entity.sdn.SdnAgentImpl;
+
+/**
+ * The Docker engine running the overlay network plugin.
+ */
+public class OverlayPluginImpl extends SdnAgentImpl implements OverlayPlugin {
+
+    private static final Logger LOG = LoggerFactory.getLogger(OverlayPlugin.class);
+
+    @Override
+    public Class getDriverInterface() {
+        return OverlayPluginDriver.class;
+    }
 
 }

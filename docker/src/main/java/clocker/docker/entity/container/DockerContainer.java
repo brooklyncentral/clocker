@@ -68,6 +68,9 @@ public interface DockerContainer extends BasicStartable, HasNetworkAddresses, Ha
     @SetFromFlag("privileged")
     ConfigKey<Boolean> PRIVILEGED = DockerAttributes.PRIVILEGED;
 
+    @SetFromFlag("interactive")
+    ConfigKey<Boolean> INTERACTIVE = DockerAttributes.INTERACTIVE;
+
     @SetFromFlag("managed")
     ConfigKey<Boolean> MANAGED = DockerAttributes.MANAGED;
 

@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package clocker.docker.networking.entity.sdn.calico;
+package clocker.docker.networking.entity.sdn.overlay;
 
 import clocker.docker.networking.entity.sdn.DockerNetworkAgentDriver;
 
-public interface CalicoNodeDriver extends DockerNetworkAgentDriver {
+public interface OverlayPluginDriver extends DockerNetworkAgentDriver {
 
 }

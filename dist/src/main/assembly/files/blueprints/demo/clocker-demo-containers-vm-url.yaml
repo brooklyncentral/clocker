@@ -23,7 +23,7 @@ services:
   location: jclouds:softlayer:lon02
   id: redis
   name: "Redis Store"
-  install.version: 3.0.0
+  install.version: 3.0.3
   start.timeout: 10m
 
 - type: docker:clockercentral/dnmonster:1.0
@@ -33,15 +33,15 @@ services:
   openPorts:
   - 8080
 
-- type: docker:clockercentral/identidock:1.1
+- type: docker:clockercentral/identidock:1.9
   location: my-docker-cloud
   id: identidock
   name: "Identidock Web Application"
   portBindings:
     80: 9090
   links:
-  - $brooklyn:component("redis")
-  - $brooklyn:component("dnmonster")
+    redis: $brooklyn:component("redis")
+    dnmonster: $brooklyn:component("dnmonster")
   brooklyn.enrichers:
   - type: org.apache.brooklyn.enricher.stock.Transformer
     brooklyn.config:

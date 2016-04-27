@@ -45,6 +45,7 @@ import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.group.DynamicGroup;
 import org.apache.brooklyn.entity.group.DynamicMultiGroup;
+import org.apache.brooklyn.entity.nosql.etcd.EtcdCluster;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
@@ -151,9 +152,20 @@ public interface DockerInfrastructure extends StartableApplication, Resizable, L
 
     AttributeSensor<Entity> DOCKER_IMAGE_REGISTRY = DockerAttributes.DOCKER_IMAGE_REGISTRY;
 
+    ConfigKey<Boolean> USE_JCLOUDS_HOSTNAME_CUSTOMIZER = ConfigKeys.newBooleanConfigKey("docker.hostname.customizer", "Fix issues with hostname in some clouds", Boolean.FALSE);
+
+    @SetFromFlag("etcdVersion")
+    ConfigKey<String> ETCD_VERSION = ConfigKeys.newStringConfigKey("etcd.version", "The Etcd version number", "2.3.1");
+
+    ConfigKey<Boolean> EXTERNAL_ETCD_CLUSTER = ConfigKeys.newBooleanConfigKey("etcd.external", "Whether to use an external Etcd cluster", Boolean.FALSE);
+    ConfigKey<Integer> EXTERNAL_ETCD_INITIAL_SIZE = ConfigKeys.newIntegerConfigKey("etcd.external.initialSize", "The initial size of the external Etcd cluster");
+    AttributeSensorAndConfigKey<String, String> EXTERNAL_ETCD_URL = ConfigKeys.newStringSensorAndConfigKey("etcd.external.url", "The URL for the external Etcd cluster (if configured, no cluster will be provisioned)");
+
+    AttributeSensor<EtcdCluster> ETCD_CLUSTER = Sensors.newSensor(EtcdCluster.class, "etcd.cluster", "The EtcdCluster entity for storing state");
+
     AttributeSensor<DynamicCluster> DOCKER_HOST_CLUSTER = Sensors.newSensor(DynamicCluster.class, "docker.hosts", "Docker host cluster");
     AttributeSensor<DynamicGroup> DOCKER_CONTAINER_FABRIC = Sensors.newSensor(DynamicGroup.class, "docker.fabric", "Docker container fabric");
-    AttributeSensor<DynamicMultiGroup> DOCKER_APPLICATIONS = Sensors.newSensor(DynamicMultiGroup.class, "docker.buckets", "Docker applications");
+
     AttributeSensor<Entity> SDN_PROVIDER = SdnAttributes.SDN_PROVIDER;
 
     AttributeSensor<AtomicInteger> DOCKER_HOST_COUNTER = Sensors.newSensor(AtomicInteger.class, "docker.hosts.counter", "Docker host counter");

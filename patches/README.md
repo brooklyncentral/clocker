@@ -56,3 +56,15 @@ for full code changes.
 
 - [`DockerTemplateOptions.java`](./src/main/java/org/jclouds/docker/compute/options/DockerTemplateOptions.java)
 - [`NullSafeCopies.java`](./src/main/java/org/jclouds/docker/internal/NullSafeCopies.java)
+
+## Backport from 2.0.0 for Docker
+
+Backports changes from the master 2.0.0-SNAPSHOT branch of the driver. Add
+`OpenStdin` configuration to `DockerTemplateOptions` and set all port bindings
+explicitly on container creation, as required for Docker 1.10 and above.
+
+See [jclouds/jclouds-labs#264](https://github.com/jclouds/jclouds-labs/pull/264)
+for full code changes.
+
+- [`DockerTemplateOptions.java`](./src/main/java/org/jclouds/docker/compute/options/DockerTemplateOptions.java)
+- [`DockerComputeServiceAdapter.java`](./src/main/java/org/jclouds/docker/compute/strategy/DockerComputeServiceAdapter.java)

@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import clocker.docker.entity.DockerInfrastructure;
+import clocker.docker.networking.entity.sdn.DockerNetworkAgentSshDriver;
 import clocker.docker.networking.entity.sdn.SdnAgent;
 import clocker.docker.networking.entity.sdn.SdnProvider;
 
@@ -35,20 +36,22 @@ import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.entity.group.AbstractGroup;
-import org.apache.brooklyn.entity.software.base.AbstractSoftwareProcessSshDriver;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableMap;
-import org.apache.brooklyn.util.core.task.Tasks;
-import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.os.Os;
 import org.apache.brooklyn.util.ssh.BashCommands;
 
-public class WeaveRouterSshDriver extends AbstractSoftwareProcessSshDriver implements WeaveRouterDriver {
+public class WeaveRouterSshDriver extends DockerNetworkAgentSshDriver implements WeaveRouterDriver {
 
     private static final Logger LOG = LoggerFactory.getLogger(WeaveRouter.class);
 
     public WeaveRouterSshDriver(EntityLocal entity, SshMachineLocation machine) {
         super(entity, machine);
+    }
+
+    @Override
+    public String getDockerNetworkDriver() {
+        return "weave";
     }
 
     public String getWeaveCommand() {
@@ -125,28 +128,10 @@ public class WeaveRouterSshDriver extends AbstractSoftwareProcessSshDriver imple
     }
 
     @Override
-    public void createSubnet(String svirtualNetworkId, String subnetId, Cidr subnetCidr) {
-        LOG.debug("Nothing to do for Weave subnet creation");
-    }
-
-    @Override
-    public InetAddress attachNetwork(String containerId, String subnetId) {
-        Tasks.setBlockingDetails(String.format("Attach %s to %s", containerId, subnetId));
-        try {
-            Cidr cidr = getEntity().sensors().get(SdnAgent.SDN_PROVIDER).getSubnetCidr(subnetId);
-            InetAddress address = getEntity().sensors().get(SdnAgent.SDN_PROVIDER).getNextContainerAddress(subnetId);
-            execute(BashCommands.sudo(String.format("%s attach %s/%d %s",
-                    getWeaveCommand(), address.getHostAddress(), cidr.getLength(), containerId)), "attach-network");
-            return address;
-        } finally {
-            Tasks.resetBlockingDetails();
-        }
-    }
-
-    @Override
     public Map<String, String> getShellEnvironment() {
         ImmutableMap.Builder<String, String> builder = ImmutableMap.<String, String> builder()
                 .putAll(super.getShellEnvironment())
+                .put("CHECKPOINT_DISABLE", "1")
                 .put("WEAVE_VERSION", entity.config().get(WeaveRouter.SUGGESTED_VERSION))
                 .put("VERSION", entity.config().get(WeaveRouter.SUGGESTED_VERSION));
         return builder.build();

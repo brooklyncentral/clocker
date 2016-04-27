@@ -50,6 +50,20 @@ public interface SdnAgent extends SoftwareProcess {
 
     String provisionNetwork(VirtualNetwork network);
 
+    void deallocateNetwork(VirtualNetwork network);
+
+    MethodEffector<InetAddress> CREATE_NETWORK = new MethodEffector<InetAddress>(SdnAgent.class, "createNetwork");
+
+    /**
+     * Create a network.
+     *
+     * @param networkId the network ID to create
+     * @return the {@link VirtualNetwork}
+     */
+    @Effector(description="Create a network")
+    VirtualNetwork createNetwork(
+            @EffectorParam(name="networkId", description="Network ID") String networkId);
+
     MethodEffector<InetAddress> ATTACH_NETWORK = new MethodEffector<InetAddress>(SdnAgent.class, "attachNetwork");
 
     /**

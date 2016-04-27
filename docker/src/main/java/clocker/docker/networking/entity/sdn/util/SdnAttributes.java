@@ -44,7 +44,12 @@ public class SdnAttributes {
 
     public static final AttributeSensorAndConfigKey<Entity, Entity> SDN_PROVIDER = ConfigKeys.newSensorAndConfigKey(Entity.class, "sdn.provider.network", "SDN provider network entity");
 
+    public static final AttributeSensor<String> INITIAL_ATTACHED_NETWORK = Sensors.newStringSensor(
+            "sdn.networks.initial", "The first network that an entity is attached to");
+
     public static final AttributeSensor<List<String>> ATTACHED_NETWORKS = Sensors.newSensor(new TypeToken<List<String>>() { },
             "sdn.networks.attached", "The list of networks that an entity is attached to");
+
+    public static final ConfigKey<Boolean> CREATE_APPLICATION_NETWORK = ConfigKeys.newBooleanConfigKey("sdn.applicationNetwork.create", "Create a new network for each application using its ID", Boolean.TRUE);
 
 }

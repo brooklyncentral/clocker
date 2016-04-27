@@ -36,7 +36,7 @@ import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.ssh.BashCommands;
 
 /**
- * Fix hostname issues on SoftLayer.
+ * Fix hostname issues.
  */
 public class JcloudsHostnameCustomizer extends BasicJcloudsLocationCustomizer {
 

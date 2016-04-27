@@ -47,6 +47,7 @@ import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.machine.MachineEntity;
+import org.apache.brooklyn.entity.nosql.etcd.EtcdNode;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
@@ -85,7 +86,13 @@ public interface DockerHost extends MachineEntity, HasShortName, LocationOwner<D
 
     @SetFromFlag("dockerSslPort")
     PortAttributeSensorAndConfigKey DOCKER_SSL_PORT = ConfigKeys.newPortSensorAndConfigKey("docker.ssl.port",
-            "Docker port", PortRanges.fromInteger(2376));
+            "Docker SSL port", PortRanges.fromInteger(2376));
+
+    ConfigKey<Integer> DOCKER_CONTROL_PLANE_PORT = ConfigKeys.newIntegerConfigKey("docker.control.port",
+            "Docker control plane port (TCP and UDP)", 7946);
+
+    ConfigKey<Integer> DOCKER_DATA_PLANE_PORT = ConfigKeys.newIntegerConfigKey("docker.data.port",
+            "Docker data plane port (UDP)", 4789);
 
     @SetFromFlag("openIptables")
     ConfigKey<Boolean> OPEN_IPTABLES = ConfigKeys.newConfigKeyWithPrefix("docker.host.", SoftwareProcess.OPEN_IPTABLES);
@@ -149,6 +156,8 @@ public interface DockerHost extends MachineEntity, HasShortName, LocationOwner<D
             "docker.addLocalhostPermission",
             "When true, will add the localhost IP address to the docker host as an acceptable ingress address. This is useful when running Clocker in the same network as the hosts will be run in (e.g. same AWS availibility zone).",
             false);
+
+    AttributeSensor<EtcdNode> ETCD_NODE = Sensors.newSensor(EtcdNode.class, "etcd.node", "The EtcdNode attached to this DockerHost");
 
     String getLoginPassword();
 

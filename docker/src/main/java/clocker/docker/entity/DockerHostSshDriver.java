@@ -36,19 +36,24 @@ import clocker.docker.entity.util.DockerUtils;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.net.HostAndPort;
 
 import org.jclouds.compute.ComputeService;
-import org.jclouds.softlayer.reference.SoftLayerConstants;
 
 import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.OsDetails;
 import org.apache.brooklyn.api.mgmt.Task;
 import org.apache.brooklyn.core.effector.ssh.SshEffectorTasks;
 import org.apache.brooklyn.core.entity.Attributes;
+import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.entity.group.AbstractGroup;
 import org.apache.brooklyn.entity.group.DynamicGroup;
+import org.apache.brooklyn.entity.nosql.etcd.EtcdCluster;
+import org.apache.brooklyn.entity.nosql.etcd.EtcdNode;
 import org.apache.brooklyn.entity.software.base.AbstractSoftwareProcessSshDriver;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.software.base.lifecycle.ScriptHelper;
@@ -66,6 +71,7 @@ import org.apache.brooklyn.util.core.task.system.ProcessTaskWrapper;
 import org.apache.brooklyn.util.net.Urls;
 import org.apache.brooklyn.util.os.Os;
 import org.apache.brooklyn.util.repeat.Repeater;
+import org.apache.brooklyn.util.ssh.BashCommands;
 import org.apache.brooklyn.util.text.Identifiers;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.text.VersionComparator;
@@ -178,16 +184,27 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
         String osVersion = osDetails.getVersion();
         String arch = osDetails.getArch();
         if (!osDetails.is64bit()) throw new IllegalStateException("Docker supports only 64bit OS");
-        if (osDetails.isWindows()) throw new IllegalStateException("Windows operating system not yet supported by Docker");
+        if (osDetails.isWindows() || osDetails.isMac()) {
+            throw new IllegalStateException("Clocker does not support Windows or OSX currently");
+        }
         log.debug("Installing Docker on {} version {}", osDetails.getName(), osVersion);
 
         // Generate Linux kernel upgrade commands
         if (osDetails.isLinux()) {
-            String kernelVersion = Strings.getFirstWord(((DockerHost) getEntity()).execCommand("uname -r"));
             String storage = Strings.toLowerCase(entity.config().get(DockerHost.DOCKER_STORAGE_DRIVER));
             if (!"devicemapper".equals(storage)) { // No kernel changes needed for devicemapper sadness as a servive
-                int present = ((DockerHost) getEntity()).execCommandStatus("modprobe " + storage);
-                if (present != 0) {
+                int present = ((DockerHost) getEntity()).execCommandStatus(BashCommands.sudo("modprobe " + storage));
+
+                ScriptHelper uname = newScript("check-kernel-version")
+                        .body.append("uname -r")
+                        .failOnNonZeroResultCode()
+                        .uniqueSshConnection()
+                        .gatherOutput()
+                        .noExtraOutput();
+                uname.execute();
+                String kernelVersion = Strings.getFirstWord(uname.getResultStdout());
+
+                if (VersionComparator.getInstance().compare("3.19", kernelVersion) > 0 || present != 0) {
                     List<String> commands = MutableList.of();
                     if ("ubuntu".equalsIgnoreCase(osDetails.getName())) {
                         commands.add(installPackage("software-properties-common linux-generic-lts-vivid"));
@@ -200,15 +217,17 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                     }
                 }
             }
+
+            // Create EtcdNode for this host
+            EtcdCluster etcd = ((DockerHost) getEntity()).getInfrastructure().sensors().get(DockerInfrastructure.ETCD_CLUSTER);
+            EtcdNode node = (EtcdNode) etcd.addNode(getMachine(), Maps.newHashMap());
+            node.start(ImmutableList.of(getMachine()));
+            getEntity().sensors().set(DockerHost.ETCD_NODE, node);
+            Entities.waitForServiceUp(node);
         }
 
         // Generate Docker install commands
         List<String> commands = Lists.newArrayList();
-        if (osDetails.isMac()) {
-            commands.add(alternatives(
-                    ifExecutableElse1("boot2docker", "boot2docker status || boot2docker init"),
-                    fail("Mac OSX install requires Boot2Docker preinstalled", 1)));
-        }
         if (osDetails.isLinux()) {
             commands.add(INSTALL_CURL);
             if ("ubuntu".equalsIgnoreCase(osDetails.getName())) {
@@ -274,7 +293,7 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
         // Setup SoftLayer hostname after reboot
         MachineProvisioningLocation<?> provisioner = getEntity().sensors().get(SoftwareProcess.PROVISIONING_LOCATION);
-        if (DockerUtils.isJcloudsLocation(provisioner, SoftLayerConstants.SOFTLAYER_PROVIDER_NAME)) {
+        if (getEntity().config().get(DockerInfrastructure.USE_JCLOUDS_HOSTNAME_CUSTOMIZER)) {
             JcloudsHostnameCustomizer.instanceOf().customize((JcloudsLocation) provisioner, (ComputeService) null, (JcloudsMachineLocation) location);
         }
     }
@@ -401,11 +420,16 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
                 .execute();
 
         // Docker daemon startup arguments
+        EtcdNode etcdNode = getEntity().sensors().get(DockerHost.ETCD_NODE);
+        HostAndPort etcdAuthority = HostAndPort.fromParts(etcdNode.sensors().get(Attributes.SUBNET_ADDRESS), etcdNode.sensors().get(EtcdNode.ETCD_CLIENT_PORT));
+
         List<String> args = MutableList.of(
                 centos ? "--selinux-enabled" : null,
                 "--userland-proxy=false",
                 format("-H tcp://0.0.0.0:%d", getDockerPort()),
                 "-H unix:///var/run/docker.sock",
+                format("--cluster-store=etcd://%s", etcdAuthority.toString()),
+                format("--cluster-advertise=%s:%d", getEntity().sensors().get(Attributes.SUBNET_ADDRESS), getDockerPort()),
                 getStorageOpts(),
                 getDockerRegistryOpts(),
                 "--tlsverify",
@@ -472,25 +496,17 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
 
     @Override
     public boolean isRunning() {
-        ScriptHelper helper = newScript(CHECK_RUNNING)
-                .body.append(
-                        alternatives(
-                                ifExecutableElse1("boot2docker", "boot2docker status"),
-                                ifExecutableElse1("service", sudo("service docker status"))))
-                .noExtraOutput() // otherwise Brooklyn appends 'check-running' and the method always returns true.
+        return newScript(CHECK_RUNNING)
+                .body.append(sudo("docker version"))
+                .failOnNonZeroResultCode()
                 .uniqueSshConnection()
-                .gatherOutput();
-        helper.execute();
-        return helper.getResultStdout().contains("running");
+                .execute() == 0;
     }
 
     @Override
     public void stop() {
         newScript(STOPPING)
-                .body.append(
-                        alternatives(
-                                ifExecutableElse1("boot2docker", "boot2docker down"),
-                                ifExecutableElse1("service", sudo("service docker stop"))))
+                .body.append(sudo("service docker stop"))
                 .failOnNonZeroResultCode()
                 .uniqueSshConnection()
                 .execute();
@@ -499,23 +515,10 @@ public class DockerHostSshDriver extends AbstractSoftwareProcessSshDriver implem
     @Override
     public void launch() {
         newScript(LAUNCHING)
-                .body.append(
-                        alternatives(
-                                ifExecutableElse1("boot2docker", "boot2docker up"),
-                                ifExecutableElse1("service", sudo("service docker start"))))
+                .body.append(sudo("service docker start"))
                 .failOnNonZeroResultCode()
                 .uniqueSshConnection()
                 .execute();
-    }
-
-    @Override
-    public Map<String, String> getShellEnvironment() {
-        ImmutableMap.Builder<String, String> builder = ImmutableMap.<String, String> builder()
-                .putAll(super.getShellEnvironment());
-        if (getMachine().getMachineDetails().getOsDetails().isMac()) {
-            builder.put("DOCKER_HOST", format("tcp://%s:%d", getSubnetAddress(), getDockerPort()));
-        }
-        return builder.build();
     }
 
 }

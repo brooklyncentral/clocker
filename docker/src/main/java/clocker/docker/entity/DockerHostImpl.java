@@ -16,9 +16,7 @@
 package clocker.docker.entity;
 
 import java.io.File;
-import java.net.InetAddress;
 import java.net.URI;
-import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +38,6 @@ import clocker.docker.location.DockerHostLocation;
 import clocker.docker.location.DockerLocation;
 import clocker.docker.networking.entity.sdn.DockerSdnProvider;
 import clocker.docker.networking.entity.sdn.SdnAgent;
-import clocker.docker.networking.entity.sdn.calico.CalicoNode;
 import clocker.docker.networking.entity.sdn.util.SdnAttributes;
 import clocker.docker.networking.entity.sdn.util.SdnUtils;
 import clocker.docker.networking.entity.sdn.weave.WeaveNetwork;
@@ -91,6 +88,7 @@ import org.apache.brooklyn.core.server.BrooklynServerPaths;
 import org.apache.brooklyn.enricher.stock.Enrichers;
 import org.apache.brooklyn.entity.group.BasicGroup;
 import org.apache.brooklyn.entity.machine.MachineEntityImpl;
+import org.apache.brooklyn.entity.nosql.etcd.EtcdCluster;
 import org.apache.brooklyn.entity.nosql.etcd.EtcdNode;
 import org.apache.brooklyn.entity.software.base.AbstractSoftwareProcessSshDriver;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
@@ -114,8 +112,9 @@ import org.apache.brooklyn.policy.ha.ServiceRestarter;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
-import org.apache.brooklyn.util.core.config.ConfigBag;
 import org.apache.brooklyn.util.core.ResourceUtils;
+import org.apache.brooklyn.util.core.config.ConfigBag;
+import org.apache.brooklyn.util.core.internal.ssh.SshTool;
 import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.core.task.Tasks;
 import org.apache.brooklyn.util.core.task.system.ProcessTaskStub.ScriptReturnType;
@@ -123,6 +122,7 @@ import org.apache.brooklyn.util.core.task.system.ProcessTaskWrapper;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.guava.Maybe;
 import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.Networking;
 import org.apache.brooklyn.util.os.Os;
 import org.apache.brooklyn.util.ssh.BashCommands;
 import org.apache.brooklyn.util.text.Identifiers;
@@ -141,7 +141,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     private static final Logger LOG = LoggerFactory.getLogger(DockerHost.class);
 
-    private transient SshFeed serviceUpIsRunningFeed;
+    private transient FunctionFeed serviceUpIsRunningFeed;
     private transient FunctionFeed scan;
 
     @Override
@@ -207,8 +207,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             if (SdnUtils.isSdnProvider(getInfrastructure(), "CalicoNetwork")) {
                 PortRange etcdPort = sdn.config().get(EtcdNode.ETCD_CLIENT_PORT);
                 if (etcdPort != null) ports.add(etcdPort.iterator().next());
-                Integer powerstripPort = sdn.config().get(CalicoNode.POWERSTRIP_PORT);
-                if (powerstripPort != null) ports.add(powerstripPort);
             }
         }
         return ports;
@@ -319,6 +317,12 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 flags.put(JcloudsLocationConfig.TEMPLATE_BUILDER.getName(), template);
 
                 customizers.add(SoftLayerSameVlanLocationCustomizer.forScope(getApplicationId()));
+
+                config().set(DockerInfrastructure.USE_JCLOUDS_HOSTNAME_CUSTOMIZER, true);
+            }
+
+            // Set hostname customizer if configured
+            if (config().get(DockerInfrastructure.USE_JCLOUDS_HOSTNAME_CUSTOMIZER)) {
                 customizers.add(JcloudsHostnameCustomizer.instanceOf());
             }
 
@@ -584,13 +588,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         permissions.addAll(getClockerPermisionsForCIDR(publicIpCidr));
 
         if (config().get(ADD_LOCALHOST_PERMISSION)) {
-            String localhostAddress = null;
-            try {
-                localhostAddress = InetAddress.getLocalHost().getHostAddress();
-            } catch (UnknownHostException e) {
-                throw Exceptions.propagate(e);
-            }
-
+            String localhostAddress = Networking.getLocalHost().getHostAddress();
             String localhostCIDR = localhostAddress + "/32";
             if (Strings.isNonEmpty(localhostAddress) && !publicIpCidr.equals(localhostCIDR)) {
                 permissions.addAll(getClockerPermisionsForCIDR(localhostCIDR));
@@ -625,14 +623,55 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                 .toPort(sensors().get(DockerHost.DOCKER_PORT))
                 .cidrBlock(cidr)
                 .build();
+        permissions.add(dockerPort);
         IpPermission dockerSslPort = IpPermission.builder()
                 .ipProtocol(IpProtocol.TCP)
                 .fromPort(sensors().get(DockerHost.DOCKER_SSL_PORT))
                 .toPort(sensors().get(DockerHost.DOCKER_SSL_PORT))
                 .cidrBlock(cidr)
                 .build();
-        permissions.add(dockerPort);
         permissions.add(dockerSslPort);
+
+        IpPermission dockerControlTcpPort = IpPermission.builder()
+                .ipProtocol(IpProtocol.TCP)
+                .fromPort(config().get(DockerHost.DOCKER_CONTROL_PLANE_PORT))
+                .toPort(config().get(DockerHost.DOCKER_CONTROL_PLANE_PORT))
+                .cidrBlock(cidr)
+                .build();
+        permissions.add(dockerControlTcpPort);
+        IpPermission dockerControlUdpPort = IpPermission.builder()
+                .ipProtocol(IpProtocol.UDP)
+                .fromPort(config().get(DockerHost.DOCKER_CONTROL_PLANE_PORT))
+                .toPort(config().get(DockerHost.DOCKER_CONTROL_PLANE_PORT))
+                .cidrBlock(cidr)
+                .build();
+        permissions.add(dockerControlUdpPort);
+        IpPermission dockerDataUdpPort = IpPermission.builder()
+                .ipProtocol(IpProtocol.UDP)
+                .fromPort(config().get(DockerHost.DOCKER_DATA_PLANE_PORT))
+                .toPort(config().get(DockerHost.DOCKER_DATA_PLANE_PORT))
+                .cidrBlock(cidr)
+                .build();
+        permissions.add(dockerDataUdpPort);
+
+        PortRange etcdClientPortConfig = config().get(EtcdNode.ETCD_CLIENT_PORT);
+        Integer etcdClientPort = etcdClientPortConfig.iterator().next();
+        IpPermission etcdClientTcpPort = IpPermission.builder()
+                .ipProtocol(IpProtocol.TCP)
+                .fromPort(etcdClientPort)
+                .toPort(etcdClientPort)
+                .cidrBlock(cidr)
+                .build();
+        permissions.add(etcdClientTcpPort);
+        PortRange etcdPeerPortConfig = config().get(EtcdNode.ETCD_PEER_PORT);
+        Integer etcdPeerPort = etcdPeerPortConfig.iterator().next();
+        IpPermission etcdPeerTcpPort = IpPermission.builder()
+                .ipProtocol(IpProtocol.TCP)
+                .fromPort(etcdPeerPort)
+                .toPort(etcdPeerPort)
+                .cidrBlock(cidr)
+                .build();
+        permissions.add(etcdPeerTcpPort);
 
         if (config().get(SdnAttributes.SDN_ENABLE)) {
             DockerSdnProvider provider = (DockerSdnProvider) (sensors().get(DockerHost.DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.SDN_PROVIDER));
@@ -649,12 +688,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
         Integer dockerPort = getDockerPort();
         boolean tlsEnabled = true;
-        if (SdnUtils.isSdnProvider(getInfrastructure(), "CalicoNetwork")) {
-            dockerPort = sensors().get(DockerHost.DOCKER_INFRASTRUCTURE)
-                    .sensors().get(DockerInfrastructure.SDN_PROVIDER)
-                    .config().get(CalicoNode.POWERSTRIP_PORT);
-            tlsEnabled = false;
-        }
         if (SdnUtils.isSdnProvider(getInfrastructure(), "WeaveNetwork")) {
             dockerPort = sensors().get(DockerHost.DOCKER_INFRASTRUCTURE)
                     .sensors().get(DockerInfrastructure.SDN_PROVIDER)
@@ -662,6 +695,8 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             tlsEnabled = true;
         }
         Maybe<SshMachineLocation> found = Machines.findUniqueMachineLocation(getLocations(), SshMachineLocation.class);
+
+
         String dockerLocationSpec = String.format("jclouds:docker:%s://%s:%s",
                 tlsEnabled ? "https" : "http", found.get().getSshHostAndPort().getHostText(), dockerPort);
 
@@ -672,7 +707,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             getMachine().copyTo(ResourceUtils.create().getResourceFromUrl("classpath://clocker/docker/entity/container/create-certs.sh"), "create-certs.sh");
             getMachine().execCommands("createCertificates",
                     ImmutableList.of("chmod 755 create-certs.sh", "./create-certs.sh " + sensors().get(ADDRESS)));
-            
+
             String localCertsDir = Os.mergePaths(BrooklynServerPaths.getMgmtBaseDir(getManagementContext()), "docker-certs");
             Os.mkdirs(new File(localCertsDir));
             certPath = Os.mergePaths(localCertsDir, getId() + "-cert.pem");
@@ -684,7 +719,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             keyPath = config().get(DockerInfrastructure.DOCKER_CLIENT_KEY_PATH);
         }
         JcloudsLocation jcloudsLocation = (JcloudsLocation) getManagementContext().getLocationRegistry()
-                .resolve(dockerLocationSpec, MutableMap.builder()
+                .getLocationManaged(dockerLocationSpec, MutableMap.builder()
                         .put("identity", certPath)
                         .put("credential", keyPath)
                         .build());
@@ -790,6 +825,11 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             }
         }
 
+        EtcdCluster etcd = getInfrastructure().sensors().get(DockerInfrastructure.ETCD_CLUSTER);
+        EtcdNode node = sensors().get(ETCD_NODE);
+        etcd.removeMember(node);
+        node.stop();
+
         super.preStop();
     }
 
@@ -863,15 +903,17 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     protected void connectServiceUpIsRunning() {
-        //TODO change to HttpFeed with client certificates at some point in the future
-        serviceUpIsRunningFeed = SshFeed.builder()
+        serviceUpIsRunningFeed = FunctionFeed.builder()
                 .entity(this)
                 .period(Duration.THIRTY_SECONDS)
-                .machine(getMachine())
-                .poll(new SshPollConfig<Boolean>(SERVICE_UP)
-                        .command("docker ps")
-                        .onSuccess(Functions.constant(true))
-                        .onFailureOrException(Functions.constant(false)))
+                .poll(new FunctionPollConfig<Boolean, Boolean>(SERVICE_PROCESS_IS_RUNNING)
+                        .suppressDuplicates(true)
+                        .onException(Functions.constant(Boolean.FALSE))
+                        .callable(new Callable<Boolean>() {
+                            public Boolean call() {
+                                return getDriver().isRunning();
+                            }
+                        }))
                 .build();
     }
 
@@ -884,6 +926,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     static {
         RendererHints.register(DOCKER_INFRASTRUCTURE, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(DOCKER_CONTAINER_CLUSTER, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(ETCD_NODE, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }

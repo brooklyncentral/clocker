@@ -25,17 +25,13 @@ import org.slf4j.LoggerFactory;
 
 import clocker.docker.entity.DockerHost;
 import clocker.docker.entity.DockerInfrastructure;
-import clocker.docker.entity.container.DockerContainer;
 import clocker.docker.networking.entity.VirtualNetwork;
-import clocker.docker.networking.entity.sdn.util.SdnUtils;
 import clocker.docker.networking.location.NetworkProvisioningExtension;
 
-import com.google.common.base.Optional;
-import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
@@ -43,14 +39,11 @@ import org.apache.brooklyn.api.entity.Group;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.policy.PolicySpec;
 import org.apache.brooklyn.core.config.render.RendererHints;
-import org.apache.brooklyn.core.entity.Entities;
-import org.apache.brooklyn.core.entity.EntityPredicates;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.entity.group.AbstractMembershipTrackingPolicy;
 import org.apache.brooklyn.entity.group.BasicGroup;
 import org.apache.brooklyn.entity.group.DynamicCluster;
-import org.apache.brooklyn.entity.group.DynamicGroup;
 import org.apache.brooklyn.entity.stock.BasicStartableImpl;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
 import org.apache.brooklyn.util.collections.MutableList;
@@ -93,7 +86,7 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements Dock
         synchronized (addressMutex) {
             sensors().set(ALLOCATED_IPS, 0);
             sensors().set(ALLOCATED_ADDRESSES, Maps.<String, InetAddress>newConcurrentMap());
-            sensors().set(SUBNET_ADDRESS_ALLOCATIONS, Maps.<String, Integer>newConcurrentMap());
+            sensors().set(SUBNET_ADDRESS_ALLOCATIONS, Maps.<String, List<InetAddress>>newConcurrentMap());
         }
 
         synchronized (networkMutex) {
@@ -124,13 +117,44 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements Dock
         Cidr cidr = getSubnetCidr(subnetId);
 
         synchronized (addressMutex) {
-            Map<String, Integer> allocations = sensors().get(SUBNET_ADDRESS_ALLOCATIONS);
-            Integer allocated = allocations.get(subnetId);
-            if (allocated == null) allocated = 1;
-            InetAddress next = cidr.addressAtOffset(allocated + 1);
-            allocations.put(subnetId, allocated + 1);
+            Map<String, List<InetAddress>> allocations = sensors().get(SUBNET_ADDRESS_ALLOCATIONS);
+            List<InetAddress> allocated = allocations.get(subnetId);
+            if (allocated == null) allocated = MutableList.of();
+            int size = 1 << (32 - cidr.getLength());
+            int next = allocated.size();
+            do {
+                InetAddress addr = cidr.addressAtOffset(next + 1);
+                if (allocated.contains(addr)) {
+                    next++;
+                } else {
+                    allocated.add(addr);
+                    allocations.put(subnetId, allocated);
+                    sensors().set(SUBNET_ADDRESS_ALLOCATIONS, allocations);
+                    return addr;
+                }
+            } while (next < size);
+            throw new IllegalStateException("No more addresses in subnet: " + subnetId);
+        }
+    }
+
+    @Override
+    public void recordContainerAddress(String subnetId, InetAddress address) {
+        synchronized (addressMutex) {
+            Map<String, List<InetAddress>> allocations = sensors().get(SUBNET_ADDRESS_ALLOCATIONS);
+            List<InetAddress> allocated = allocations.get(subnetId);
+            if (allocated == null) allocated = MutableList.of();
+            allocated.add(address);
+            allocations.put(subnetId, allocated);
             sensors().set(SUBNET_ADDRESS_ALLOCATIONS, allocations);
-            return next;
+        }
+    }
+
+    @Override
+    public void associateContainerAddress(String containerId, InetAddress address) {
+        synchronized (addressMutex) {
+            Multimap<String, InetAddress> allocations = sensors().get(CONTAINER_ADDRESSES);
+            allocations.put(containerId, address);
+            sensors().set(CONTAINER_ADDRESSES, allocations);
         }
     }
 
@@ -163,16 +187,6 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements Dock
             Map<String, Cidr> subnets = sensors().get(SdnProvider.SUBNETS);
             subnets.put(networkId, subnetCidr);
             sensors().set(SdnProvider.SUBNETS, subnets);
-        }
-    }
-
-    @Override
-    public void recordSubnetCidr(String networkId, Cidr subnetCidr, int allocated) {
-        synchronized (networkMutex) {
-            recordSubnetCidr(networkId, subnetCidr);
-            Map<String, Integer> allocations = sensors().get(SUBNET_ADDRESS_ALLOCATIONS);
-            allocations.put(networkId, allocated);
-            sensors().set(SUBNET_ADDRESS_ALLOCATIONS, allocations);
         }
     }
 
@@ -292,10 +306,11 @@ public abstract class SdnProviderImpl extends BasicStartableImpl implements Dock
 
     @Override
     public void deallocateNetwork(VirtualNetwork network) {
+        String networkId = network.sensors().get(VirtualNetwork.NETWORK_ID);
         sensors().get(SDN_NETWORKS).removeMember(network);
-        network.stop();
-        Entities.unmanage(network);
-        // TODO actually deprovision the network if possible?
+        SdnAgent agent = (SdnAgent) (getAgents().getMembers().iterator().next());
+        agent.deallocateNetwork(network);
+        LOG.info("Deallocated network {} at {}", networkId, agent);
     }
 
     static {

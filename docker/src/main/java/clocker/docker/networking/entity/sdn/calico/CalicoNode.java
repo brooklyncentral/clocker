@@ -32,7 +32,7 @@ import org.apache.brooklyn.util.core.flags.SetFromFlag;
 public interface CalicoNode extends SdnAgent {
 
     @SetFromFlag("version")
-    ConfigKey<String> SUGGESTED_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "0.4.8");
+    ConfigKey<String> SUGGESTED_VERSION = ConfigKeys.newConfigKeyWithDefault(SoftwareProcess.SUGGESTED_VERSION, "0.19.0");
 
     @SetFromFlag("downloadUrl")
     AttributeSensorAndConfigKey<String, String> DOWNLOAD_URL = ConfigKeys.newSensorAndConfigKeyWithDefault(SoftwareProcess.DOWNLOAD_URL,
@@ -40,9 +40,6 @@ public interface CalicoNode extends SdnAgent {
 
     @SetFromFlag("etcdNode")
     AttributeSensorAndConfigKey<EtcdNode, EtcdNode> ETCD_NODE = ConfigKeys.newSensorAndConfigKey(EtcdNode.class,
-            "sdn.calico.etcd.node", "The EtcdNode attached to the same DockerHost as the plugin");
-
-    @SetFromFlag("powerstripPort")
-    ConfigKey<Integer> POWERSTRIP_PORT = ConfigKeys.newIntegerConfigKey("powerstrip.port", "Powerstrip port", 2377);
+            "calico.etcd.node", "The EtcdNode attached to the same DockerHost as the plugin");
 
 }

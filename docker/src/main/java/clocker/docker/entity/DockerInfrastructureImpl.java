@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.annotation.Nullable;
 import javax.net.ssl.X509TrustManager;
 
 import org.slf4j.Logger;
@@ -77,12 +76,11 @@ import org.apache.brooklyn.core.location.BasicLocationRegistry;
 import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.core.location.dynamic.LocationOwner;
 import org.apache.brooklyn.enricher.stock.Enrichers;
-import org.apache.brooklyn.entity.group.BasicGroup;
 import org.apache.brooklyn.entity.group.Cluster;
 import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.group.DynamicGroup;
-import org.apache.brooklyn.entity.group.DynamicMultiGroup;
 import org.apache.brooklyn.entity.machine.MachineAttributes;
+import org.apache.brooklyn.entity.nosql.etcd.EtcdCluster;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess.ChildStartableMode;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
@@ -94,6 +92,7 @@ import org.apache.brooklyn.util.core.ResourceUtils;
 import org.apache.brooklyn.util.core.crypto.SecureKeys;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.text.Strings;
+import org.apache.brooklyn.util.text.VersionComparator;
 import org.apache.brooklyn.util.time.Duration;
 
 public class DockerInfrastructureImpl extends AbstractApplication implements DockerInfrastructure {
@@ -109,6 +108,11 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
 
     @Override
     public void init() {
+        String version = config().get(DOCKER_VERSION);
+        if (VersionComparator.getInstance().compare("1.9", version) > 1) {
+            throw new IllegalStateException("Requires libnetwork capable Docker > 1.9");
+        }
+
         LOG.info("Starting Docker infrastructure id {}", getId());
         registerLocationResolver();
         super.init();
@@ -166,22 +170,27 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
                 .configure(BrooklynCampConstants.PLAN_ID, "docker-hosts")
                 .displayName("Docker Hosts"));
 
+        EntitySpec<?> etcdNodeSpec = EntitySpec.create(config().get(EtcdCluster.ETCD_NODE_SPEC));
+        String etcdVersion = config().get(ETCD_VERSION);
+        if (Strings.isNonBlank(etcdVersion)) {
+            etcdNodeSpec.configure(SoftwareProcess.SUGGESTED_VERSION, etcdVersion);
+        }
+        sensors().set(EtcdCluster.ETCD_NODE_SPEC, etcdNodeSpec);
+
+        EtcdCluster etcd = addChild(EntitySpec.create(EtcdCluster.class)
+                .configure(Cluster.INITIAL_SIZE, 0)
+                .configure(EtcdCluster.ETCD_NODE_SPEC, etcdNodeSpec)
+                .configure(EtcdCluster.CLUSTER_NAME, "docker")
+                .configure(EtcdCluster.CLUSTER_TOKEN, "etcd-docker")
+                .configure(DynamicCluster.QUARANTINE_FAILED_ENTITIES, true)
+                .configure(DynamicCluster.RUNNING_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
+                .configure(DynamicCluster.UP_QUORUM_CHECK, QuorumChecks.atLeastOneUnlessEmpty())
+                .displayName("Etcd Cluster"));
+        sensors().set(ETCD_CLUSTER, etcd);
+
         DynamicGroup fabric = addChild(EntitySpec.create(DynamicGroup.class)
                 .configure(DynamicGroup.ENTITY_FILTER, Predicates.and(Predicates.instanceOf(DockerContainer.class), EntityPredicates.attributeEqualTo(DockerContainer.DOCKER_INFRASTRUCTURE, this)))
                 .displayName("All Docker Containers"));
-
-        DynamicMultiGroup buckets = addChild(EntitySpec.create(DynamicMultiGroup.class)
-                .configure(DynamicMultiGroup.ENTITY_FILTER,
-                        Predicates.and(DockerUtils.sameInfrastructure(this), Predicates.not(EntityPredicates.applicationIdEqualTo(getApplicationId()))))
-                .configure(DynamicMultiGroup.RESCAN_INTERVAL, 15L)
-                .configure(DynamicMultiGroup.BUCKET_FUNCTION, new Function<Entity, String>() {
-                    @Override
-                    public String apply(@Nullable Entity input) {
-                        return input.getApplication().getDisplayName() + ":" + input.getApplicationId();
-                    }
-                })
-                .configure(DynamicMultiGroup.BUCKET_SPEC, EntitySpec.create(BasicGroup.class))
-                .displayName("Docker Applications"));
 
         if (config().get(SDN_ENABLE) && config().get(SDN_PROVIDER_SPEC) != null) {
             EntitySpec entitySpec = EntitySpec.create(config().get(SDN_PROVIDER_SPEC));
@@ -192,7 +201,6 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
 
         sensors().set(DOCKER_HOST_CLUSTER, hosts);
         sensors().set(DOCKER_CONTAINER_FABRIC, fabric);
-        sensors().set(DOCKER_APPLICATIONS, buckets);
 
         hosts.enrichers().add(Enrichers.builder()
                 .aggregating(DockerHost.CPU_USAGE)
@@ -471,8 +479,8 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
 
         RendererHints.register(DOCKER_HOST_CLUSTER, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(DOCKER_CONTAINER_FABRIC, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
-        RendererHints.register(DOCKER_APPLICATIONS, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
         RendererHints.register(SDN_PROVIDER, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
+        RendererHints.register(ETCD_CLUSTER, RendererHints.openWithUrl(DelegateEntity.EntityUrl.entityUrl()));
     }
 
 }

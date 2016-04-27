@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package clocker.docker.networking.entity.sdn.calico;
+package clocker.docker.networking.entity.sdn.overlay;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -34,32 +34,16 @@ import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
-import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.exceptions.Exceptions;
-import org.apache.brooklyn.util.text.Strings;
 
-public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork {
+public class OverlayNetworkImpl extends SdnProviderImpl implements OverlayNetwork {
 
-    private static final Logger LOG = LoggerFactory.getLogger(CalicoNetwork.class);
-
-    @Override
-    public void init() {
-        LOG.info("Starting Calico network id {}", getId());
-        super.init();
-
-        EntitySpec<?> agentSpec = EntitySpec.create(config().get(CALICO_NODE_SPEC))
-                .configure(CalicoNode.SDN_PROVIDER, this);
-        String calicoVersion = config().get(CALICO_VERSION);
-        if (Strings.isNonBlank(calicoVersion)) {
-            agentSpec.configure(SoftwareProcess.SUGGESTED_VERSION, calicoVersion);
-        }
-        sensors().set(SDN_AGENT_SPEC, agentSpec);
-    }
+    private static final Logger LOG = LoggerFactory.getLogger(OverlayNetwork.class);
 
     @Override
-    public String getIconUrl() { return "classpath://calico-logo.png"; }
+    public String getIconUrl() { return "classpath://docker-logo.png"; }
 
     @Override
     public Collection<IpPermission> getIpPermissions(String source) {
@@ -70,7 +54,7 @@ public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork 
     @Override
     public InetAddress getNextAgentAddress(String agentId) {
         Entity agent = getManagementContext().getEntityManager().getEntity(agentId);
-        String address = agent.sensors().get(CalicoNode.DOCKER_HOST).sensors().get(Attributes.SUBNET_ADDRESS);
+        String address = agent.sensors().get(OverlayPlugin.DOCKER_HOST).sensors().get(Attributes.SUBNET_ADDRESS);
         try {
             return InetAddress.getByName(address);
         } catch (UnknownHostException uhe) {
@@ -81,32 +65,30 @@ public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork 
     @Override
     public void rebind() {
         super.rebind();
-        // TODO implement calico rebind logic
     }
 
     @Override
     public void addHost(DockerHost host) {
         SshMachineLocation machine = host.getDynamicLocation().getMachine();
         EntitySpec<?> spec = EntitySpec.create(sensors().get(SDN_AGENT_SPEC))
-                .configure(CalicoNode.DOCKER_HOST, host)
-                .configure(CalicoNode.ETCD_NODE, host.sensors().get(DockerHost.ETCD_NODE));
-        CalicoNode agent = (CalicoNode) getAgents().addChild(spec);
+                .configure(OverlayPlugin.DOCKER_HOST, host);
+        OverlayPlugin agent = (OverlayPlugin) getAgents().addChild(spec);
         getAgents().addMember(agent);
         agent.start(ImmutableList.of(machine));
-        if (LOG.isDebugEnabled()) LOG.debug("{} added calico plugin {}", this, agent);
+        if (LOG.isDebugEnabled()) LOG.debug("{} added overlay plugin {}", this, agent);
     }
 
     @Override
     public void removeHost(DockerHost host) {
         SdnAgent agent = host.sensors().get(SdnAgent.SDN_AGENT);
         if (agent == null) {
-            LOG.warn("{} cannot find calico service: {}", this, host);
+            LOG.warn("{} cannot find overlay service: {}", this, host);
             return;
         }
         agent.stop();
         getAgents().removeMember(agent);
         Entities.unmanage(agent);
-        if (LOG.isDebugEnabled()) LOG.debug("{} removed calico plugin {}", this, agent);
+        if (LOG.isDebugEnabled()) LOG.debug("{} removed overlay plugin {}", this, agent);
     }
 
 }
