@@ -24,7 +24,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import clocker.docker.networking.entity.sdn.DockerNetworkAgentrSshDriver;
+import clocker.docker.networking.entity.sdn.DockerNetworkAgentSshDriver;
 import clocker.docker.networking.entity.sdn.SdnAgent;
 
 import com.google.common.collect.Lists;
@@ -42,7 +42,7 @@ import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.os.Os;
 import org.apache.brooklyn.util.ssh.BashCommands;
 
-public class CalicoNodeSshDriver extends DockerNetworkAgentrSshDriver implements CalicoNodeDriver {
+public class CalicoNodeSshDriver extends DockerNetworkAgentSshDriver implements CalicoNodeDriver {
 
     private static final Logger LOG = LoggerFactory.getLogger(CalicoNode.class);
 

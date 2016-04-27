@@ -18,12 +18,12 @@ package clocker.docker.networking.entity.sdn.overlay;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import clocker.docker.networking.entity.sdn.DockerNetworkAgentrSshDriver;
+import clocker.docker.networking.entity.sdn.DockerNetworkAgentSshDriver;
 
 import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 
-public class OverlayPluginSshDriver extends DockerNetworkAgentrSshDriver implements OverlayPluginDriver {
+public class OverlayPluginSshDriver extends DockerNetworkAgentSshDriver implements OverlayPluginDriver {
 
     private static final Logger LOG = LoggerFactory.getLogger(OverlayPlugin.class);
 

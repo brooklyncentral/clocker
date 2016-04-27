@@ -25,7 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import clocker.docker.entity.DockerInfrastructure;
-import clocker.docker.networking.entity.sdn.DockerNetworkAgentrSshDriver;
+import clocker.docker.networking.entity.sdn.DockerNetworkAgentSshDriver;
 import clocker.docker.networking.entity.sdn.SdnAgent;
 import clocker.docker.networking.entity.sdn.SdnProvider;
 
@@ -41,7 +41,7 @@ import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.os.Os;
 import org.apache.brooklyn.util.ssh.BashCommands;
 
-public class WeaveRouterSshDriver extends DockerNetworkAgentrSshDriver implements WeaveRouterDriver {
+public class WeaveRouterSshDriver extends DockerNetworkAgentSshDriver implements WeaveRouterDriver {
 
     private static final Logger LOG = LoggerFactory.getLogger(WeaveRouter.class);
 

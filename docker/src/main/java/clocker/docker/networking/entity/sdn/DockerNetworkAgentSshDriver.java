@@ -21,7 +21,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.api.client.util.Joiner;
+import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
 
 import org.apache.brooklyn.api.entity.EntityLocal;
@@ -32,11 +32,11 @@ import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Networking;
 import org.apache.brooklyn.util.text.StringFunctions;
 
-public abstract class DockerNetworkAgentrSshDriver extends AbstractSoftwareProcessSshDriver implements DockerNetworkAgentDriver {
+public abstract class DockerNetworkAgentSshDriver extends AbstractSoftwareProcessSshDriver implements DockerNetworkAgentDriver {
 
     private static final Logger LOG = LoggerFactory.getLogger(SdnAgent.class);
 
-    public DockerNetworkAgentrSshDriver(EntityLocal entity, SshMachineLocation machine) {
+    public DockerNetworkAgentSshDriver(EntityLocal entity, SshMachineLocation machine) {
         super(entity, machine);
     }
 
