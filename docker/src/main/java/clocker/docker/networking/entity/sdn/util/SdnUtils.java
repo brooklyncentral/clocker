@@ -23,6 +23,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import clocker.docker.entity.DockerHost;
 import clocker.docker.networking.entity.VirtualNetwork;
 import clocker.docker.networking.entity.sdn.SdnProvider;
 
@@ -40,6 +41,7 @@ import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.core.task.TaskBuilder;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.repeat.Repeater;
+import org.apache.brooklyn.util.ssh.BashCommands;
 import org.apache.brooklyn.util.time.Duration;
 
 public class SdnUtils {
@@ -50,7 +52,7 @@ public class SdnUtils {
     private SdnUtils() { }
 
     /** Checks if the SDN provider is of the specified type. */
-    public static boolean isSdnProvider(Entity entity, String providerName) {
+    public static final boolean isSdnProvider(Entity entity, String providerName) {
         if (entity.config().get(SdnAttributes.SDN_ENABLE)) {
             Entity sdn = entity.sensors().get(SdnAttributes.SDN_PROVIDER);
             if (sdn == null) return false;
@@ -87,7 +89,7 @@ public class SdnUtils {
         return network;
     }
 
-    public static VirtualNetwork lookupNetwork(final SdnProvider provider, final String networkId) {
+    public static final VirtualNetwork lookupNetwork(final SdnProvider provider, final String networkId) {
         Task<Boolean> lookup = TaskBuilder.<Boolean> builder()
                 .displayName("Waiting until virtual network is available")
                 .body(new Callable<Boolean>() {
@@ -117,6 +119,7 @@ public class SdnUtils {
                 EntityPredicates.attributeEqualTo(VirtualNetwork.NETWORK_ID, networkId));
         return network;
     }
+
     public static final Cidr provisionNetwork(final SdnProvider provider, final VirtualNetwork network) {
         String networkId = network.sensors().get(VirtualNetwork.NETWORK_ID);
 
@@ -154,6 +157,13 @@ public class SdnUtils {
                 return false;
             }
         }
-    };
+    }
+
+    public static final int countAttached(DockerHost dockerHost, String networkId) {
+        String output = dockerHost.runDockerCommand(
+                BashCommands.sudo(String.format("network inspect --format=\"{{ len .Containers }}\" %s", networkId)));
+        int attached = Integer.parseInt(output);
+        return attached;
+    }
 
 }

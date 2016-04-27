@@ -611,9 +611,9 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                     addresses.add(address.getHostAddress());
                     if (networkId.equals(initialNetwork)) {
                         sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
-                        sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostName());
+                        sensors().set(Attributes.SUBNET_HOSTNAME, getHostname());
                         entity.sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
-                        entity.sensors().set(Attributes.SUBNET_HOSTNAME, address.getHostName());
+                        entity.sensors().set(Attributes.SUBNET_HOSTNAME, getHostname());
                     }
                 }
 
@@ -741,19 +741,25 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         }
         removeContainer();
 
+        // Delete SDN networks no longer in use
         if (config().get(SdnAttributes.SDN_ENABLE)) {
             SdnProvider provider = (SdnProvider) getDockerHost().getInfrastructure().sensors().get(SdnAttributes.SDN_PROVIDER);
             List<String> networks = sensors().get(SdnAttributes.ATTACHED_NETWORKS);
             for (String networkId : networks) {
-                String output = getDockerHost().runDockerCommand(
-                        BashCommands.sudo(String.format("network inspect --format=\"{{ len .Containers }}\" %s", networkId)));
-                int attached = Integer.parseInt(output);
+                int attached = SdnUtils.countAttached(getDockerHost(), networkId);
                 if (attached == 0) {
                     VirtualNetwork networkEntity = SdnUtils.lookupNetwork(provider, networkId);
                     Entities.invokeEffector(this, networkEntity, Startable.STOP).getUnchecked();
                     Entities.unmanage(networkEntity);
                 }
             }
+        }
+
+        // Delete application bridge network
+        String bridgeNetwork = String.format("%s_%s", entity.getApplicationId(), DockerUtils.BRIDGE_NETWORK);
+        int attached = SdnUtils.countAttached(getDockerHost(), bridgeNetwork);
+        if (attached == 0) {
+            getDockerHost().runDockerCommand(String.format("network rm %s", bridgeNetwork));
         }
 
         sensors().set(SSH_MACHINE_LOCATION, null);
@@ -767,7 +773,13 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
     @Override
     public String getHostname() {
-        return getDockerContainerName(); // XXX or SUBNET_ADDRESS attribute?
+        String containerName = getDockerContainerName();
+        if (config().get(SdnAttributes.SDN_ENABLE)) {
+            String initialNetwork = sensors().get(SdnAttributes.INITIAL_ATTACHED_NETWORK);
+            return String.format("%s.%s", containerName, initialNetwork);
+        } else {
+            return containerName;
+        }
     }
 
     @Override
