@@ -568,13 +568,15 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             }
 
             // Create isolated application bridge network for port forwarding
-            String bridgeNetwork = String.format("%s_%s", entity.getApplicationId(), DockerUtils.BRIDGE_NETWORK);
-            if (!getDockerHost().runDockerCommand("network ls").contains(bridgeNetwork)) {
-                getDockerHost().runDockerCommand(String.format("network create --driver bridge " +
-                        "-o com.docker.network.bridge.enable_ip_masquerade=true " +
-                        "-o com.docker.network.bridge.host_binding_ipv4=0.0.0.0 %s", bridgeNetwork));
+            synchronized (getDockerHost()) { // One per Docker host
+                String bridgeNetwork = String.format("%s_%s", entity.getApplicationId(), DockerUtils.BRIDGE_NETWORK);
+                if (!getDockerHost().runDockerCommand("network ls").contains(bridgeNetwork)) {
+                    getDockerHost().runDockerCommand(String.format("network create --driver bridge " +
+                            "-o com.docker.network.bridge.enable_ip_masquerade=true " +
+                            "-o com.docker.network.bridge.host_binding_ipv4=0.0.0.0 %s", bridgeNetwork));
+                }
+                options.networkMode(bridgeNetwork);
             }
-            options.networkMode(bridgeNetwork);
 
             // Create a new container using jclouds Docker driver
             JcloudsSshMachineLocation container = (JcloudsSshMachineLocation) host.getJcloudsLocation().obtain(dockerFlags);
