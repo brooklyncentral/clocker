@@ -26,6 +26,7 @@ import java.net.InetAddress;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,13 +35,14 @@ import clocker.docker.entity.DockerHost;
 import clocker.docker.entity.container.DockerContainer;
 import clocker.docker.entity.util.DockerCallbacks;
 import clocker.docker.entity.util.DockerUtils;
+import clocker.docker.networking.entity.sdn.util.SdnAttributes;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
 
@@ -370,15 +372,24 @@ public class DockerContainerLocation extends SshMachineLocation implements Suppo
 
     @Override
     public String getSubnetHostname() {
-        return getSubnetIp();
+        return dockerContainer.getHostname();
+    }
+
+    @Override
+    public Set<String> getPrivateAddresses() {
+        if (dockerContainer.config().get(SdnAttributes.SDN_ENABLE)) {
+            return ImmutableSet.copyOf(dockerContainer.sensors().get(DockerContainer.CONTAINER_ADDRESSES));
+        } else {
+            return ImmutableSet.of(getSubnetIp());
+        }
     }
 
     @Override
     public String getSubnetIp() {
-        String containerAddress = getOwner().sensors().get(Attributes.SUBNET_ADDRESS);
+        String containerAddress = dockerContainer.sensors().get(Attributes.SUBNET_ADDRESS);
         if (Strings.isEmpty(containerAddress)) {
-            String containerId = checkNotNull(getOwner().getContainerId(), "containerId");
-            containerAddress = getOwner().getDockerHost()
+            String containerId = checkNotNull(dockerContainer.getContainerId(), "containerId");
+            containerAddress = dockerContainer.getDockerHost()
                     .runDockerCommand("inspect --format={{.NetworkSettings.IPAddress}} " + containerId)
                     .trim();
         }

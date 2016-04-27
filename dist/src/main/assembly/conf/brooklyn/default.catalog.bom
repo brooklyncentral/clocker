@@ -371,7 +371,7 @@ brooklyn.catalog:
           id: nodejs
           name: "Node.js"
           brooklyn.config:
-            docker.direct.ports:
+            docker.container.directPorts.configKeys:
             - "http.port"
             gitRepoUrl:
               "https://github.com/grkvlt/nodejs-todo/"
@@ -390,7 +390,7 @@ brooklyn.catalog:
             - redis
             - redis-url
             - connect
-            env:
+            docker.container.environment:
               REDISTOGO_URL: >
                 $brooklyn:formatString("redis://%s:%d/",
                 component("redis").attributeWhenReady("host.subnet.hostname"),

@@ -34,7 +34,7 @@ services:
   id: nodejs
   name: "Node.JS"
   brooklyn.config:
-    docker.direct.ports:
+    docker.container.directPorts.configKeys:
     - "http.port"
     docker.container.strategies:
     - $brooklyn:object:
@@ -58,7 +58,7 @@ services:
     - redis
     - redis-url
     - connect
-    env:
+    docker.container.environment:
       REDISTOGO_URL: >
         $brooklyn:formatString("redis://%s:%d/",
         component("redis").attributeWhenReady("host.subnet.hostname"),

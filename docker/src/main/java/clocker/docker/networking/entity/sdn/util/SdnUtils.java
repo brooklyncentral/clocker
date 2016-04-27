@@ -161,7 +161,7 @@ public class SdnUtils {
 
     public static final int countAttached(DockerHost dockerHost, String networkId) {
         String output = dockerHost.runDockerCommand(
-                BashCommands.sudo(String.format("network inspect --format=\"{{ len .Containers }}\" %s", networkId)));
+                String.format("network inspect --format=\"{{ len .Containers }}\" %s", networkId));
         int attached = Integer.parseInt(output);
         return attached;
     }

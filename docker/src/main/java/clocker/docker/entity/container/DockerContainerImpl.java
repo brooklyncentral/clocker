@@ -600,7 +600,6 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             // If SDN is enabled, attach networks
             if (config().get(SdnAttributes.SDN_ENABLE)) {
                 SdnAgent agent = Entities.attributeSupplierWhenReady(dockerHost, SdnAgent.SDN_AGENT).get();
-                String initialNetwork = sensors().get(SdnAttributes.INITIAL_ATTACHED_NETWORK);
                 List<String> networks = sensors().get(SdnAttributes.ATTACHED_NETWORKS);
                 Set<String> addresses = Sets.newHashSet();
 
@@ -609,12 +608,6 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                     agent.createNetwork(networkId);
                     InetAddress address = agent.attachNetwork(containerId, networkId);
                     addresses.add(address.getHostAddress());
-                    if (networkId.equals(initialNetwork)) {
-                        sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
-                        sensors().set(Attributes.SUBNET_HOSTNAME, getHostname());
-                        entity.sensors().set(Attributes.SUBNET_ADDRESS, address.getHostAddress());
-                        entity.sensors().set(Attributes.SUBNET_HOSTNAME, getHostname());
-                    }
                 }
 
                 // Save container addresses
