@@ -81,38 +81,42 @@ public class SdnUtils {
             Entities.start(network, provider.getLocations());
             Entities.waitForServiceUp(network);
         } else {
-            Task<Boolean> lookup = TaskBuilder.<Boolean> builder()
-                    .displayName("Waiting until virtual network is available")
-                    .body(new Callable<Boolean>() {
-                        @Override
-                        public Boolean call() throws Exception {
-                            return Repeater.create()
-                                    .every(Duration.TEN_SECONDS)
-                                    .until(new Callable<Boolean>() {
-                                        public Boolean call() {
-                                            Optional<Entity> found = Iterables.tryFind(provider.sensors().get(SdnProvider.SDN_NETWORKS).getMembers(),
-                                                    EntityPredicates.attributeEqualTo(VirtualNetwork.NETWORK_ID, networkId));
-                                            return found.isPresent();
-                                        }
-                                    })
-                                    .limitTimeTo(Duration.ONE_MINUTE)
-                                    .run();
-                        }
-                    })
-                    .build();
-            Boolean result = DynamicTasks.queueIfPossible(lookup)
-                    .orSubmitAndBlock()
-                    .andWaitForSuccess();
-            if (!result) {
-                throw new IllegalStateException(String.format("Cannot find virtual network entity for %s", networkId));
-            }
-            network = (VirtualNetwork) Iterables.find(provider.sensors().get(SdnProvider.SDN_NETWORKS).getMembers(),
-                    EntityPredicates.attributeEqualTo(VirtualNetwork.NETWORK_ID, networkId));
+            network = lookupNetwork(provider, networkId);
         }
 
         return network;
     }
 
+    public static VirtualNetwork lookupNetwork(final SdnProvider provider, final String networkId) {
+        Task<Boolean> lookup = TaskBuilder.<Boolean> builder()
+                .displayName("Waiting until virtual network is available")
+                .body(new Callable<Boolean>() {
+                    @Override
+                    public Boolean call() throws Exception {
+                        return Repeater.create()
+                                .every(Duration.TEN_SECONDS)
+                                .until(new Callable<Boolean>() {
+                                    public Boolean call() {
+                                        Optional<Entity> found = Iterables.tryFind(provider.sensors().get(SdnProvider.SDN_NETWORKS).getMembers(),
+                                                EntityPredicates.attributeEqualTo(VirtualNetwork.NETWORK_ID, networkId));
+                                        return found.isPresent();
+                                    }
+                                })
+                                .limitTimeTo(Duration.ONE_MINUTE)
+                                .run();
+                    }
+                })
+                .build();
+        Boolean result = DynamicTasks.queueIfPossible(lookup)
+                .orSubmitAndBlock()
+                .andWaitForSuccess();
+        if (!result) {
+            throw new IllegalStateException(String.format("Cannot find virtual network entity for %s", networkId));
+        }
+        VirtualNetwork network = (VirtualNetwork) Iterables.find(provider.sensors().get(SdnProvider.SDN_NETWORKS).getMembers(),
+                EntityPredicates.attributeEqualTo(VirtualNetwork.NETWORK_ID, networkId));
+        return network;
+    }
     public static final Cidr provisionNetwork(final SdnProvider provider, final VirtualNetwork network) {
         String networkId = network.sensors().get(VirtualNetwork.NETWORK_ID);
 

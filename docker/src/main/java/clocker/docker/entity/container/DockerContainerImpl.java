@@ -36,8 +36,11 @@ import clocker.docker.entity.util.DockerAttributes;
 import clocker.docker.entity.util.DockerUtils;
 import clocker.docker.location.DockerContainerLocation;
 import clocker.docker.location.DockerHostLocation;
+import clocker.docker.networking.entity.VirtualNetwork;
 import clocker.docker.networking.entity.sdn.SdnAgent;
+import clocker.docker.networking.entity.sdn.SdnProvider;
 import clocker.docker.networking.entity.sdn.util.SdnAttributes;
+import clocker.docker.networking.entity.sdn.util.SdnUtils;
 
 import com.google.common.base.CaseFormat;
 import com.google.common.base.CharMatcher;
@@ -68,6 +71,7 @@ import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
+import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.core.location.Locations;
 import org.apache.brooklyn.core.location.cloud.CloudLocationConfig;
@@ -90,6 +94,7 @@ import org.apache.brooklyn.util.core.internal.ssh.SshTool;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Urls;
+import org.apache.brooklyn.util.ssh.BashCommands;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
 
@@ -735,6 +740,21 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             shutDown();
         }
         removeContainer();
+
+        if (config().get(SdnAttributes.SDN_ENABLE)) {
+            SdnProvider provider = (SdnProvider) getDockerHost().getInfrastructure().sensors().get(SdnAttributes.SDN_PROVIDER);
+            List<String> networks = sensors().get(SdnAttributes.ATTACHED_NETWORKS);
+            for (String networkId : networks) {
+                String output = getDockerHost().runDockerCommand(
+                        BashCommands.sudo(String.format("network inspect --format=\"{{ len .Containers }}\" %s", networkId)));
+                int attached = Integer.parseInt(output);
+                if (attached == 0) {
+                    VirtualNetwork networkEntity = SdnUtils.lookupNetwork(provider, networkId);
+                    Entities.invokeEffector(this, networkEntity, Startable.STOP).getUnchecked();
+                    Entities.unmanage(networkEntity);
+                }
+            }
+        }
 
         sensors().set(SSH_MACHINE_LOCATION, null);
         Boolean started = config().get(SoftwareProcess.ENTITY_STARTED);
