@@ -24,23 +24,12 @@ services:
   name: "Redis"
   brooklyn.config:
     install.version: 3.0.0
-    docker.container.strategies:
-    - $brooklyn:object:
-        type: "clocker.docker.location.strategy.host.ProvisioningFlagsPlacementStrategy"
-        brooklyn.config:
-          minRam: 4000
-
 - type: org.apache.brooklyn.entity.webapp.nodejs.NodeJsWebAppService
   id: nodejs
   name: "Node.JS"
   brooklyn.config:
     docker.container.directPorts.configKeys:
     - "http.port"
-    docker.container.strategies:
-    - $brooklyn:object:
-        type: "clocker.docker.location.strategy.host.ProvisioningFlagsPlacementStrategy"
-        brooklyn.config:
-          minRam: 1000
     gitRepoUrl:
       "https://github.com/grkvlt/nodejs-todo/"
     appFileName: server.js

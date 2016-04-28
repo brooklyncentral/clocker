@@ -160,6 +160,7 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
         if (Boolean.TRUE.equals(config().get(SdnAttributes.SDN_DEBUG))) {
             dockerHostSpec.configure(DockerAttributes.DOCKERFILE_URL, DockerUtils.UBUNTU_NETWORKING_DOCKERFILE);
         }
+        sensors().set(DOCKER_HOST_SPEC, dockerHostSpec);
 
         DynamicCluster hosts = addChild(EntitySpec.create(DynamicCluster.class)
                 .configure(Cluster.INITIAL_SIZE, initialSize)
@@ -244,7 +245,8 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
                     .configure(AutoScalerPolicy.POOL_OK_SENSOR, ContainerHeadroomEnricher.DOCKER_CONTAINER_CLUSTER_OK)
                     .configure(AutoScalerPolicy.MIN_POOL_SIZE, initialSize)
                     .configure(AutoScalerPolicy.RESIZE_UP_STABILIZATION_DELAY, Duration.THIRTY_SECONDS)
-                    .configure(AutoScalerPolicy.RESIZE_DOWN_STABILIZATION_DELAY, Duration.FIVE_MINUTES));
+                    .configure(AutoScalerPolicy.RESIZE_DOWN_STABILIZATION_DELAY, Duration.FIVE_MINUTES)
+                    .displayName("Headroom Auto Scaler"));
         }
 
         sensors().set(Attributes.MAIN_URI, URI.create("/clocker"));
@@ -303,7 +305,7 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
     @Override
     public Integer resize(Integer desiredSize) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Resize Docker infrastructure to {} at {}", new Object[]{desiredSize, getLocations()});
+            LOG.debug("Resize Docker infrastructure to {} at {}", new Object[]{ desiredSize, getLocations() });
         }
         return getDockerHostCluster().resize(desiredSize);
     }

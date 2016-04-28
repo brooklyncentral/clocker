@@ -21,7 +21,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Semaphore;
@@ -33,8 +32,8 @@ import clocker.docker.entity.DockerHost;
 import clocker.docker.entity.DockerInfrastructure;
 import clocker.docker.entity.util.DockerAttributes;
 import clocker.docker.location.strategy.DockerAwarePlacementStrategy;
-import clocker.docker.location.strategy.DockerAwareProvisioningStrategy;
 import clocker.docker.networking.location.NetworkProvisioningExtension;
+import clocker.docker.policy.ContainerHeadroomEnricher;
 
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Optional;
@@ -56,6 +55,7 @@ import org.apache.brooklyn.api.location.NoMachinesAvailableException;
 import org.apache.brooklyn.api.mgmt.rebind.RebindContext;
 import org.apache.brooklyn.api.mgmt.rebind.RebindSupport;
 import org.apache.brooklyn.api.mgmt.rebind.mementos.LocationMemento;
+import org.apache.brooklyn.api.policy.Policy;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.entity.Entities;
@@ -67,6 +67,7 @@ import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.core.mgmt.rebind.BasicLocationRebindSupport;
 import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
+import org.apache.brooklyn.policy.autoscaling.AutoScalerPolicy;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.core.mutex.WithMutexes;
@@ -208,17 +209,30 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
             // Get permission to create a new Docker host
             if (permit.tryAcquire()) {
                 try {
-                    Iterable<DockerAwareProvisioningStrategy> provisioningStrategies = Iterables.filter(Iterables.concat(strategies,  entityStrategies), DockerAwareProvisioningStrategy.class);
-                    for (DockerAwareProvisioningStrategy strategy : provisioningStrategies) {
-                        flags = strategy.apply((Map<String,Object>) flags);
-                    }
+                    // Determine if headroom scaling policy is being used and suspend
+                    Integer headroom = getOwner().config().get(ContainerHeadroomEnricher.CONTAINER_HEADROOM);
+                    Double headroomPercent = getOwner().config().get(ContainerHeadroomEnricher.CONTAINER_HEADROOM_PERCENTAGE);
+                    boolean headroomSet = (headroom != null && headroom > 0) || (headroomPercent != null && headroomPercent > 0d);
+                    Optional<Policy> policy = Iterables.tryFind(getOwner().getDockerHostCluster().policies(), Predicates.instanceOf(AutoScalerPolicy.class));
+                    if (headroomSet && policy.isPresent()) policy.get().suspend();
 
-                    LOG.info("Provisioning new host with flags: {}", flags);
-                    SshMachineLocation provisioned = getProvisioner().obtain(flags);
-                    Entity added = getDockerInfrastructure().getDockerHostCluster().addNode(provisioned, MutableMap.of());
-                    dockerHost = (DockerHost) added;
-                    machine = dockerHost.getDynamicLocation();
-                    Entities.start(added, ImmutableList.of(provisioned));
+                    try {
+                        // Resize the host cluster
+                        LOG.info("Provisioning new host");
+                        Entity added = Iterables.getOnlyElement(getOwner().getDockerHostCluster().resizeByDelta(1));
+                        dockerHost = (DockerHost) added;
+                        machine = dockerHost.getDynamicLocation();
+
+                        // Update autoscaler policy with new minimum size and resume
+                        if (headroomSet && policy.isPresent()) {
+                            int currentMin = policy.get().config().get(AutoScalerPolicy.MIN_POOL_SIZE);
+                            LOG.info("Updating autoscaler policy ({}) setting {} to {}",
+                                    new Object[] { policy.get(), AutoScalerPolicy.MIN_POOL_SIZE.getName(), currentMin + 1 });
+                            policy.get().config().set(AutoScalerPolicy.MIN_POOL_SIZE, currentMin + 1);
+                        }
+                    } finally {
+                        if (policy.isPresent()) policy.get().resume();
+                    }
                 } finally {
                     permit.release();
                 }
@@ -298,6 +312,8 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
             LOG.warn("Docker Host {} not found for release", host.getDockerHostName());
         }
 
+        // TODO update autoscaler policy pool size
+
         // Now close and unmange the host
         try {
             host.stop();
@@ -320,14 +336,17 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
         return infrastructure;
     }
 
+    @Override
     public List<Entity> getDockerContainerList() {
         return infrastructure.getDockerContainerList();
     }
 
+    @Override
     public List<Entity> getDockerHostList() {
         return infrastructure.getDockerHostList();
     }
 
+    @Override
     public DockerInfrastructure getDockerInfrastructure() {
         return infrastructure;
     }

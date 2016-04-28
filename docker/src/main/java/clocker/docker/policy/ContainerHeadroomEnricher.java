@@ -158,7 +158,7 @@ public class ContainerHeadroomEnricher extends AbstractEnricher {
         lowThreshold = Math.max(0d, lowThreshold);
 
         double highThreshold = (double) (possible - headroom) / (double) possible;
-        highThreshold = Math.max(0, highThreshold);
+        highThreshold = Math.max(0d, highThreshold);
 
         // Emit current status of the pool as sensor data
         emit(CONTAINERS_NEEDED, needed);
