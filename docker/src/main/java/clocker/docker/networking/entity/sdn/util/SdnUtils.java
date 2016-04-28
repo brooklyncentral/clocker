@@ -27,9 +27,11 @@ import clocker.docker.entity.DockerHost;
 import clocker.docker.networking.entity.VirtualNetwork;
 import clocker.docker.networking.entity.sdn.SdnProvider;
 
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 
 import org.apache.brooklyn.api.entity.Entity;
@@ -37,11 +39,12 @@ import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.mgmt.Task;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityPredicates;
+import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.core.task.TaskBuilder;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.repeat.Repeater;
-import org.apache.brooklyn.util.ssh.BashCommands;
+import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
 
 public class SdnUtils {
@@ -160,9 +163,11 @@ public class SdnUtils {
     }
 
     public static final int countAttached(DockerHost dockerHost, String networkId) {
-        String output = dockerHost.runDockerCommand(
-                String.format("network inspect --format=\"{{ len .Containers }}\" %s", networkId));
-        int attached = Integer.parseInt(output);
+        Entity etcd = dockerHost.sensors().get(DockerHost.ETCD_NODE);
+        String installDir = etcd.sensors().get(SoftwareProcess.EXPANDED_INSTALL_DIR);
+        String fullNetworkId = dockerHost.runDockerCommand(String.format("network inspect --format=\"{{ .ID }}\" %s", networkId));
+        String output = dockerHost.execCommand(String.format("%s/etcdctl ls /docker/network/v1.0/endpoint/%s", installDir, fullNetworkId));
+        int attached = Iterables.size(Splitter.on("\n").split(output));
         return attached;
     }
 

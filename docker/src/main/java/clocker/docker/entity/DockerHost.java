@@ -205,6 +205,8 @@ public interface DockerHost extends MachineEntity, HasShortName, LocationOwner<D
     void addIpPermissions(Collection<IpPermission> permissions);
     void removeIpPermissions(Collection<IpPermission> permissions);
 
+    Object getHostMutex();
+
     MethodEffector<String> BUILD_IMAGE = new MethodEffector<String>(DockerHost.class, "buildImage");
     MethodEffector<String> RUN_DOCKER_COMMAND = new MethodEffector<String>(DockerHost.class, "runDockerCommand");
     MethodEffector<String> RUN_DOCKER_COMMAND_TIMEOUT = new MethodEffector<String>(DockerHost.class, "runDockerCommandTimeout");

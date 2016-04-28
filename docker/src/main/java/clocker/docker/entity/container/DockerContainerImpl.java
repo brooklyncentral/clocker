@@ -94,7 +94,6 @@ import org.apache.brooklyn.util.core.internal.ssh.SshTool;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Urls;
-import org.apache.brooklyn.util.ssh.BashCommands;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
 
@@ -573,7 +572,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             }
 
             // Create isolated application bridge network for port forwarding
-            synchronized (getDockerHost()) { // One per Docker host
+            synchronized (getDockerHost().getHostMutex()) {
                 String bridgeNetwork = String.format("%s_%s", entity.getApplicationId(), DockerUtils.BRIDGE_NETWORK);
                 if (!getDockerHost().runDockerCommand("network ls").contains(bridgeNetwork)) {
                     getDockerHost().runDockerCommand(String.format("network create --driver bridge " +
@@ -739,20 +738,25 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             SdnProvider provider = (SdnProvider) getDockerHost().getInfrastructure().sensors().get(SdnAttributes.SDN_PROVIDER);
             List<String> networks = sensors().get(SdnAttributes.ATTACHED_NETWORKS);
             for (String networkId : networks) {
-                int attached = SdnUtils.countAttached(getDockerHost(), networkId);
-                if (attached == 0) {
-                    VirtualNetwork networkEntity = SdnUtils.lookupNetwork(provider, networkId);
-                    Entities.invokeEffector(this, networkEntity, Startable.STOP).getUnchecked();
-                    Entities.unmanage(networkEntity);
+                synchronized (getDockerHost().getInfrastructure().getInfrastructureMutex()) {
+                    int attached = SdnUtils.countAttached(getDockerHost(), networkId);
+                    if (attached == 0) {
+                        VirtualNetwork networkEntity = SdnUtils.lookupNetwork(provider, networkId);
+                        Entities.invokeEffector(this, networkEntity, Startable.STOP).getUnchecked();
+                        Entities.unmanage(networkEntity);
+                    }
                 }
             }
         }
 
         // Delete application bridge network
-        String bridgeNetwork = String.format("%s_%s", entity.getApplicationId(), DockerUtils.BRIDGE_NETWORK);
-        int attached = SdnUtils.countAttached(getDockerHost(), bridgeNetwork);
-        if (attached == 0) {
-            getDockerHost().runDockerCommand(String.format("network rm %s", bridgeNetwork));
+        synchronized (getDockerHost().getHostMutex()) {
+            String bridgeNetwork = String.format("%s_%s", entity.getApplicationId(), DockerUtils.BRIDGE_NETWORK);
+            int attached = Integer.parseInt(getDockerHost().runDockerCommand(
+                    String.format("network inspect --format=\"{{ len .Containers }}\" %s", bridgeNetwork)));
+            if (attached == 0) {
+                getDockerHost().runDockerCommand(String.format("network rm %s", bridgeNetwork));
+            }
         }
 
         sensors().set(SSH_MACHINE_LOCATION, null);
