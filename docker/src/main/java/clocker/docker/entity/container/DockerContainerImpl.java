@@ -733,22 +733,6 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         }
         removeContainer();
 
-        // Delete SDN networks no longer in use
-        if (config().get(SdnAttributes.SDN_ENABLE)) {
-            SdnProvider provider = (SdnProvider) getDockerHost().getInfrastructure().sensors().get(SdnAttributes.SDN_PROVIDER);
-            List<String> networks = sensors().get(SdnAttributes.ATTACHED_NETWORKS);
-            for (String networkId : networks) {
-                synchronized (getDockerHost().getInfrastructure().getInfrastructureMutex()) {
-                    int attached = SdnUtils.countAttached(getDockerHost(), networkId);
-                    if (attached == 0) {
-                        VirtualNetwork networkEntity = SdnUtils.lookupNetwork(provider, networkId);
-                        Entities.invokeEffector(this, networkEntity, Startable.STOP).getUnchecked();
-                        Entities.unmanage(networkEntity);
-                    }
-                }
-            }
-        }
-
         // Delete application bridge network
         synchronized (getDockerHost().getHostMutex()) {
             String bridgeNetwork = String.format("%s_%s", entity.getApplicationId(), DockerUtils.BRIDGE_NETWORK);
@@ -760,6 +744,22 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 }
             } catch (IllegalStateException ise) {
                 LOG.warn("Error trying to remove bridge network {}: {}", bridgeNetwork, ise);
+            }
+        }
+
+        // Delete SDN networks no longer in use
+        if (config().get(SdnAttributes.SDN_ENABLE)) {
+            SdnProvider provider = (SdnProvider) getDockerHost().getInfrastructure().sensors().get(SdnAttributes.SDN_PROVIDER);
+            List<String> networks = sensors().get(SdnAttributes.ATTACHED_NETWORKS);
+            for (String networkId : networks) {
+                synchronized (getDockerHost().getInfrastructure().getInfrastructureMutex()) {
+                    int attached = SdnUtils.countAttached(getDockerHost(), networkId);
+                    if (attached == 0) {
+                        VirtualNetwork networkEntity = SdnUtils.lookupNetwork(provider, networkId);
+                        Entities.invokeEffector(getDockerHost(), networkEntity, Startable.STOP).getUnchecked();
+                        Entities.unmanage(networkEntity);
+                    }
+                }
             }
         }
 

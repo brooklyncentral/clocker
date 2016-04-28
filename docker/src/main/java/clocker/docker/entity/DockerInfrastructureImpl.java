@@ -421,15 +421,8 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
 
         // Shutdown the Registry if configured
         if (config().get(DOCKER_SHOULD_START_REGISTRY)) {
-            try {
-                Entity dockerRegistry = sensors().get(DOCKER_IMAGE_REGISTRY);
-                if (dockerRegistry != null) {
-                    LOG.debug("Stopping Docker Registry: {}", dockerRegistry);
-                    Entities.invokeEffector(this, dockerRegistry, Startable.STOP).get(timeout);
-                }
-            } catch (Exception e) {
-                LOG.warn("Error stopping Docker Registry", e);
-            }
+            Entity registry = sensors().get(DOCKER_IMAGE_REGISTRY);
+            DockerUtils.stop(this, registry, Duration.THIRTY_SECONDS);
         }
 
         // Find all applications and stop, blocking for up to five minutes until ended
@@ -448,20 +441,9 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
             LOG.warn("Error stopping applications", e);
         }
 
-        // Shutdown SDN if configured
-        if (config().get(SDN_ENABLE)) {
-            try {
-                Entity sdn = sensors().get(SDN_PROVIDER);
-                LOG.debug("Stopping SDN: {}", sdn);
-                Entities.invokeEffector(this, sdn, Startable.STOP).get(timeout);
-            } catch (Exception e) {
-                LOG.warn("Error stopping SDN", e);
-            }
-        }
-
         // Stop all Docker hosts in parallel
         try {
-            DynamicCluster hosts = sensors().get(DOCKER_HOST_CLUSTER);
+            DynamicCluster hosts = getDockerHostCluster();
             LOG.debug("Stopping hosts: {}", Iterables.toString(hosts.getMembers()));
             Entities.invokeEffectorList(this, hosts.getMembers(), Startable.STOP).get(timeout);
         } catch (Exception e) {

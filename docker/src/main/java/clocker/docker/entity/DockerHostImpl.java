@@ -88,6 +88,7 @@ import org.apache.brooklyn.core.location.geo.LocalhostExternalIpLoader;
 import org.apache.brooklyn.core.server.BrooklynServerPaths;
 import org.apache.brooklyn.enricher.stock.Enrichers;
 import org.apache.brooklyn.entity.group.BasicGroup;
+import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.machine.MachineEntityImpl;
 import org.apache.brooklyn.entity.nosql.etcd.EtcdCluster;
 import org.apache.brooklyn.entity.nosql.etcd.EtcdNode;
@@ -451,7 +452,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     public int execCommandStatus(String command) {
-        return execCommandStatusTimeout(command, Duration.seconds(15));
+        return execCommandStatusTimeout(command, Duration.ONE_MINUTE);
     }
 
     @Override
@@ -818,30 +819,27 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     public void preStop() {
         if (scan != null && scan.isActivated()) scan.stop();
 
-        SdnAgent agent = sensors().get(SdnAgent.SDN_AGENT);
-        if (agent != null && Entities.isManaged(agent)) {
-            // Avoid DockerHost -> SdnAgent -> DockerHost stop recursion by invoking
-            // the effector instead of agent.stop().
-            boolean agentStopped = Entities.invokeEffector(this, agent, Startable.STOP)
-                    .blockUntilEnded(Duration.TEN_SECONDS);
-            if (!agentStopped) {
-                LOG.debug("{} may not have stopped. Proceeding to stop {} anyway", agent, this);
-            }
-        }
-
-        EtcdCluster etcd = getInfrastructure().sensors().get(DockerInfrastructure.ETCD_CLUSTER);
-        EtcdNode node = sensors().get(ETCD_NODE);
-        etcd.removeMember(node);
-        node.stop();
-
         super.preStop();
+
+        deleteLocation();
+
+        // Stop all Docker containers in parallel
+        try {
+            Group containers = getDockerContainerCluster();
+            // TODO filter out SDN containers
+            LOG.debug("Stopping containers: {}", Iterables.toString(containers.getMembers()));
+            Entities.invokeEffectorList(this, containers.getMembers(), Startable.STOP).get(Duration.ONE_MINUTE);
+        } catch (Exception e) {
+            LOG.warn("Error stopping containers", e);
+        }
     }
 
     @Override
     public void postStop() {
         super.postStop(); // Currently does nothing
 
-        deleteLocation();
+        EtcdNode etcd = sensors().get(ETCD_NODE);
+        DockerUtils.stop(this, etcd, Duration.THIRTY_SECONDS);
     }
 
     public void scanContainers() {

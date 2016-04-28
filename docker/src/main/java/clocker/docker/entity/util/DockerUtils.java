@@ -46,6 +46,7 @@ import com.google.common.hash.Hashing;
 import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.api.entity.Entity;
+import org.apache.brooklyn.api.entity.Group;
 import org.apache.brooklyn.api.location.Location;
 import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.PortRange;
@@ -59,6 +60,7 @@ import org.apache.brooklyn.core.config.render.RendererHints.NamedActionWithUrl;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityAndAttribute;
+import org.apache.brooklyn.core.entity.trait.Startable;
 import org.apache.brooklyn.core.location.PortRanges;
 import org.apache.brooklyn.core.mgmt.BrooklynTaskTags;
 import org.apache.brooklyn.core.objs.BrooklynObjectInternal.ConfigurationSupportInternal;
@@ -83,6 +85,7 @@ import org.apache.brooklyn.util.core.task.system.ProcessTaskWrapper;
 import org.apache.brooklyn.util.guava.Maybe;
 import org.apache.brooklyn.util.text.Identifiers;
 import org.apache.brooklyn.util.text.Strings;
+import org.apache.brooklyn.util.time.Duration;
 
 import brooklyn.networking.subnet.SubnetTier;
 
@@ -440,6 +443,16 @@ public class DockerUtils {
         return ImmutableSet.copyOf(entityOpenPorts);
     }
 
+    public static final void stop(Entity caller, Entity target, Duration timeout) {
+        if (target != null && Entities.isManaged(target)) {
+            boolean stopped = Entities.invokeEffector(caller, target, Startable.STOP)
+                    .blockUntilEnded(timeout);
+            if (!stopped) {
+                LOG.debug("{} may not have stopped. Proceeding to stop {} anyway", target, caller);
+            }
+        }
+    }
+
     public static final Predicate<Entity> sameInfrastructure(Entity entity) {
         Preconditions.checkNotNull(entity, "entity");
         return new SameInfrastructurePredicate(entity.getId());
@@ -465,7 +478,7 @@ public class DockerUtils {
                 return false;
             }
         }
-    };
+    }
 
     public static void addExtraPublicKeys(Entity entity, SshMachineLocation location) {
         String extraPublicKey = location.config().get(JcloudsLocationConfig.EXTRA_PUBLIC_KEY_DATA_TO_AUTH);
@@ -483,5 +496,5 @@ public class DockerUtils {
             BrooklynTaskTags.markInessential(task);
             DynamicTasks.queueIfPossible(task).orSubmitAsync(entity);
         }
-    };
+    }
 }
