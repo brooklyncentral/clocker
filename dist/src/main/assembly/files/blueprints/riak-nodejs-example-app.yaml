@@ -31,8 +31,9 @@ services:
     privateKeyFile: /root/.ssh/ospenstack.pem
     keyPair: openstack
     securityGroup: openstack
+  id: riak-cluster
+  name: "Riak Cluster"
   initialSize: 3
-  id: cluster
   brooklyn.config:
     install.version: 2.1.1
     riak.networking.optimize: false
@@ -41,7 +42,8 @@ services:
 
 - type: org.apache.brooklyn.entity.webapp.ControlledDynamicWebAppCluster
   location: calico-openstack-cloud
-  name: Web Cluster
+  id: web-cluster
+  name: "Web Cluster"
   brooklyn.config:
     initialSize: 2
     network.list:
@@ -60,17 +62,10 @@ services:
           - 3000
           shell.env:
             RIAK_NODES:
-              $brooklyn:component("cluster").attributeWhenReady("riak.cluster.nodeListPbPort")
+              $brooklyn:component("riak-cluster").attributeWhenReady("riak.cluster.nodeListPbPort")
             PORT: 3000
     controlleddynamicwebappcluster.controllerSpec:
       $brooklyn:entitySpec:
-        type: org.apache.brooklyn.entity.proxy.haproxy.HAProxyController
+        type: haproxy-controller
         brooklyn.config:
-          docker.image.name: haproxy
-          docker.image.tag: 1.5.9
-          docker.container.directPorts.configKeys:
-          - $brooklyn:sensor("org.apache.brooklyn.entity.proxy.AbstractController", "proxy.http.port")
-          - $brooklyn:sensor("org.apache.brooklyn.entity.proxy.AbstractController", "proxy.https.port")
-          install.dir: /usr/local/sbin/
-          run.dir: /usr/local/etc/haproxy/
-          member.sensor.hostname: "host.subnet.hostname"
+          docker.image.tag: 1.6.4

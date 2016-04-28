@@ -291,6 +291,8 @@ brooklyn.catalog:
     item:
       services:
       - type: org.apache.brooklyn.entity.stock.BasicApplication
+        id: riak-demo
+        name: "Riak Demo"
         brooklyn.children:
         - type: clocker.docker.networking.entity.VirtualNetwork
           networkId: webapp
@@ -357,6 +359,8 @@ brooklyn.catalog:
     item:
       services:
       - type: org.apache.brooklyn.entity.stock.BasicApplication
+        id: nodejs-demo
+        name: "Node.js Demo"
         brooklyn.children:
         - type: org.apache.brooklyn.entity.nosql.redis.RedisStore
           id: redis
