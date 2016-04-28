@@ -752,10 +752,14 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         // Delete application bridge network
         synchronized (getDockerHost().getHostMutex()) {
             String bridgeNetwork = String.format("%s_%s", entity.getApplicationId(), DockerUtils.BRIDGE_NETWORK);
-            int attached = Integer.parseInt(getDockerHost().runDockerCommand(
-                    String.format("network inspect --format=\"{{ len .Containers }}\" %s", bridgeNetwork)));
-            if (attached == 0) {
-                getDockerHost().runDockerCommand(String.format("network rm %s", bridgeNetwork));
+            try {
+                int attached = Integer.parseInt(getDockerHost().runDockerCommand(
+                        String.format("network inspect --format=\"{{ len .Containers }}\" %s", bridgeNetwork)));
+                if (attached == 0) {
+                    getDockerHost().runDockerCommand(String.format("network rm %s", bridgeNetwork));
+                }
+            } catch (IllegalStateException ise) {
+                LOG.warn("Error trying to remove bridge network {}: {}", bridgeNetwork, ise);
             }
         }
 
