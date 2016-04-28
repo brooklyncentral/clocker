@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 import clocker.docker.entity.util.DockerUtils;
+import clocker.docker.entity.util.JcloudsHostnameCustomizer;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;

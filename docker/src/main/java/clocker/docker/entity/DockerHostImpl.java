@@ -34,6 +34,7 @@ import clocker.docker.entity.container.DockerContainer;
 import clocker.docker.entity.container.registry.DockerRegistry;
 import clocker.docker.entity.util.DockerAttributes;
 import clocker.docker.entity.util.DockerUtils;
+import clocker.docker.entity.util.JcloudsHostnameCustomizer;
 import clocker.docker.location.DockerHostLocation;
 import clocker.docker.location.DockerLocation;
 import clocker.docker.networking.entity.sdn.DockerSdnProvider;
