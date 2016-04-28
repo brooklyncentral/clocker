@@ -50,4 +50,10 @@ public class HAProxyControllerImpl extends AbstractControllerImpl implements HAP
         disconnectServiceUpIsRunning();
         super.disconnectSensors();
     }
+
+    @Override
+    protected String inferUrl() {
+        return inferUrl(true); // Require Brooklyn accessible hostname
+    }
+
 }
