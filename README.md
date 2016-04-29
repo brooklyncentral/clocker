@@ -12,7 +12,7 @@ Docker Cloud infrastructure.
 This repository contains all of the required Brooklyn entities, locations and examples.
 
 <!-- CLOCKER_VERSION_BELOW -->
-[![Build Status](https://api.travis-ci.org/brooklyncentral/clocker.svg?branch=master)](https://travis-ci.org/brooklyncentral/clocker)&nbsp;[![Latest Builds](http://img.shields.io/badge/version-1.1.0--SNAPSHOT-blue.svg?style=flat)](http://clocker-latest.s3-website-eu-west-1.amazonaws.com/)&nbsp;[![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/brooklyncentral/clocker)&nbsp;[![Docker Image](https://badge.imagelayers.io/clockercentral/clocker:1.1.0-PREVIEW.20160402.svg)](https://imagelayers.io/?images=clockercentral/clocker:1.1.0-PREVIEW.20160402)
+[![Build Status](https://api.travis-ci.org/brooklyncentral/clocker.svg?branch=master)](https://travis-ci.org/brooklyncentral/clocker)&nbsp;[![Latest Builds](http://img.shields.io/badge/version-1.2.0--SNAPSHOT-blue.svg?style=flat)](http://clocker-latest.s3-website-eu-west-1.amazonaws.com/)&nbsp;[![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/brooklyncentral/clocker)&nbsp;[![Docker Image](https://badge.imagelayers.io/clockercentral/clocker:1.1.0.svg)](https://imagelayers.io/?images=clockercentral/clocker:1.1.0)
 
 ## Getting started
 
@@ -34,12 +34,12 @@ depending on your choice of SDN provider.
 ### Using the latest Clocker release
 
 <!-- CLOCKER_VERSION_BELOW -->
-The latest version of Clocker is [1.1.0-PREVIEW.20160402](https://github.com/brooklyncentral/clocker/releases/tag/v1.1.0-PREVIEW.20160402).
+The latest version of Clocker is [1.1.0](https://github.com/brooklyncentral/clocker/releases/tag/v1.1.0).
 You can deploy your own **Docker Cloud** with a Weave SDN by running these commands with the _network_ argument
 set to `weave`, to use Project Calico as your SDN provider, change the last argument to `calico` instead:
 ```Bash
 % wget --no-check-certificate --quiet \
-    -O brooklyn-clocker-dist.tar.gz http://git.io/v2rFC
+    -O brooklyn-clocker-dist.tar.gz http://git.io/vwPri
 % tar zxf brooklyn-clocker-dist.tar.gz
 % cd brooklyn-clocker
 % ./bin/clocker.sh location network
@@ -62,7 +62,7 @@ _jclouds:softlayer:sjc01_, a group of machines as _byon:(hosts="10.1.2.3,10.1.2.
 location from your `brooklyn.properties` file as _named:alias_.
 
 For all cloud locations you must first configure the `~/.brooklyn/brooklyn.properties` file with any
-necessary credentials and security details, and select an SSH key (defaulting to `~/.ssh/id_rsa`).
+necessary credentials and security details, and select an SSH key (defaulting to `~/.ssh/id\_rsa`).
 A basic `brooklyn.properties` file should look like the following:
 
 ```properties
@@ -124,7 +124,7 @@ Build and run this version of Clocker from source as follows:
 % cd clocker
 % mvn clean install
 ...
-% tar zxf examples/target/brooklyn-clocker-dist.tar.gz
+% tar zxf dist/target/brooklyn-clocker-dist.tar.gz
 % cd brooklyn-clocker
 % ./bin/clocker.sh location network
 ...
