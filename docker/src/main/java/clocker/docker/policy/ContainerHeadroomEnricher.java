@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import clocker.docker.entity.DockerInfrastructure;
 import clocker.docker.location.strategy.DockerAwarePlacementStrategy;
 import clocker.docker.location.strategy.basic.MaxContainersPlacementStrategy;
-import clocker.docker.policy.ContainerHeadroomEnricher;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -158,7 +157,7 @@ public class ContainerHeadroomEnricher extends AbstractEnricher {
         lowThreshold = Math.max(0d, lowThreshold);
 
         double highThreshold = (double) (possible - headroom) / (double) possible;
-        highThreshold = Math.max(0, highThreshold);
+        highThreshold = Math.max(0d, highThreshold);
 
         // Emit current status of the pool as sensor data
         emit(CONTAINERS_NEEDED, needed);

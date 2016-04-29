@@ -34,6 +34,7 @@ import clocker.docker.entity.container.DockerContainer;
 import clocker.docker.entity.container.registry.DockerRegistry;
 import clocker.docker.entity.util.DockerAttributes;
 import clocker.docker.entity.util.DockerUtils;
+import clocker.docker.entity.util.JcloudsHostnameCustomizer;
 import clocker.docker.location.DockerHostLocation;
 import clocker.docker.location.DockerLocation;
 import clocker.docker.networking.entity.sdn.DockerSdnProvider;
@@ -88,15 +89,12 @@ import org.apache.brooklyn.core.server.BrooklynServerPaths;
 import org.apache.brooklyn.enricher.stock.Enrichers;
 import org.apache.brooklyn.entity.group.BasicGroup;
 import org.apache.brooklyn.entity.machine.MachineEntityImpl;
-import org.apache.brooklyn.entity.nosql.etcd.EtcdCluster;
 import org.apache.brooklyn.entity.nosql.etcd.EtcdNode;
 import org.apache.brooklyn.entity.software.base.AbstractSoftwareProcessSshDriver;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
 import org.apache.brooklyn.feed.function.FunctionFeed;
 import org.apache.brooklyn.feed.function.FunctionPollConfig;
-import org.apache.brooklyn.feed.ssh.SshFeed;
-import org.apache.brooklyn.feed.ssh.SshPollConfig;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.jclouds.JcloudsLocationConfig;
 import org.apache.brooklyn.location.jclouds.JcloudsLocationCustomizer;
@@ -114,7 +112,6 @@ import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.collections.QuorumCheck.QuorumChecks;
 import org.apache.brooklyn.util.core.ResourceUtils;
 import org.apache.brooklyn.util.core.config.ConfigBag;
-import org.apache.brooklyn.util.core.internal.ssh.SshTool;
 import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.core.task.Tasks;
 import org.apache.brooklyn.util.core.task.system.ProcessTaskStub.ScriptReturnType;
@@ -143,6 +140,12 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     private transient FunctionFeed serviceUpIsRunningFeed;
     private transient FunctionFeed scan;
+    private transient Object mutex = new Object[0];
+
+    @Override
+    public Object getHostMutex() {
+        return mutex;
+    }
 
     @Override
     public void init() {
@@ -447,7 +450,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     public int execCommandStatus(String command) {
-        return execCommandStatusTimeout(command, Duration.seconds(15));
+        return execCommandStatusTimeout(command, Duration.ONE_MINUTE);
     }
 
     @Override
@@ -814,30 +817,27 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     public void preStop() {
         if (scan != null && scan.isActivated()) scan.stop();
 
-        SdnAgent agent = sensors().get(SdnAgent.SDN_AGENT);
-        if (agent != null && Entities.isManaged(agent)) {
-            // Avoid DockerHost -> SdnAgent -> DockerHost stop recursion by invoking
-            // the effector instead of agent.stop().
-            boolean agentStopped = Entities.invokeEffector(this, agent, Startable.STOP)
-                    .blockUntilEnded(Duration.TEN_SECONDS);
-            if (!agentStopped) {
-                LOG.debug("{} may not have stopped. Proceeding to stop {} anyway", agent, this);
-            }
-        }
-
-        EtcdCluster etcd = getInfrastructure().sensors().get(DockerInfrastructure.ETCD_CLUSTER);
-        EtcdNode node = sensors().get(ETCD_NODE);
-        etcd.removeMember(node);
-        node.stop();
-
         super.preStop();
+
+        deleteLocation();
+
+        // Stop all Docker containers in parallel
+        try {
+            Group containers = getDockerContainerCluster();
+            // TODO filter out SDN containers
+            LOG.debug("Stopping containers: {}", Iterables.toString(containers.getMembers()));
+            Entities.invokeEffectorList(this, containers.getMembers(), Startable.STOP).get(Duration.ONE_MINUTE);
+        } catch (Exception e) {
+            LOG.warn("Error stopping containers", e);
+        }
     }
 
     @Override
     public void postStop() {
         super.postStop(); // Currently does nothing
 
-        deleteLocation();
+        EtcdNode etcd = sensors().get(ETCD_NODE);
+        DockerUtils.stop(getInfrastructure(), etcd, Duration.THIRTY_SECONDS);
     }
 
     public void scanContainers() {

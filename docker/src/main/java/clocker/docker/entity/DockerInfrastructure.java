@@ -44,7 +44,6 @@ import org.apache.brooklyn.core.sensor.BasicAttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.group.DynamicGroup;
-import org.apache.brooklyn.entity.group.DynamicMultiGroup;
 import org.apache.brooklyn.entity.nosql.etcd.EtcdCluster;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;

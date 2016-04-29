@@ -23,11 +23,11 @@ import clocker.docker.entity.container.application.VanillaDockerApplication;
 import clocker.docker.entity.util.DockerAttributes;
 
 import org.apache.brooklyn.api.catalog.CatalogConfig;
-import org.apache.brooklyn.core.entity.StartableApplication;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.entity.BrooklynConfigKeys;
+import org.apache.brooklyn.core.entity.StartableApplication;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
 /**

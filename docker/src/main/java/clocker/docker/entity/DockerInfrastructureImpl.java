@@ -160,6 +160,7 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
         if (Boolean.TRUE.equals(config().get(SdnAttributes.SDN_DEBUG))) {
             dockerHostSpec.configure(DockerAttributes.DOCKERFILE_URL, DockerUtils.UBUNTU_NETWORKING_DOCKERFILE);
         }
+        sensors().set(DOCKER_HOST_SPEC, dockerHostSpec);
 
         DynamicCluster hosts = addChild(EntitySpec.create(DynamicCluster.class)
                 .configure(Cluster.INITIAL_SIZE, initialSize)
@@ -244,7 +245,8 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
                     .configure(AutoScalerPolicy.POOL_OK_SENSOR, ContainerHeadroomEnricher.DOCKER_CONTAINER_CLUSTER_OK)
                     .configure(AutoScalerPolicy.MIN_POOL_SIZE, initialSize)
                     .configure(AutoScalerPolicy.RESIZE_UP_STABILIZATION_DELAY, Duration.THIRTY_SECONDS)
-                    .configure(AutoScalerPolicy.RESIZE_DOWN_STABILIZATION_DELAY, Duration.FIVE_MINUTES));
+                    .configure(AutoScalerPolicy.RESIZE_DOWN_STABILIZATION_DELAY, Duration.FIVE_MINUTES)
+                    .displayName("Headroom Auto Scaler"));
         }
 
         sensors().set(Attributes.MAIN_URI, URI.create("/clocker"));
@@ -303,7 +305,7 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
     @Override
     public Integer resize(Integer desiredSize) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Resize Docker infrastructure to {} at {}", new Object[]{desiredSize, getLocations()});
+            LOG.debug("Resize Docker infrastructure to {} at {}", new Object[]{ desiredSize, getLocations() });
         }
         return getDockerHostCluster().resize(desiredSize);
     }
@@ -419,15 +421,8 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
 
         // Shutdown the Registry if configured
         if (config().get(DOCKER_SHOULD_START_REGISTRY)) {
-            try {
-                Entity dockerRegistry = sensors().get(DOCKER_IMAGE_REGISTRY);
-                if (dockerRegistry != null) {
-                    LOG.debug("Stopping Docker Registry: {}", dockerRegistry);
-                    Entities.invokeEffector(this, dockerRegistry, Startable.STOP).get(timeout);
-                }
-            } catch (Exception e) {
-                LOG.warn("Error stopping Docker Registry", e);
-            }
+            Entity registry = sensors().get(DOCKER_IMAGE_REGISTRY);
+            DockerUtils.stop(this, registry, Duration.THIRTY_SECONDS);
         }
 
         // Find all applications and stop, blocking for up to five minutes until ended
@@ -446,20 +441,9 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
             LOG.warn("Error stopping applications", e);
         }
 
-        // Shutdown SDN if configured
-        if (config().get(SDN_ENABLE)) {
-            try {
-                Entity sdn = sensors().get(SDN_PROVIDER);
-                LOG.debug("Stopping SDN: {}", sdn);
-                Entities.invokeEffector(this, sdn, Startable.STOP).get(timeout);
-            } catch (Exception e) {
-                LOG.warn("Error stopping SDN", e);
-            }
-        }
-
         // Stop all Docker hosts in parallel
         try {
-            DynamicCluster hosts = sensors().get(DOCKER_HOST_CLUSTER);
+            DynamicCluster hosts = getDockerHostCluster();
             LOG.debug("Stopping hosts: {}", Iterables.toString(hosts.getMembers()));
             Entities.invokeEffectorList(this, hosts.getMembers(), Startable.STOP).get(timeout);
         } catch (Exception e) {

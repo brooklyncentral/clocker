@@ -57,7 +57,7 @@ public abstract class DockerNetworkAgentSshDriver extends AbstractSoftwareProces
     @Override
     public void deleteSubnet(String subnetId) {
         getEntity().sensors().get(SdnAgent.DOCKER_HOST).runDockerCommand(
-                String.format("network rm --driver %s %s", getDockerNetworkDriver(), subnetId));
+                String.format("network rm %s", subnetId));
     }
 
     @Override
