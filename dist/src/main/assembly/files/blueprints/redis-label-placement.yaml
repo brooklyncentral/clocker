@@ -29,7 +29,7 @@ services:
     install.version: 3.0.0
     docker.container.strategies:
     - $brooklyn:object:
-        type: "brooklyn.location.docker.strategy.LabelPlacementStrategy"
+        type: "clocker.docker.location.strategy.basic.LabelPlacementStrategy"
         brooklyn.config:
           docker.constraint.labels:
           - "ssd"

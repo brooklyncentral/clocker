@@ -50,10 +50,13 @@ services:
         type: org.apache.brooklyn.entity.webapp.DynamicWebAppCluster
     controlleddynamicwebappcluster.controllerSpec:
       $brooklyn:entitySpec:
-        type: brooklyn.entity.proxy.haproxy.HAProxyController
+        type: org.apache.brooklyn.entity.proxy.haproxy.HAProxyController
         brooklyn.config:
           docker.image.name: haproxy
           docker.image.tag: latest
+          docker.container.directPorts.configKeys:
+          - $brooklyn:sensor("org.apache.brooklyn.entity.proxy.AbstractController", "proxy.http.port")
+          - $brooklyn:sensor("org.apache.brooklyn.entity.proxy.AbstractController", "proxy.https.port")
           install.dir: /usr/local/sbin/
           run.dir: /usr/local/etc/haproxy/
           member.sensor.hostname: "host.subnet.hostname"

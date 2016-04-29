@@ -17,23 +17,23 @@ name: Riak Cluster with Node.js Webapp Cluster
 origin: "https://github.com/csabapalfi/riak-counters-example/"
 
 services:
-- type: brooklyn.networking.OpenStackVirtualNetwork
-  location: jclouds:openstack-nova:http://openstack02.abstractvisitorpattern.co.uk:35357/v2.0/:
+- type: clocker.docker.networking.entity.OpenStackVirtualNetwork
+  location: jclouds:openstack-nova:http://openstack.example.org:35357/v2.0/:
     identity: admin:admin
     credential: admin
   networkId: example
   cidr: 50.2.0.0/24
 
 - type: org.apache.brooklyn.entity.nosql.riak.RiakCluster
-  location: jclouds:openstack-nova:http://openstack02.abstractvisitorpattern.co.uk:35357/v2.0/:
+  location: jclouds:openstack-nova:http://openstack.example.org:35357/v2.0/:
     identity: admin:admin
     credential: admin
-    publicKeyFile: /root/.ssh/os_rsa.pub
-    privateKeyFile: /root/.ssh/os_rsa
+    privateKeyFile: /root/.ssh/ospenstack.pem
     keyPair: openstack
     securityGroup: openstack
+  id: riak-cluster
+  name: "Riak Cluster"
   initialSize: 3
-  id: cluster
   brooklyn.config:
     install.version: 2.1.1
     riak.networking.optimize: false
@@ -42,7 +42,8 @@ services:
 
 - type: org.apache.brooklyn.entity.webapp.ControlledDynamicWebAppCluster
   location: calico-openstack-cloud
-  name: Web Cluster
+  id: web-cluster
+  name: "Web Cluster"
   brooklyn.config:
     initialSize: 2
     network.list:
@@ -55,20 +56,16 @@ services:
         brooklyn.config:
           appName: riak-counters-example
           gitRepoUrl:
-            "https://github.com/csabapalfi/riak-counters-example"
+            "https://github.com/clockercentral/riak-counters-example"
           appFileName: index.js
           docker.openPorts:
           - 3000
           shell.env:
             RIAK_NODES:
-              $brooklyn:component("cluster").attributeWhenReady("riak.cluster.nodeListPbPort")
+              $brooklyn:component("riak-cluster").attributeWhenReady("riak.cluster.nodeListPbPort")
             PORT: 3000
     controlleddynamicwebappcluster.controllerSpec:
       $brooklyn:entitySpec:
-        type: brooklyn.entity.proxy.haproxy.HAProxyController
+        type: haproxy-controller
         brooklyn.config:
-          docker.image.name: haproxy
-          docker.image.tag: 1.5.9
-          install.dir: /usr/local/sbin/
-          run.dir: /usr/local/etc/haproxy/
-          member.sensor.hostname: "host.subnet.hostname"
+          docker.image.tag: 1.6.4

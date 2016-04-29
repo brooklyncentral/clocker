@@ -32,19 +32,19 @@ brooklyn.catalog:
   - id: docker-infrastructure
     name: "Docker Infrastructure"
     item:
-      type: brooklyn.entity.container.docker.DockerInfrastructure
+      type: clocker.docker.entity.DockerInfrastructure
       brooklyn.config:
-        docker.version: 1.9.1 # DOCKER_VERSION
+        docker.version: 1.10.3 # DOCKER_VERSION
         entity.dynamicLocation.name: "my-docker-cloud"
         docker.container.cluster.headroom.count: 4
         docker.policy.ha.enable: false
         docker.container.strategies:
         - $brooklyn:object:
-            type: brooklyn.location.docker.strategy.MaxContainersPlacementStrategy
+            type: clocker.docker.location.strategy.MaxContainersPlacementStrategy
             brooklyn.config:
               maxContainers: 16
         - $brooklyn:object:
-            type: brooklyn.location.docker.strategy.BreadthFirstPlacementStrategy
+            type: clocker.docker.location.strategy.BreadthFirstPlacementStrategy
         docker.host.spec:
           $brooklyn:entitySpec:
             type: docker-host
@@ -52,7 +52,7 @@ brooklyn.catalog:
   - id: docker-host
     name: "Docker Host"
     item:
-      type: brooklyn.entity.container.docker.DockerHost
+      type: clocker.docker.entity.DockerHost
       brooklyn.config:
         docker.host.driver.storage: overlay
         docker.host.nameFormat: "docker-%2$d"
@@ -68,16 +68,16 @@ brooklyn.catalog:
   - id: docker-container
     name: "Docker Container"
     item:
-      type: brooklyn.entity.container.docker.DockerContainer
+      type: clocker.docker.entity.container.DockerContainer
       brooklyn.config:
         docker.container.nameFormat: "container-%2$02x"
 
   - id: calico-network
     name: "Calico Network"
     item:
-      type: brooklyn.networking.sdn.calico.CalicoNetwork
+      type: clocker.docker.networking.entity.sdn.calico.CalicoNetwork
       brooklyn.config:
-        calico.version: 0.4.9
+        calico.version: 0.19.0
         sdn.agent.spec:
           $brooklyn:entitySpec:
             type: calico-node
@@ -85,32 +85,39 @@ brooklyn.catalog:
   - id: calico-node
     name: "Calico Node"
     item:
-      type: brooklyn.networking.sdn.calico.CalicoNode
+      type: clocker.docker.networking.entity.sdn.calico.CalicoNode
 
-  - id: etcd-cluster
-    name: "Etcd Cluster"
+  - id: calico-module
+    name: "Calico Network Module"
     item:
-      type: brooklyn.entity.nosql.etcd.EtcdCluster
+      type: clocker.mesos.networking.entity.sdn.calico.CalicoModule
       brooklyn.config:
-        etcd.version: 2.0.11
-        etcd.node.spec:
-          $brooklyn:entitySpec:
-            type: etcd-node
+        calico.version: 0.8.0
 
   - id: etcd-node
     name: "Etcd Node"
     item:
-      type: brooklyn.entity.nosql.etcd.EtcdNode
+      type: org.apache.brooklyn.entity.nosql.etcd.EtcdNode
 
   - id: etcd-proxy
     name: "Etcd Proxy"
     item:
-      type: brooklyn.entity.nosql.etcd.EtcdProxy
+      type: org.apache.brooklyn.entity.nosql.etcd.EtcdProxy
+
+  - id: etcd-cluster
+    name: "Etcd Cluster"
+    item:
+      type: org.apache.brooklyn.entity.nosql.etcd.EtcdCluster
+      brooklyn.config:
+        etcd.version: 2.3.1
+        etcd.node.spec:
+          $brooklyn:entitySpec:
+            type: etcd-node
 
   - id: weave-network
     name: "Weave Network"
     item:
-      type: brooklyn.networking.sdn.weave.WeaveNetwork
+      type: clocker.docker.networking.entity.sdn.weave.WeaveNetwork
       brooklyn.config:
         weave.version: 1.1.2
         sdn.agent.spec:
@@ -120,31 +127,45 @@ brooklyn.catalog:
   - id: weave-router
     name: "Weave Router"
     item:
-      type: brooklyn.networking.sdn.weave.WeaveContainer
+      type: clocker.docker.networking.entity.sdn.weave.WeaveRouter
+
+  - id: overlay-network
+    name: "Docker Overlay Network"
+    item:
+      type: clocker.docker.networking.entity.sdn.overlay.OverlayNetwork
+      brooklyn.config:
+        sdn.agent.spec:
+          $brooklyn:entitySpec:
+            type: overlay-plugin
+
+  - id: overlay-plugin
+    name: "Docker Overlay Plugin"
+    item:
+      type: clocker.docker.networking.entity.sdn.overlay.OverlayPlugin
 
   - id: docker-registry
     name: "Docker Registry"
     services:
-    - type: brooklyn.entity.container.docker.registry.DockerRegistry
+    - type: clocker.docker.entity.container.registry.DockerRegistry
       brooklyn.config:
         docker.registry.port: 5000
 
   - id: mesos-cluster
     name: "Mesos Cluster"
     item:
-      type: brooklyn.entity.mesos.MesosCluster
+      type: clocker.mesos.entity.MesosCluster
       brooklyn.config:
         entity.dynamicLocation.name: "my-mesos-cluster"
 
   - id: marathon-framework
     name: "Marathon Framework"
     item:
-      type: brooklyn.entity.mesos.framework.marathon.MarathonFramework
+      type: clocker.mesos.entity.framework.marathon.MarathonFramework
 
-  - id: docker-cloud
+  - id: docker-cloud-single
     name: "Clocker"
     description: |
-      Docker Cloud infrastructure
+      Single Docker host without networking
     iconUrl: classpath://docker-logo.png
     itemType: template
     item:
@@ -155,11 +176,11 @@ brooklyn.catalog:
           docker.container.cluster.headroom.count: 0
           docker.container.strategies:
           - $brooklyn:object:
-              type: brooklyn.location.docker.strategy.MaxContainersPlacementStrategy
+              type: clocker.docker.location.strategy.MaxContainersPlacementStrategy
               brooklyn.config:
                 maxContainers: 32
           - $brooklyn:object:
-              type: brooklyn.location.docker.strategy.DepthFirstPlacementStrategy
+              type: clocker.docker.location.strategy.DepthFirstPlacementStrategy
           sdn.enable: false
 
   - id: docker-cloud-calico
@@ -213,6 +234,30 @@ brooklyn.catalog:
                     brooklyn.config:
                       docker.container.nameFormat: "weave-%2$02x"
 
+  - id: docker-cloud-overlay
+    name: "Clocker with Docker Overlay"
+    description: |
+      Docker Cloud infrastructure with Docker overlay networking
+    iconUrl: classpath://docker-logo.png
+    itemType: template
+    item:
+      services:
+      - type: docker-infrastructure
+        brooklyn.config:
+          sdn.enable: true
+          sdn.provider.spec:
+            $brooklyn:entitySpec:
+              type: overlay-network
+          docker.host.spec:
+            $brooklyn:entitySpec:
+              type: docker-host
+              brooklyn.config:
+                docker.container.spec:
+                  $brooklyn:entitySpec:
+                    type: docker-container
+                    brooklyn.config:
+                      docker.container.nameFormat: "docker-%2$02x"
+
   - id: external-mesos-cluster
     name: "External Mesos Cluster"
     description: |
@@ -224,5 +269,27 @@ brooklyn.catalog:
       - type: mesos-cluster
         brooklyn.config:
           mesos.url: "http://localhost:5050/"
+
+  - id: haproxy-controller
+    name: "HAProxy"
+    description: |
+      HAProxy load balancer entity.
+    item:
+      type: org.apache.brooklyn.entity.proxy.haproxy.HAProxyController
+      brooklyn.config:
+        docker.image.name: haproxy
+        docker.useSsh: false
+        docker.image.commands:
+        - "/bin/bash"
+        docker.container.interactive: true
+        docker.container.openPorts.configKeys:
+        - $brooklyn:sensor("org.apache.brooklyn.entity.proxy.AbstractController", "proxy.http.port")
+        - $brooklyn:sensor("org.apache.brooklyn.entity.proxy.AbstractController", "proxy.https.port")
+        install.dir: /usr/local/sbin/
+        run.dir: /usr/local/etc/haproxy/
+        member.sensor.hostname: "host.subnet.hostname"
+        provisioning.properties:
+          entity.dynamicLocation.flags:
+            user: root
 
 # vim:ts=2:sw=2:ft=yaml:

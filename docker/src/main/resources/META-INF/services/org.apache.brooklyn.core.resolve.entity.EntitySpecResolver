@@ -1,1 +1,1 @@
-brooklyn.entity.container.docker.application.DockerEntitySpecResolver
+clocker.docker.entity.container.application.DockerEntitySpecResolver

@@ -1,14 +1,14 @@
 services:
   - type: org.apache.brooklyn.test.framework.TestCase
     brooklyn.children:
-      - type: brooklyn.entity.container.docker.DockerInfrastructure
+      - type: clocker.docker.entity.DockerInfrastructure
         location: named:aws-california
         id: infrastructure
         brooklyn.config:
           entity.dynamicLocation.name: my-docker-cloud
           docker.host.cluster.initial.size: 2
           docker.registry.start: false
-          docker.version: 1.7.1
+          docker.version: 1.10.3 # DOCKER_VERSION
       - type: org.apache.brooklyn.test.framework.TestSensor
         name: Check infrastructure isUp
         sensor: service.isUp

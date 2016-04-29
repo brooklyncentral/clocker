@@ -18,9 +18,9 @@ origin: https://github.com/brooklyncentral/clocker/
 location: jclouds:softlayer:ams01
 
 services:
-- type: docker-cloud
+- type: docker-cloud-single
   brooklyn.config:
     entity.dynamicLocation.name: "my-docker-cloud"
-    docker.version: 1.9.1 # DOCKER_VERSION
+    docker.version: 1.10.3 # DOCKER_VERSION
     docker.host.cluster.initial.size: 1
 

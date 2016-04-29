@@ -39,6 +39,11 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>io.brooklyn.clocker</groupId>
+            <artifactId>brooklyn-clocker-extras</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.brooklyn</groupId>
             <artifactId>brooklyn-all</artifactId>
             <version>${brooklyn.version}</version>

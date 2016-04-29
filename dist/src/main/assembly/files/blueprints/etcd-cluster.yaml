@@ -19,7 +19,7 @@ locations:
 - my-docker-cloud
 
 services:
-- type: brooklyn.entity.nosql.etcd.EtcdCluster
+- type: org.apache.brooklyn.entity.nosql.etcd.EtcdCluster
   initialSize: 3
   id: cluster
   brooklyn.config:

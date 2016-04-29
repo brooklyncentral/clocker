@@ -79,8 +79,8 @@ brooklyn.location.named.Amazon-Ireland = jclouds:aws-ec2:eu-west-1
 ```
 
 For more information on setting up locations, including supplying cloud provider credentials, see the
-[_Setting up Locations_ section of Brooklyn Getting Started](https://brooklyn.incubator.apache.org/quickstart/#configuring-a-location),
-and the more detailed [locations guide](https://brooklyn.incubator.apache.org/v/0.8.0-incubating/use/guide/locations/index.html).<!-- BROOKLYN_VERSION -->
+[_Setting up Locations_ section of Brooklyn Getting Started](https://brooklyn.apache.org/quickstart/#configuring-a-location),
+and the more detailed [locations guide](https://brooklyn.apache.org/v/0.9.0/use/guide/locations/index.html).<!-- BROOKLYN_VERSION -->
 The Brooklyn documentation also covers setting up security for the web-console, and configuring users
 and passwords.
 
@@ -94,7 +94,7 @@ available in the Locations drop-down list when adding new applications. Simply s
 and it will use Docker containers instead of virtual machines.
 
 For more information on deploying applications from the Brooklyn catalog, see
-[Getting Started - Policies and Catalogs](https://brooklyn.incubator.apache.org/quickstart/policies-and-catalogs.html).
+[Getting Started - Policies and Catalogs](https://brooklyn.apache.org/quickstart/policies-and-catalogs.html).
 
 You can also paste a YAML blueprint into the _YAML_ tab of the _Add Application_ dialog, as follows:
 ```JS
@@ -137,9 +137,9 @@ download on [Amazon S3](http://clocker-latest.s3-website-eu-west-1.amazonaws.com
 ## Getting involved
 
 Clocker is [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0) licensed, and builds on  the
-[Apache Brooklyn](http://brooklyn.incubator.apache.org/) project. Please get involved and join the 
+[Apache Brooklyn](http://brooklyn.apache.org/) project. Please get involved and join the 
 discussion on [Freenode](http://freenode.net/), IRC `#brooklyncentral` or the Apache Brooklyn 
-community [mailing list](https://brooklyn.incubator.apache.org/community/). We also maintain a
+community [mailing list](https://brooklyn.apache.org/community/). We also maintain a
 [Trello](https://trello.com/b/lhS7ltyi/clocker) board with the current roadmap and active tasks.
 
 ### Documentation

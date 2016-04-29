@@ -1,0 +1,6 @@
+name: Docker Cloud on Travis
+
+location: localhost
+
+services:
+  - type: docker-cloud-single

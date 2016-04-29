@@ -48,4 +48,4 @@ JAVA_OPTS="-Dbrooklyn.location.localhost.address=127.0.0.1 ${JAVA_OPTS}"
 
 # start Brooklyn
 echo $$ > "$ROOT/pid_java"
-exec java ${JAVA_OPTS} -cp "${INITIAL_CLASSPATH}" brooklyn.clocker.Main "$@"
+exec java ${JAVA_OPTS} -cp "${INITIAL_CLASSPATH}" clocker.main.Main "$@"
