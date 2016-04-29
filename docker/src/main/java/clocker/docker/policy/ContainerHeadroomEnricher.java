@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import clocker.docker.entity.DockerInfrastructure;
 import clocker.docker.location.strategy.DockerAwarePlacementStrategy;
 import clocker.docker.location.strategy.basic.MaxContainersPlacementStrategy;
-import clocker.docker.policy.ContainerHeadroomEnricher;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;

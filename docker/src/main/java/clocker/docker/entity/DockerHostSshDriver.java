@@ -21,7 +21,6 @@ import static org.apache.brooklyn.util.ssh.BashCommands.INSTALL_CURL;
 import static org.apache.brooklyn.util.ssh.BashCommands.alternatives;
 import static org.apache.brooklyn.util.ssh.BashCommands.chain;
 import static org.apache.brooklyn.util.ssh.BashCommands.chainGroup;
-import static org.apache.brooklyn.util.ssh.BashCommands.fail;
 import static org.apache.brooklyn.util.ssh.BashCommands.ifExecutableElse0;
 import static org.apache.brooklyn.util.ssh.BashCommands.ifExecutableElse1;
 import static org.apache.brooklyn.util.ssh.BashCommands.installPackage;

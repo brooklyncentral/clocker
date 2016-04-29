@@ -27,7 +27,6 @@ import clocker.docker.entity.DockerHost;
 import clocker.docker.networking.entity.VirtualNetwork;
 import clocker.docker.networking.entity.sdn.SdnProvider;
 
-import com.google.common.base.CharMatcher;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -44,7 +43,6 @@ import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.core.task.TaskBuilder;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.repeat.Repeater;
-import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
 
 public class SdnUtils {

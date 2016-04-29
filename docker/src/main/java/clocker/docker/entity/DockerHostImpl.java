@@ -88,9 +88,7 @@ import org.apache.brooklyn.core.location.geo.LocalhostExternalIpLoader;
 import org.apache.brooklyn.core.server.BrooklynServerPaths;
 import org.apache.brooklyn.enricher.stock.Enrichers;
 import org.apache.brooklyn.entity.group.BasicGroup;
-import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.machine.MachineEntityImpl;
-import org.apache.brooklyn.entity.nosql.etcd.EtcdCluster;
 import org.apache.brooklyn.entity.nosql.etcd.EtcdNode;
 import org.apache.brooklyn.entity.software.base.AbstractSoftwareProcessSshDriver;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
@@ -839,7 +837,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         super.postStop(); // Currently does nothing
 
         EtcdNode etcd = sensors().get(ETCD_NODE);
-        DockerUtils.stop(this, etcd, Duration.THIRTY_SECONDS);
+        DockerUtils.stop(getInfrastructure(), etcd, Duration.THIRTY_SECONDS);
     }
 
     public void scanContainers() {
