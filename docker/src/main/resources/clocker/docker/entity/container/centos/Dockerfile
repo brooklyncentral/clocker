@@ -18,4 +18,4 @@ FROM centos:6.6
 MAINTAINER Cloudsoft "brooklyn@cloudsoftcorp.com"
 
 # CLOCKER_VERSION_BELOW
-LABEL version="1.1.0-SNAPSHOT"
+LABEL version="1.2.0-SNAPSHOT"

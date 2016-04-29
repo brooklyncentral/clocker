@@ -1,6 +1,6 @@
 brooklyn.catalog:
   id: cal1
-  version: 1.1.0-SNAPSHOT # CLOCKER_VERSION
+  version: 1.2.0-SNAPSHOT # CLOCKER_VERSION
   itemType: location
   name: cal1
   item:
