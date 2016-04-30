@@ -15,8 +15,6 @@
  */
 package clocker.docker.entity.container;
 
-import static java.lang.String.format;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -25,13 +23,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import clocker.docker.entity.DockerHost;
-import clocker.docker.entity.DockerInfrastructure;
 import clocker.docker.entity.util.DockerAttributes;
 import clocker.docker.entity.util.DockerUtils;
 import clocker.docker.location.DockerContainerLocation;
@@ -42,8 +38,6 @@ import clocker.docker.networking.entity.sdn.SdnProvider;
 import clocker.docker.networking.entity.sdn.util.SdnAttributes;
 import clocker.docker.networking.entity.sdn.util.SdnUtils;
 
-import com.google.common.base.CaseFormat;
-import com.google.common.base.CharMatcher;
 import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
@@ -114,18 +108,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         LOG.info("Starting Docker container id {}", getId());
         super.init();
 
-        AtomicInteger counter = config().get(DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.DOCKER_CONTAINER_COUNTER);
-        String dockerContainerName = config().get(DOCKER_CONTAINER_NAME);
-        String dockerContainerNameFormat = config().get(DOCKER_CONTAINER_NAME_FORMAT);
-        if (Strings.isBlank(dockerContainerName) && Strings.isNonBlank(dockerContainerNameFormat)) {
-            dockerContainerName = format(dockerContainerNameFormat, getId(), counter.incrementAndGet());
-        }
-        if (Strings.isNonBlank(dockerContainerName)) {
-            dockerContainerName = CharMatcher.BREAKING_WHITESPACE.trimAndCollapseFrom(dockerContainerName, '-');
-            setDisplayName(CaseFormat.LOWER_HYPHEN.to(CaseFormat.UPPER_CAMEL, dockerContainerName));
-            sensors().set(DOCKER_CONTAINER_NAME, dockerContainerName);
-        }
-
+        ConfigToAttributes.apply(this, DOCKER_CONTAINER_NAME);
         ConfigToAttributes.apply(this, DOCKER_INFRASTRUCTURE);
         ConfigToAttributes.apply(this, DOCKER_HOST);
         ConfigToAttributes.apply(this, ENTITY);
@@ -133,6 +116,12 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
     @Override
     public String getIconUrl() { return "classpath://container.png"; }
+
+    @Override
+    public String getDisplayName() {
+        return String.format("Container (%s)",
+                Objects.firstNonNull(sensors().get(DockerContainer.DOCKER_CONTAINER_NAME), config().get(DockerContainer.DOCKER_IMAGE_NAME)));
+    }
 
     protected void connectSensors() {
         status = FunctionFeed.builder()
@@ -624,8 +613,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 .configure("address", getSshHostAddress())
                 .configure(SshMachineLocation.SSH_HOST, getSshHostAddress().getHostName())
                 .configure(SshTool.PROP_HOST, getSshHostAddress().getHostName())
-                .configure(SshTool.PROP_PORT, container.getSshHostAndPort().getPort())
-                .displayName(getDockerContainerName());
+                .configure(SshTool.PROP_PORT, container.getSshHostAndPort().getPort());
             DockerContainerLocation location = getManagementContext().getLocationManager().createLocation(spec);
 
             sensors().set(DYNAMIC_LOCATION, location);

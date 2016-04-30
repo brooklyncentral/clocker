@@ -45,7 +45,6 @@ brooklyn.catalog:
       type: clocker.docker.entity.DockerHost
       brooklyn.config:
         docker.host.driver.storage: overlay
-        docker.host.nameFormat: "docker-%2$d"
         docker.container.spec:
           $brooklyn:entitySpec:
             type: docker-container
@@ -59,8 +58,6 @@ brooklyn.catalog:
     name: "Docker Container"
     item:
       type: clocker.docker.entity.container.DockerContainer
-      brooklyn.config:
-        docker.container.nameFormat: "container-%2$02x"
 
   - id: calico-network
     name: "Calico Network"
@@ -190,15 +187,6 @@ brooklyn.catalog:
               brooklyn.config:
                 sdn.network.cidr: 50.0.0.0/16
                 sdn.network.size: 24
-          docker.host.spec:
-            $brooklyn:entitySpec:
-              type: docker-host
-              brooklyn.config:
-                docker.container.spec:
-                  $brooklyn:entitySpec:
-                    type: docker-container
-                    brooklyn.config:
-                      docker.container.nameFormat: "calico-%2$02x"
 
   - id: docker-cloud-weave
     name: "Clocker with Weave"
@@ -214,15 +202,6 @@ brooklyn.catalog:
           sdn.provider.spec:
             $brooklyn:entitySpec:
               type: weave-network
-          docker.host.spec:
-            $brooklyn:entitySpec:
-              type: docker-host
-              brooklyn.config:
-                docker.container.spec:
-                  $brooklyn:entitySpec:
-                    type: docker-container
-                    brooklyn.config:
-                      docker.container.nameFormat: "weave-%2$02x"
 
   - id: docker-cloud-overlay
     name: "Clocker with Docker Overlay"
@@ -238,15 +217,6 @@ brooklyn.catalog:
           sdn.provider.spec:
             $brooklyn:entitySpec:
               type: overlay-network
-          docker.host.spec:
-            $brooklyn:entitySpec:
-              type: docker-host
-              brooklyn.config:
-                docker.container.spec:
-                  $brooklyn:entitySpec:
-                    type: docker-container
-                    brooklyn.config:
-                      docker.container.nameFormat: "docker-%2$02x"
 
   - id: external-mesos-cluster
     name: "External Mesos Cluster"

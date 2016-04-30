@@ -117,8 +117,6 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
         registerLocationResolver();
         super.init();
 
-        sensors().set(DOCKER_HOST_COUNTER, new AtomicInteger(0));
-        sensors().set(DOCKER_CONTAINER_COUNTER, new AtomicInteger(0));
         int initialSize = config().get(DOCKER_HOST_CLUSTER_MIN_SIZE);
 
         Map<String, String> runtimeFiles = ImmutableMap.of();
@@ -335,7 +333,6 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
         }
 
         DockerLocation location = getManagementContext().getLocationManager().createLocation(LocationSpec.create(DockerLocation.class)
-                .displayName("Docker Infrastructure("+getId()+")")
                 .configure(flags)
                 .configure("owner", getProxy())
                 .configure("locationName", locationName));

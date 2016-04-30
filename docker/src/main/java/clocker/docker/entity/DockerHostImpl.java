@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nullable;
 
@@ -36,7 +35,6 @@ import clocker.docker.entity.util.DockerAttributes;
 import clocker.docker.entity.util.DockerUtils;
 import clocker.docker.entity.util.JcloudsHostnameCustomizer;
 import clocker.docker.location.DockerHostLocation;
-import clocker.docker.location.DockerLocation;
 import clocker.docker.networking.entity.sdn.DockerSdnProvider;
 import clocker.docker.networking.entity.sdn.SdnAgent;
 import clocker.docker.networking.entity.sdn.util.SdnAttributes;
@@ -46,6 +44,7 @@ import clocker.docker.networking.entity.sdn.weave.WeaveRouter;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Functions;
+import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
@@ -76,6 +75,7 @@ import org.apache.brooklyn.camp.brooklyn.BrooklynCampConstants;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.effector.ssh.SshEffectorTasks;
+import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.core.entity.EntityFunctions;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
@@ -152,11 +152,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         LOG.info("Starting Docker host id {}", getId());
         super.init();
 
-        AtomicInteger counter = config().get(DOCKER_INFRASTRUCTURE).sensors().get(DockerInfrastructure.DOCKER_HOST_COUNTER);
-        String dockerHostName = String.format(config().get(DockerHost.DOCKER_HOST_NAME_FORMAT), getId(), counter.incrementAndGet());
-        setDisplayName(dockerHostName);
-        sensors().set(DOCKER_HOST_NAME, dockerHostName);
-
         // Set a password for this host's containers
         String password = config().get(DOCKER_LOGIN_PASSWORD);
         if (Strings.isBlank(password)) {
@@ -194,6 +189,11 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
     @Override
     public String getIconUrl() { return "classpath://docker-logo.png"; }
+
+    @Override
+    public String getDisplayName() {
+        return String.format("Docker (%s)", Objects.firstNonNull(sensors().get(Attributes.HOSTNAME), getId()));
+    }
 
     @Override
     protected Collection<Integer> getRequiredOpenPorts() {
@@ -361,11 +361,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     }
 
     @Override
-    public String getDockerHostName() {
-        return sensors().get(DOCKER_HOST_NAME);
-    }
-
-    @Override
     public List<Entity> getDockerContainerList() {
         return ImmutableList.copyOf(getDockerContainerCluster().getMembers());
     }
@@ -496,15 +491,13 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
     @Override
     public DockerHostLocation createLocation(Map<String, ?> flags) {
         DockerInfrastructure infrastructure = getInfrastructure();
-        DockerLocation docker = infrastructure.getDynamicLocation();
-        String locationName = docker.getId() + "-" + getDockerHostName();
+        String locationName = Joiner.on('-').join("docker", infrastructure.getId(), getId());
 
         SshMachineLocation machine = Machines.findUniqueMachineLocation(getLocations(), SshMachineLocation.class).get();
 
         // The 'flags' contains jcloudsLocation and portForwarder already
         DockerHostLocation location = getManagementContext().getLocationManager().createLocation(LocationSpec.create(DockerHostLocation.class)
                 .parent(infrastructure.getDynamicLocation())
-                .displayName("Docker Host ("+getId()+")")
                 .configure(flags)
                 .configure("owner", getProxy())
                 .configure("machine", machine)

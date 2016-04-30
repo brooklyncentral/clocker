@@ -22,7 +22,6 @@ import java.util.Set;
 import clocker.docker.entity.DockerHost;
 import clocker.docker.entity.DockerInfrastructure;
 import clocker.docker.entity.util.DockerAttributes;
-import clocker.docker.entity.util.DockerUtils;
 import clocker.docker.location.DockerContainerLocation;
 
 import com.google.common.reflect.TypeToken;
@@ -121,9 +120,6 @@ public interface DockerContainer extends BasicStartable, HasNetworkAddresses, Ha
     @SetFromFlag("entity")
     AttributeSensorAndConfigKey<Entity, Entity> ENTITY = ConfigKeys.newSensorAndConfigKey(Entity.class,
             "docker.container.entity", "The entity running in this Docker container");
-
-    ConfigKey<String> DOCKER_CONTAINER_NAME_FORMAT = ConfigKeys.newStringConfigKey(
-            "docker.container.nameFormat", "Format for generating Docker container names", DockerUtils.DEFAULT_DOCKER_CONTAINER_NAME_FORMAT);
 
     AttributeSensor<String> IMAGE_ID = Sensors.newStringSensor("docker.container.image.id", "The Docker container image ID");
     AttributeSensor<String> IMAGE_NAME = Sensors.newStringSensor("docker.container.image.name", "The Docker container image name");

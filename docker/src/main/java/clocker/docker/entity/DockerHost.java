@@ -21,7 +21,6 @@ import java.util.Map;
 
 import clocker.docker.entity.container.DockerContainer;
 import clocker.docker.entity.util.DockerAttributes;
-import clocker.docker.entity.util.DockerUtils;
 import clocker.docker.location.DockerHostLocation;
 import clocker.docker.location.strategy.affinity.AffinityRules;
 
@@ -108,9 +107,6 @@ public interface DockerHost extends MachineEntity, HasShortName, LocationOwner<D
     @SetFromFlag("infrastructure")
     AttributeSensorAndConfigKey<Entity, Entity> DOCKER_INFRASTRUCTURE = DockerAttributes.DOCKER_INFRASTRUCTURE;
 
-    ConfigKey<String> DOCKER_HOST_NAME_FORMAT = ConfigKeys.newStringConfigKey("docker.host.nameFormat",
-            "Format for generating Docker host names", DockerUtils.DEFAULT_DOCKER_HOST_NAME_FORMAT);
-
     ConfigKey<String> EPEL_RELEASE = ConfigKeys.newStringConfigKey("docker.host.epel.release",
             "EPEL release for yum based OS", "6-8");
 
@@ -131,8 +127,6 @@ public interface DockerHost extends MachineEntity, HasShortName, LocationOwner<D
 
     @SetFromFlag("affinityRules")
     ConfigKey<List<String>> DOCKER_HOST_AFFINITY_RULES = AffinityRules.AFFINITY_RULES;
-
-    AttributeSensor<String> DOCKER_HOST_NAME = Sensors.newStringSensor("docker.host.name", "The name of the Docker host");
 
     @SetFromFlag("provisioningFlags")
     ConfigKey<Map<String,Object>> PROVISIONING_FLAGS = ConfigKeys.newConfigKey(new TypeToken<Map<String,Object>>() { },
@@ -166,8 +160,6 @@ public interface DockerHost extends MachineEntity, HasShortName, LocationOwner<D
     JcloudsLocation getJcloudsLocation();
 
     SubnetTier getSubnetTier();
-
-    String getDockerHostName();
 
     Group getDockerContainerCluster();
 
