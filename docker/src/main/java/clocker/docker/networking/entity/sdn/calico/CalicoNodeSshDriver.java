@@ -112,7 +112,8 @@ public class CalicoNodeSshDriver extends DockerNetworkAgentSshDriver implements 
     public List<String> getDockerNetworkCreateOpts() {
         boolean ipip = entity.config().get(CalicoNetwork.USE_IPIP);
         boolean nat = entity.config().get(CalicoNetwork.USE_NAT);
-        List<String> opts = MutableList.of();
+
+        List<String> opts = MutableList.copyOf(super.getDockerNetworkCreateOpts());
         if (ipip) opts.add("ipip=true");
         if (nat) opts.add("nat-outgoing=true");
         return opts;
