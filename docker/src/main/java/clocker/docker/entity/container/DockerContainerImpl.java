@@ -198,7 +198,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
     @Override
     public String getContainerId() {
-        return sensors().get(CONTAINER_ID);
+        return sensors().get(DOCKER_CONTAINER_ID);
     }
 
     @Override
@@ -577,7 +577,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             // Create a new container using jclouds Docker driver
             JcloudsSshMachineLocation container = (JcloudsSshMachineLocation) host.getJcloudsLocation().obtain(dockerFlags);
             String containerId = container.getJcloudsId();
-            sensors().set(CONTAINER_ID, containerId);
+            sensors().set(DOCKER_CONTAINER_ID, containerId);
 
             // Configure the host to allow remote access to bound container ports
             configurePortBindings(dockerHost, entity);
@@ -586,7 +586,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             entity.sensors().set(DockerContainer.DOCKER_INFRASTRUCTURE, dockerHost.getInfrastructure());
             entity.sensors().set(DockerContainer.DOCKER_HOST, dockerHost);
             entity.sensors().set(DockerContainer.CONTAINER, this);
-            entity.sensors().set(DockerContainer.CONTAINER_ID, containerId);
+            entity.sensors().set(DockerContainer.DOCKER_CONTAINER_ID, containerId);
 
             // If SDN is enabled, attach networks
             if (config().get(SdnAttributes.SDN_ENABLE)) {
@@ -664,8 +664,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             if (Boolean.TRUE.equals(started)) {
                 DockerHost dockerHost = getDockerHost();
                 DockerHostLocation host = dockerHost.getDynamicLocation();
-                sensors().set(DockerContainer.IMAGE_ID, config().get(DOCKER_IMAGE_ID));
-                sensors().set(DockerContainer.IMAGE_NAME, config().get(DockerAttributes.DOCKER_IMAGE_NAME));
+                sensors().set(DockerContainer.DOCKER_IMAGE_ID, config().get(DOCKER_IMAGE_ID));
+                sensors().set(DockerContainer.DOCKER_IMAGE_NAME, config().get(DockerAttributes.DOCKER_IMAGE_NAME));
                 sensors().set(SSH_MACHINE_LOCATION, host.getMachine());
             } else {
                 Map<String, ?> flags = MutableMap.copyOf(config().get(LOCATION_FLAGS));

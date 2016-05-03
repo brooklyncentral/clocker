@@ -825,7 +825,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                     String line = ps.get(i);
                     String id = Strings.getFirstWord(line);
                     Optional<Entity> container = Iterables.tryFind(getDockerContainerCluster().getMembers(),
-                            Predicates.compose(StringPredicates.startsWith(id), EntityFunctions.attribute(DockerContainer.CONTAINER_ID)));
+                            Predicates.compose(StringPredicates.startsWith(id), EntityFunctions.attribute(DockerContainer.DOCKER_CONTAINER_ID)));
                     if (container.isPresent()) continue;
 
                     // Build a DockerContainer without a locations, as it may not be SSHable
@@ -842,12 +842,12 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
                     // Create, manage and start the container
                     DockerContainer added = getDockerContainerCluster().addMemberChild(containerSpec);
-                    added.sensors().set(DockerContainer.CONTAINER_ID, containerId);
+                    added.sensors().set(DockerContainer.DOCKER_CONTAINER_ID, containerId);
                     added.start(ImmutableList.of(getDynamicLocation().getMachine()));
                 }
             }
             for (Entity member : ImmutableList.copyOf(getDockerContainerCluster().getMembers())) {
-                final String id = member.sensors().get(DockerContainer.CONTAINER_ID);
+                final String id = member.sensors().get(DockerContainer.DOCKER_CONTAINER_ID);
                 if (id != null) {
                     Optional<String> found = Iterables.tryFind(ps, new Predicate<String>() {
                         @Override

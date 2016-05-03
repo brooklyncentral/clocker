@@ -344,9 +344,9 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             DockerContainer dockerContainer = (DockerContainer) added;
 
             // Save the container attributes
-            dockerContainer.sensors().set(DockerContainer.IMAGE_ID, imageId);
-            dockerContainer.sensors().set(DockerContainer.IMAGE_NAME, imageName);
-            dockerContainer.sensors().set(DockerContainer.HARDWARE_ID, hardwareId);
+            dockerContainer.sensors().set(DockerContainer.DOCKER_IMAGE_ID, imageId);
+            dockerContainer.sensors().set(DockerContainer.DOCKER_IMAGE_NAME, imageName);
+            dockerContainer.sensors().set(DockerContainer.DOCKER_HARDWARE_ID, hardwareId);
 
             // record SDN application network details
             if (getOwner().config().get(SdnAttributes.SDN_ENABLE)) {
