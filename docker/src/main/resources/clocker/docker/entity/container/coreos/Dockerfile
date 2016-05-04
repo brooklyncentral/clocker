@@ -18,7 +18,7 @@ FROM ubuntu:12.04
 MAINTAINER Cloudsoft "brooklyn@cloudsoftcorp.com"
 
 # CLOCKER_VERSION_BELOW
-LABEL version="1.1.0"
+LABEL version="1.1.1"
 
 # make sure the package repository is up to date
 RUN ( echo "deb http://archive.ubuntu.com/ubuntu precise main universe" ; echo "deb http://archive.ubuntu.com/ubuntu precise-updates main universe" ) > /etc/apt/sources.list
