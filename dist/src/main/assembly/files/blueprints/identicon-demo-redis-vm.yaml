@@ -12,35 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-id: dockercon-clocker-demo-application
-name: "DockerCon Demo Application"
+id: identicon-demo-application
+name: "Identicon Demo Application"
 description: |
-  DockerCon Clocker demo application. Containers
-  on Docker and Mesos and Redis on an OpenStack VM,
-  plus an enricher for the main URL.
+  Identicon application using Redis backing store deployed on
+  SoftLayer and Node.js front end deployed to Clocker.
 
 services:
 - type: org.apache.brooklyn.entity.nosql.redis.RedisStore
-  location: my-openstack-cloud
+  location: jclouds:softlayer:lon02
   id: redis
   name: "Redis Store"
   install.version: 3.0.3
   start.timeout: 10m
 
 - type: docker:clockercentral/dnmonster:1.0
-  location: my-mesos-cluster
+  location: "my-docker-cloud"
   id: dnmonster
   name: "Dnmonster Avatar Service"
   openPorts:
   - 8080
 
 - type: docker:clockercentral/identidock:1.9
-  location: my-docker-cloud
+  location: "my-docker-cloud"
   id: identidock
   name: "Identidock Web Application"
-  portBindings:
-    80: 9090
   openPorts:
+  - 9090
   - 9091
   links:
     redis: $brooklyn:component("redis")
@@ -48,12 +46,10 @@ services:
   brooklyn.enrichers:
   - type: org.apache.brooklyn.enricher.stock.Transformer
     brooklyn.config:
-      uniqueTag: url-generator
-      enricher.sourceSensor: host.name
+      uniqueTag: external-url-generator
+      enricher.sourceSensor: mapped.docker.port.9090
       enricher.targetSensor: main.uri
-      enricher.targetValue: 
+      enricher.targetValue:
         $brooklyn:formatString:
-        - "http://%s/" 
-        - $brooklyn:attributeWhenReady("host.name")
-
-# vim:ts=2:sw=2:ft=yaml:
+        - "http://%s/"
+        - $brooklyn:attributeWhenReady("mapped.docker.port.9090")
