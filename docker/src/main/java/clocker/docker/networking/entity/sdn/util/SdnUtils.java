@@ -161,13 +161,18 @@ public class SdnUtils {
         }
     }
 
-    public static final int countAttached(DockerHost dockerHost, String networkId) {
+    public static final Optional<Integer> countAttached(DockerHost dockerHost, String networkId) {
         Entity etcd = dockerHost.sensors().get(DockerHost.ETCD_NODE);
         String installDir = etcd.sensors().get(SoftwareProcess.EXPANDED_INSTALL_DIR);
-        String fullNetworkId = dockerHost.runDockerCommand(String.format("network inspect --format=\"{{ .ID }}\" %s", networkId));
-        String output = dockerHost.execCommand(String.format("%s/etcdctl ls /docker/network/v1.0/endpoint/%s", installDir, fullNetworkId));
-        int attached = Strings.getWordCount(output, false);
-        return attached;
+        try {
+            String fullNetworkId = dockerHost.runDockerCommand(String.format("network inspect --format=\"{{ .ID }}\" %s", networkId));
+            String output = dockerHost.execCommand(String.format("%s/etcdctl ls /docker/network/v1.0/endpoint/%s", installDir, fullNetworkId));
+            int attached = Strings.getWordCount(output, false);
+            return Optional.of(attached);
+        } catch (IllegalStateException ise) {
+            LOG.warn("Cannot count attached containers on {} for {} (does it exist?)", dockerHost, networkId);
+            return Optional.absent();
+        }
     }
 
 }

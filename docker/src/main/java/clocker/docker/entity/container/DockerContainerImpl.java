@@ -119,11 +119,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
     @Override
     public String getDisplayName() {
-        return String.format("Container (%s)",
-                Iterables.getFirst(Optional.presentInstances(ImmutableList.of(
-                        Optional.fromNullable(sensors().get(DockerContainer.DOCKER_CONTAINER_NAME)),
-                        Optional.fromNullable(config().get(DockerContainer.DOCKER_IMAGE_NAME)))),
-                                getId()));
+        return String.format("Container (%s)", DockerUtils.getUniqueContainerName(this));
     }
 
     protected void connectSensors() {
@@ -267,7 +263,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         Boolean useHostDns = Objects.firstNonNull(entity.config().get(DOCKER_USE_HOST_DNS_NAME), Boolean.FALSE);
         String hostname = getDockerHost().sensors().get(Attributes.HOSTNAME);
         String address = getDockerHost().sensors().get(Attributes.ADDRESS);
-        String container = DockerUtils.getUniqueContainerName(entity).or(Optional.fromNullable(getDockerContainerName())).get();
+        String container = DockerUtils.getUniqueContainerName(entity);
         String name = (!useHostDns || hostname.equalsIgnoreCase(address)) ? container : hostname;
         options.hostname(name);
         options.nodeNames(ImmutableList.of(name));
@@ -663,11 +659,12 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         ServiceStateLogic.setExpectedState(this, Lifecycle.STARTING);
         try {
             Boolean started = config().get(SoftwareProcess.ENTITY_STARTED);
-            if (Boolean.TRUE.equals(started)) {
+            Boolean managed = config().get(DockerContainer.MANAGED);
+            if (Boolean.TRUE.equals(started) || !managed) {
                 DockerHost dockerHost = getDockerHost();
                 DockerHostLocation host = dockerHost.getDynamicLocation();
-                sensors().set(DockerContainer.DOCKER_IMAGE_ID, config().get(DOCKER_IMAGE_ID));
-                sensors().set(DockerContainer.DOCKER_IMAGE_NAME, config().get(DockerAttributes.DOCKER_IMAGE_NAME));
+                sensors().set(DOCKER_IMAGE_ID, config().get(DOCKER_IMAGE_ID));
+                sensors().set(DOCKER_IMAGE_NAME, config().get(DOCKER_IMAGE_NAME));
                 sensors().set(SSH_MACHINE_LOCATION, host.getMachine());
             } else {
                 Map<String, ?> flags = MutableMap.copyOf(config().get(LOCATION_FLAGS));
@@ -726,42 +723,46 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         }
         removeContainer();
 
-        // Delete application bridge network
-        synchronized (getDockerHost().getHostMutex()) {
-            String bridgeNetwork = sensors().get(SdnAttributes.BRIDGE_NETWORK_ID);
-            try {
-                int attached = Integer.parseInt(getDockerHost().runDockerCommand(
-                        String.format("network inspect --format=\"{{ len .Containers }}\" %s", bridgeNetwork)));
-                if (attached == 0) {
-                    getDockerHost().runDockerCommand(String.format("network rm %s", bridgeNetwork));
-                }
-            } catch (IllegalStateException ise) {
-                LOG.warn("Error trying to remove bridge network {}: {}", bridgeNetwork, ise);
-            }
-        }
-
-        // Delete SDN networks no longer in use
-        if (config().get(SdnAttributes.SDN_ENABLE)) {
-            SdnProvider provider = (SdnProvider) getDockerHost().getInfrastructure().sensors().get(SdnAttributes.SDN_PROVIDER);
-            List<String> networks = sensors().get(SdnAttributes.ATTACHED_NETWORKS);
-            for (String networkId : networks) {
-                synchronized (getDockerHost().getInfrastructure().getInfrastructureMutex()) {
-                    int attached = SdnUtils.countAttached(getDockerHost(), networkId);
-                    LOG.debug("Found {} containers attached to {} when stopping {}",
-                            new Object[] { attached, networkId, getContainerId() });
+        // If this is a Clocker managd container delete networks and location
+        Boolean managed = config().get(DockerContainer.MANAGED);
+        if (managed) {
+            // Delete application bridge network
+            synchronized (getDockerHost().getHostMutex()) {
+                String bridgeNetwork = sensors().get(SdnAttributes.BRIDGE_NETWORK_ID);
+                try {
+                    int attached = Integer.parseInt(getDockerHost().runDockerCommand(
+                            String.format("network inspect --format=\"{{ len .Containers }}\" %s", bridgeNetwork)));
                     if (attached == 0) {
-                        VirtualNetwork networkEntity = SdnUtils.lookupNetwork(provider, networkId);
-                        Entities.invokeEffector(getDockerHost(), networkEntity, Startable.STOP).getUnchecked();
-                        Entities.unmanage(networkEntity);
+                        getDockerHost().runDockerCommand(String.format("network rm %s", bridgeNetwork));
+                    }
+                } catch (IllegalStateException ise) {
+                    LOG.warn("Error trying to remove bridge network {}: {}", bridgeNetwork, ise);
+                }
+            }
+
+            // Delete SDN networks no longer in use
+            if (config().get(SdnAttributes.SDN_ENABLE)) {
+                SdnProvider provider = (SdnProvider) getDockerHost().getInfrastructure().sensors().get(SdnAttributes.SDN_PROVIDER);
+                List<String> networks = sensors().get(SdnAttributes.ATTACHED_NETWORKS);
+                for (String networkId : networks) {
+                    synchronized (getDockerHost().getInfrastructure().getInfrastructureMutex()) {
+                        Optional<Integer> attached = SdnUtils.countAttached(getDockerHost(), networkId);
+                        LOG.debug("Found {} containers attached to {} when stopping {}",
+                                new Object[] { attached.or(-1), networkId, getContainerId() });
+                        if (attached.isPresent() && attached.get() == 0) {
+                            VirtualNetwork networkEntity = SdnUtils.lookupNetwork(provider, networkId);
+                            Entities.invokeEffector(getDockerHost(), networkEntity, Startable.STOP).getUnchecked();
+                            Entities.unmanage(networkEntity);
+                        }
                     }
                 }
             }
-        }
 
-        sensors().set(SSH_MACHINE_LOCATION, null);
-        Boolean started = config().get(SoftwareProcess.ENTITY_STARTED);
-        if (!Boolean.TRUE.equals(started)) {
-            deleteLocation();
+            sensors().set(SSH_MACHINE_LOCATION, null);
+            Boolean started = config().get(SoftwareProcess.ENTITY_STARTED);
+            if (!started) {
+                deleteLocation();
+            }
         }
 
         ServiceStateLogic.setExpectedState(this, Lifecycle.STOPPED);

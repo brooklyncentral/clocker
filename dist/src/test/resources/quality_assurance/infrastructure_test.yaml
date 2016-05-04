@@ -1,64 +1,64 @@
 services:
-  - type: org.apache.brooklyn.test.framework.TestCase
-    brooklyn.children:
-      - type: clocker.docker.entity.DockerInfrastructure
-        location: named:aws-california
-        id: infrastructure
-        brooklyn.config:
-          entity.dynamicLocation.name: my-docker-cloud
-          docker.host.cluster.initial.size: 2
-          docker.registry.start: false
-          docker.version: 1.10.3 # DOCKER_VERSION
-      - type: org.apache.brooklyn.test.framework.TestSensor
-        name: Check infrastructure isUp
-        sensor: service.isUp
-        targetId: infrastructure
-        timeout: 1m
-        assert:
-         - equals: true
-      - type: org.apache.brooklyn.test.framework.LoopOverGroupMembersTestCase
-        target: $brooklyn:component("infrastructure").component("child", "DockerHosts")
-        testSpec:
-          $brooklyn:entitySpec:
-            type: org.apache.brooklyn.test.framework.TestCase
-            brooklyn.children:
-              # Check that the hosts itself is up and running as expected
-              - type: org.apache.brooklyn.test.framework.ParallelTestCase
-                brooklyn.children:
-                  - type: org.apache.brooklyn.test.framework.TestSensor
-                    name: Check DockerHost isUp
-                    sensor: service.isUp
-                    timeout: 1m
-                    assert:
-                     - equals: true
-                  - type: org.apache.brooklyn.test.framework.TestEffector
-                    name: Check DockerHost runDockerCommand effector
-                    effector: runDockerCommand
-                    timeout: 1m
-                    params:
-                      command: info
-                    assert:
-                     - contains: "Containers: 0"
-              # Test deploying and undeploying with an effector
-              - type: org.apache.brooklyn.test.framework.TestCase
-                brooklyn.children:
-                 - type: org.apache.brooklyn.test.framework.TestEffector
-                   name: Deploy test entity
-                   effector: runDockerCommand
-                   timeout: 10m
-                   params:
-                     command: run -d elasticsearch
-                 - type: org.apache.brooklyn.test.framework.TestEffector
-                   name: ensure docker info thinks there are containers
-                   effector: runDockerCommand
-                   timeout: 1m
-                   params:
-                     command: info
-                   assert:
-                    - contains: "Containers: 1"
-                 - type: org.apache.brooklyn.test.framework.TestSensor
-                   name: Check containers total
-                   sensor: docker.containers.total
-                   timeout: 1m
-                   assert:
-                    - equals: 1
+- type: org.apache.brooklyn.test.framework.TestCase
+  brooklyn.children:
+  - type: clocker.docker.entity.DockerInfrastructure
+    location: named:aws-california
+    id: infrastructure
+    brooklyn.config:
+      entity.dynamicLocation.name: my-docker-cloud
+      docker.host.cluster.initial.size: 2
+      docker.registry.start: false
+      docker.version: 1.10.3 # DOCKER_VERSION
+  - type: org.apache.brooklyn.test.framework.TestSensor
+    name: Check infrastructure isUp
+    sensor: service.isUp
+    targetId: infrastructure
+    timeout: 1m
+    assert:
+    - equals: true
+  - type: org.apache.brooklyn.test.framework.LoopOverGroupMembersTestCase
+    target: $brooklyn:component("infrastructure").component("child", "DockerHosts")
+    testSpec:
+      $brooklyn:entitySpec:
+        type: org.apache.brooklyn.test.framework.TestCase
+        brooklyn.children:
+        # Check that the hosts itself is up and running as expected
+        - type: org.apache.brooklyn.test.framework.ParallelTestCase
+          brooklyn.children:
+          - type: org.apache.brooklyn.test.framework.TestSensor
+            name: Check DockerHost isUp
+            sensor: service.isUp
+            timeout: 1m
+            assert:
+            - equals: true
+          - type: org.apache.brooklyn.test.framework.TestEffector
+            name: Check DockerHost runDockerCommand effector
+            effector: runDockerCommand
+            timeout: 1m
+            params:
+              command: info
+            assert:
+            - contains: "Containers: 0"
+        # Test deploying and undeploying with an effector
+        - type: org.apache.brooklyn.test.framework.TestCase
+          brooklyn.children:
+          - type: org.apache.brooklyn.test.framework.TestEffector
+            name: Deploy test entity
+            effector: runDockerCommand
+            timeout: 10m
+            params:
+              command: run -d elasticsearch
+          - type: org.apache.brooklyn.test.framework.TestEffector
+            name: ensure docker info thinks there are containers
+            effector: runDockerCommand
+            timeout: 1m
+            params:
+              command: info
+            assert:
+            - contains: "Containers: 1"
+          - type: org.apache.brooklyn.test.framework.TestSensor
+            name: Check containers total
+            sensor: docker.containers.total
+            timeout: 1m
+            assert:
+            - equals: 1
