@@ -120,7 +120,10 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
     @Override
     public String getDisplayName() {
         return String.format("Container (%s)",
-                Objects.firstNonNull(sensors().get(DockerContainer.DOCKER_CONTAINER_NAME), config().get(DockerContainer.DOCKER_IMAGE_NAME)));
+                Iterables.getFirst(Optional.presentInstances(ImmutableList.of(
+                        Optional.fromNullable(sensors().get(DockerContainer.DOCKER_CONTAINER_NAME)),
+                        Optional.fromNullable(config().get(DockerContainer.DOCKER_IMAGE_NAME)))),
+                                getId()));
     }
 
     protected void connectSensors() {

@@ -26,10 +26,10 @@ import clocker.docker.entity.util.DockerAttributes;
 import clocker.docker.entity.util.DockerUtils;
 import clocker.docker.location.DockerContainerLocation;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 
+import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.entity.software.base.SoftwareProcessImpl;
 
 public class VanillaDockerApplicationImpl extends SoftwareProcessImpl implements VanillaDockerApplication {
@@ -41,8 +41,12 @@ public class VanillaDockerApplicationImpl extends SoftwareProcessImpl implements
 
     @Override
     public String getDisplayName() {
-        return String.format("Container (%s)",
-                Objects.firstNonNull(sensors().get(DockerContainer.DOCKER_CONTAINER_NAME), config().get(DockerContainer.DOCKER_IMAGE_NAME)));
+        Entity container = sensors().get(DockerContainer.CONTAINER);
+        if (container != null) {
+            return container.getDisplayName();
+        } else  {
+            return "Container";
+        }
     }
 
     @Override

@@ -446,13 +446,6 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
         } catch (Exception e) {
             LOG.warn("Error stopping hosts", e);
         }
-
-        // Stop anything else left over
-        try {
-            super.stop();
-        } catch (Exception e) {
-            LOG.warn("Error stopping children", e);
-        }
     }
 
     static {

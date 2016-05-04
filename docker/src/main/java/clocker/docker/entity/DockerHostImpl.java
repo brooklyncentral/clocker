@@ -823,11 +823,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
         } catch (Exception e) {
             LOG.warn("Error stopping containers", e);
         }
-    }
-
-    @Override
-    public void postStop() {
-        super.postStop(); // Currently does nothing
 
         EtcdNode etcd = sensors().get(ETCD_NODE);
         DockerUtils.stop(getInfrastructure(), etcd, Duration.THIRTY_SECONDS);
