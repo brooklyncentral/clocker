@@ -5,39 +5,39 @@ brooklyn.catalog:
   itemType: template
   item:
     services:
-      - type: org.apache.brooklyn.test.framework.InfrastructureDeploymentTestCase
-        brooklyn.config:
-          infrastructure.deployment.location.sensor: entity.dynamicLocation
-          infrastructure.deployment.spec:
-            $brooklyn:entitySpec:
-              - type: clocker.docker.entity.DockerInfrastructure
-                id: infrastructure
-                brooklyn.config:
-                  docker.addLocalhostPermission: true
-                  docker.host.cluster.initial.size: 1
-                  docker.registry.start: false
-                  docker.version: 1.10.3 # DOCKER_VERSION
-          infrastructure.deployment.entity.specs:
-            - $brooklyn:entitySpec:
-                type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-                id: TestServer
-                brooklyn.config:
-                  docker.container.directPorts:
-                    - 8080
-                launch.command: while true; do echo "hello world" | nc -l 8080; done &
-                checkRunning.command: echo 'up'
-        brooklyn.children:
-          - type: org.apache.brooklyn.test.framework.TestSensor
-            name: Check infrastructure isUp
-            targetId: infrastructure
-            sensor: service.isUp
-            timeout: 10m
-            assert:
-             - equals: true
-          - type: org.apache.brooklyn.test.framework.TestSensor
-            name: Check TestServer isUp
-            targetId: TestServer
-            sensor: service.isUp
-            timeout: 20m
-            assert:
-             - equals: true
+    - type: org.apache.brooklyn.test.framework.InfrastructureDeploymentTestCase
+      brooklyn.config:
+        infrastructure.deployment.location.sensor: entity.dynamicLocation
+        infrastructure.deployment.spec:
+          $brooklyn:entitySpec:
+            type: clocker.docker.entity.DockerInfrastructure
+            id: infrastructure
+            brooklyn.config:
+              docker.addLocalhostPermission: true
+              docker.host.cluster.initial.size: 1
+              docker.registry.start: false
+              docker.version: 1.10.3 # DOCKER_VERSION
+        infrastructure.deployment.entity.specs:
+        - $brooklyn:entitySpec:
+            type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+            id: TestServer
+            brooklyn.config:
+              docker.container.directPorts:
+              - 8080
+              launch.command: while true; do echo "hello world" | nc -l 8080; done &
+              checkRunning.command: echo 'up'
+      brooklyn.children:
+      - type: org.apache.brooklyn.test.framework.TestSensor
+        name: Check infrastructure isUp
+        targetId: infrastructure
+        sensor: service.isUp
+        timeout: 10m
+        assert:
+        - equals: true
+      - type: org.apache.brooklyn.test.framework.TestSensor
+        name: Check TestServer isUp
+        targetId: TestServer
+        sensor: service.isUp
+        timeout: 20m
+        assert:
+        - equals: true

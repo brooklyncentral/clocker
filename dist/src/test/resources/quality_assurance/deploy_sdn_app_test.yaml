@@ -5,53 +5,53 @@ brooklyn.catalog:
   itemType: template
   item:
     services:
-      - type: org.apache.brooklyn.test.framework.InfrastructureDeploymentTestCase
-        brooklyn.config:
-          infrastructure.deployment.location.sensor: entity.dynamicLocation
-          infrastructure.deployment.spec:
-            $brooklyn:entitySpec:
-              - type: "docker-cloud-calico:1.2.0-SNAPSHOT" # CLOCKER_VERSION
-                id: infrastructure
-                brooklyn.config:
-                  entity.dynamicLocation.name: my-docker-cloud
-                  docker.host.cluster.initial.size: 2
-                  docker.registry.start: false
-                  docker.version: 1.10.3 # DOCKER_VERSION
-          infrastructure.deployment.entity.specs:
-            - $brooklyn:entitySpec:
-                type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-                id: TestServer
-                brooklyn.config:
-                  docker.container.directPorts:
-                    - 8080
-                launch.command: while true; do echo "hello world" | netcat -l 8080; done &
-                checkRunning.command: netcat localhost 8080
-            - $brooklyn:entitySpec:
-                type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-                id: TestClient
-                launch.command: echo "There is no launch command!"
-                checkRunning.command: $brooklyn:formatString("netcat %s 8080", $brooklyn:component("TestServer").attributeWhenReady("host.subnet.hostname"))
-                brooklyn.config:
-                  start.timeout: 10m
-        brooklyn.children:
-          - type: org.apache.brooklyn.test.framework.TestSensor
-            name: Check infrastructure isUp
-            targetId: infrastructure
-            sensor: service.isUp
-            timeout: 20m
-            assert:
-             - equals: true
-          - type: org.apache.brooklyn.test.framework.TestSensor
-            name: Check TestClient isUp
-            targetId: TestClient
-            sensor: service.isUp
-            timeout: 20m
-            assert:
-             - equals: true
-          - type: org.apache.brooklyn.test.framework.TestSensor
-            name: Check TestServer isUp
-            targetId: TestServer
-            sensor: service.isUp
-            timeout: 20m
-            assert:
-             - equals: true
+    - type: org.apache.brooklyn.test.framework.InfrastructureDeploymentTestCase
+      brooklyn.config:
+        infrastructure.deployment.location.sensor: entity.dynamicLocation
+        infrastructure.deployment.spec:
+          $brooklyn:entitySpec:
+            type: "docker-cloud-calico:1.2.0-SNAPSHOT" # CLOCKER_VERSION
+            id: infrastructure
+            brooklyn.config:
+              entity.dynamicLocation.name: my-docker-cloud
+              docker.host.cluster.initial.size: 2
+              docker.registry.start: false
+              docker.version: 1.10.3 # DOCKER_VERSION
+        infrastructure.deployment.entity.specs:
+        - $brooklyn:entitySpec:
+            type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+            id: TestServer
+            brooklyn.config:
+              docker.container.directPorts:
+              - 8080
+              launch.command: while true; do echo "hello world" | netcat -l 8080; done &
+              checkRunning.command: netcat localhost 8080
+        - $brooklyn:entitySpec:
+            type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+            id: TestClient
+            brooklyn.config:
+              launch.command: echo "There is no launch command!"
+              checkRunning.command: $brooklyn:formatString("netcat %s 8080", $brooklyn:component("TestServer").attributeWhenReady("host.subnet.hostname"))
+              start.timeout: 10m
+      brooklyn.children:
+      - type: org.apache.brooklyn.test.framework.TestSensor
+        name: Check infrastructure isUp
+        targetId: infrastructure
+        sensor: service.isUp
+        timeout: 20m
+        assert:
+        - equals: true
+      - type: org.apache.brooklyn.test.framework.TestSensor
+        name: Check TestClient isUp
+        targetId: TestClient
+        sensor: service.isUp
+        timeout: 20m
+        assert:
+        - equals: true
+      - type: org.apache.brooklyn.test.framework.TestSensor
+        name: Check TestServer isUp
+        targetId: TestServer
+        sensor: service.isUp
+        timeout: 20m
+        assert:
+        - equals: true
