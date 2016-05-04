@@ -56,6 +56,7 @@ import org.apache.brooklyn.api.entity.Group;
 import org.apache.brooklyn.api.location.LocationDefinition;
 import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.NoMachinesAvailableException;
+import org.apache.brooklyn.api.mgmt.ManagementContext.PropertiesReloadListener;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.config.Sanitizer;
@@ -133,6 +134,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             machine = checkNotNull(config().get(MACHINE), "machine");
             portForwarder = config().get(PORT_FORWARDER);
             jcloudsLocation = config().get(JCLOUDS_LOCATION);
+            addReloadListener();
         }
     }
     
@@ -148,6 +150,15 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
         if (dockerHost != null && getConfig(LOCATION_NAME) != null) {
             register();
         }
+        addReloadListener();
+    }
+
+    @SuppressWarnings("serial")
+    private void addReloadListener() {
+        getManagementContext().addPropertiesReloadListener(new PropertiesReloadListener() {
+            @Override public void reloaded() {
+                register();
+            }});
     }
 
     @Override
