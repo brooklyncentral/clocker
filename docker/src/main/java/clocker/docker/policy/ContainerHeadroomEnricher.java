@@ -73,6 +73,11 @@ public class ContainerHeadroomEnricher extends AbstractEnricher {
     public static final ConfigKey<Double> CONTAINER_HEADROOM_PERCENTAGE = ConfigKeys.newDoubleConfigKey(
             "docker.container.cluster.headroom.percent", "Required headroom (percentage free containers) for the Docker cluster");
 
+    public static final ConfigKey<Boolean> CLUSTER_TOO_COLD_ENABLED = ConfigKeys.newBooleanConfigKey(
+            "docker.container.cluster.cold.enabled", 
+            "Whether to emit too-cold events (which can trigger auto-scaling down)",
+            false);
+
     public static final AttributeSensor<Integer> CONTAINERS_NEEDED = Sensors.newIntegerSensor(
             "docker.container.cluster.needed", "Number of containers needed to give requierd headroom");
     public static final AttributeSensor<Double> DOCKER_CONTAINER_UTILISATION = Sensors.newDoubleSensor(
@@ -130,6 +135,7 @@ public class ContainerHeadroomEnricher extends AbstractEnricher {
         if (maxContainers == null) {
             maxContainers = MaxContainersPlacementStrategy.DEFAULT_MAX_CONTAINERS;
         }
+        boolean tooColdEnabled = Boolean.TRUE.equals(config().get(CLUSTER_TOO_COLD_ENABLED));
 
         // Calculate cluster state
         Integer containers = entity.sensors().get(DockerInfrastructure.DOCKER_CONTAINER_COUNT);
@@ -172,7 +178,7 @@ public class ContainerHeadroomEnricher extends AbstractEnricher {
         if (needed > 0) {
             lastPublished = DOCKER_CONTAINER_CLUSTER_HOT;
             emit(DOCKER_CONTAINER_CLUSTER_HOT, properties);
-        } else if (available > (headroom + maxContainers)) {
+        } else if (tooColdEnabled && available > (headroom + maxContainers)) {
             lastPublished = DOCKER_CONTAINER_CLUSTER_COLD;
             emit(DOCKER_CONTAINER_CLUSTER_COLD, properties);
         } else {

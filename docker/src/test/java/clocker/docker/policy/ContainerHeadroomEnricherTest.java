@@ -38,6 +38,7 @@ import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.api.sensor.EnricherSpec;
 import org.apache.brooklyn.api.sensor.SensorEvent;
 import org.apache.brooklyn.api.sensor.SensorEventListener;
+import org.apache.brooklyn.core.entity.EntityAsserts;
 import org.apache.brooklyn.core.entity.EntityInternal;
 import org.apache.brooklyn.core.sensor.BasicNotificationSensor;
 import org.apache.brooklyn.core.test.BrooklynAppUnitTestSupport;
@@ -45,7 +46,6 @@ import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.group.DynamicGroup;
 import org.apache.brooklyn.entity.stock.BasicStartableImpl;
 import org.apache.brooklyn.test.Asserts;
-import org.apache.brooklyn.test.EntityTestUtils;
 import org.apache.brooklyn.util.time.Duration;
 import org.apache.brooklyn.util.time.Time;
 
@@ -66,14 +66,14 @@ public class ContainerHeadroomEnricherTest extends BrooklynAppUnitTestSupport {
                 .configure(MaxContainersPlacementStrategy.DOCKER_CONTAINER_CLUSTER_MAX_SIZE, 8));
 
         listener = new RecordingSensorEventListener();
-        app.subscribe(entity, ContainerHeadroomEnricher.DOCKER_CONTAINER_CLUSTER_HOT, listener);
-        app.subscribe(entity, ContainerHeadroomEnricher.DOCKER_CONTAINER_CLUSTER_COLD, listener);
-        app.subscribe(entity, ContainerHeadroomEnricher.DOCKER_CONTAINER_CLUSTER_OK, listener);
+        app.subscriptions().subscribe(entity, ContainerHeadroomEnricher.DOCKER_CONTAINER_CLUSTER_HOT, listener);
+        app.subscriptions().subscribe(entity, ContainerHeadroomEnricher.DOCKER_CONTAINER_CLUSTER_COLD, listener);
+        app.subscriptions().subscribe(entity, ContainerHeadroomEnricher.DOCKER_CONTAINER_CLUSTER_OK, listener);
     }
     
     @Test
     public void testNoEventsWhenAllOk() throws Exception {
-        entity.addEnricher(EnricherSpec.create(ContainerHeadroomEnricher.class)
+        entity.enrichers().add(EnricherSpec.create(ContainerHeadroomEnricher.class)
                 .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM, 4));
 
         entity.sensors().set(DockerInfrastructure.DOCKER_HOST_COUNT, 2);
@@ -87,7 +87,7 @@ public class ContainerHeadroomEnricherTest extends BrooklynAppUnitTestSupport {
     // second later then our subsequent assertion will fail.  
     @Test(groups="integration")
     public void testTooHotWhenHeadroomExceeded() throws Exception {
-        entity.addEnricher(EnricherSpec.create(ContainerHeadroomEnricher.class)
+        entity.enrichers().add(EnricherSpec.create(ContainerHeadroomEnricher.class)
                 .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM, 4));
         
         // Too hot: headroom insufficient by one container
@@ -138,8 +138,9 @@ public class ContainerHeadroomEnricherTest extends BrooklynAppUnitTestSupport {
     // See comment on testTooHotThenOk.
     @Test(groups="integration")
     public void testTooColdThenOk() throws Exception {
-        entity.addEnricher(EnricherSpec.create(ContainerHeadroomEnricher.class)
-                .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM, 4));
+        entity.enrichers().add(EnricherSpec.create(ContainerHeadroomEnricher.class)
+                .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM, 4)
+                .configure(ContainerHeadroomEnricher.CLUSTER_TOO_COLD_ENABLED, true));
         
         // Too cold - only need one host rather than 10
         entity.sensors().set(DockerInfrastructure.DOCKER_HOST_COUNT, 10);
@@ -152,7 +153,7 @@ public class ContainerHeadroomEnricherTest extends BrooklynAppUnitTestSupport {
                 .lowThreshold((80d - (4 + 8)) / 80)
                 .highThreshold(76d/80));
         
-        // Too hot - only need one host rather than 2
+        // Too cold - only need one host rather than 2
         listener.clearEventsContinually();
         entity.sensors().set(DockerInfrastructure.DOCKER_HOST_COUNT, 2);
 
@@ -181,6 +182,25 @@ public class ContainerHeadroomEnricherTest extends BrooklynAppUnitTestSupport {
         assertNoEventsContinually();
     }
 
+    // Integration because takes over a second, and because time-sensitive:
+    // See comment on testTooHotThenOk.
+    @Test(groups="integration")
+    public void testTooColdNotPublishedByDefault() throws Exception {
+        entity.enrichers().add(EnricherSpec.create(ContainerHeadroomEnricher.class)
+                .configure(ContainerHeadroomEnricher.CONTAINER_HEADROOM, 4));
+        
+        // Too cold - only need one host rather than 10.
+        // Same state as in testTooColdThenOk, so know that it really is "too cold".
+        entity.sensors().set(DockerInfrastructure.DOCKER_HOST_COUNT, 10);
+        entity.sensors().set(DockerInfrastructure.DOCKER_CONTAINER_COUNT, 1);
+        
+        // Make everything ok again; do not expect an "ok"
+        entity.sensors().set(DockerInfrastructure.DOCKER_HOST_COUNT, 2);
+        entity.sensors().set(DockerInfrastructure.DOCKER_CONTAINER_COUNT, 8);
+
+        assertNoEventsContinually();
+    }
+
     private void assertNoEventsContinually() {
         Asserts.succeedsContinually(new Runnable() {
             public void run() {
@@ -201,8 +221,8 @@ public class ContainerHeadroomEnricherTest extends BrooklynAppUnitTestSupport {
     }
 
     private void assertTemperatureEvent(final CurrentStatus status, final BasicNotificationSensor<Map> eventType) {
-        EntityTestUtils.assertAttributeEqualsEventually(assertMap, entity, ContainerHeadroomEnricher.CONTAINERS_NEEDED, status.needed);
-        EntityTestUtils.assertAttributeEqualsEventually(assertMap, entity, ContainerHeadroomEnricher.DOCKER_CONTAINER_UTILISATION, status.utilization);
+        EntityAsserts.assertAttributeEqualsEventually(assertMap, entity, ContainerHeadroomEnricher.CONTAINERS_NEEDED, status.needed);
+        EntityAsserts.assertAttributeEqualsEventually(assertMap, entity, ContainerHeadroomEnricher.DOCKER_CONTAINER_UTILISATION, status.utilization);
 
         Asserts.succeedsEventually(assertMap, new Runnable() {
             public void run() {
