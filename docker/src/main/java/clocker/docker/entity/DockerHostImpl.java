@@ -828,7 +828,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                             Predicates.compose(StringPredicates.startsWith(id), EntityFunctions.attribute(DockerContainer.DOCKER_CONTAINER_ID)));
                     if (container.isPresent()) continue;
 
-                    // Build a DockerContainer without a locations, as it may not be SSHable
+                    // Build an unmanged DockerContainer without a locations, as it may not be SSHable
                     String containerId = Strings.getFirstWord(runDockerCommand("inspect --format {{.Id}} " + id));
                     String imageId = Strings.getFirstWord(runDockerCommand("inspect --format {{.Image}} " + id));
                     String imageName = Strings.getFirstWord(runDockerCommand("inspect --format {{.Config.Image}} " + id));
@@ -838,9 +838,10 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                             .configure(DockerContainer.DOCKER_INFRASTRUCTURE, getInfrastructure())
                             .configure(DockerContainer.DOCKER_IMAGE_ID, imageId)
                             .configure(DockerContainer.DOCKER_IMAGE_NAME, imageName)
+                            .configure(DockerContainer.MANAGED, Boolean.FALSE)
                             .configure(DockerContainer.LOCATION_FLAGS, MutableMap.<String, Object>of("container", getMachine()));
 
-                    // Create, manage and start the container
+                    // Create and start the container
                     DockerContainer added = getDockerContainerCluster().addMemberChild(containerSpec);
                     added.sensors().set(DockerContainer.DOCKER_CONTAINER_ID, containerId);
                     added.start(ImmutableList.of(getDynamicLocation().getMachine()));
