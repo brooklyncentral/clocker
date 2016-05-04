@@ -742,10 +742,10 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             List<String> networks = sensors().get(SdnAttributes.ATTACHED_NETWORKS);
             for (String networkId : networks) {
                 synchronized (getDockerHost().getInfrastructure().getInfrastructureMutex()) {
-                    int attached = SdnUtils.countAttached(getDockerHost(), networkId);
+                    Optional<Integer> attached = SdnUtils.countAttached(getDockerHost(), networkId);
                     LOG.debug("Found {} containers attached to {} when stopping {}",
-                            new Object[] { attached, networkId, getContainerId() });
-                    if (attached == 0) {
+                            new Object[] { attached.or(-1), networkId, getContainerId() });
+                    if (attached.isPresent() && attached.get() == 0) {
                         VirtualNetwork networkEntity = SdnUtils.lookupNetwork(provider, networkId);
                         Entities.invokeEffector(getDockerHost(), networkEntity, Startable.STOP).getUnchecked();
                         Entities.unmanage(networkEntity);
