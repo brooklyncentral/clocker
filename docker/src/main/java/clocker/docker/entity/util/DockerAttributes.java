@@ -84,10 +84,13 @@ public class DockerAttributes {
             "docker.image.commands", "Optional replacement for the image commands");
 
     public static final AttributeSensorAndConfigKey<String, String> DOCKER_HARDWARE_ID = ConfigKeys.newStringSensorAndConfigKey(
-            "docker.hardwareId", "The ID of a Docker hardware type to use for a container", "small");
+            "docker.container.hardwareId", "The ID of a Docker hardware type to use for a container", "small");
 
     public static final AttributeSensorAndConfigKey<String, String> DOCKER_CONTAINER_NAME = ConfigKeys.newStringSensorAndConfigKey(
             "docker.container.name", "The name of the Docker container");
+
+    public static final AttributeSensor<String> DOCKER_CONTAINER_ID = Sensors.newStringSensor(
+            "docker.container.id", "The id of the Docker container");
 
     public static final ConfigKey<String> DOCKER_LOGIN_USER = ConfigKeys.newConfigKeyWithDefault(
             ConfigKeys.newConfigKeyWithPrefix("docker.", JcloudsLocationConfig.LOGIN_USER), "root");

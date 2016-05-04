@@ -412,6 +412,7 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
     @Override
     public void stop() {
         sensors().set(SERVICE_UP, Boolean.FALSE);
+        ServiceStateLogic.setExpectedState(this, Lifecycle.STOPPING);
         Duration timeout = config().get(SHUTDOWN_TIMEOUT);
 
         deleteLocation();
@@ -446,6 +447,8 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
         } catch (Exception e) {
             LOG.warn("Error stopping hosts", e);
         }
+
+        ServiceStateLogic.setExpectedState(this, Lifecycle.STOPPED);
     }
 
     static {

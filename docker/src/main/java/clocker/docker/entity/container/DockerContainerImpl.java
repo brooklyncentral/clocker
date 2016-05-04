@@ -198,7 +198,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
     @Override
     public String getContainerId() {
-        return sensors().get(CONTAINER_ID);
+        return sensors().get(DOCKER_CONTAINER_ID);
     }
 
     @Override
@@ -571,13 +571,15 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                             "-o com.docker.network.bridge.enable_ip_masquerade=true " +
                             "-o com.docker.network.bridge.host_binding_ipv4=0.0.0.0 %s", bridgeNetwork));
                 }
+                sensors().set(SdnAttributes.BRIDGE_NETWORK_ID, bridgeNetwork);
+                entity.sensors().set(SdnAttributes.BRIDGE_NETWORK_ID, bridgeNetwork);
                 options.networkMode(bridgeNetwork);
             }
 
             // Create a new container using jclouds Docker driver
             JcloudsSshMachineLocation container = (JcloudsSshMachineLocation) host.getJcloudsLocation().obtain(dockerFlags);
             String containerId = container.getJcloudsId();
-            sensors().set(CONTAINER_ID, containerId);
+            sensors().set(DOCKER_CONTAINER_ID, containerId);
 
             // Configure the host to allow remote access to bound container ports
             configurePortBindings(dockerHost, entity);
@@ -586,7 +588,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             entity.sensors().set(DockerContainer.DOCKER_INFRASTRUCTURE, dockerHost.getInfrastructure());
             entity.sensors().set(DockerContainer.DOCKER_HOST, dockerHost);
             entity.sensors().set(DockerContainer.CONTAINER, this);
-            entity.sensors().set(DockerContainer.CONTAINER_ID, containerId);
+            entity.sensors().set(DockerContainer.DOCKER_CONTAINER_ID, containerId);
 
             // If SDN is enabled, attach networks
             if (config().get(SdnAttributes.SDN_ENABLE)) {
@@ -664,8 +666,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             if (Boolean.TRUE.equals(started)) {
                 DockerHost dockerHost = getDockerHost();
                 DockerHostLocation host = dockerHost.getDynamicLocation();
-                sensors().set(DockerContainer.IMAGE_ID, config().get(DOCKER_IMAGE_ID));
-                sensors().set(DockerContainer.IMAGE_NAME, config().get(DockerAttributes.DOCKER_IMAGE_NAME));
+                sensors().set(DockerContainer.DOCKER_IMAGE_ID, config().get(DOCKER_IMAGE_ID));
+                sensors().set(DockerContainer.DOCKER_IMAGE_NAME, config().get(DockerAttributes.DOCKER_IMAGE_NAME));
                 sensors().set(SSH_MACHINE_LOCATION, host.getMachine());
             } else {
                 Map<String, ?> flags = MutableMap.copyOf(config().get(LOCATION_FLAGS));
@@ -704,7 +706,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         Lifecycle state = sensors().get(SERVICE_STATE_ACTUAL);
         if (Lifecycle.STOPPING.equals(state) || Lifecycle.STOPPED.equals(state)) {
             LOG.debug("Ignoring request to stop {} when it is already {}", this, state);
-            LOG.debug("Duplicate stop came from: \n" + Joiner.on("\n").join(Thread.getAllStackTraces().get(Thread.currentThread())));
+            LOG.trace("Duplicate stop came from: \n" + Joiner.on("\n").join(Thread.getAllStackTraces().get(Thread.currentThread())));
             return;
         }
         LOG.info("Stopping {} when its state is {}", this, sensors().get(SERVICE_STATE_ACTUAL));
@@ -726,7 +728,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
         // Delete application bridge network
         synchronized (getDockerHost().getHostMutex()) {
-            String bridgeNetwork = String.format("%s_%s", entity.getApplicationId(), DockerUtils.BRIDGE_NETWORK);
+            String bridgeNetwork = sensors().get(SdnAttributes.BRIDGE_NETWORK_ID);
             try {
                 int attached = Integer.parseInt(getDockerHost().runDockerCommand(
                         String.format("network inspect --format=\"{{ len .Containers }}\" %s", bridgeNetwork)));
@@ -745,6 +747,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             for (String networkId : networks) {
                 synchronized (getDockerHost().getInfrastructure().getInfrastructureMutex()) {
                     int attached = SdnUtils.countAttached(getDockerHost(), networkId);
+                    LOG.debug("Found {} containers attached to {} when stopping {}",
+                            new Object[] { attached, networkId, getContainerId() });
                     if (attached == 0) {
                         VirtualNetwork networkEntity = SdnUtils.lookupNetwork(provider, networkId);
                         Entities.invokeEffector(getDockerHost(), networkEntity, Startable.STOP).getUnchecked();

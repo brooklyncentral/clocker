@@ -24,7 +24,6 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import clocker.docker.entity.DockerInfrastructure;
 import clocker.docker.networking.entity.sdn.DockerNetworkAgentSshDriver;
 import clocker.docker.networking.entity.sdn.SdnAgent;
 import clocker.docker.networking.entity.sdn.SdnProvider;
@@ -81,16 +80,6 @@ public class WeaveRouterSshDriver extends DockerNetworkAgentSshDriver implements
         Entity first = getEntity().sensors().get(AbstractGroup.FIRST);
         LOG.info("Launching {} Weave service at {}", Boolean.TRUE.equals(firstMember) ? "first" : "next", address.getHostAddress());
 
-        if (entity.config().get(DockerInfrastructure.DOCKER_GENERATE_TLS_CERTIFICATES)) {
-            newScript(ImmutableMap.of(NON_STANDARD_LAYOUT, "true"), CUSTOMIZING)
-                    .body.append(
-                    String.format("cp ca-cert.pem %s/ca.pem", getRunDir()),
-                    String.format("cp server-cert.pem %s/cert.pem", getRunDir()),
-                    String.format("cp server-key.pem %s/key.pem", getRunDir()))
-                    .failOnNonZeroResultCode()
-                    .execute();
-        }
-
         newScript(MutableMap.of(USE_PID_FILE, false), LAUNCHING)
                 .body.append(
                         chain(
@@ -98,10 +87,7 @@ public class WeaveRouterSshDriver extends DockerNetworkAgentSshDriver implements
                                         getWeaveCommand(),
                                         entity.config().get(SdnProvider.CONTAINER_NETWORK_CIDR),
                                         Boolean.TRUE.equals(firstMember) ? "" : first.sensors().get(Attributes.SUBNET_ADDRESS))),
-                                BashCommands.sudo(String.format("%s launch-proxy -H tcp://[::]:%d --tlsverify --tls --tlscert=%s/cert.pem --tlskey=%<s/key.pem --tlscacert=%<s/ca.pem",
-                                        getWeaveCommand(),
-                                        entity.config().get(WeaveRouter.WEAVE_PROXY_PORT),
-                                        getRunDir()))))
+                                BashCommands.sudo(String.format("%s launch-plugin", getWeaveCommand()))))
                 .failOnNonZeroResultCode()
                 .uniqueSshConnection()
                 .execute();

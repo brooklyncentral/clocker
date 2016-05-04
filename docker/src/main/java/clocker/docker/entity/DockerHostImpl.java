@@ -40,7 +40,6 @@ import clocker.docker.networking.entity.sdn.SdnAgent;
 import clocker.docker.networking.entity.sdn.util.SdnAttributes;
 import clocker.docker.networking.entity.sdn.util.SdnUtils;
 import clocker.docker.networking.entity.sdn.weave.WeaveNetwork;
-import clocker.docker.networking.entity.sdn.weave.WeaveRouter;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Functions;
@@ -204,12 +203,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
             if (SdnUtils.isSdnProvider(getInfrastructure(), "WeaveNetwork")) {
                 Integer weavePort = sdn.config().get(WeaveNetwork.WEAVE_PORT);
                 if (weavePort != null) ports.add(weavePort);
-                Integer proxyPort = sdn.config().get(WeaveRouter.WEAVE_PROXY_PORT);
-                if (proxyPort != null) ports.add(proxyPort);
-            }
-            if (SdnUtils.isSdnProvider(getInfrastructure(), "CalicoNetwork")) {
-                PortRange etcdPort = sdn.config().get(EtcdNode.ETCD_CLIENT_PORT);
-                if (etcdPort != null) ports.add(etcdPort.iterator().next());
             }
         }
         return ports;
@@ -684,12 +677,6 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
         Integer dockerPort = getDockerPort();
         boolean tlsEnabled = true;
-        if (SdnUtils.isSdnProvider(getInfrastructure(), "WeaveNetwork")) {
-            dockerPort = sensors().get(DockerHost.DOCKER_INFRASTRUCTURE)
-                    .sensors().get(DockerInfrastructure.SDN_PROVIDER)
-                    .config().get(WeaveRouter.WEAVE_PROXY_PORT);
-            tlsEnabled = true;
-        }
         Maybe<SshMachineLocation> found = Machines.findUniqueMachineLocation(getLocations(), SshMachineLocation.class);
 
 
@@ -838,7 +825,7 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
                     String line = ps.get(i);
                     String id = Strings.getFirstWord(line);
                     Optional<Entity> container = Iterables.tryFind(getDockerContainerCluster().getMembers(),
-                            Predicates.compose(StringPredicates.startsWith(id), EntityFunctions.attribute(DockerContainer.CONTAINER_ID)));
+                            Predicates.compose(StringPredicates.startsWith(id), EntityFunctions.attribute(DockerContainer.DOCKER_CONTAINER_ID)));
                     if (container.isPresent()) continue;
 
                     // Build a DockerContainer without a locations, as it may not be SSHable
@@ -855,12 +842,12 @@ public class DockerHostImpl extends MachineEntityImpl implements DockerHost {
 
                     // Create, manage and start the container
                     DockerContainer added = getDockerContainerCluster().addMemberChild(containerSpec);
-                    added.sensors().set(DockerContainer.CONTAINER_ID, containerId);
+                    added.sensors().set(DockerContainer.DOCKER_CONTAINER_ID, containerId);
                     added.start(ImmutableList.of(getDynamicLocation().getMachine()));
                 }
             }
             for (Entity member : ImmutableList.copyOf(getDockerContainerCluster().getMembers())) {
-                final String id = member.sensors().get(DockerContainer.CONTAINER_ID);
+                final String id = member.sensors().get(DockerContainer.DOCKER_CONTAINER_ID);
                 if (id != null) {
                     Optional<String> found = Iterables.tryFind(ps, new Predicate<String>() {
                         @Override

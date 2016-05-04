@@ -36,9 +36,6 @@ public interface WeaveRouter extends SdnAgent {
     @SetFromFlag("weavePort")
     ConfigKey<Integer> WEAVE_PORT = ConfigKeys.newIntegerConfigKey("weave.port", "Weave port", 6783);
 
-    @SetFromFlag("proxyPort")
-    ConfigKey<Integer> WEAVE_PROXY_PORT = ConfigKeys.newIntegerConfigKey("weave.proxy.port", "Weave proxy port", 2377);
-
     @SetFromFlag("downloadUrl")
     BasicAttributeSensorAndConfigKey<String> DOWNLOAD_URL = new BasicAttributeSensorAndConfigKey<String>(
             SoftwareProcess.DOWNLOAD_URL, "https://raw.githubusercontent.com/weaveworks/weave/v${version}/weave");
