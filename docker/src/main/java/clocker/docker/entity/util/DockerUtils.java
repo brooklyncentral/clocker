@@ -283,22 +283,20 @@ public class DockerUtils {
         }
     }
     
-    public static Optional<String> getContainerName(Entity target) {
-        Optional<String> unique = getUniqueContainerName(target);
-        if (unique.isPresent()) {
-            String name = unique.get();
-            String suffix = "_" + target.getId();
-            return Optional.of(Strings.removeFromEnd(name, suffix));
-        } else {
-            return Optional.absent();
-        }
+    public static String getContainerName(Entity target) {
+        String unique = getUniqueContainerName(target);
+        String suffix = "_" + target.getId();
+        return Strings.removeFromEnd(unique, suffix);
     }
 
-    public static Optional<String> getUniqueContainerName(Entity target) {
+    public static String getUniqueContainerName(Entity target) {
         return Optional.fromNullable(target.sensors().get(DockerContainer.DOCKER_CONTAINER_NAME))
                 .or(Optional.fromNullable(target.config().get(DockerContainer.DOCKER_CONTAINER_NAME)))
                 .or(Optional.fromNullable(getContainerNameFromPlan(target)))
-                .transform(DockerUtils.ALLOWED);
+                .or(Optional.fromNullable(target.config().get(DockerContainer.DOCKER_IMAGE_NAME)))
+                .or(Optional.fromNullable(target.getId()))
+                .transform(DockerUtils.ALLOWED)
+                .orNull();
     }
 
     private static String getContainerNameFromPlan(Entity target) {
@@ -314,8 +312,7 @@ public class DockerUtils {
     /* Generate the address to use to talk to another target entity. */
     public static String getTargetAddress(Entity source, Entity target) {
         boolean local = source.sensors().get(SoftwareProcess.PROVISIONING_LOCATION).equals(target.sensors().get(SoftwareProcess.PROVISIONING_LOCATION));
-        List networks = target.sensors().get(SdnAttributes.ATTACHED_NETWORKS);
-        if ( local ) {
+        if (local) {
             return target.sensors().get(Attributes.SUBNET_ADDRESS);
         } else {
             return target.sensors().get(Attributes.ADDRESS);
@@ -325,11 +322,11 @@ public class DockerUtils {
     /* Generate the list of link environment variables. */
     public static Map<String, Object> generateLinks(Entity source, Entity target, String alias) {
         Entities.waitForServiceUp(target);
-        Optional<String> from = DockerUtils.getContainerName(source);
-        Optional<String> to = DockerUtils.getContainerName(target);
+        String from = DockerUtils.getContainerName(source);
+        String to = DockerUtils.getContainerName(target);
         boolean local = source.sensors().get(SoftwareProcess.PROVISIONING_LOCATION).equals(target.sensors().get(SoftwareProcess.PROVISIONING_LOCATION));
         List networks = target.sensors().get(SdnAttributes.ATTACHED_NETWORKS);
-        if (to.isPresent()) {
+        if (Strings.isNonBlank(to)) {
             // Copy explicitly defined environment variables from target to source
             Map<String, Object> env = MutableMap.of();
             MutableMap<String, Object> targetEnvironment = MutableMap.copyOf(target.getConfig(DockerContainer.DOCKER_CONTAINER_ENVIRONMENT.getConfigKey()));
@@ -357,7 +354,7 @@ public class DockerUtils {
             }
             for (Integer port : ports.keySet()) {
                 Integer containerPort = ports.get(port);
-                env.put(String.format("%S_NAME", alias), String.format("/%s/%s", from.or(source.getId()), alias));
+                env.put(String.format("%S_NAME", alias), String.format("/%s/%s", from, alias));
                 env.put(String.format("%S_PORT", alias), String.format("tcp://%s:%d", address, port));
                 env.put(String.format("%S_PORT_%d_TCP", alias, containerPort), String.format("tcp://%s:%d", address, port));
                 env.put(String.format("%S_PORT_%d_TCP_ADDR", alias, containerPort), address);
