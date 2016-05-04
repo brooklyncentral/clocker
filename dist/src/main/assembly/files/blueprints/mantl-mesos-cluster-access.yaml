@@ -25,5 +25,3 @@ services:
     mesos.username: "admin"
     mesos.password: "admin"
     marathon.mesos.framework.url: "https://10.1.1.1/marathon/"
-
-# vim:ts=2:sw=2:ft=yaml:

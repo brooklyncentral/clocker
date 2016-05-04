@@ -45,7 +45,6 @@ brooklyn.catalog:
       type: clocker.docker.entity.DockerHost
       brooklyn.config:
         docker.host.driver.storage: overlay
-        docker.host.nameFormat: "docker-%2$d"
         docker.container.spec:
           $brooklyn:entitySpec:
             type: docker-container
@@ -59,8 +58,6 @@ brooklyn.catalog:
     name: "Docker Container"
     item:
       type: clocker.docker.entity.container.DockerContainer
-      brooklyn.config:
-        docker.container.nameFormat: "container-%2$02x"
 
   - id: calico-network
     name: "Calico Network"
@@ -109,7 +106,7 @@ brooklyn.catalog:
     item:
       type: clocker.docker.networking.entity.sdn.weave.WeaveNetwork
       brooklyn.config:
-        weave.version: 1.1.2
+        weave.version: 1.5.0
         sdn.agent.spec:
           $brooklyn:entitySpec:
             type: weave-router
@@ -190,15 +187,6 @@ brooklyn.catalog:
               brooklyn.config:
                 sdn.network.cidr: 50.0.0.0/16
                 sdn.network.size: 24
-          docker.host.spec:
-            $brooklyn:entitySpec:
-              type: docker-host
-              brooklyn.config:
-                docker.container.spec:
-                  $brooklyn:entitySpec:
-                    type: docker-container
-                    brooklyn.config:
-                      docker.container.nameFormat: "calico-%2$02x"
 
   - id: docker-cloud-weave
     name: "Clocker with Weave"
@@ -214,15 +202,6 @@ brooklyn.catalog:
           sdn.provider.spec:
             $brooklyn:entitySpec:
               type: weave-network
-          docker.host.spec:
-            $brooklyn:entitySpec:
-              type: docker-host
-              brooklyn.config:
-                docker.container.spec:
-                  $brooklyn:entitySpec:
-                    type: docker-container
-                    brooklyn.config:
-                      docker.container.nameFormat: "weave-%2$02x"
 
   - id: docker-cloud-overlay
     name: "Clocker with Docker Overlay"
@@ -238,15 +217,6 @@ brooklyn.catalog:
           sdn.provider.spec:
             $brooklyn:entitySpec:
               type: overlay-network
-          docker.host.spec:
-            $brooklyn:entitySpec:
-              type: docker-host
-              brooklyn.config:
-                docker.container.spec:
-                  $brooklyn:entitySpec:
-                    type: docker-container
-                    brooklyn.config:
-                      docker.container.nameFormat: "docker-%2$02x"
 
   - id: external-mesos-cluster
     name: "External Mesos Cluster"
@@ -371,7 +341,7 @@ brooklyn.catalog:
           id: nodejs
           name: "Node.js"
           brooklyn.config:
-            docker.container.directPorts.configKeys:
+            docker.container.openPorts.configKeys:
             - "http.port"
             gitRepoUrl:
               "https://github.com/grkvlt/nodejs-todo/"
@@ -399,13 +369,56 @@ brooklyn.catalog:
             provisioning.properties:
               installDevUrandom: true
         brooklyn.enrichers:
-        # publish the URL (both mapped and unmapped) at the top-level app
         - type: org.apache.brooklyn.enricher.stock.Propagator
           brooklyn.config:
             uniqueTag: url-propagator
             enricher.producer: $brooklyn:component("nodejs")
             enricher.propagating.inclusions:
-            - webapp.url	
-            - mapped.webapp.url	
+            - webapp.url
+            - mapped.webapp.url
 
-# vim:ts=2:sw=2:ft=yaml:
+  - id: identicon-demo-application
+    name: "Identicon Demo Application"
+    description: |
+      Identicon application using Redis backing store and Node.js front end.
+    iconUrl: http://identicon.net/img/identicon.png
+    itemType: template
+    item:
+      services:
+      - type: org.apache.brooklyn.entity.stock.BasicApplication
+        id: identicon-demo
+        name: "Identicon Demo"
+        brooklyn.children:
+        - type: docker:redis:3
+          id: redis
+          openPorts:
+          - 6379
+        - type: docker:clockercentral/dnmonster:1.0
+          id: dnmonster
+          openPorts:
+          - 8080
+        - type: docker:clockercentral/identidock:1.9
+          id: identidock
+          openPorts:
+          - 9090
+          - 9091
+          links:
+            redis: $brooklyn:component("redis")
+            dnmonster: $brooklyn:component("dnmonster")
+          brooklyn.enrichers:
+          - type: org.apache.brooklyn.enricher.stock.Transformer
+            brooklyn.config:
+              uniqueTag: external-url-generator
+              enricher.sourceSensor: mapped.docker.port.9090
+              enricher.targetSensor: main.uri
+              enricher.targetValue:
+                $brooklyn:formatString:
+                - "http://%s/"
+                - $brooklyn:attributeWhenReady("mapped.docker.port.9090")
+        brooklyn.enrichers:
+        - type: org.apache.brooklyn.enricher.stock.Propagator
+          brooklyn.config:
+            uniqueTag: url-propagator
+            enricher.producer: $brooklyn:component("identidock")
+            enricher.propagating.inclusions:
+            - main.uri

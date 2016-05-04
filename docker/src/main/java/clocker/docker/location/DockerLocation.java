@@ -307,9 +307,9 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
         DynamicCluster cluster = infrastructure.getDockerHostCluster();
         DockerHost host = machine.getOwner();
         if (cluster.removeMember(host)) {
-            LOG.info("Docker Host {} released", host.getDockerHostName());
+            LOG.info("Docker Host {} released", host);
         } else {
-            LOG.warn("Docker Host {} not found for release", host.getDockerHostName());
+            LOG.warn("Docker Host {} not found for release", host);
         }
 
         // TODO update autoscaler policy pool size

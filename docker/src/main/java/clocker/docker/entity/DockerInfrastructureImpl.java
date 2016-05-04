@@ -117,8 +117,6 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
         registerLocationResolver();
         super.init();
 
-        sensors().set(DOCKER_HOST_COUNTER, new AtomicInteger(0));
-        sensors().set(DOCKER_CONTAINER_COUNTER, new AtomicInteger(0));
         int initialSize = config().get(DOCKER_HOST_CLUSTER_MIN_SIZE);
 
         Map<String, String> runtimeFiles = ImmutableMap.of();
@@ -335,7 +333,6 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
         }
 
         DockerLocation location = getManagementContext().getLocationManager().createLocation(LocationSpec.create(DockerLocation.class)
-                .displayName("Docker Infrastructure("+getId()+")")
                 .configure(flags)
                 .configure("owner", getProxy())
                 .configure("locationName", locationName));
@@ -415,6 +412,7 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
     @Override
     public void stop() {
         sensors().set(SERVICE_UP, Boolean.FALSE);
+        ServiceStateLogic.setExpectedState(this, Lifecycle.STOPPING);
         Duration timeout = config().get(SHUTDOWN_TIMEOUT);
 
         deleteLocation();
@@ -450,12 +448,7 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
             LOG.warn("Error stopping hosts", e);
         }
 
-        // Stop anything else left over
-        try {
-            super.stop();
-        } catch (Exception e) {
-            LOG.warn("Error stopping children", e);
-        }
+        ServiceStateLogic.setExpectedState(this, Lifecycle.STOPPED);
     }
 
     static {

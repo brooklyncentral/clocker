@@ -335,7 +335,7 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             spec.configure(containerFlags);
             Entity added = cluster.addMemberChild(spec);
             if (added == null) {
-                throw new NoMachinesAvailableException(String.format("Failed to create container at %s", dockerHost.getDockerHostName()));
+                throw new NoMachinesAvailableException(String.format("Failed to create container at %s", dockerHost));
             } else {
                 if (LOG.isDebugEnabled()) LOG.debug("Starting container {} at {}, config {}", 
                         new Object[] { added, machine, Sanitizer.sanitize(((EntityInternal)added).config().getBag()) });
@@ -344,9 +344,9 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             DockerContainer dockerContainer = (DockerContainer) added;
 
             // Save the container attributes
-            dockerContainer.sensors().set(DockerContainer.IMAGE_ID, imageId);
-            dockerContainer.sensors().set(DockerContainer.IMAGE_NAME, imageName);
-            dockerContainer.sensors().set(DockerContainer.HARDWARE_ID, hardwareId);
+            dockerContainer.sensors().set(DockerContainer.DOCKER_IMAGE_ID, imageId);
+            dockerContainer.sensors().set(DockerContainer.DOCKER_IMAGE_NAME, imageName);
+            dockerContainer.sensors().set(DockerContainer.DOCKER_HARDWARE_ID, hardwareId);
 
             // record SDN application network details
             if (getOwner().config().get(SdnAttributes.SDN_ENABLE)) {
@@ -407,9 +407,9 @@ public class DockerHostLocation extends AbstractLocation implements MachineProvi
             Group cluster = dockerHost.getDockerContainerCluster();
             DockerContainer container = machine.getOwner();
             if (cluster.removeMember(container)) {
-                LOG.info("Docker Host {}: member {} released", dockerHost.getDockerHostName(), machine);
+                LOG.info("Docker Host {}: member {} released", dockerHost, machine);
             } else {
-                LOG.warn("Docker Host {}: member {} not found for release", dockerHost.getDockerHostName(), machine);
+                LOG.warn("Docker Host {}: member {} not found for release", dockerHost, machine);
             }
 
             // Now close and unmange the container

@@ -43,6 +43,7 @@ import org.apache.brooklyn.util.core.task.DynamicTasks;
 import org.apache.brooklyn.util.core.task.TaskBuilder;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.repeat.Repeater;
+import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
 
 public class SdnUtils {
@@ -165,7 +166,7 @@ public class SdnUtils {
         String installDir = etcd.sensors().get(SoftwareProcess.EXPANDED_INSTALL_DIR);
         String fullNetworkId = dockerHost.runDockerCommand(String.format("network inspect --format=\"{{ .ID }}\" %s", networkId));
         String output = dockerHost.execCommand(String.format("%s/etcdctl ls /docker/network/v1.0/endpoint/%s", installDir, fullNetworkId));
-        int attached = Iterables.size(Splitter.on("\n").split(output));
+        int attached = Strings.getWordCount(output, false);
         return attached;
     }
 

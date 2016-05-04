@@ -12,31 +12,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-id: clocker-demo-application
-name: "Demo Application"
+id: identicon-demo-application
+name: "Identicon Demo Application"
 description: |
-  Clocker demo application. Containers plus VM.
+  Identicon application using Redis backing store and Node.js front end.
+
+location: "my-docker-cloud"
 
 services:
-- type: org.apache.brooklyn.entity.nosql.redis.RedisStore
-  location: jclouds:softlayer:lon02
+- type: docker:redis:3
   id: redis
-  install.version: 3.0.3
-  start.timeout: 10m
+  openPorts:
+  - 6379
 
 - type: docker:clockercentral/dnmonster:1.0
-  location: openstack-docker-cloud
   id: dnmonster
   openPorts:
   - 8080
 
 - type: docker:clockercentral/identidock:1.9
-  location: openstack-docker-cloud
   id: identidock
-  portBindings:
-    80: 9090
+  openPorts:
+  - 9090
+  - 9091
   links:
     redis: $brooklyn:component("redis")
-    dnminster: $brooklyn:component("dnmonster")
-
-# vim:ts=2:sw=2:ft=yaml:
+    dnmonster: $brooklyn:component("dnmonster")
+  brooklyn.enrichers:
+  - type: org.apache.brooklyn.enricher.stock.Transformer
+    brooklyn.config:
+      uniqueTag: external-url-generator
+      enricher.sourceSensor: mapped.docker.port.9090
+      enricher.targetSensor: main.uri
+      enricher.targetValue:
+        $brooklyn:formatString:
+        - "http://%s/"
+        - $brooklyn:attributeWhenReady("mapped.docker.port.9090")

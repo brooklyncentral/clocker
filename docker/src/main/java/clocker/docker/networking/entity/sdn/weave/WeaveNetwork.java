@@ -33,7 +33,7 @@ import org.apache.brooklyn.util.core.flags.SetFromFlag;
 public interface WeaveNetwork extends DockerSdnProvider {
 
     @SetFromFlag("version")
-    ConfigKey<String> WEAVE_VERSION = ConfigKeys.newStringConfigKey("weave.version", "The Weave SDN version number", "1.1.2");
+    ConfigKey<String> WEAVE_VERSION = ConfigKeys.newStringConfigKey("weave.version", "The Weave SDN version number", "1.5.0");
 
     @SetFromFlag("weavePort")
     ConfigKey<Integer> WEAVE_PORT = WeaveRouter.WEAVE_PORT;

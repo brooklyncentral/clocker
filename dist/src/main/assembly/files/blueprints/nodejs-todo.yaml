@@ -28,7 +28,7 @@ services:
   id: nodejs
   name: "Node.JS"
   brooklyn.config:
-    docker.container.directPorts.configKeys:
+    docker.container.openPorts.configKeys:
     - "http.port"
     gitRepoUrl:
       "https://github.com/grkvlt/nodejs-todo/"

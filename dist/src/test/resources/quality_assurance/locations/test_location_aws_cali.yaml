@@ -6,4 +6,4 @@ brooklyn.catalog:
   item:
     type: jclouds:aws-ec2:us-west-2
     brooklyn.config:
-     osFamily: ubuntu
+      osFamily: ubuntu

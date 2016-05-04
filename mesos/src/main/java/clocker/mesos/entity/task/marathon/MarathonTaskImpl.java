@@ -356,8 +356,8 @@ public class MarathonTaskImpl extends MesosTaskImpl implements MarathonTask {
                     break;
                 }
             }
-            sensors().set(DockerContainer.CONTAINER_ID, containerId);
-            entity.sensors().set(DockerContainer.CONTAINER_ID, containerId);
+            sensors().set(DockerContainer.DOCKER_CONTAINER_ID, containerId);
+            entity.sensors().set(DockerContainer.DOCKER_CONTAINER_ID, containerId);
 
             // Set network configuration if using Calico SDN
             if (SdnUtils.isSdnProvider(getMesosCluster(), "CalicoModule")) {
