@@ -571,6 +571,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                             "-o com.docker.network.bridge.enable_ip_masquerade=true " +
                             "-o com.docker.network.bridge.host_binding_ipv4=0.0.0.0 %s", bridgeNetwork));
                 }
+                sensors().set(SdnAttributes.BRIDGE_NETWORK_ID, bridgeNetwork);
+                entity.sensors().set(SdnAttributes.BRIDGE_NETWORK_ID, bridgeNetwork);
                 options.networkMode(bridgeNetwork);
             }
 
@@ -704,7 +706,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
         Lifecycle state = sensors().get(SERVICE_STATE_ACTUAL);
         if (Lifecycle.STOPPING.equals(state) || Lifecycle.STOPPED.equals(state)) {
             LOG.debug("Ignoring request to stop {} when it is already {}", this, state);
-            LOG.debug("Duplicate stop came from: \n" + Joiner.on("\n").join(Thread.getAllStackTraces().get(Thread.currentThread())));
+            LOG.trace("Duplicate stop came from: \n" + Joiner.on("\n").join(Thread.getAllStackTraces().get(Thread.currentThread())));
             return;
         }
         LOG.info("Stopping {} when its state is {}", this, sensors().get(SERVICE_STATE_ACTUAL));
@@ -726,7 +728,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
         // Delete application bridge network
         synchronized (getDockerHost().getHostMutex()) {
-            String bridgeNetwork = String.format("%s_%s", entity.getApplicationId(), DockerUtils.BRIDGE_NETWORK);
+            String bridgeNetwork = sensors().get(SdnAttributes.BRIDGE_NETWORK_ID);
             try {
                 int attached = Integer.parseInt(getDockerHost().runDockerCommand(
                         String.format("network inspect --format=\"{{ len .Containers }}\" %s", bridgeNetwork)));
@@ -745,6 +747,8 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             for (String networkId : networks) {
                 synchronized (getDockerHost().getInfrastructure().getInfrastructureMutex()) {
                     int attached = SdnUtils.countAttached(getDockerHost(), networkId);
+                    LOG.debug("Found {} containers attached to {} when stopping {}",
+                            new Object[] { attached, networkId, getContainerId() });
                     if (attached == 0) {
                         VirtualNetwork networkEntity = SdnUtils.lookupNetwork(provider, networkId);
                         Entities.invokeEffector(getDockerHost(), networkEntity, Startable.STOP).getUnchecked();
