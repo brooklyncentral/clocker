@@ -342,7 +342,7 @@ brooklyn.catalog:
           name: "Node.js"
           brooklyn.config:
             docker.container.openPorts.configKeys:
-            - "http.port"
+            - $brooklyn:sensor("http.port")
             gitRepoUrl:
               "https://github.com/grkvlt/nodejs-todo/"
             appFileName: server.js
