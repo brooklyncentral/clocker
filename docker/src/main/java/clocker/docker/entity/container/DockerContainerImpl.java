@@ -44,6 +44,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
 
@@ -88,6 +89,7 @@ import org.apache.brooklyn.util.core.internal.ssh.SshTool;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.net.Urls;
+import org.apache.brooklyn.util.text.StringFunctions;
 import org.apache.brooklyn.util.text.Strings;
 import org.apache.brooklyn.util.time.Duration;
 
@@ -551,6 +553,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
                 if (networks.isEmpty()) {
                     throw new IllegalStateException("No networks configured for container");
                 }
+                networks = Lists.transform(networks, StringFunctions.toLowerCase());
 
                 // Save attached network list
                 sensors().set(SdnAttributes.INITIAL_ATTACHED_NETWORK, networks.get(0));
@@ -561,7 +564,7 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
             // Create isolated application bridge network for port forwarding
             synchronized (getDockerHost().getHostMutex()) {
-                String bridgeNetwork = String.format("%s_%s", entity.getApplicationId(), DockerUtils.BRIDGE_NETWORK);
+                String bridgeNetwork = String.format("%s_%s", entity.getApplicationId(), DockerUtils.BRIDGE_NETWORK).toLowerCase();
                 if (!getDockerHost().runDockerCommand("network ls").contains(bridgeNetwork)) {
                     getDockerHost().runDockerCommand(String.format("network create --driver bridge " +
                             "-o com.docker.network.bridge.enable_ip_masquerade=true " +
