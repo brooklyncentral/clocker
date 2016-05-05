@@ -52,6 +52,7 @@ import org.apache.brooklyn.api.location.LocationDefinition;
 import org.apache.brooklyn.api.location.MachineLocation;
 import org.apache.brooklyn.api.location.MachineProvisioningLocation;
 import org.apache.brooklyn.api.location.NoMachinesAvailableException;
+import org.apache.brooklyn.api.mgmt.ManagementContext.PropertiesReloadListener;
 import org.apache.brooklyn.api.mgmt.rebind.RebindContext;
 import org.apache.brooklyn.api.mgmt.rebind.RebindSupport;
 import org.apache.brooklyn.api.mgmt.rebind.mementos.LocationMemento;
@@ -117,6 +118,7 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
             infrastructure = (DockerInfrastructure) getConfig(OWNER);
         } else {
             infrastructure = (DockerInfrastructure) checkNotNull(getConfig(OWNER), "owner");
+            addReloadListener();
         }
     }
     
@@ -129,6 +131,15 @@ public class DockerLocation extends AbstractLocation implements DockerVirtualLoc
         if (infrastructure != null && getConfig(LOCATION_NAME) != null) {
             register();
         }
+        addReloadListener();
+    }
+    
+    @SuppressWarnings("serial")
+    private void addReloadListener() {
+        getManagementContext().addPropertiesReloadListener(new PropertiesReloadListener() {
+            @Override public void reloaded() {
+                register();
+            }});
     }
 
     @Override
