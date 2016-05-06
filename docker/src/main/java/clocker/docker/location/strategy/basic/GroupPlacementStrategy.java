@@ -46,6 +46,7 @@ import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.core.mutex.WithMutexes;
+import org.apache.brooklyn.util.core.task.Tasks;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.time.Duration;
 
@@ -94,9 +95,12 @@ public class GroupPlacementStrategy extends AbstractDockerPlacementStrategy impl
         boolean requireExclusive = config().get(REQUIRE_EXCLUSIVE);
 
         try {
+            Tasks.setBlockingDetails("Waiting for access to Docker hosts for placement");
             acquireMutex(entity.getApplicationId(), "Filtering locations for " + entity);
         } catch (InterruptedException ie) {
             Exceptions.propagate(ie); // Should never happen...
+        } finally {
+            Tasks.resetBlockingDetails();
         }
 
         // Find hosts with entities from our application deployed there
