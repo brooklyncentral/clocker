@@ -38,18 +38,14 @@ public class OverlayPluginSshDriver extends DockerNetworkAgentSshDriver implemen
 
     @Override
     public void install() {
-        newScript(INSTALLING).execute();
+        LOG.info("Docker libnetwork overlay plugin installed");
     }
 
     @Override
-    public void customize() {
-        newScript(CUSTOMIZING).execute();
-    }
+    public void customize() { }
 
     @Override
-    public void launch() {
-        newScript(LAUNCHING).execute();
-    }
+    public void launch() { }
 
     @Override
     public boolean isRunning() {
@@ -57,7 +53,6 @@ public class OverlayPluginSshDriver extends DockerNetworkAgentSshDriver implemen
     }
 
     @Override
-    public void stop() {
-    }
+    public void stop() { }
 
 }

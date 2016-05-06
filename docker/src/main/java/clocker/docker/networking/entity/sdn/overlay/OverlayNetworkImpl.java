@@ -34,6 +34,7 @@ import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntitySpec;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
+import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.exceptions.Exceptions;
@@ -41,6 +42,14 @@ import org.apache.brooklyn.util.exceptions.Exceptions;
 public class OverlayNetworkImpl extends SdnProviderImpl implements OverlayNetwork {
 
     private static final Logger LOG = LoggerFactory.getLogger(OverlayNetwork.class);
+
+    @Override
+    public void init() {
+        LOG.info("Starting Overlay network id {}", getId());
+        super.init();
+
+        ConfigToAttributes.apply(this, SDN_AGENT_SPEC);
+    }
 
     @Override
     public String getIconUrl() { return "classpath://docker-logo.png"; }
@@ -63,14 +72,10 @@ public class OverlayNetworkImpl extends SdnProviderImpl implements OverlayNetwor
     }
 
     @Override
-    public void rebind() {
-        super.rebind();
-    }
-
-    @Override
     public void addHost(DockerHost host) {
         SshMachineLocation machine = host.getDynamicLocation().getMachine();
         EntitySpec<?> spec = EntitySpec.create(sensors().get(SDN_AGENT_SPEC))
+                .configure(OverlayPlugin.SDN_PROVIDER, this)
                 .configure(OverlayPlugin.DOCKER_HOST, host);
         OverlayPlugin agent = (OverlayPlugin) getAgents().addChild(spec);
         getAgents().addMember(agent);
