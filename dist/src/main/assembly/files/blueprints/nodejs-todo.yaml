@@ -47,7 +47,7 @@ services:
     - redis
     - redis-url
     - connect
-    docker.container.environment:
+    env:
       REDISTOGO_URL: >
         $brooklyn:formatString("redis://%s:%d/",
         component("redis").attributeWhenReady("host.subnet.hostname"),
