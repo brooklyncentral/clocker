@@ -18,6 +18,7 @@ package clocker.docker.networking.entity.sdn;
 import java.net.InetAddress;
 
 import clocker.docker.entity.DockerHost;
+import clocker.docker.entity.container.DockerContainer;
 import clocker.docker.networking.entity.VirtualNetwork;
 
 import org.apache.brooklyn.api.sensor.AttributeSensor;
@@ -52,6 +53,9 @@ public interface SdnAgent extends SoftwareProcess {
 
     void deallocateNetwork(VirtualNetwork network);
 
+    void connect(DockerContainer container, VirtualNetwork network);
+    void disconnect(DockerContainer container, VirtualNetwork network);
+
     MethodEffector<InetAddress> CREATE_NETWORK = new MethodEffector<InetAddress>(SdnAgent.class, "createNetwork");
 
     /**
@@ -67,13 +71,13 @@ public interface SdnAgent extends SoftwareProcess {
     MethodEffector<InetAddress> ATTACH_NETWORK = new MethodEffector<InetAddress>(SdnAgent.class, "attachNetwork");
 
     /**
-     * Attach a container to a network.
+     * Attach a network to a container.
      *
      * @param containerId the container ID
      * @param networkId the network ID to attach
      * @return the {@link SubnetTier} IP address
      */
-    @Effector(description="Attach a container to a network")
+    @Effector(description="Attach a network to a container")
     InetAddress attachNetwork(
             @EffectorParam(name="containerId", description="Container ID") String containerId,
             @EffectorParam(name="networkId", description="Network ID") String networkId);

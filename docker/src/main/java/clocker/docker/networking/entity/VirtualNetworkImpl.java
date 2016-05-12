@@ -17,6 +17,9 @@ package clocker.docker.networking.entity;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,17 +32,22 @@ import com.google.common.collect.Iterables;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
+import org.apache.brooklyn.api.mgmt.Task;
 import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.core.location.Locations;
+import org.apache.brooklyn.core.sensor.DependentConfiguration;
 import org.apache.brooklyn.entity.stock.BasicStartableImpl;
 import org.apache.brooklyn.util.collections.MutableList;
+import org.apache.brooklyn.util.core.task.DynamicTasks;
+import org.apache.brooklyn.util.core.task.Tasks;
 import org.apache.brooklyn.util.exceptions.Exceptions;
 import org.apache.brooklyn.util.net.Cidr;
 import org.apache.brooklyn.util.text.StringFunctions;
 import org.apache.brooklyn.util.text.Strings;
+import org.apache.brooklyn.util.time.Duration;
 
 public class VirtualNetworkImpl extends BasicStartableImpl implements VirtualNetwork {
 
@@ -103,12 +111,32 @@ public class VirtualNetworkImpl extends BasicStartableImpl implements VirtualNet
     public void stop() {
         sensors().set(SERVICE_UP, Boolean.FALSE);
 
-        NetworkProvisioningExtension provisioner = sensors().get(NETWORK_PROVISIONER);
-        if (provisioner != null) {
-            provisioner.deallocateNetwork(this);
-        }
+        synchronized (this) {
+            try {
+                Tasks.setBlockingDetails("Waiting until all containers are disconnected from " + sensors().get(NETWORK_ID));
+                Task<?> waiting = DependentConfiguration.attributeWhenReady(this, CONNECTED_CONTAINERS, new Predicate<Set>() {
+                    @Override
+                    public boolean apply(Set input) {
+                        return input.isEmpty();
+                    }
+                });
+                Task<?> task = DynamicTasks.queueIfPossible(waiting).orSubmitAndBlock(this).asTask();
+                task.get(Duration.FIVE_MINUTES);
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                LOG.error("Error waiting for containers to disconnect", e);
+                throw Exceptions.propagate(e);
+            } finally {
+                Tasks.resetBlockingDetails();
+            }
 
-        super.stop();
+            // If task is still blocking we would never be able to delete the network
+            NetworkProvisioningExtension provisioner = sensors().get(NETWORK_PROVISIONER);
+            if (provisioner != null) {
+                provisioner.deallocateNetwork(this);
+            }
+
+            super.stop();
+        }
     }
 
     static {
