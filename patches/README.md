@@ -68,3 +68,14 @@ for full code changes.
 
 - [`DockerTemplateOptions.java`](./src/main/java/org/jclouds/docker/compute/options/DockerTemplateOptions.java)
 - [`DockerComputeServiceAdapter.java`](./src/main/java/org/jclouds/docker/compute/strategy/DockerComputeServiceAdapter.java)
+
+## Backport from 2.0.0 for Docker JSON deserialisation patches
+
+Backports changes from the master 2.0.0-SNAPSHOT branch of jclouds and jclouds-labs.
+
+See [jclouds/jclouds#958](https://github.com/jclouds/jclouds/pull/958)
+and [jclouds/jclouds-labs#269](https://github.com/jclouds/jclouds-labs/pull/269)
+for full code changes.
+
+- [`Port.java`](./src/main/java/org/jclouds/docker/domain/Port.java)
+- [`NullFilteringTypeAdapterFactories.java`](./src/main/java/org/jclouds/json/internal/NullFilteringTypeAdapterFactories.java)
