@@ -32,7 +32,7 @@ script:
   - mkdir -p dist/target/brooklyn-maven-plugin/
   - touch dist/target/brooklyn-maven-plugin/brooklyn.debug.log
   - mvn -q clean install -DskipTests
-  - travis_wait 60 mvn -q verify -Pintegration -Dsoftlayer.identity=$SOFTLAYER_IDENTITY -Dsoftlayer.credential=$SOFTLAYER_CREDENTIAL
+  - travis_wait 60 mvn verify -Pintegration -Dsoftlayer.identity=$SOFTLAYER_IDENTITY -Dsoftlayer.credential=$SOFTLAYER_CREDENTIAL
 
 after_success:
   - .buildscript/deploy_snapshot.sh
