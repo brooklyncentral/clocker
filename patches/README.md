@@ -90,3 +90,13 @@ for full code changes.
 - [`ContainerToNodeMetadata.java`](./src/main/java/org/jclouds/docker/compute/functions/ContainerToNodeMetadata.java)
 - [`Container.java`](./src/main/java/org/jclouds/docker/domain/Container.java)
 - [`Node.java`](./src/main/java/org/jclouds/docker/domain/Node.java)
+
+## Support supplying key and certificate to Docker as data
+
+See [jclouds/jclouds-labs#271](https://github.com/jclouds/jclouds-labs/pull/271)
+for full code changes.
+
+- [`DockerApiMetadata.java`](./src/main/java/org/jclouds/docker/DockerApiMetadata.java)
+- [`DockerSSLContextSupplier.java`](./src/main/java/org/jclouds/docker/supplier/DockerSSLContextSupplier.java)
+- [`DockerUntrustedSSLContextSupplier.java`](./src/main/java/org/jclouds/docker/supplier/DockerUntrustedSSLContextSupplier.java)
+- [`SSLContextBuilder.java`](./src/main/java/org/jclouds/docker/supplier/SSLContextBuilder.java)
