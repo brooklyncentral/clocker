@@ -79,3 +79,14 @@ for full code changes.
 
 - [`Port.java`](./src/main/java/org/jclouds/docker/domain/Port.java)
 - [`NullFilteringTypeAdapterFactories.java`](./src/main/java/org/jclouds/json/internal/NullFilteringTypeAdapterFactories.java)
+
+## Use container host IP not manager IP
+
+Get the node IP from the container details, rather than the API endpoint
+
+See [jclouds/jclouds-labs#277](https://github.com/jclouds/jclouds-labs/pull/277)
+for full code changes.
+
+- [`ContainerToNodeMetadata.java`](./src/main/java/org/jclouds/docker/compute/functions/ContainerToNodeMetadata.java)
+- [`Container.java`](./src/main/java/org/jclouds/docker/domain/Container.java)
+- [`Node.java`](./src/main/java/org/jclouds/docker/domain/Node.java)
