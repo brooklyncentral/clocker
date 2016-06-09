@@ -68,3 +68,43 @@ for full code changes.
 
 - [`DockerTemplateOptions.java`](./src/main/java/org/jclouds/docker/compute/options/DockerTemplateOptions.java)
 - [`DockerComputeServiceAdapter.java`](./src/main/java/org/jclouds/docker/compute/strategy/DockerComputeServiceAdapter.java)
+
+## Backport from 2.0.0 for Docker JSON deserialisation patches
+
+Backports changes from the master 2.0.0-SNAPSHOT branch of jclouds and jclouds-labs.
+
+See [jclouds/jclouds#958](https://github.com/jclouds/jclouds/pull/958)
+and [jclouds/jclouds-labs#269](https://github.com/jclouds/jclouds-labs/pull/269)
+for full code changes.
+
+- [`Port.java`](./src/main/java/org/jclouds/docker/domain/Port.java)
+- [`NullFilteringTypeAdapterFactories.java`](./src/main/java/org/jclouds/json/internal/NullFilteringTypeAdapterFactories.java)
+
+## Use container host IP not manager IP
+
+Get the node IP from the container details, rather than the API endpoint
+
+See [jclouds/jclouds-labs#277](https://github.com/jclouds/jclouds-labs/pull/277)
+for full code changes.
+
+- [`ContainerToNodeMetadata.java`](./src/main/java/org/jclouds/docker/compute/functions/ContainerToNodeMetadata.java)
+- [`Container.java`](./src/main/java/org/jclouds/docker/domain/Container.java)
+- [`Node.java`](./src/main/java/org/jclouds/docker/domain/Node.java)
+
+## Support supplying key and certificate to Docker as data
+
+See [jclouds/jclouds-labs#271](https://github.com/jclouds/jclouds-labs/pull/271)
+for full code changes.
+
+- [`DockerApiMetadata.java`](./src/main/java/org/jclouds/docker/DockerApiMetadata.java)
+- [`DockerSSLContextSupplier.java`](./src/main/java/org/jclouds/docker/supplier/DockerSSLContextSupplier.java)
+- [`DockerUntrustedSSLContextSupplier.java`](./src/main/java/org/jclouds/docker/supplier/DockerUntrustedSSLContextSupplier.java)
+- [`SSLContextBuilder.java`](./src/main/java/org/jclouds/docker/supplier/SSLContextBuilder.java)
+
+## Node json should be optional
+
+See [jclouds/jclouds-labs#281](https://github.com/jclouds/jclouds-labs/pull/281)
+for full code changes.
+
+- [`ContainerToNodeMetadata.java`](./src/main/java/org/jclouds/docker/compute/functions/ContainerToNodeMetadata.java)
+- [`Container.java`](./src/main/java/org/jclouds/docker/domain/Container.java)
