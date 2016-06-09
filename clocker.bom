@@ -27,6 +27,10 @@ brooklyn.catalog:
   - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.networking&a=brooklyn-networking-cloudstack&v=0.10.0-SNAPSHOT" # ADVANCED_NETWORKING_VERSION
   - "https://repository.apache.org/service/local/repositories/releases/content/org/apache/jclouds/labs/docker/1.9.2/docker-1.9.2.jar" # JCLOUDS_VERSION
   - "https://repository.apache.org/service/local/repositories/releases/content/org/apache/jclouds/api/cloudstack/1.9.2/cloudstack-1.9.2.jar" # JCLOUDS_VERSION
+  - "https://oss.sonatype.org/content/repositories/releases/io/brooklyn/etcd/brooklyn-etcd/2.0.0/brooklyn-etcd-2.0.0.jar"
+
+  include: https://raw.githubusercontent.com/brooklyncentral/brooklyn-etcd/master/catalog.bom
+
 
   items:
 
@@ -91,26 +95,6 @@ brooklyn.catalog:
       type: clocker.mesos.networking.entity.sdn.calico.CalicoModule
       brooklyn.config:
         calico.version: 0.8.0
-
-  - id: etcd-node
-    name: "Etcd Node"
-    item:
-      type: org.apache.brooklyn.entity.nosql.etcd.EtcdNode
-
-  - id: etcd-proxy
-    name: "Etcd Proxy"
-    item:
-      type: org.apache.brooklyn.entity.nosql.etcd.EtcdProxy
-
-  - id: etcd-cluster
-    name: "Etcd Cluster"
-    item:
-      type: org.apache.brooklyn.entity.nosql.etcd.EtcdCluster
-      brooklyn.config:
-        etcd.version: 2.3.1
-        etcd.node.spec:
-          $brooklyn:entitySpec:
-            type: etcd-node
 
   - id: weave-network
     name: "Weave Network"

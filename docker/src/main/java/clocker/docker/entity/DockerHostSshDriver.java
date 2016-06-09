@@ -25,6 +25,8 @@ import static org.apache.brooklyn.util.ssh.BashCommands.ifExecutableElse0;
 import static org.apache.brooklyn.util.ssh.BashCommands.ifExecutableElse1;
 import static org.apache.brooklyn.util.ssh.BashCommands.installPackage;
 import static org.apache.brooklyn.util.ssh.BashCommands.sudo;
+import io.brooklyn.entity.nosql.etcd.EtcdCluster;
+import io.brooklyn.entity.nosql.etcd.EtcdNode;
 
 import java.util.List;
 import java.util.Map;
@@ -52,8 +54,6 @@ import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.entity.Entities;
 import org.apache.brooklyn.entity.group.AbstractGroup;
 import org.apache.brooklyn.entity.group.DynamicGroup;
-import org.apache.brooklyn.entity.nosql.etcd.EtcdCluster;
-import org.apache.brooklyn.entity.nosql.etcd.EtcdNode;
 import org.apache.brooklyn.entity.software.base.AbstractSoftwareProcessSshDriver;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.software.base.lifecycle.ScriptHelper;

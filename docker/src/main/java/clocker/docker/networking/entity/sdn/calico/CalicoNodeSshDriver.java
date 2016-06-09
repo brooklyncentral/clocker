@@ -17,6 +17,8 @@ package clocker.docker.networking.entity.sdn.calico;
 
 import static org.apache.brooklyn.util.ssh.BashCommands.sudo;
 
+import io.brooklyn.entity.nosql.etcd.EtcdNode;
+
 import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +36,6 @@ import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.EntityLocal;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.entity.group.AbstractGroup;
-import org.apache.brooklyn.entity.nosql.etcd.EtcdNode;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.collections.MutableList;
 import org.apache.brooklyn.util.collections.MutableMap;

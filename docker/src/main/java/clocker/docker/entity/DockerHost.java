@@ -15,6 +15,8 @@
  */
 package clocker.docker.entity;
 
+import io.brooklyn.entity.nosql.etcd.EtcdNode;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +48,6 @@ import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.PortAttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.machine.MachineEntity;
-import org.apache.brooklyn.entity.nosql.etcd.EtcdNode;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.location.jclouds.JcloudsLocation;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;

@@ -15,6 +15,8 @@
  */
 package clocker.docker.entity;
 
+import io.brooklyn.entity.nosql.etcd.EtcdCluster;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -27,7 +29,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.net.ssl.X509TrustManager;
 
@@ -80,7 +81,6 @@ import org.apache.brooklyn.entity.group.Cluster;
 import org.apache.brooklyn.entity.group.DynamicCluster;
 import org.apache.brooklyn.entity.group.DynamicGroup;
 import org.apache.brooklyn.entity.machine.MachineAttributes;
-import org.apache.brooklyn.entity.nosql.etcd.EtcdCluster;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess.ChildStartableMode;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
