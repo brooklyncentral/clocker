@@ -100,3 +100,11 @@ for full code changes.
 - [`DockerSSLContextSupplier.java`](./src/main/java/org/jclouds/docker/supplier/DockerSSLContextSupplier.java)
 - [`DockerUntrustedSSLContextSupplier.java`](./src/main/java/org/jclouds/docker/supplier/DockerUntrustedSSLContextSupplier.java)
 - [`SSLContextBuilder.java`](./src/main/java/org/jclouds/docker/supplier/SSLContextBuilder.java)
+
+## Node json should be optional
+
+See [jclouds/jclouds-labs#281](https://github.com/jclouds/jclouds-labs/pull/281)
+for full code changes.
+
+- [`ContainerToNodeMetadata.java`](./src/main/java/org/jclouds/docker/compute/functions/ContainerToNodeMetadata.java)
+- [`Container.java`](./src/main/java/org/jclouds/docker/domain/Container.java)

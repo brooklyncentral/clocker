@@ -36,7 +36,6 @@ import org.jclouds.domain.Location;
 import org.jclouds.providers.ProviderMetadata;
 
 import com.google.common.base.Function;
-import com.google.common.base.Strings;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -113,8 +112,8 @@ public class ContainerToNodeMetadata implements Function<Container, NodeMetadata
 
    private List<String> getPublicIpAddresses(Container container) {
       String dockerIpAddress;
-      if (container.node() != null && !Strings.isNullOrEmpty(container.node().ip())) {
-         dockerIpAddress = container.node().ip();
+      if (container.node() != null && container.node().isPresent()) {
+         dockerIpAddress = container.node().get().ip();
       } else {
          dockerIpAddress = URI.create(providerMetadata.getEndpoint()).getHost();
       }

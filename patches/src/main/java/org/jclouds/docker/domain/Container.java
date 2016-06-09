@@ -26,6 +26,7 @@ import org.jclouds.javax.annotation.Nullable;
 import org.jclouds.json.SerializedNames;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -77,7 +78,7 @@ public abstract class Container {
 
    @Nullable public abstract String processLabel();
 
-   @Nullable public abstract Node node();
+   @Nullable public abstract Optional<Node> node();
 
    Container() {
    }
@@ -93,7 +94,7 @@ public abstract class Container {
                                   String resolvConfPath, Map<String, String> volumes, HostConfig hostConfig,
                                   String driver, String execDriver, Map<String, Boolean> volumesRW, String command,
                                   String status, List<Port> ports, String hostnamePath, String hostsPath,
-                                  String mountLabel, String processLabel, Node node) {
+                                  String mountLabel, String processLabel, Optional<Node> node) {
       return new AutoValue_Container(id, created, path, name, copyOf(args), config, state, image, networkSettings,
               sysInitPath, resolvConfPath, copyOf(volumes), hostConfig, driver, execDriver, copyOf(volumesRW), command,
               status, copyOf(ports), hostnamePath, hostsPath, mountLabel, processLabel, node);
@@ -132,7 +133,7 @@ public abstract class Container {
       private String hostsPath;
       private String mountLabel;
       private String processLabel;
-      private Node node;
+      private Optional<Node> node;
 
       public Builder id(String id) {
          this.id = id;
@@ -249,7 +250,7 @@ public abstract class Container {
          return this;
       }
 
-      public Builder node(Node node) {
+      public Builder node(Optional<Node> node) {
          this.node = node;
          return this;
       }
