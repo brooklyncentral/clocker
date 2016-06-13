@@ -108,3 +108,11 @@ for full code changes.
 
 - [`ContainerToNodeMetadata.java`](./src/main/java/org/jclouds/docker/compute/functions/ContainerToNodeMetadata.java)
 - [`Container.java`](./src/main/java/org/jclouds/docker/domain/Container.java)
+
+## Getting container IPs of container with network(s)
+
+See [jclouds/jclouds-labs#284](https://github.com/jclouds/jclouds-labs/pull/284)
+for full code changes.
+
+- [`ContainerToNodeMetadata.java`](./src/main/java/org/jclouds/docker/compute/functions/ContainerToNodeMetadata.java)
+- [`NetworkSettings.java`](./src/main/java/org/jclouds/docker/domain/NetworkSettings.java)

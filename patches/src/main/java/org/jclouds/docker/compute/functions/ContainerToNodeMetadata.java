@@ -31,6 +31,7 @@ import org.jclouds.compute.domain.NodeMetadataBuilder;
 import org.jclouds.compute.domain.Processor;
 import org.jclouds.compute.functions.GroupNamingConvention;
 import org.jclouds.docker.domain.Container;
+import org.jclouds.docker.domain.NetworkSettings;
 import org.jclouds.docker.domain.State;
 import org.jclouds.domain.Location;
 import org.jclouds.providers.ProviderMetadata;
@@ -38,6 +39,7 @@ import org.jclouds.providers.ProviderMetadata;
 import com.google.common.base.Function;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.inject.Singleton;
 
@@ -106,8 +108,24 @@ public class ContainerToNodeMetadata implements Function<Container, NodeMetadata
    }
 
    private Iterable<String> getPrivateIpAddresses(Container container) {
+      // A container can be attached to multiple networks. It can therefore have multiple private
+      // IPs. The NetworkSettings.ipAddress might in fact be blank, with the only IP being on
+      // network objects.
       if (container.networkSettings() == null) return ImmutableList.of();
-      return ImmutableList.of(container.networkSettings().ipAddress());
+      ImmutableSet.Builder<String> builder = ImmutableSet.<String>builder();
+      NetworkSettings settings = container.networkSettings();
+      if (settings.ipAddress() != null && settings.ipAddress().length() > 0) {
+         builder.add(settings.ipAddress());
+      }
+      if (settings.networks() != null) {
+         for (Map.Entry<String, NetworkSettings.Details> entry : settings.networks().entrySet()) {
+            String ipAddress = entry.getValue().ipAddress();
+            if (ipAddress != null && ipAddress.length() > 0) {
+               builder.add(ipAddress);
+            }
+         }
+      }
+      return builder.build();
    }
 
    private List<String> getPublicIpAddresses(Container container) {
