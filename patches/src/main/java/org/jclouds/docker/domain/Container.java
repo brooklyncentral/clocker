@@ -78,7 +78,7 @@ public abstract class Container {
 
    @Nullable public abstract String processLabel();
 
-   @Nullable public abstract Optional<Node> node();
+   public abstract Optional<Node> node();
 
    Container() {
    }
@@ -133,7 +133,7 @@ public abstract class Container {
       private String hostsPath;
       private String mountLabel;
       private String processLabel;
-      private Optional<Node> node;
+      private Optional<Node> node = Optional.absent();
 
       public Builder id(String id) {
          this.id = id;
@@ -250,8 +250,8 @@ public abstract class Container {
          return this;
       }
 
-      public Builder node(Optional<Node> node) {
-         this.node = node;
+      public Builder node(Node node) {
+         this.node = Optional.fromNullable(node);
          return this;
       }
 
@@ -267,7 +267,7 @@ public abstract class Container {
                  .sysInitPath(in.sysInitPath()).resolvConfPath(in.resolvConfPath()).driver(in.driver())
                  .execDriver(in.execDriver()).volumes(in.volumes()).hostConfig(in.hostConfig()).volumesRW(in.volumesRW())
                  .command(in.command()).status(in.status()).ports(in.ports()).hostnamePath(in.hostnamePath())
-                 .hostsPath(in.hostsPath()).mountLabel(in.mountLabel()).processLabel(in.processLabel()).node(in.node());
+                 .hostsPath(in.hostsPath()).mountLabel(in.mountLabel()).processLabel(in.processLabel()).node(in.node().orNull());
       }
    }
 }

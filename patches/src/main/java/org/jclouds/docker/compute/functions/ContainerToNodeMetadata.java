@@ -112,7 +112,7 @@ public class ContainerToNodeMetadata implements Function<Container, NodeMetadata
 
    private List<String> getPublicIpAddresses(Container container) {
       String dockerIpAddress;
-      if (container.node() != null && container.node().isPresent()) {
+      if (container.node().isPresent()) {
          dockerIpAddress = container.node().get().ip();
       } else {
          dockerIpAddress = URI.create(providerMetadata.getEndpoint()).getHost();
