@@ -29,6 +29,7 @@ import com.google.common.reflect.TypeToken;
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.ImplementedBy;
 import org.apache.brooklyn.api.objs.HasShortName;
+import org.apache.brooklyn.api.relations.RelationshipType;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.annotation.Effector;
@@ -36,6 +37,7 @@ import org.apache.brooklyn.core.config.ConfigKeys;
 import org.apache.brooklyn.core.effector.MethodEffector;
 import org.apache.brooklyn.core.entity.lifecycle.Lifecycle;
 import org.apache.brooklyn.core.location.dynamic.LocationOwner;
+import org.apache.brooklyn.core.relations.RelationshipTypes;
 import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
@@ -168,5 +170,7 @@ public interface DockerContainer extends BasicStartable, HasNetworkAddresses, Ha
     DockerHost getDockerHost();
 
     SshMachineLocation getMachine();
+
+    RelationshipType<Entity, Entity> RUNNING = RelationshipTypes.newRelationshipPair("container", "containers", Entity.class, "running", "entity", "entities", Entity.class, "running");
 
 }

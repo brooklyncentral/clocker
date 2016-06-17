@@ -47,8 +47,7 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
         super.init();
 
         EntitySpec<?> agentSpec = EntitySpec.create(config().get(WEAVE_ROUTER_SPEC))
-                .configure(WeaveRouter.WEAVE_PORT, config().get(WeaveNetwork.WEAVE_PORT))
-                .configure(WeaveRouter.SDN_PROVIDER, this);
+                .configure(WeaveRouter.WEAVE_PORT, config().get(WeaveNetwork.WEAVE_PORT));
         String weaveVersion = config().get(WEAVE_VERSION);
         if (Strings.isNonBlank(weaveVersion)) {
             agentSpec.configure(SoftwareProcess.SUGGESTED_VERSION, weaveVersion);
@@ -87,6 +86,7 @@ public class WeaveNetworkImpl extends SdnProviderImpl implements WeaveNetwork {
     public void addHost(DockerHost host) {
         SshMachineLocation machine = host.getDynamicLocation().getMachine();
         EntitySpec<?> spec = EntitySpec.create(sensors().get(SDN_AGENT_SPEC))
+                .configure(WeaveRouter.SDN_PROVIDER, this)
                 .configure(WeaveRouter.DOCKER_HOST, host);
         WeaveRouter agent = (WeaveRouter) getAgents().addChild(spec);
         getAgents().addMember(agent);

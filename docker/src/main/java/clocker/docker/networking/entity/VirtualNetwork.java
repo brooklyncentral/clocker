@@ -16,18 +16,22 @@
 package clocker.docker.networking.entity;
 
 import java.util.Map;
+import java.util.Set;
 
 import clocker.docker.networking.entity.sdn.util.SdnAttributes;
 import clocker.docker.networking.location.NetworkProvisioningExtension;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.reflect.TypeToken;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.entity.ImplementedBy;
+import org.apache.brooklyn.api.relations.RelationshipType;
 import org.apache.brooklyn.api.sensor.AttributeSensor;
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.core.relations.RelationshipTypes;
 import org.apache.brooklyn.core.sensor.AttributeSensorAndConfigKey;
 import org.apache.brooklyn.core.sensor.Sensors;
 import org.apache.brooklyn.entity.stock.BasicStartable;
@@ -58,5 +62,11 @@ public interface VirtualNetwork extends BasicStartable {
     AttributeSensor<Integer> ALLOCATED_ADDRESSES = Sensors.newIntegerSensor("network.allocated", "Allocated IP addresses");
 
     AttributeSensor<NetworkProvisioningExtension> NETWORK_PROVISIONER = Sensors.newSensor(NetworkProvisioningExtension.class, "network.provsioner", "Location extension for provisioning networks");
+
+    AttributeSensor<Set<Entity>> CONNECTED_CONTAINERS = Sensors.newSensor(new TypeToken<Set<Entity>>() { },
+            "network.connected.containers", "The set of containers that are connected to this network");
+
+    RelationshipType<Entity, Entity> ATTACHED = RelationshipTypes.newRelationshipPair("network", "networks", Entity.class, "attached", "container", "containers", Entity.class, "conected");
+    RelationshipType<Entity, Entity> CONNECTED = ATTACHED.getInverseRelationshipType();
 
 }

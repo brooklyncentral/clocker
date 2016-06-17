@@ -16,18 +16,22 @@
 package clocker.docker.networking.entity.sdn;
 
 import java.net.InetAddress;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import clocker.docker.entity.DockerHost;
+import clocker.docker.entity.container.DockerContainer;
 import clocker.docker.networking.entity.VirtualNetwork;
 import clocker.docker.networking.entity.sdn.util.SdnUtils;
 
+import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.core.config.render.RendererHints;
 import org.apache.brooklyn.core.feed.ConfigToAttributes;
 import org.apache.brooklyn.entity.software.base.SoftwareProcessImpl;
 import org.apache.brooklyn.entity.stock.DelegateEntity;
+import org.apache.brooklyn.util.collections.MutableSet;
 import org.apache.brooklyn.util.net.Cidr;
 
 /**
@@ -79,12 +83,6 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
     }
 
     @Override
-    public void rebind() {
-        super.rebind();
-        // TODO implement custom SDN agent rebind logic
-    }
-
-    @Override
     public VirtualNetwork createNetwork(String networkId) {
         final SdnProvider provider = sensors().get(SDN_PROVIDER);
         VirtualNetwork network = SdnUtils.createNetwork(provider, networkId);
@@ -118,6 +116,28 @@ public abstract class SdnAgentImpl extends SoftwareProcessImpl implements SdnAge
 
         // Delete the network using the SDN driver
         getDriver().deleteSubnet(networkId);
+    }
+
+    @Override
+    public void connect(DockerContainer container, VirtualNetwork network) {
+        synchronized (network) {
+            MutableSet<Entity> connected = MutableSet.copyOf(network.sensors().get(VirtualNetwork.CONNECTED_CONTAINERS));
+            connected.add(container);
+            network.sensors().set(VirtualNetwork.CONNECTED_CONTAINERS, connected.asImmutableCopy());
+        }
+        network.relations().add(VirtualNetwork.ATTACHED, container);
+        container.relations().add(VirtualNetwork.CONNECTED, network);
+    }
+
+    @Override
+    public void disconnect(DockerContainer container, VirtualNetwork network) {
+        synchronized (network) {
+            MutableSet<Entity> connected = MutableSet.copyOf(network.sensors().get(VirtualNetwork.CONNECTED_CONTAINERS));
+            connected.remove(container);
+            network.sensors().set(VirtualNetwork.CONNECTED_CONTAINERS, connected.asImmutableCopy());
+        }
+        network.relations().remove(VirtualNetwork.CONNECTED, container);
+        container.relations().remove(VirtualNetwork.CONNECTED, network);
     }
 
     static {

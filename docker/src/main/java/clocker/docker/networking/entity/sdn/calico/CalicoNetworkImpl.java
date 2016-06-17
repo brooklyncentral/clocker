@@ -49,8 +49,7 @@ public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork 
         LOG.info("Starting Calico network id {}", getId());
         super.init();
 
-        EntitySpec<?> agentSpec = EntitySpec.create(config().get(CALICO_NODE_SPEC))
-                .configure(CalicoNode.SDN_PROVIDER, this);
+        EntitySpec<?> agentSpec = EntitySpec.create(config().get(CALICO_NODE_SPEC));
         String calicoVersion = config().get(CALICO_VERSION);
         if (Strings.isNonBlank(calicoVersion)) {
             agentSpec.configure(SoftwareProcess.SUGGESTED_VERSION, calicoVersion);
@@ -79,15 +78,10 @@ public class CalicoNetworkImpl extends SdnProviderImpl implements CalicoNetwork 
     }
 
     @Override
-    public void rebind() {
-        super.rebind();
-        // TODO implement calico rebind logic
-    }
-
-    @Override
     public void addHost(DockerHost host) {
         SshMachineLocation machine = host.getDynamicLocation().getMachine();
         EntitySpec<?> spec = EntitySpec.create(sensors().get(SDN_AGENT_SPEC))
+                .configure(CalicoNode.SDN_PROVIDER, this)
                 .configure(CalicoNode.DOCKER_HOST, host)
                 .configure(CalicoNode.ETCD_NODE, host.sensors().get(DockerHost.ETCD_NODE));
         CalicoNode agent = (CalicoNode) getAgents().addChild(spec);

@@ -589,6 +589,9 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             entity.sensors().set(DockerContainer.CONTAINER, this);
             entity.sensors().set(DockerContainer.DOCKER_CONTAINER_ID, containerId);
 
+            relations().add(DockerContainer.RUNNING, entity);
+            entity.relations().add(DockerContainer.RUNNING.getInverseRelationshipType(), this);
+
             // If SDN is enabled, attach networks
             if (config().get(SdnAttributes.SDN_ENABLE)) {
                 SdnAgent agent = Entities.attributeSupplierWhenReady(dockerHost, SdnAgent.SDN_AGENT).get();
@@ -597,9 +600,10 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
 
                 // Create and attach networks
                 for (String networkId : networks) {
-                    agent.createNetwork(networkId);
+                    VirtualNetwork vlan = agent.createNetwork(networkId);
                     InetAddress address = agent.attachNetwork(containerId, networkId);
                     addresses.add(address.getHostAddress());
+                    agent.connect(this, vlan);
                 }
 
                 // Save container addresses
@@ -746,16 +750,18 @@ public class DockerContainerImpl extends BasicStartableImpl implements DockerCon
             // Delete SDN networks no longer in use
             if (config().get(SdnAttributes.SDN_ENABLE)) {
                 SdnProvider provider = (SdnProvider) getDockerHost().getInfrastructure().sensors().get(SdnAttributes.SDN_PROVIDER);
+                SdnAgent agent = getDockerHost().sensors().get(SdnAgent.SDN_AGENT);
                 List<String> networks = sensors().get(SdnAttributes.ATTACHED_NETWORKS);
                 for (String networkId : networks) {
                     synchronized (getDockerHost().getInfrastructure().getInfrastructureMutex()) {
+                        VirtualNetwork vlan = SdnUtils.lookupNetwork(provider, networkId);
+                        agent.disconnect(this, vlan);
                         Optional<Integer> attached = SdnUtils.countAttached(getDockerHost(), networkId);
                         LOG.debug("Found {} containers attached to {} when stopping {}",
                                 new Object[] { attached.or(-1), networkId, getContainerId() });
                         if (attached.isPresent() && attached.get() == 0) {
-                            VirtualNetwork networkEntity = SdnUtils.lookupNetwork(provider, networkId);
-                            Entities.invokeEffector(getDockerHost(), networkEntity, Startable.STOP).getUnchecked();
-                            Entities.unmanage(networkEntity);
+                            Entities.invokeEffector(getDockerHost(), vlan, Startable.STOP).getUnchecked();
+                            Entities.unmanage(vlan);
                         }
                     }
                 }
