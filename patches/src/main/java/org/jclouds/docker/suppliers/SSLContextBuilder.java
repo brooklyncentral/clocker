@@ -59,7 +59,7 @@ public class SSLContextBuilder {
     private TrustManager[] trustManagers;
 
     public static final boolean isClientKeyAndCertificateData(String key, String cert) {
-        return (key.startsWith(Pems.PUBLIC_X509_MARKER) || key.startsWith(Pems.PUBLIC_PKCS1_MARKER)) &&
+        return (key.startsWith(Pems.PRIVATE_PKCS1_MARKER) || key.startsWith(Pems.PRIVATE_PKCS8_MARKER)) &&
                 cert.startsWith(Pems.CERTIFICATE_X509_MARKER);
     }
 

@@ -116,3 +116,10 @@ for full code changes.
 
 - [`ContainerToNodeMetadata.java`](./src/main/java/org/jclouds/docker/compute/functions/ContainerToNodeMetadata.java)
 - [`NetworkSettings.java`](./src/main/java/org/jclouds/docker/domain/NetworkSettings.java)
+
+## Fix incorrect key format check in Docker
+
+See [jclouds/jclouds-labs#287](https://github.com/jclouds/jclouds-labs/pull/287)
+for full code changes.
+
+- [`SSLContextBuilder.java`](./src/main/java/org/jclouds/docker/supplier/SSLContextBuilder.java)
