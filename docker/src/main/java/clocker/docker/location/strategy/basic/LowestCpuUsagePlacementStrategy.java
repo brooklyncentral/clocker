@@ -15,9 +15,10 @@
  */
 package clocker.docker.location.strategy.basic;
 
-import clocker.docker.entity.DockerHost;
 import clocker.docker.location.DockerHostLocation;
 import clocker.docker.location.strategy.BasicDockerPlacementStrategy;
+
+import org.apache.brooklyn.entity.machine.MachineAttributes;
 
 /**
  * Placement strategy that selects the Docker host with the lowest CPU usage.
@@ -26,9 +27,9 @@ public class LowestCpuUsagePlacementStrategy extends BasicDockerPlacementStrateg
 
     @Override
     public int compare(DockerHostLocation l1, DockerHostLocation l2) {
-        Double cpu1 = l1.getOwner().sensors().get(DockerHost.CPU_USAGE);
+        Double cpu1 = l1.getOwner().sensors().get(MachineAttributes.CPU_USAGE);
         if (cpu1 == null) cpu1 = -1d;
-        Double cpu2 = l2.getOwner().sensors().get(DockerHost.CPU_USAGE);
+        Double cpu2 = l2.getOwner().sensors().get(MachineAttributes.CPU_USAGE);
         if (cpu2 == null) cpu2 = -1d;
         return Double.compare(cpu1, cpu2);
     }

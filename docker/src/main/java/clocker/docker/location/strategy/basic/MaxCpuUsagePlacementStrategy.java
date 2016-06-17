@@ -18,13 +18,13 @@ package clocker.docker.location.strategy.basic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import clocker.docker.entity.DockerHost;
 import clocker.docker.entity.DockerInfrastructure;
 import clocker.docker.location.DockerHostLocation;
 import clocker.docker.location.strategy.BasicDockerPlacementStrategy;
 
 import org.apache.brooklyn.config.ConfigKey;
 import org.apache.brooklyn.core.config.ConfigKeys;
+import org.apache.brooklyn.entity.machine.MachineAttributes;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 
@@ -56,7 +56,7 @@ public class MaxCpuUsagePlacementStrategy extends BasicDockerPlacementStrategy {
         if (maxCpu == null) maxCpu = DEFAULT_MAX_CPU_USAGE;
 
         Boolean serviceUp = input.getOwner().sensors().get(SoftwareProcess.SERVICE_UP);
-        Double currentCpu = input.getOwner().sensors().get(DockerHost.CPU_USAGE);
+        Double currentCpu = input.getOwner().sensors().get(MachineAttributes.CPU_USAGE);
         if (!Boolean.TRUE.equals(serviceUp) || currentCpu == null) return false; // reject
 
         boolean accept = currentCpu < maxCpu;
