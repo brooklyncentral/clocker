@@ -27,7 +27,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.net.ssl.X509TrustManager;
 
@@ -202,7 +201,7 @@ public class DockerInfrastructureImpl extends AbstractApplication implements Doc
         sensors().set(DOCKER_CONTAINER_FABRIC, fabric);
 
         hosts.enrichers().add(Enrichers.builder()
-                .aggregating(DockerHost.CPU_USAGE)
+                .aggregating(MachineAttributes.CPU_USAGE)
                 .computingAverage()
                 .fromMembers()
                 .publishing(MachineAttributes.AVERAGE_CPU_USAGE)
