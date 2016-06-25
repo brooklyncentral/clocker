@@ -15,6 +15,8 @@
  */
 package clocker.docker.entity;
 
+import io.brooklyn.entity.nosql.etcd.EtcdNode;
+
 import java.io.File;
 import java.net.URI;
 import java.util.Collection;
@@ -88,7 +90,6 @@ import org.apache.brooklyn.core.server.BrooklynServerPaths;
 import org.apache.brooklyn.enricher.stock.Enrichers;
 import org.apache.brooklyn.entity.group.BasicGroup;
 import org.apache.brooklyn.entity.machine.MachineEntityImpl;
-import org.apache.brooklyn.entity.nosql.etcd.EtcdNode;
 import org.apache.brooklyn.entity.software.base.AbstractSoftwareProcessSshDriver;
 import org.apache.brooklyn.entity.software.base.SoftwareProcess;
 import org.apache.brooklyn.entity.stock.DelegateEntity;

@@ -30,7 +30,6 @@ import clocker.docker.networking.entity.sdn.SdnProvider;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
-import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 
 import org.apache.brooklyn.api.entity.Entity;
