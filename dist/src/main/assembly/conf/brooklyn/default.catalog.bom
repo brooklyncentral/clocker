@@ -21,10 +21,6 @@ brooklyn.catalog:
   include: https://raw.githubusercontent.com/brooklyncentral/brooklyn-etcd/v2.2.0/catalog.bom
 
   items:
-
-  # load everything in the classpath with a @Catalog annotation
-  - scanJavaAnnotations: true
-
   - id: docker-infrastructure
     name: "Docker Infrastructure"
     item:
