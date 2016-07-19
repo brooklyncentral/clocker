@@ -69,6 +69,12 @@
             <groupId>io.brooklyn.networking</groupId>
             <artifactId>brooklyn-networking-cloudstack</artifactId>
             <version>${brooklyn.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>${jclouds.groupId}.labs</groupId>
+                    <artifactId>docker</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.brooklyn.etcd</groupId>
@@ -101,6 +107,13 @@
             <groupId>${jclouds.docker.groupId}.labs</groupId>
             <artifactId>docker</artifactId>
             <version>${jclouds.docker.version}</version>
+            <exclusions>
+                <exclusion>
+                    <!-- Conflicts with javax.ws.rs-api -->
+                    <groupId>javax.ws.rs</groupId>
+                    <artifactId>jsr311-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 
