@@ -1,6 +1,6 @@
 brooklyn.catalog:
   id: sdn-test
-  version: 1.2.0-SNAPSHOT # CLOCKER_VERSION
+  version: 1.3.0-SNAPSHOT # CLOCKER_VERSION
   name: SDN Test
   itemType: template
   item:
@@ -10,7 +10,7 @@ brooklyn.catalog:
         infrastructure.deployment.location.sensor: entity.dynamicLocation
         infrastructure.deployment.spec:
           $brooklyn:entitySpec:
-            type: "docker-cloud-calico:1.2.0-SNAPSHOT" # CLOCKER_VERSION
+            type: "docker-cloud-calico:1.3.0-SNAPSHOT" # CLOCKER_VERSION
             id: infrastructure
             brooklyn.config:
               entity.dynamicLocation.name: my-docker-cloud

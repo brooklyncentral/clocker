@@ -12,7 +12,7 @@ Docker Cloud infrastructure.
 This repository contains all of the required Brooklyn entities, locations and examples.
 
 <!-- CLOCKER_VERSION_BELOW -->
-[![Build Status](https://api.travis-ci.org/brooklyncentral/clocker.svg?branch=master)](https://travis-ci.org/brooklyncentral/clocker)&nbsp;[![Latest Builds](http://img.shields.io/badge/version-1.2.0--SNAPSHOT-blue.svg?style=flat)](http://clocker-latest.s3-website-eu-west-1.amazonaws.com/)&nbsp;[![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/brooklyncentral/clocker)&nbsp;[![Docker Image](https://badge.imagelayers.io/clockercentral/clocker:1.1.1.svg)](https://imagelayers.io/?images=clockercentral/clocker:1.1.1)
+[![Build Status](https://api.travis-ci.org/brooklyncentral/clocker.svg?branch=master)](https://travis-ci.org/brooklyncentral/clocker)&nbsp;[![Latest Builds](http://img.shields.io/badge/version-1.3.0--SNAPSHOT-blue.svg?style=flat)](http://clocker-latest.s3-website-eu-west-1.amazonaws.com/)&nbsp;[![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/brooklyncentral/clocker)&nbsp;[![Docker Image](https://badge.imagelayers.io/clockercentral/clocker:1.2.0.svg)](https://imagelayers.io/?images=clockercentral/clocker:1.2.0)
 
 ## Getting started
 
@@ -34,12 +34,12 @@ depending on your choice of SDN provider.
 ### Using the latest Clocker release
 
 <!-- CLOCKER_VERSION_BELOW -->
-The latest version of Clocker is [1.1.1](https://github.com/brooklyncentral/clocker/releases/tag/v1.1.1).
+The latest version of Clocker is [1.2.0](https://github.com/brooklyncentral/clocker/releases/tag/v1.2.0).
 You can deploy your own **Docker Cloud** with a Weave SDN by running these commands with the _network_ argument
 st to `weave`, to use Project Calico as your SDN provider, change the last argument to `calico` instead:
 ```Bash
 % wget --no-check-certificate --quiet \
-    -O brooklyn-clocker-dist.tar.gz http://git.io/vw5Kz
+    -O brooklyn-clocker-dist.tar.gz http://git.io/vKrJr
 % tar zxf brooklyn-clocker-dist.tar.gz
 % cd brooklyn-clocker
 % ./bin/clocker.sh location network
@@ -115,7 +115,7 @@ services:
 
 ### Building from source
 
-The master branch of Clocker is at version [1.2.0-SNAPSHOT](http://github.com/brooklyncentral/clocker/).
+The master branch of Clocker is at version [1.3.0-SNAPSHOT](http://github.com/brooklyncentral/clocker/).
 Build and run this version of Clocker from source as follows:
 
 ```Bash
