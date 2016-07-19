@@ -29,6 +29,7 @@ import clocker.mesos.entity.task.marathon.MarathonTask;
 
 import com.google.common.base.Objects.ToStringHelper;
 import com.google.common.base.Optional;
+import com.google.common.net.HostAndPort;
 
 import org.apache.brooklyn.api.entity.Entity;
 import org.apache.brooklyn.api.location.Location;
@@ -36,10 +37,15 @@ import org.apache.brooklyn.api.location.LocationDefinition;
 import org.apache.brooklyn.api.location.PortRange;
 import org.apache.brooklyn.core.entity.Attributes;
 import org.apache.brooklyn.core.location.HasSubnetHostname;
+import org.apache.brooklyn.core.location.access.PortForwardManager;
 import org.apache.brooklyn.core.location.dynamic.DynamicLocation;
 import org.apache.brooklyn.location.ssh.SshMachineLocation;
 import org.apache.brooklyn.util.core.flags.SetFromFlag;
 import org.apache.brooklyn.util.exceptions.Exceptions;
+import org.apache.brooklyn.util.net.Cidr;
+import org.apache.brooklyn.util.net.Protocol;
+
+import brooklyn.networking.common.subnet.PortForwarder;
 
 /**
  * A {@link Location} that wraps a Marathon task; i.e. a Docker container.
@@ -81,17 +87,39 @@ public class MarathonTaskLocation extends SshMachineLocation implements HasSubne
         return entity;
     }
 
+    public int getMappedPort(int portNumber) {
+        Map<Integer, String> mapping = config().get(SshMachineLocation.TCP_PORT_MAPPINGS);
+        for (Map.Entry<Integer, String> entry : mapping.entrySet()) {
+            int containerPort = HostAndPort.fromString(entry.getValue()).getPort();
+            if (containerPort == portNumber) {
+                return entry.getKey();
+            }
+        }
+        return -1;
+    }
+
     @Override
     public boolean obtainSpecificPort(int portNumber) {
-        LOG.debug("Calling obtainSpecificPort: {}", portNumber);
+        int targetPort = getMappedPort(portNumber);
+        mapPort(targetPort, portNumber);
         return true;
     }
 
     @Override
     public int obtainPort(PortRange range) {
-        LOG.debug("Calling obtainPort: {}", range.toString());
         int portNumber = range.iterator().next();
+        int targetPort = getMappedPort(portNumber);
+        mapPort(targetPort, portNumber);
         return portNumber;
+    }
+
+    private void mapPort(int hostPort, int containerPort) {
+        String dockerHost = getAddress().getHostAddress();
+        PortForwardManager portForwardManager = getOwner().getMesosCluster().getMesosSlave(dockerHost).getSubnetTier().getPortForwardManager();
+        portForwardManager.associate(dockerHost, HostAndPort.fromParts(dockerHost, hostPort), this, containerPort);
+        PortForwarder portForwarder = getOwner().getMesosCluster().getMesosSlave(dockerHost).getSubnetTier().getPortForwarder();
+        portForwarder.openPortForwarding(this, containerPort, Optional.of(hostPort), Protocol.TCP, Cidr.UNIVERSAL);
+        portForwarder.openFirewallPort(entity, hostPort, Protocol.TCP, Cidr.UNIVERSAL);
     }
 
     @Override
