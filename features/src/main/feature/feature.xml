@@ -48,6 +48,7 @@
     <feature name="clocker-extras" version="${project.version}" description="Clocker Extra Entities">
         <details>Extra Brooklyn entities for Clocker.</details>
 
+        <bundle>mvn:io.brooklyn.etcd/brooklyn-etcd/2.2.0</bundle>
         <bundle>mvn:io.brooklyn.clocker/brooklyn-clocker-extras/${project.version}</bundle>
         <feature version="${brooklyn.version}">brooklyn-core</feature>
         <feature version="${brooklyn.version}">brooklyn-software-base</feature>
@@ -59,8 +60,7 @@
         <details>Clocker Brooklyn entities and locations for Docker integration.</details>
 
         <bundle>mvn:io.brooklyn.clocker/brooklyn-clocker-docker/${project.version}</bundle>
-        <feature version="${brooklyn.version}">brooklyn-core</feature>
-        <feature version="${brooklyn.version}">brooklyn-software-base</feature>
+        <feature version="${project.version}">clocker-extras</feature>
         <feature version="${brooklyn.version}">brooklyn-locations-jclouds</feature>
         <bundle dependency="true">mvn:io.brooklyn.networking/brooklyn-networking-common/${brooklyn.version}</bundle>
         <bundle dependency="true">mvn:io.brooklyn.networking/brooklyn-networking-portforwarding/${brooklyn.version}</bundle>
