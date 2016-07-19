@@ -16,9 +16,9 @@ brooklyn.catalog:
   version: "1.2.0-SNAPSHOT" # CLOCKER_VERSION
 
   brooklyn.libraries:
-  - "https://oss.sonatype.org/content/repositories/releases/io/brooklyn/etcd/brooklyn-etcd/2.0.0/brooklyn-etcd-2.0.0.jar"
+    - "https://oss.sonatype.org/content/repositories/releases/io/brooklyn/etcd/brooklyn-etcd/2.2.0/brooklyn-etcd-2.2.0.jar"
 
-  include: https://raw.githubusercontent.com/brooklyncentral/brooklyn-etcd/master/catalog.bom
+  include: https://raw.githubusercontent.com/brooklyncentral/brooklyn-etcd/v2.2.0/catalog.bom
 
   items:
 

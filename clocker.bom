@@ -16,21 +16,18 @@ brooklyn.catalog:
   version: "1.2.0-SNAPSHOT" # CLOCKER_VERSION
 
   brooklyn.libraries:
+    - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=brooklyn-clocker-extras&v=1.2.0-SNAPSHOT" # CLOCKER_VERSION
+    - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=brooklyn-clocker-docker&v=1.2.0-SNAPSHOT" # CLOCKER_VERSION
+    - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=brooklyn-clocker-mesos&v=1.2.0-SNAPSHOT" # CLOCKER_VERSION
+    - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=brooklyn-clocker-dist&v=1.2.0-SNAPSHOT" # CLOCKER_VERSION
+    - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.networking&a=brooklyn-networking-common&v=0.10.0-SNAPSHOT" # ADVANCED_NETWORKING_VERSION
+    - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.networking&a=brooklyn-networking-portforwarding&v=0.10.0-SNAPSHOT" # ADVANCED_NETWORKING_VERSION
+    - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.networking&a=brooklyn-networking-cloudstack&v=0.10.0-SNAPSHOT" # ADVANCED_NETWORKING_VERSION
+    - "http://ccweb.cloudsoftcorp.com/maven/libs-release-local/io/cloudsoft/jclouds/labs/docker/1.9.2-cloudsoft.20160630/docker-1.9.2-cloudsoft.20160630.jar"
+    - "https://repository.apache.org/service/local/repositories/releases/content/org/apache/jclouds/api/cloudstack/1.9.2/cloudstack-1.9.2.jar" # JCLOUDS_VERSION
+    - "https://oss.sonatype.org/content/repositories/releases/io/brooklyn/etcd/brooklyn-etcd/2.2.0/brooklyn-etcd-2.2.0.jar"
 
-  - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=brooklyn-clocker-patches&v=1.2.0-SNAPSHOT" # CLOCKER_VERSION
-  - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=brooklyn-clocker-extras&v=1.2.0-SNAPSHOT" # CLOCKER_VERSION
-  - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=brooklyn-clocker-docker&v=1.2.0-SNAPSHOT" # CLOCKER_VERSION
-  - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=brooklyn-clocker-mesos&v=1.2.0-SNAPSHOT" # CLOCKER_VERSION
-  - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=brooklyn-clocker-dist&v=1.2.0-SNAPSHOT" # CLOCKER_VERSION
-  - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.networking&a=brooklyn-networking-common&v=0.10.0-SNAPSHOT" # ADVANCED_NETWORKING_VERSION
-  - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.networking&a=brooklyn-networking-portforwarding&v=0.10.0-SNAPSHOT" # ADVANCED_NETWORKING_VERSION
-  - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.networking&a=brooklyn-networking-cloudstack&v=0.10.0-SNAPSHOT" # ADVANCED_NETWORKING_VERSION
-  - "https://repository.apache.org/service/local/repositories/releases/content/org/apache/jclouds/labs/docker/1.9.2/docker-1.9.2.jar" # JCLOUDS_VERSION
-  - "https://repository.apache.org/service/local/repositories/releases/content/org/apache/jclouds/api/cloudstack/1.9.2/cloudstack-1.9.2.jar" # JCLOUDS_VERSION
-  - "https://oss.sonatype.org/content/repositories/releases/io/brooklyn/etcd/brooklyn-etcd/2.0.0/brooklyn-etcd-2.0.0.jar"
-
-  include: https://raw.githubusercontent.com/brooklyncentral/brooklyn-etcd/master/catalog.bom
-
+  include: https://raw.githubusercontent.com/brooklyncentral/brooklyn-etcd/v2.2.0/catalog.bom
 
   items:
 
