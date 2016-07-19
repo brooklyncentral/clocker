@@ -58,6 +58,12 @@
             <groupId>io.brooklyn.networking</groupId>
             <artifactId>brooklyn-networking-portforwarding</artifactId>
             <version>${brooklyn.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>${jclouds.groupId}.labs</groupId>
+                    <artifactId>docker</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.brooklyn.networking</groupId>
@@ -89,6 +95,12 @@
             <version>${brooklyn.version}</version>
             <classifier>tests</classifier>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${jclouds.docker.groupId}.labs</groupId>
+            <artifactId>docker</artifactId>
+            <version>${jclouds.docker.version}</version>
         </dependency>
     </dependencies>
 

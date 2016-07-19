@@ -4,98 +4,11 @@ Clocker Patches
 This project contains files that have been changed in external projects but
 are not yet available in public repositories for donload as dependencies.
 
-## Added volumesFrom to Docker template options
-
-This adds the `VolumesFrom` configuration to the API request to create a
-container. This is the same as the `--volumes-from` command line option for
-`docker run`.
-
-See [jclouds/jclouds-labs#253](https://github.com/jclouds/jclouds-labs/pull/253)
-for full code changes.
-
-- [`DockerTemplateOptions.java`](./src/main/java/org/jclouds/docker/compute/options/DockerTemplateOptions.java)
-- [`DockerComputeServiceAdapter.java`](./src/main/java/org/jclouds/docker/compute/strategy/DockerComputeServiceAdapter.java)
-- [`Config.java`](./src/main/java/org/jclouds/docker/domain/Config.java)
-- [`HostConfig.java`](./src/main/java/org/jclouds/docker/domain/HostConfig.java)
-- [`NullSafeCopies.java`](./src/main/java/org/jclouds/docker/internal/NullSafeCopies.java)
-
-This code is part of jclouds-labs _1.9.3-SNAPSHOT_ and _2.0.0-SNAPSHOT_
-but **not** any official jclouds release yet.
-
-## Make DockerTemplateOptions values null safe
-
-Fixes [#276](https://github.com/brooklyncentral/clocker/issues/276) by allowing
-null values in `DockerTemplateOptions` where appropriate.
-
-See [jclouds/jclouds-labs#260](https://github.com/jclouds/jclouds-labs/pull/260)
-for full code changes.
-
-- [`DockerTemplateOptions.java`](./src/main/java/org/jclouds/docker/compute/options/DockerTemplateOptions.java)
-- [`NullSafeCopies.java`](./src/main/java/org/jclouds/docker/internal/NullSafeCopies.java)
-
-## Backport from 2.0.0 for Docker
-
-Backports changes from the master 2.0.0-SNAPSHOT branch of the driver. Add
-`OpenStdin` configuration to `DockerTemplateOptions` and set all port bindings
-explicitly on container creation, as required for Docker 1.10 and above.
-
-See [jclouds/jclouds-labs#264](https://github.com/jclouds/jclouds-labs/pull/264)
-for full code changes.
-
-- [`DockerTemplateOptions.java`](./src/main/java/org/jclouds/docker/compute/options/DockerTemplateOptions.java)
-- [`DockerComputeServiceAdapter.java`](./src/main/java/org/jclouds/docker/compute/strategy/DockerComputeServiceAdapter.java)
-
 ## Backport from 2.0.0 for Docker JSON deserialisation patches
 
-Backports changes from the master 2.0.0-SNAPSHOT branch of jclouds and jclouds-labs.
+Backports changes from the master 2.0.0-SNAPSHOT branch of jclouds.
 
 See [jclouds/jclouds#958](https://github.com/jclouds/jclouds/pull/958)
-and [jclouds/jclouds-labs#269](https://github.com/jclouds/jclouds-labs/pull/269)
 for full code changes.
 
-- [`Port.java`](./src/main/java/org/jclouds/docker/domain/Port.java)
 - [`NullFilteringTypeAdapterFactories.java`](./src/main/java/org/jclouds/json/internal/NullFilteringTypeAdapterFactories.java)
-
-## Use container host IP not manager IP
-
-Get the node IP from the container details, rather than the API endpoint
-
-See [jclouds/jclouds-labs#277](https://github.com/jclouds/jclouds-labs/pull/277)
-for full code changes.
-
-- [`ContainerToNodeMetadata.java`](./src/main/java/org/jclouds/docker/compute/functions/ContainerToNodeMetadata.java)
-- [`Container.java`](./src/main/java/org/jclouds/docker/domain/Container.java)
-- [`Node.java`](./src/main/java/org/jclouds/docker/domain/Node.java)
-
-## Support supplying key and certificate to Docker as data
-
-See [jclouds/jclouds-labs#271](https://github.com/jclouds/jclouds-labs/pull/271)
-for full code changes.
-
-- [`DockerApiMetadata.java`](./src/main/java/org/jclouds/docker/DockerApiMetadata.java)
-- [`DockerSSLContextSupplier.java`](./src/main/java/org/jclouds/docker/supplier/DockerSSLContextSupplier.java)
-- [`DockerUntrustedSSLContextSupplier.java`](./src/main/java/org/jclouds/docker/supplier/DockerUntrustedSSLContextSupplier.java)
-- [`SSLContextBuilder.java`](./src/main/java/org/jclouds/docker/supplier/SSLContextBuilder.java)
-
-## Node json should be optional
-
-See [jclouds/jclouds-labs#281](https://github.com/jclouds/jclouds-labs/pull/281)
-for full code changes.
-
-- [`ContainerToNodeMetadata.java`](./src/main/java/org/jclouds/docker/compute/functions/ContainerToNodeMetadata.java)
-- [`Container.java`](./src/main/java/org/jclouds/docker/domain/Container.java)
-
-## Getting container IPs of container with network(s)
-
-See [jclouds/jclouds-labs#284](https://github.com/jclouds/jclouds-labs/pull/284)
-for full code changes.
-
-- [`ContainerToNodeMetadata.java`](./src/main/java/org/jclouds/docker/compute/functions/ContainerToNodeMetadata.java)
-- [`NetworkSettings.java`](./src/main/java/org/jclouds/docker/domain/NetworkSettings.java)
-
-## Fix incorrect key format check in Docker
-
-See [jclouds/jclouds-labs#287](https://github.com/jclouds/jclouds-labs/pull/287)
-for full code changes.
-
-- [`SSLContextBuilder.java`](./src/main/java/org/jclouds/docker/supplier/SSLContextBuilder.java)
