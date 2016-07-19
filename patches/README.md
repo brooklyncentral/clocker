@@ -4,30 +4,6 @@ Clocker Patches
 This project contains files that have been changed in external projects but
 are not yet available in public repositories for donload as dependencies.
 
-# Current Patch Files
-
-## Fix NPE in forcePersistNow
-
-Fixes issue where `forcePeristNow()` fails due to `persistenceRealChangeListener`
-being null.
-
-See [apache/brooklyn-server#113](https://github.com/apache/brooklyn-server/pull/113)
-for full code changes.
-
-- [`RebindManagerImpl.java`](./src/main/java/org/apache/brooklyn/core/mgmt/rebind/RebindManagerImpl.java)
-
-This code is part of brooklyn-server _0.10.0-SNAPSHOT_ but **not** any official
-Brooklyn release yet.
-
-## Add configuration option to SSH sensor to trim output
-
-Removes surrounding whitespace which makes further transformation simpler.
-
-See [apache/brooklyn-server#127](https://github.com/apache/brooklyn-server/pull/127)
-for full code changes.
-
-- [`SshCommandSensor.java`](./src/main/java/org/apache/brooklyn/core/sensor/ssh/SshCommandSensor.java)
-
 ## Added volumesFrom to Docker template options
 
 This adds the `VolumesFrom` configuration to the API request to create a
