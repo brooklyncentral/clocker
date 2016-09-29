@@ -337,6 +337,47 @@ brooklyn.catalog:
             cluster.initial.size: $brooklyn:entity("kubernetes-cluster").config("kubernetes.master.size")
             dynamiccluster.quarantineFailedEntities:
               $brooklyn:parent().config("kubernetes.recovery.quarantineFailedEntities")
+            dynamiccluster.firstmemberspec:
+              $brooklyn:entitySpec:
+                type: kubernetes-master
+                id: kubernetes-master
+                name: "kubernetes-master"
+                brooklyn.config:
+                  install.latch: $brooklyn:entity("etcd-cluster").attributeWhenReady("service.isUp")
+                  kubernetes.schedulable: false
+                brooklyn.children:
+                  - type: child-software-process
+                    id: add-calico-pool
+                    name: "add-calico-pool"
+                    brooklyn.config:
+                      start.latch: $brooklyn:sibling("calico-cni-plugin").attributeWhenReady("service.isUp")
+                      shell.env:
+                        ETCD_ENDPOINTS: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
+                        FLANNEL_NETWORK: $brooklyn:sibling("flannel-network-agent").config("flannel.network")
+                      launch.command: |
+                        sudo -E calicoctl pool add ${FLANNEL_NETWORK} --nat-outgoing
+                      checkRunning.command: |
+                        sudo -E calicoctl pool show --ipv4 | grep "${FLANNEL_NETWORK}"
+                  - type: calico-policy-controller-pod
+                    id: calico-policy-controller
+                    name: "calico-policy-controller"
+                    brooklyn.config:
+                      start.latch: $brooklyn:sibling("kube-apiserver").attributeWhenReady("service.isUp")
+                  - type: kube-dns-pod
+                    id: kube-dns
+                    name: "kube-dns"
+                    brooklyn.config:
+                      start.latch: $brooklyn:sibling("kube-apiserver").attributeWhenReady("service.isUp")
+                  - type: kubernetes-dashboard-pod
+                    id: kubernetes-dashboard
+                    name: "kubernetes-dashboard"
+                    brooklyn.config:
+                      start.latch: $brooklyn:sibling("kube-apiserver").attributeWhenReady("service.isUp")
+                  - type: prometheus-pod
+                    id: prometheus
+                    name: "prometheus"
+                    brooklyn.config:
+                      start.latch: $brooklyn:sibling("kube-apiserver").attributeWhenReady("service.isUp")
             dynamiccluster.memberspec:
               $brooklyn:entitySpec:
                 type: kubernetes-master
@@ -625,18 +666,6 @@ brooklyn.catalog:
           default: 8080
 
       brooklyn.children:
-        - type: child-software-process
-          id: calico-pool
-          name: "calico-pool"
-          brooklyn.config:
-            start.latch: $brooklyn:sibling("calico-cni-plugin").attributeWhenReady("service.isUp")
-            shell.env:
-              ETCD_ENDPOINTS: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
-              FLANNEL_NETWORK: $brooklyn:sibling("flannel-network-agent").config("flannel.network")
-            launch.command: |
-              sudo -E calicoctl pool add ${FLANNEL_NETWORK} --nat-outgoing
-            checkRunning.command: |
-              sudo -E calicoctl pool show --ipv4 | grep "${FLANNEL_NETWORK}"
         - type: kube-apiserver-service
           id: kube-apiserver
           name: "kube-apiserver"
@@ -650,26 +679,6 @@ brooklyn.catalog:
         - type: kube-scheduler-service
           id: kube-scheduler
           name: "kube-scheduler"
-          brooklyn.config:
-            start.latch: $brooklyn:sibling("kube-apiserver").attributeWhenReady("service.isUp")
-        - type: calico-policy-controller-pod
-          id: calico-policy-controller
-          name: "calico-policy-controller"
-          brooklyn.config:
-            start.latch: $brooklyn:sibling("kube-apiserver").attributeWhenReady("service.isUp")
-        - type: kube-dns-pod
-          id: kube-dns
-          name: "kube-dns"
-          brooklyn.config:
-            start.latch: $brooklyn:sibling("kube-apiserver").attributeWhenReady("service.isUp")
-        - type: kubernetes-dashboard-pod
-          id: kubernetes-dashboard
-          name: "kubernetes-dashboard"
-          brooklyn.config:
-            start.latch: $brooklyn:sibling("kube-apiserver").attributeWhenReady("service.isUp")
-        - type: prometheus-pod
-          id: prometheus
-          name: "prometheus"
           brooklyn.config:
             start.latch: $brooklyn:sibling("kube-apiserver").attributeWhenReady("service.isUp")
 
