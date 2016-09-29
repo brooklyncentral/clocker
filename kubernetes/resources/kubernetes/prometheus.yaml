@@ -7,7 +7,7 @@ metadata:
     app: prometheus
     name: prometheus-service
   annotations:
-    prometheus.io/scrape: 'true'
+    prometheus.io/scrape: "true"
 spec:
   selector:
     app: prometheus
@@ -26,12 +26,20 @@ metadata:
   labels:
     app: prometheus
     name: prometheus-deployment
+    version: v1.1.3
+    kubernetes.io/cluster-service: "true"
+    kubernetes.io/name: "prometheus"
 spec:
   replicas: 1
+  selector:
+    app: prometheus
+    kubernetes.io/cluster-service: "true"
   template:
     metadata:
       labels:
         app: prometheus
+        version: v1.1.3
+        kubernetes.io/cluster-service: "true"
     spec:
       containers:
       - image: quay.io/prometheus/prometheus:v1.1.3
@@ -65,8 +73,8 @@ spec:
           configMap:
             name: prometheus-config
 ---
-apiVersion: v1
 kind: ConfigMap
+apiVersion: v1
 metadata:
   name: prometheus-config
   namespace: kube-system
@@ -81,38 +89,37 @@ data:
           - targets:
               - localhost:9090
       - job_name: 'kubernetes-cluster'
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
         kubernetes_sd_configs:
           - api_servers:
-              - ${config['template.substitutions']['kubernetes_url']}
-            basic_auth:
-              username: prometheus
-              password: pr0m3th3us
+              - https://kubernetes.default.svc
+            in_cluster: true
             role: apiserver
       - job_name: 'kubernetes-nodes'
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
         kubernetes_sd_configs:
           - api_servers:
-              - ${config['template.substitutions']['kubernetes_url']}
-            basic_auth:
-              username: prometheus
-              password: pr0m3th3us
+              - https://kubernetes.default.svc
+            in_cluster: true
             role: node
         relabel_configs:
           - action: labelmap
             regex: __meta_kubernetes_node_label_(.+)
-          - source_labels: [__meta_kubernetes_role]
-            action: replace
-            target_label: kubernetes_role
-          - source_labels: [__address__]
-            regex: (.*):10250
-            replacement: ${r"${1}:10255"}
-            target_label: __address__
       - job_name: 'kubernetes-service-endpoints'
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
         kubernetes_sd_configs:
           - api_servers:
-              - ${config['template.substitutions']['kubernetes_url']}
-            basic_auth:
-              username: prometheus
-              password: pr0m3th3us
+              - https://kubernetes.default.svc
+            in_cluster: true
             role: endpoint
         relabel_configs:
           - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
