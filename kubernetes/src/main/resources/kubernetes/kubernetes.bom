@@ -31,6 +31,14 @@ brooklyn.catalog:
         # Duplicated parameters for UI visibility
         - name: kubernetes.initial.size
           label: "Initial Cluster Size"
+          description: |
+            Size of the Kubernetes worker cluster when created initially
+          type: integer
+          default: 3
+        - name: kubernetes.master.size
+          label: "Master Cluster Size"
+          description: |
+            Size of the Kubernetes master cluster when created initially
           type: integer
           default: 3
         - name: kubernetes.max.size
@@ -160,9 +168,15 @@ brooklyn.catalog:
         - name: kubernetes.initial.size
           label: "Initial Cluster Size"
           description: |
-            Size of the cluster when created initially
+            Size of the Kubernetes worker cluster when created initially
           type: integer
-          default: 1
+          default: 3
+        - name: kubernetes.master.size
+          label: "Master Cluster Size"
+          description: |
+            Size of the Kubernetes master cluster when created initially
+          type: integer
+          default: 3
         - name: kubernetes.scaling.cpu.limit
           label: "Kubernetes Scaling CPU Limit"
           description: |
@@ -173,7 +187,7 @@ brooklyn.catalog:
         - name: kubernetes.max.size
           label: "Maximum Cluster Size"
           description: |
-            Maximum size the Kubernetes cluster can be scaled to
+            Maximum size the Kubernetes worker cluster can be scaled to
           type: integer
           default: 5
         - name: kubernetes.cluster.name
@@ -229,19 +243,109 @@ brooklyn.catalog:
       brooklyn.enrichers:
         - type: org.apache.brooklyn.enricher.stock.Propagator
           brooklyn.config:
-            uniqueTag: kubernetes-url-propagator
-            producer: $brooklyn:entity("kubernetes-master")
+            uniqueTag: kubernetes-url-and-endpoint-propagator
+            producer: $brooklyn:entity("kubernetes-manager-load-balancer")
             propagating:
               - $brooklyn:sensor("kubernetes.url")
-              - $brooklyn:sensor("kubernetes.endpoint")
+              - $brooklyn:sensor("kubernetes.endpoints")
 
       brooklyn.children:
-        - type: kubernetes-master
-          id: kubernetes-master
-          name: "kubernetes-master"
+        - type: haproxy-load-balancer
+          id: kubernetes-manager-load-balancer
+          name: "kubernetes-manager-load-balancer"
           brooklyn.config:
-            install.latch: $brooklyn:entity("etcd-cluster").attributeWhenReady("service.isUp")
-            kubernetes.schedulable: false
+            haproxy.port: $brooklyn:parent().config("kubernetes.apiserver.port")
+            haproxy.protocol: "http"
+          brooklyn.initializers:
+            - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+              brooklyn.config:
+                name: configureKubernetes
+                description: |
+                  Generate HAProxy configuration from Kubernetes endpoint list
+                shell.env:
+                  KUBERNETES_ENDPOINTS:
+                    $brooklyn:attributeWhenReady("kubernetes.endpoints")
+                command: |
+                  cat > servers.conf <<-EOF
+                  backend servers
+                    balance roundrobin
+                  EOF
+                  for endpoint in $(echo ${KUBERNETES_ENDPOINTS} | tr ',' ' ') ; do
+                    echo "  server manager$((++n)) ${endpoint} maxconn 32" >> servers.conf
+                  done
+                  haproxy -D -f haproxy.conf -f servers.conf -st $(cat ${RUN_DIR}/pid.txt)
+          brooklyn.policies:
+            - type: org.apache.brooklyn.policy.InvokeEffectorOnSensorChange
+              brooklyn.config:
+                effector: configureSwarm
+                sensor: $brooklyn:sensor("kubernetes.endpoints")
+          brooklyn.enrichers:
+            - type: org.apache.brooklyn.enricher.stock.Propagator
+              brooklyn.config:
+                uniqueTag: swarm-endpoints-propagator
+                producer: $brooklyn:entity("kubernetes-master-cluster")
+                propagating:
+                  - $brooklyn:sensor("kubernetes.endpoints")
+            - type: org.apache.brooklyn.enricher.stock.Transformer
+              brooklyn.config:
+                uniqueTag: cluster-swarm-endpoint-publisher
+                enricher.triggerSensors:
+                  - $brooklyn:sensor("host.address")
+                  - $brooklyn:sensor("haproxy.port")
+                enricher.targetSensor: $brooklyn:sensor("kubernetes.endpoint")
+                enricher.targetValue:
+                  $brooklyn:formatString:
+                    - "%s:%d"
+                    - $brooklyn:attributeWhenReady("host.address")
+                    - $brooklyn:attributeWhenReady("haproxy.port")
+            - type: org.apache.brooklyn.enricher.stock.Transformer
+              brooklyn.config:
+                uniqueTag: cluster-kubernetes-url-publisher
+                enricher.triggerSensors:
+                  - $brooklyn:sensor("kubernetes.endpoint")
+                enricher.targetSensor: $brooklyn:sensor("kubernetes.url")
+                enricher.targetValue:
+                  $brooklyn:formatString:
+                    - "http://%s"
+                    - $brooklyn:attributeWhenReady("kubernetes.endpoint")
+
+        - type: cluster
+          id: kubernetes-master-cluster
+          name: "kubernetes-master-cluster"
+          brooklyn.policies:
+            - type: org.apache.brooklyn.policy.ha.ServiceReplacer
+          brooklyn.enrichers:
+            - type: org.apache.brooklyn.enricher.stock.Aggregator
+              brooklyn.config:
+                uniqueTag: kubernetes-endpoint-aggregator
+                enricher.sourceSensor: $brooklyn:sensor("kubernetes.endpoint")
+                enricher.targetSensor: $brooklyn:sensor("kubernetes.endpoint.list")
+                enricher.aggregating.fromMembers: true
+            - type: org.apache.brooklyn.enricher.stock.Joiner
+              brooklyn.config:
+                uniqueTag: kubernetes-endpoint-joiner
+                enricher.sourceSensor: $brooklyn:sensor("kubernetes.endpoint.list")
+                enricher.targetSensor: $brooklyn:sensor("kubernetes.endpoints")
+                enricher.joiner.quote: false
+            - type: org.apache.brooklyn.enricher.stock.Propagator
+              brooklyn.config:
+                uniqueTag: kubernetes-url-propagator
+                producer: $brooklyn:entity("kubernetes-manager-load-balancer")
+                propagating:
+                  - $brooklyn:sensor("kubernetes.url")
+          brooklyn.config:
+            cluster.initial.size: $brooklyn:entity("kubernetes-cluster").config("kubernetes.master.size")
+            dynamiccluster.quarantineFailedEntities:
+              $brooklyn:parent().config("kubernetes.recovery.quarantineFailedEntities")
+            dynamiccluster.memberspec:
+              $brooklyn:entitySpec:
+                type: kubernetes-master
+                id: kubernetes-master
+                name: "kubernetes-master"
+                brooklyn.config:
+                  install.latch: $brooklyn:entity("etcd-cluster").attributeWhenReady("service.isUp")
+                  kubernetes.schedulable: false
+
         - type: cluster
           id: kubernetes-worker-cluster
           name: "kubernetes-worker-cluster"
@@ -281,7 +385,7 @@ brooklyn.catalog:
                 id: kubernetes-worker
                 name: "kubernetes-worker"
                 brooklyn.config:
-                  launch.latch: $brooklyn:entity("kubernetes-master").attributeWhenReady("service.isUp")
+                  launch.latch: $brooklyn:entity("kubernetes-master-cluster").attributeWhenReady("service.isUp")
 
   - id: kubernetes-worker
     name: "Kubernetes Worker"
@@ -341,8 +445,8 @@ brooklyn.catalog:
           KUBERNETES_USER: $brooklyn:entity("kubernetes-cluster").config("kubernetes.user")
           KUBERNETES_PASSWORD: $brooklyn:entity("kubernetes-cluster").config("kubernetes.password")
           KUBECTL_DOWNLOAD_URL: $brooklyn:config("kubectl.download.url")
-          KUBERNETES_URL: $brooklyn:entity("kubernetes-master").attributeWhenReady("kubernetes.url")
-          KUBERNETES_ENDPOINT: $brooklyn:entity("kubernetes-master").attributeWhenReady("kubernetes.endpoint")
+          KUBERNETES_URL: $brooklyn:scopeRoot().attributeWhenReady("kubernetes.url")
+          KUBERNETES_ENDPOINT: $brooklyn:scopeRoot().attributeWhenReady("kubernetes.endpoint")
           HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
           HOST_SUBNET_ADDRESS: $brooklyn:attributeWhenReady("host.subnet.address")
           ENTITY_ID: $brooklyn:attributeWhenReady("entity.id")
@@ -622,8 +726,8 @@ brooklyn.catalog:
           K8S_SERVICE: $brooklyn:config("kubernetes.service")
           HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
           HOST_SUBNET_ADDRESS: $brooklyn:attributeWhenReady("host.subnet.address")
-          KUBERNETES_ENDPOINT: $brooklyn:entity("kubernetes-master").attributeWhenReady("kubernetes.endpoint")
-          KUBERNETES_URL: $brooklyn:entity("kubernetes-master").attributeWhenReady("kubernetes.url")
+          KUBERNETES_ENDPOINT: $brooklyn:scopeRoot().attributeWhenReady("kubernetes.endpoint")
+          KUBERNETES_URL: $brooklyn:scopeRoot().attributeWhenReady("kubernetes.url")
           ETCD_ENDPOINTS: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
           ENTITY_ID: $brooklyn:parent().attributeWhenReady("entity.id")
           APPLICATION_ID: $brooklyn:attributeWhenReady("application.id")
@@ -690,7 +794,7 @@ brooklyn.catalog:
 
         shell.env:
           FLANNEL_SUBNET: $brooklyn:sibling("flannel-network-agent").attributeWhenReady("flannel.subnet")
-          KUBERNETES_URL: $brooklyn:entity("kubernetes-master").attributeWhenReady("kubernetes.url")
+          KUBERNETES_URL: $brooklyn:scopeRoot().attributeWhenReady("kubernetes.url")
           DNS_SERVICE_IP: $brooklyn:entity("kubernetes-cluster").config("kubernetes.dns.address")
           DNS_LOCAL_DOMAIN: $brooklyn:entity("kubernetes-cluster").config("kubernetes.dns.domain")
           CADVISOR_PORT: $brooklyn:parent().config("kubernetes.cadvisor.port")
@@ -1026,7 +1130,7 @@ brooklyn.catalog:
         kubernetes.pod.namespace: "kube-system"
 
         template.substitutions:
-          kubernetes_url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
+          kubernetes_url: $brooklyn:scopeRoot().attributeWhenReady("kubernetes.url")
           dns_service_ip: $brooklyn:entity("kubernetes-cluster").config("kubernetes.dns.address")
           dns_service_domain: $brooklyn:entity("kubernetes-cluster").config("kubernetes.dns.domain")
 
@@ -1044,7 +1148,7 @@ brooklyn.catalog:
         kubernetes.pod.namespace: "kube-system"
 
         template.substitutions:
-          kubernetes_url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
+          kubernetes_url: $brooklyn:scopeRoot().attributeWhenReady("kubernetes.url")
 
   - id: calico-policy-controller-pod
     name: "Calico Policy Controller Pod"
@@ -1061,7 +1165,7 @@ brooklyn.catalog:
         kubernetes.pod.manifest: true
 
         template.substitutions:
-          kubernetes_url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
+          kubernetes_url: $brooklyn:scopeRoot().attributeWhenReady("kubernetes.url")
           etcd_endpoints: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
 
   - id: prometheus-pod
