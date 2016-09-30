@@ -1,0 +1,250 @@
+brooklyn.catalog:
+  version: "2.0.0-SNAPSHOT" # CLOCKER_VERSION
+  publish:
+    description: |
+      Resources for working with Docker Engine plugins from Apache Brooklyn
+    license_code: APACHE-2.0
+
+  items:
+
+  - id: flannel-network-agent
+    name: "Flannel Network Agent"
+    description: |
+      The Flannel virtual network agent
+    itemType: entity
+    iconUrl: https://www.tigera.io/wp-content/uploads/flannel-logo@2x.png
+    item:
+      type: child-software-process
+      name: "flannel-network-agent"
+
+      brooklyn.parameters:
+        - name: flannel.version
+          label: "Flannel Version"
+          description: |
+            The Flannel version to install
+          type: string
+          default: "0.6.0"
+        - name: flannel.network
+          label: "Flannel Network"
+          description: |
+            The Flannel network CIDR
+          type: string
+          default: "10.0.0.0/8"
+        - name: flannel.subnet.size
+          label: "Flannel Subnet Size"
+          description: |
+            The size of the subnet CIDRs to be created
+          type: integer
+          default: 20
+        - name: flannel.transport
+          label: "Flannel Transport"
+          description: |
+            The Flannel backend transport mechanism. Can be any of: 'udp',
+            'vxlan', 'host-gw', 'aws-vpc', 'gce' or 'alloc'.
+          type: string
+          default: "udp"
+        - name: flannel.interface
+          label: "Flannel Interface"
+          description: |
+            The Flannel interface for host to host traffic
+          type: string
+          default: "eth0"
+        - name: etcd.client.version
+          label: "Etcd Client Version"
+          description: |
+            The etcd client version to install
+          type: string
+          default: "3.0.3"
+        - name: etcd.endpoints
+          label: "Etcd Endpoints"
+          description: |
+            The URLs for an etcd KV store
+          type: string
+
+      brooklyn.config:
+        shell.env:
+          ETCD_VERSION: $brooklyn:config("etcd.client.version")
+          ETCD_ENDPOINTS: $brooklyn:config("etcd.endpoints")
+          FLANNEL_VERSION: $brooklyn:config("flannel.version")
+          FLANNEL_ADDRESS_RANGE: $brooklyn:config("flannel.network")
+          FLANNEL_SUBNET_SIZE: $brooklyn:config("flannel.subnet.size")
+          FLANNEL_TRANSPORT: $brooklyn:config("flannel.transport")
+          FLANNEL_IFACE: $brooklyn:config("flannel.interface")
+          HOST_ADDRESS: $brooklyn:parent().attributeWhenReady("host.address")
+          HOST_SUBNET_ADDRESS: $brooklyn:parent().attributeWhenReady("host.subnet.address")
+          FLANNEL_ETCD_PREFIX: "/io.cloudsoft/clocker/flannel"
+
+        install.command: |
+          wget https://github.com/coreos/flannel/releases/download/v${FLANNEL_VERSION}/flanneld-amd64
+          chmod 755 flanneld-amd64
+          sudo cp flanneld-amd64 /usr/bin/flanneld
+          wget https://github.com/coreos/etcd/releases/download/v${ETCD_VERSION}/etcd-v${ETCD_VERSION}-linux-amd64.tar.gz
+          tar zxvf etcd-v${ETCD_VERSION}-linux-amd64.tar.gz etcd-v${ETCD_VERSION}-linux-amd64/etcdctl
+          sudo cp etcd-v${ETCD_VERSION}-linux-amd64/etcdctl /usr/bin
+          sudo mkdir -p /var/run/flannel
+
+        customize.command: |
+          echo "[CLOCKER] Reset bridge and NAT configuration"
+          ip link | grep docker0 && (
+            sudo ip link set dev docker0 down
+            sudo ip link delete docker0
+          )
+          sudo iptables -F -t nat
+
+          echo "[CLOCKER] Configure Flannel for ${FLANNEL_TRANSPORT}"
+          if [ "${FLANNEL_TRANSPORT}" == "vxlan" ] ; then
+            FLANNEL_TRANSPORT_OPTS=", \"VNI\":1"
+          fi
+          cat > flannel.json <<-EOF
+          {
+            "Network": "${FLANNEL_ADDRESS_RANGE}",
+            "SubnetLen": ${FLANNEL_SUBNET_SIZE},
+            "Backend": {
+              "Type": "${FLANNEL_TRANSPORT}"${FLANNEL_TRANSPORT_OPTS}
+            }
+          }
+          EOF
+          if ! etcdctl --peers ${ETCD_ENDPOINTS} get ${FLANNEL_ETCD_PREFIX}/config ; then
+            etcdctl --peers ${ETCD_ENDPOINTS} mk ${FLANNEL_ETCD_PREFIX}/config < flannel.json
+          fi
+
+          sudo -E tee /etc/systemd/system/flannel.service <<-EOF
+          [Unit]
+          Description=Flannel Overlay Agent
+          After=network.target
+          Before=docker.service
+          [Service]
+          ExecStart=/usr/bin/flanneld \
+            -etcd-endpoints=${ETCD_ENDPOINTS} \
+            -etcd-prefix=${FLANNEL_ETCD_PREFIX} \
+            --iface ${FLANNEL_IFACE} \
+            --ip-masq \
+            --subnet-file=/var/run/flannel/subnet.env \
+            --public-ip=${HOST_SUBNET_ADDRESS}
+          Type=notify
+          [Install]
+          WantedBy=multi-user.target
+          RequiredBy=docker.service
+          EOF
+
+        launch.command: |
+          sudo systemctl daemon-reload
+          sudo systemctl enable flannel
+          sudo systemctl start flannel
+
+        checkRunning.command: |
+          sudo systemctl status flannel
+
+      brooklyn.initializers:
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: flannel.mtu
+            description: |
+              The MTU for the Flannel network
+            targetType: integer
+            command: |
+              source /var/run/flannel/subnet.env && echo ${FLANNEL_MTU}
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: flannel.subnet
+            description: |
+              The Flannel subnet address range
+            targetType: string
+            command: |
+              source /var/run/flannel/subnet.env && echo ${FLANNEL_SUBNET}
+
+  - id: calico-cni-plugin
+    name: "Calico CNI Plugin"
+    description: |
+      The Project Calico plugin for CNI
+    itemType: entity
+    iconUrl: https://www.projectcalico.org/wp-content/uploads/2015/03/Project-Calico-logo-456x456-no-text.png
+    item:
+      type: child-software-process
+      name: "calico-network-plugin"
+
+      brooklyn.parameters:
+        - name: calico.version
+          label: "Calico Version"
+          description: |
+            The Project Calico driver version
+          type: string
+          default: "0.21.0"
+        - name: cni.version
+          label: "CNI Version"
+          description: |
+            The CNI version
+          type: string
+          default: "0.3.0"
+        - name: calico.cni.version
+          label: "Calico CNI Version"
+          description: |
+            The Project Calico CNI version
+          type: string
+          default: "1.4.0-rc4"
+        - name: etcd.endpoints
+          label: "Etcd Endpoints"
+          description: |
+            The URLs for an etcd KV store
+          type: string
+
+      brooklyn.config:
+        shell.env:
+          CALICO_VERSION: $brooklyn:config("calico.version")
+          CALICO_CNI_VERSION: $brooklyn:config("calico.cni.version")
+          CNI_VERSION: $brooklyn:config("cni.version")
+          ETCD_ENDPOINTS: $brooklyn:config("etcd.endpoints")
+          HOST_ADDRESS: $brooklyn:parent().attributeWhenReady("host.address")
+          HOST_SUBNET_ADDRESS: $brooklyn:parent().attributeWhenReady("host.subnet.address")
+          ENTITY_ID: $brooklyn:parent().attributeWhenReady("entity.id")
+
+        install.command: |
+          wget https://github.com/projectcalico/calico-containers/releases/download/v${CALICO_VERSION}/calicoctl
+          chmod +x calicoctl
+          sudo mv calicoctl /usr/bin
+          sudo mkdir -p /opt/cni/bin
+          wget https://github.com/containernetworking/cni/releases/download/v${CNI_VERSION}/cni-v${CNI_VERSION}.tgz
+          sudo tar --strip-components=1 -xvzf cni-v${CNI_VERSION}.tgz -C /opt/cni/bin
+          wget https://github.com/projectcalico/calico-cni/releases/download/v${CALICO_CNI_VERSION}/calico
+          wget https://github.com/projectcalico/calico-cni/releases/download/v${CALICO_CNI_VERSION}/calico-ipam
+          chmod +x calico calico-ipam
+          sudo mv calico calico-ipam /opt/cni/bin
+          docker pull calico/node:v${CALICO_VERSION}
+          sudo yum install -y ipset
+          sudo modprobe ip6_tables
+          sudo modprobe xt_set
+
+        customize.command: |
+          sudo mkdir -p /etc/cni/net.d
+
+        launch.command: |
+          sudo -E tee /etc/systemd/system/calico-node.service <<-EOF
+          [Unit]
+          Description=Calico Node
+          After=docker.service
+          Requires=docker.service
+          [Service]
+          User=root
+          PermissionsStartOnly=true
+          Environment="ETCD_ENDPOINTS=${ETCD_ENDPOINTS}"
+          Environment="CALICO_NETWORKING=false"
+          Environment="HOSTNAME=${HOST_SUBNET_ADDRESS}"
+          Environment="FELIX_FELIXHOSTNAME=${HOST_SUBNET_ADDRESS}"
+          Environment="NO_DEFAULT_POOLS=true"
+          ExecStart=/usr/bin/calicoctl node \
+            --ip=${HOST_SUBNET_ADDRESS} \
+            --no-pull \
+            --node-image=calico/node:v${CALICO_VERSION} \
+            --detach=false
+          Restart=always
+          RestartSec=10
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+          sudo systemctl daemon-reload
+          sudo systemctl enable calico-node
+          sudo systemctl start calico-node
+
+        checkRunning.command: |
+          unset DOCKER_HOST
+          sudo systemctl status calico-node

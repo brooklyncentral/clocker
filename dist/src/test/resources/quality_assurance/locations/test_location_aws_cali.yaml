@@ -1,9 +1,0 @@
-brooklyn.catalog:
-  id: cal
-  version: 1.3.0-SNAPSHOT # CLOCKER_VERSION
-  itemType: location
-  name: cal
-  item:
-    type: jclouds:aws-ec2:us-west-2
-    brooklyn.config:
-      osFamily: ubuntu

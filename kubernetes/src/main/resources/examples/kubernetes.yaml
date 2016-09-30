@@ -1,0 +1,36 @@
+id: kubernetes
+name: "Kubernetes Cluster"
+description: |
+  Includes built-in etcd discovery cluster and TLS protected Docker.
+
+  Deploys on CentOS 7 VMs in SoftLayer, on a single VLAN segment.
+
+location:
+  jclouds:softlayer:
+    region: ams01
+    identity: xxxxxxxx
+    credential: XXXXXXXX
+    privateKeyFile: ~/.ssh/softlayer.pem
+    customizers:
+      - $brooklyn:object:
+          type: org.apache.brooklyn.location.jclouds.softlayer.SoftLayerSameVlanLocationCustomizer
+          brooklyn.config:
+            softlayer.vlan.scopeUid: "kubernetes"
+
+services:
+  - type: kubernetes-cluster-application
+    id: kubernetes
+    name: "kubernetes"
+    brooklyn.config:
+      start.timeout: 30m
+      kubernetes.initial.size: 4
+      kubernetes.max.size: 16
+      etcd.initial.size: 3
+      kubernetes.apiserver.port: 8000
+      kubernetes.scaling.cpu.limit: 0.80
+      kubernetes.recovery.stabilizationDelay: 10s
+      kubernetes.recovery.failOnRecurringFailuresInThisDuration: 5m
+      flannel.network: 10.254.0.0/16
+      provisioning.properties:
+        minRam: 8g
+        minCores: 2

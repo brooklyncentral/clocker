@@ -1,0 +1,91 @@
+brooklyn.catalog:
+  items:
+  - id: kubernetes-cluster-tests
+    version: "2.0.0-SNAPSHOT" # CLOCKER_VERSION
+    itemType: template
+    iconUrl: https://twitter.com/kubernetesio/profile_image?size=original
+    name: Kubernetes Cluster Tests
+    item:
+      services:
+      - type: kubernetes-cluster-template
+        id: k8s-cluster
+        brooklyn.config:
+          kubernetes.initial.size: 3
+          kubernetes.max.size: 5
+          etcd.initial.size: 3
+          kubernetes.version: 1.3.5
+          kubernetes.cluster.name: amp
+          kubernetes.pod.cidr: 172.16.0.0/16
+          kubernetes.apiserver.port: 8080
+      - type: org.apache.brooklyn.test.framework.TestCase
+        name: K8S Smoke Tests
+        brooklyn.config:
+          timeout: 1h
+          targetId: k8s-cluster
+        brooklyn.children:
+        - type: assert-up-and-running-initial
+          name: "1. K8S cluster up and running"
+        - type: assert-reachable
+          name: "2. K8S UI Reachable"
+          brooklyn.config:
+            endpointSensor: main.uri
+            timeout: 5m
+        - type: invoke-effector
+          name: "3. kubectl create deployment [A]"
+          target: $brooklyn:entity("kubernetes-master")
+          effector: kubectl
+          params:
+            args: 'run workload-a --image=cloudsoft/centos:7 --replicas=1 --port=22'
+        - type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
+          name: "4. kubectl create deployment [B]"
+          target: $brooklyn:entity("kubernetes-master")
+          assertStatus:
+            equals: 0
+          command: |
+            kubectl run workload-b --image=cloudsoft/centos:7 --replicas=1 --port=22
+        - type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
+          name: "5. Assert [A] running"
+          target: $brooklyn:entity("kubernetes-master")
+          command: |
+            kubectl get deployments
+          assertOut:
+            contains: 'workload-a'
+        - type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
+          name: "6. Assert [B] running"
+          target: $brooklyn:entity("kubernetes-master")
+          command: |
+            kubectl get deployments
+          assertOut:
+            contains: 'workload-b'
+
+        - type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
+          name: "7. Test ICMP [A -> B]"
+          target: $brooklyn:entity("kubernetes-master")
+          command: |
+            POD_A="$(kubectl get pods -o wide | grep workload-a | tr -s ' ' | cut -d ' ' -f1)"
+            IP_B="$(kubectl get pods -o wide | grep workload-b | tr -s ' ' | cut -d ' ' -f6)"
+            kubectl exec ${POD_A} -- ping -c 1 ${IP_B}
+          assertOut:
+            contains: '1 received'
+        - type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
+          name: "8. Test ICMP [B -> A]"
+          target: $brooklyn:entity("kubernetes-master")
+          command: |
+            POD_B="$(kubectl get pods -o wide | grep workload-b | tr -s ' ' | cut -d ' ' -f1)"
+            IP_A="$(kubectl get pods -o wide | grep workload-a | tr -s ' ' | cut -d ' ' -f6)"
+            kubectl exec ${POD_B} -- ping -c 1 ${IP_A}
+          assertOut:
+            contains: '1 received'
+        - type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
+          name: "9. Kill deployments [A,B]"
+          target: $brooklyn:entity("kubernetes-master")
+          command: |
+            kubectl delete deployment workload-a
+            kubectl delete deployment workload-b
+        - type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
+          name: "10. Assert [A,B] NOT running"
+          target: $brooklyn:entity("kubernetes-master")
+          command: |
+            kubectl get deployments | grep workload- | wc -l
+          assertOut:
+            contains: '0'

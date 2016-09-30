@@ -1,0 +1,165 @@
+brooklyn.catalog:
+  version: "2.0.0-SNAPSHOT" # CLOCKER_VERSION
+  publish:
+    description: |
+      Resources for common Apache Brooklyn entities
+    license_code: APACHE-2.0
+
+  items:
+    - https://raw.githubusercontent.com/brooklyncentral/brooklyn-dns/master/brooklyn-dns-etc-hosts-generator.bom
+
+    - id: conditional-entity
+      name: "Conditional Entity"
+      description: |
+        An entity that creates a child only if a configuration key is set
+      itemType: entity
+      item:
+        type: org.apache.brooklyn.entity.stock.ConditionalEntity
+        id: conditional-entity
+
+    - id: child-software-process
+      name: "Child Software Process"
+      description: |
+        A child entity that executes commands to run a process
+      itemType: entity
+      item:
+        type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+        id: child-software-process
+
+    - id: centos-software-process
+      name: "CentOS Software Process"
+      description: |
+        An entity that executes commands to run a process
+
+        Uses a CentOS 7.x Virtual Machine
+      itemType: entity
+      iconUrl: https://raw.githubusercontent.com/docker-library/docs/c4df0024e2cad985326dc38f6b6ce39abeab59c5/centos/logo.png
+      item:
+        type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+        id: centos-software-process
+        brooklyn.config:
+          dontRequireTtyForSudo: true
+          provisioning.properties:
+            osFamily: centos
+            osVersionRegex: 7
+
+    - id: haproxy-load-balancer-template
+      name: "HAProxy Load Balancer"
+      description: |
+        HAProxy load balancer entity
+      itemType: template
+      iconUrl: https://media.licdn.com/mpr/mpr/shrink_200_200/AAEAAQAAAAAAAAhhAAAAJGMyYWJjZWExLTljZGMtNDA3ZS05YjU3LTU2ODdmZTk2YTlmNg.png
+      item:
+        services:
+          - type: org.apache.brooklyn.entity.stock.BasicApplication
+
+            brooklyn.parameters:
+              # Duplicated parameters for UI visibility
+              - name: haproxy.version
+                label: HAProxy Version
+                description: |
+                  The HAProxy version to install
+                type: string
+                default: "1.6.7"
+              - name: haproxy.port
+                label: HAProxy Port
+                description: |
+                  Port that HAProxy should listen on
+                type: port
+                default: 8000
+              - name: haproxy.protocol
+                label: HAProxy Protocol
+                description: |
+                  Protocol to forward (either http or https)
+                type: string
+                default: "http"
+              - name: haproxy.bind.options
+                label: HAProxy Bind Options
+                description: |
+                  Extra bind configuration for HAProxy
+                type: string
+
+            brooklyn.children:
+              - type: haproxy-load-balancer
+
+    - id: haproxy-load-balancer
+      name: "HAProxy Load Balancer"
+      description: |
+        HAProxy load balancer entity
+      itemType: entity
+      iconUrl: https://media.licdn.com/mpr/mpr/shrink_200_200/AAEAAQAAAAAAAAhhAAAAJGMyYWJjZWExLTljZGMtNDA3ZS05YjU3LTU2ODdmZTk2YTlmNg.png
+      item:
+        type: centos-software-process
+        name: "haproxy-load-balancer"
+
+        brooklyn.parameters:
+          - name: haproxy.version
+            label: HAProxy Version
+            description: |
+              The HAProxy version to install
+            type: string
+            default: "1.6.7"
+          - name: haproxy.port
+            label: HAProxy Port
+            description: |
+              Port that HAProxy should listen on
+            type: port
+            default: 8000
+          - name: haproxy.protocol
+            label: HAProxy Protocol
+            description: |
+              Protocol to forward (either http or https)
+            type: string
+            default: "http"
+          - name: haproxy.bind.options
+            label: HAProxy Bind Options
+            description: |
+              Extra bind configuration such as TLS certificate paths
+            type: string
+
+        brooklyn.config:
+          haproxy.bind.options:
+
+          shell.env:
+            HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
+            SUBNET_ADDRESS: $brooklyn:attributeWhenReady("host.subnet.address")
+            INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
+            RUN_DIR: $brooklyn:attributeWhenReady("run.dir")
+            HAPROXY_VERSION: $brooklyn:config("haproxy.version")
+            HAPROXY_PORT: $brooklyn:attributeWhenReady("haproxy.port")
+            HAPROXY_PROTOCOL: $brooklyn:config("haproxy.protocol")
+            HAPROXY_BIND_OPTIONS: $brooklyn:config("haproxy.bind.options")
+
+          install.command: |
+            sudo yum install -y gcc make openssl-devel wget
+            haproxy_major_minor=$(echo ${HAPROXY_VERSION} | cut -d. -f1,2)
+            wget "http://www.haproxy.org/download/${haproxy_major_minor}/src/haproxy-${HAPROXY_VERSION}.tar.gz"
+            tar zxf haproxy-${HAPROXY_VERSION}.tar.gz
+            cd haproxy-${HAPROXY_VERSION}
+            make TARGET=linux26 USE_OPENSSL=true
+            sudo cp haproxy /usr/bin
+
+          customize.command: |
+            cat > haproxy.conf <<-EOF
+            global
+              daemon
+              maxconn 256
+              pidfile ${PID_FILE}
+            defaults
+              option http-server-close
+              timeout connect 5000ms
+              timeout client 60s
+              timeout server 60s
+            frontend www-${HAPROXY_PROTOCOL}
+              bind *:${HAPROXY_PORT} ${HAPROXY_BIND_OPTIONS}
+              reqadd X-Forwarded-Proto:\ ${HAPROXY_PROTOCOL}
+              default_backend servers
+              mode tcp
+              option tcplog
+              log 127.0.0.1 syslog
+            EOF
+            echo "backend servers" > servers.conf
+
+          launch.command: |
+            haproxy -f haproxy.conf -f servers.conf -c &&
+              haproxy -D -f haproxy.conf -f servers.conf -sf $(cat ${PID_FILE})

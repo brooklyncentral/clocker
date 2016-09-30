@@ -1,0 +1,25 @@
+id: kubernetes-minimal
+name: "Kubernetes Cluster"
+description: |
+  Uses the default settings for configuring Kubernetes, apart from the initial
+  size of the cluster of worker nodes.
+
+  Deploys on AWS using only the default Kubernetes entity configuration. Requires
+  a security group to be deined in the AWS region or VPC, which should be
+  set in the 'templateOptions' of the location, as seen below.
+
+location:
+  jclouds:aws-ec2:
+    region: eu-central-1
+    privateKeyFile: "~/.ssh/kubernetes.pem"
+    loginUser.privateKeyFile: "~/.ssh/kubernetes.pem"
+    keyPair: "kubernetes"
+    templateOptions:
+      securityGroups:
+        - "kubernetes"
+
+services:
+  - type: kubernetes-cluster-application
+    name: "kubernetes-aws-ec2"
+    brooklyn.config:
+      kubernetes.initial.size: 2

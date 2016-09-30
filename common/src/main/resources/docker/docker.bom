@@ -1,0 +1,512 @@
+brooklyn.catalog:
+  version: "2.0.0-SNAPSHOT" # CLOCKER_VERSION
+  publish:
+    description: |
+      Resources for working with Docker Engine from Apache Brooklyn
+    license_code: APACHE-2.0
+    overview: README.md
+    qa: tests/docker.tests.bom
+
+  items:
+
+  - id: docker-engine-template
+    name: "Docker Engine"
+    description: |
+      Creates a single docker engine.
+    itemType: template
+    iconUrl: https://raw.githubusercontent.com/docker-library/docs/c350af05d3fac7b5c3f6327ac82fe4d990d8729c/docker/logo.png
+    item:
+      services:
+        - type: docker-engine
+
+  - id: docker-engine
+    name: "Docker Engine"
+    description: |
+      The engine for running Docker containers
+    itemType: entity
+    iconUrl: https://raw.githubusercontent.com/docker-library/docs/c350af05d3fac7b5c3f6327ac82fe4d990d8729c/docker/logo.png
+    item:
+      type: centos-software-process
+      id: docker-engine
+
+      brooklyn.parameters:
+        - name: docker.package
+          label: Docker Package
+          description: |
+            The Docker Engine package to install
+          type: string
+        - name: docker.version
+          label: Docker Version
+          description: |
+            The Docker Engine version to install
+          type: string
+        - name: docker.repository.url
+          label: Docker Repository URL
+          description: |
+            The Docker repository URL to use for installation
+          type: string
+        - name: docker.gpgkey.url
+          label: Docker GPG Key URL
+          description: |
+            The Docker GPG key URL to use to authenticate the installation
+          type: string
+        - name: docker.additionaloptions
+          label: Docker Additional Options
+          description: |
+            The additional options to pass to the engine on startup
+          type: string
+        - name: image.preinstall
+          label: Image Pre-install
+          description: |
+            A docker hub image id to pull after installation
+          type: string
+          default: cloudsoft/centos:7
+
+      brooklyn.initializers:
+        - type: org.apache.brooklyn.entity.machine.AddMachineMetrics
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: docker.version
+            period: 5m
+            command: |
+              docker info | grep "^Server Version" | sed -e "s/^Server Version: //"
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: docker.container.count
+            period: 1m
+            targetType: integer
+            command: |
+              docker ps -q | wc -l
+
+      brooklyn.config:
+        defaultDisplayName: "docker-engine"
+
+        image.preinstall: cloudsoft/centos:7
+
+        shell.env:
+          DOCKER_ADDITIONAL_OPTIONS: $brooklyn:config("docker.additionaloptions")
+          HOST_NAME: $brooklyn:attributeWhenReady("host.name")
+          DOCKER_IMAGE_PREINSTALL: $brooklyn:config("image.preinstall")
+          DOCKER_PACKAGE: $brooklyn:config("docker.package")
+          DOCKER_VERSION: $brooklyn:config("docker.version")
+          DOCKER_REPOSITORY_URL: $brooklyn:config("docker.repository.url")
+          DOCKER_GPG_KEY_URL: $brooklyn:config("docker.gpgkey.url")
+          ENTITY_ID: $brooklyn:entityId()
+          CLOCKER_VERSION: "2.0.0-SNAPSHOT"
+
+        install.command: |
+          set -e # need all commands to execute successfully
+
+          sudo yum -y update
+
+          echo "[CLOCKER] Configuring package manager"
+          if [[ "${DOCKER_REPOSITORY_URL}" && "${DOCKER_GPG_KEY_URL}" ]] ; then
+            # Commercially Supported Docker Engine
+            sudo rpm --import "${DOCKER_GPG_KEY_URL}"
+            sudo yum install -y yum-utils
+            sudo yum-config-manager --add-repo "${DOCKER_REPOSITORY_URL}"
+          else
+            # Open-Source Docker Engine
+            sudo tee /etc/yum.repos.d/docker.repo <<-EOF
+          [dockerrepo]
+          name=Docker Repository
+          baseurl=https://yum.dockerproject.org/repo/main/centos/\$releasever/
+          enabled=1
+          gpgcheck=1
+          gpgkey=https://yum.dockerproject.org/gpg
+          EOF
+          fi
+          if [[ "${DOCKER_VERSION}" ]] ; then
+            sudo yum -y install ${DOCKER_PACKAGE:-docker-engine}-${DOCKER_VERSION}
+          else
+            sudo yum -y install ${DOCKER_PACKAGE:-docker-engine}
+          fi
+
+          echo "[CLOCKER] Setting up Docker systemd service"
+          sudo mkdir -p /etc/systemd/system/docker.service.d
+          sudo tee /etc/systemd/system/docker.service.d/docker.conf <<-EOF
+          [Service]
+          # Need to clear the default first and then set a custom value
+          ExecStart=
+          ExecStart=/usr/bin/docker daemon \
+            -H unix:///var/run/docker.sock \
+            --api-cors-header="*" \
+            --config-file /etc/systemd/system/docker.service.d/daemon.json \
+            ${DOCKER_ADDITIONAL_OPTIONS}
+          ExecStartPost=/usr/bin/chown ${USER}:docker /var/run/docker.sock
+          EOF
+          sudo tee /etc/systemd/system/docker.service.d/daemon.json <<-EOF
+          {
+            "labels": [
+              "io.cloudsoft.clocker.name=${HOST_NAME}",
+              "io.cloudsoft.clocker.version=${CLOCKER_VERSION}",
+              "io.cloudsoft.clocker.entityId=${ENTITY_ID}"
+            ]
+          }
+          EOF
+
+          if sudo systemctl list-unit-files | grep "rngd" ; then
+            echo "[CLOCKER] Fix 100% CPU issue on some VMs"
+            sudo service rngd stop || true
+            sudo systemctl disable rngd.service
+          fi
+
+          sudo systemctl enable docker.service
+          sudo systemctl daemon-reload
+
+        post.install.command: |
+          echo "[CLOCKER] Setting up user and group for Docker"
+          sudo groupadd -f docker
+          sudo usermod -aG docker ${USER}
+
+        launch.command: |
+          sudo service docker start &&
+            ( [ -z "${DOCKER_IMAGE_PREINSTALL}" ] ||
+              docker images --format="{{.Repository}}:{{.Tag}}" | grep -q "${DOCKER_IMAGE_PREINSTALL}" ||
+              docker pull ${DOCKER_IMAGE_PREINSTALL} )
+
+        stop.command: |
+          sudo service docker stop
+
+        checkRunning.command: |
+          sudo service docker status
+
+        # ensure docker running before starting children
+        childStartMode: foreground_late
+
+  - id: docker-engine-tls
+    name: "Docker Engine with TLS"
+    description: |
+      A docker-engine customised with TLS
+    itemType: entity
+    iconUrl: https://raw.githubusercontent.com/docker-library/docs/c350af05d3fac7b5c3f6327ac82fe4d990d8729c/docker/logo.png
+    item:
+      type: docker-engine
+
+      brooklyn.parameters:
+        - name: docker.port
+          label: Docker Port
+          description: |
+            The TCP port for Docker to listen on
+          type: port
+          default: 2376
+        - name: docker.bindaddress
+          label: Docker Bind Address
+          description: |
+            The docker network address to to listen on.
+          type: string
+          default: 0.0.0.0
+        - name: ca.request.root.url
+          label: CA Request Root URL
+          description: |
+            Optional root URL for a CA server.
+
+            Use this or set the configuration for the certificate and key
+            URLs separately.
+          type: string
+        - name: ca.cert.url
+          label: CA Certificate URL
+          description: |
+            Optional URL for the CA certificate
+          type: string
+        - name: ca.cert
+          label: CA Certificate
+          description: |
+            Optional CA certificate data
+          type: string
+        - name: node.cert.url
+          label: Node Certificate URL
+          description: |
+            Optional URL for the TLS certificate for this Docker engine
+          type: string
+        - name: private.key.url
+          label: Private Key URL
+          description: |
+            Optional URL for the private key of this Docker engine
+          type: string
+
+      brooklyn.enrichers:
+        - type: org.apache.brooklyn.enricher.stock.Transformer
+          brooklyn.config:
+            uniqueTag: docker-public-endpoint-generator
+            enricher.triggerSensors:
+              - $brooklyn:sensor("host.address")
+              - $brooklyn:sensor("docker.port")
+            enricher.targetSensor: $brooklyn:sensor("docker.endpoint.public")
+            enricher.targetValue:
+              $brooklyn:formatString:
+                - "%s:%d"
+                - $brooklyn:attributeWhenReady("host.address")
+                - $brooklyn:attributeWhenReady("docker.port")
+        - type: org.apache.brooklyn.enricher.stock.Transformer
+          brooklyn.config:
+            uniqueTag: docker-endpoint-generator
+            enricher.triggerSensors:
+              - $brooklyn:sensor("host.subnet.address")
+              - $brooklyn:sensor("docker.port")
+            enricher.targetSensor: $brooklyn:sensor("docker.endpoint")
+            enricher.targetValue:
+              $brooklyn:formatString:
+                - "%s:%d"
+                - $brooklyn:attributeWhenReady("host.subnet.address")
+                - $brooklyn:attributeWhenReady("docker.port")
+        - type: org.apache.brooklyn.enricher.stock.Transformer
+          brooklyn.config:
+            uniqueTag: docker-url-generator
+            enricher.triggerSensors:
+              - $brooklyn:sensor("docker.endpoint")
+            enricher.targetSensor: $brooklyn:sensor("docker.url")
+            enricher.targetValue:
+              $brooklyn:formatString:
+                - "tcp://%s"
+                - $brooklyn:attributeWhenReady("docker.endpoint")
+        - type: org.apache.brooklyn.enricher.stock.Transformer
+          brooklyn.config:
+            uniqueTag: docker-bind-url-generator
+            enricher.triggerSensors:
+              - $brooklyn:sensor("docker.port")
+            enricher.targetSensor: $brooklyn:sensor("docker.bind.url")
+            enricher.targetValue:
+              $brooklyn:formatString:
+                - "tcp://%s:%d"
+                - $brooklyn:config("docker.bindaddress")
+                - $brooklyn:attributeWhenReady("docker.port")
+
+      brooklyn.config:
+        docker.cert.path:
+          $brooklyn:formatString:
+            - "%s/.certs"
+            - $brooklyn:attributeWhenReady("install.dir")
+        docker.tlsoptions:
+          $brooklyn:formatString:
+            - >-
+              --tlsverify
+              --tlscacert=%1$s/ca.pem
+              --tlscert=%1$s/cert.pem
+              --tlskey=%1$s/key.pem
+            - $brooklyn:config("docker.cert.path")
+        docker.additionaloptions.docker-engine-tls:
+          $brooklyn:formatString:
+            - "-H %s %s"
+            - $brooklyn:attributeWhenReady("docker.bind.url")
+            - $brooklyn:config("docker.tlsoptions")
+        docker.additionaloptions: $brooklyn:config("docker.additionaloptions.docker-engine-tls")
+        shell.env:
+          CA_REQUEST_ROOT_URL: $brooklyn:config("ca.request.root.url")
+          CA_CERT: $brooklyn:config("ca.cert")
+          CA_CERT_URL: $brooklyn:config("ca.cert.url")
+          NODE_CERT_URL: $brooklyn:config("node.cert.url")
+          PRIV_KEY_URL: $brooklyn:config("private.key.url")
+          HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
+          SUBNET_ADDRESS: $brooklyn:attributeWhenReady("host.subnet.address")
+          INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
+          TLS_OPTIONS: $brooklyn:config("docker.tlsoptions")
+          DOCKER_ENDPOINT: $brooklyn:attributeWhenReady("docker.endpoint")
+          DOCKER_ENDPOINT_PUBLIC: $brooklyn:attributeWhenReady("docker.endpoint.public")
+          DOCKER_HOST: $brooklyn:attributeWhenReady("docker.url")
+          DOCKER_TLS_VERIFY: true
+          DOCKER_CERT_PATH: $brooklyn:config("docker.cert.path")
+        resources.preInstall.latch: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
+        files.preinstall:
+          "classpath://io.brooklyn.clocker.common:common/certificate-functions.sh": certificate-functions.sh
+        customize.command: |
+          set -e
+          source ${INSTALL_DIR}/certificate-functions.sh
+
+          echo "[CLOCKER] Creating ${DOCKER_CERT_PATH}"
+          mkdir -p ${DOCKER_CERT_PATH}
+
+          if [ "${CA_REQUEST_ROOT_URL}" ] ; then
+            #echo "$CA_CERT" >  ${DOCKER_CERT_PATH}/ca.pem # commented out until after we get back to this.
+            getcert ${CA_REQUEST_ROOT_URL}/cacert/ca.pem ${DOCKER_CERT_PATH}/ca.pem
+
+            generate_key ${DOCKER_CERT_PATH}/key.pem
+            generate_conf ${DOCKER_CERT_PATH}/csr.cnf ${HOST_ADDRESS} ${SUBNET_ADDRESS}
+            generate_csr ${DOCKER_CERT_PATH}/csr.cnf ${DOCKER_CERT_PATH}/key.pem ${DOCKER_CERT_PATH}/csr.pem
+
+            echo "[CLOCKER] Requesting certificate from ${CA_REQUEST_ROOT_URL}"
+            curl -X POST --data-binary @${DOCKER_CERT_PATH}/csr.pem  ${CA_REQUEST_ROOT_URL}/sign > ${DOCKER_CERT_PATH}/cert.pem
+            echo "[CLOCKER] Certifcate for ${HOST_ADDRESS} received"
+          else
+            echo "[CLOCKER] Downloading certificates from configuration settings"
+            getcert ${CA_CERT_URL} > ${DOCKER_CERT_PATH}/ca.pem
+            getcert ${NODE_CERT_URL} > ${DOCKER_CERT_PATH}/cert.pem
+            getcert ${PRIV_KEY_URL}  > ${DOCKER_CERT_PATH}/key.pem
+          fi
+          # TODO verify certs with openssl
+          test -f ${DOCKER_CERT_PATH}/ca.pem || failwith "Failed to obtain ca.pem"
+          test -f ${DOCKER_CERT_PATH}/cert.pem || failwith "Failed to obtain cert.pem"
+          test -f ${DOCKER_CERT_PATH}/key.pem || failwith "Failed to obtain key.pem"
+        post.customize.command: |
+          echo "[CLOCKER] Set up Docker environment variables with TLS"
+          if ! grep docker_client ${HOME}/.bashrc ; then
+            echo ". docker_client.rc" >> ${HOME}/.bashrc
+          fi
+          cat > ${HOME}/docker_client.rc <<-EOF
+          DOCKER_TLS_VERIFY=${DOCKER_TLS_VERIFY}
+          DOCKER_CERT_PATH=${DOCKER_CERT_PATH}
+          DOCKER_HOST=${DOCKER_HOST}
+          export DOCKER_TLS_VERIFY DOCKER_CERT_PATH DOCKER_HOST
+          EOF
+
+      brooklyn.initializers:
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: docker.csr
+            period: 5m
+            command: |
+              cat ${DOCKER_CERT_PATH}/csr.pem
+
+  - id: docker-engine-container
+    name: "Docker Container"
+    description: |
+      An easy way to launch a Docker container, as a child of a Docker Engine.
+    itemType: entity
+    iconUrl: https://raw.githubusercontent.com/docker-library/docs/c350af05d3fac7b5c3f6327ac82fe4d990d8729c/docker/logo.png
+    item:
+      type: centos-software-process
+
+      brooklyn.parameters:
+        - name: image.details
+          label: Image Details
+          description: |
+            The Docker Container image details.
+
+            Either the name of a Docker Hub image or the id of an image that has
+            been pulled and is available on the Engine already.
+          type: string
+
+      brooklyn.config:
+        dontRequireTtyForSudo: true
+
+        # TODO advertise container id as a sensor.
+
+        shell.env:
+          IMAGE_DETAILS: $brooklyn:config("image.details")
+
+        launch.command: |
+          docker run -d ${IMAGE_DETAILS}
+
+  - id: docker-vm-container
+    name: Docker Entity
+    description: |
+      An easy way to launch a single Docker container on a VM
+    itemType: entity
+    item:
+      type: docker-engine
+
+      brooklyn.parameters:
+        - name: docker.image
+          label: Docker Image
+          description: |
+            The docker image to use when running the container
+        - name: docker.run.arguments
+          label: Docker Run Arguments
+          description: |
+            Arguments to pass to the docker run command
+        - name: docker.run.volumes
+          label: Container Volumns
+          type: java.util.List
+          description: |
+            List of volumes to mount. Items follow the documented docker format
+            for the '-v' option
+          default: [ ]
+        - name: docker.run.env
+          label: Container Environment
+          type: java.util.Map
+          description: |
+            Map of environment variables to pass to the container
+          default: { }
+        - name: docker.restart
+          label: Restart policy
+          description: |
+            Restart policy on the container. One of no, on-failure[:max-retries],
+            always or unless-stopped
+        - name: docker.run.additionaloptions
+          label: Run command additional options
+          description: |
+            Additional options to pass to the 'docker run' command
+
+      brooklyn.config:
+        defaultDisplayName: $brooklyn:config("docker.image")
+        image.preinstall:
+
+        shell.env:
+          DOCKER_IMAGE: $brooklyn:config("docker.image")
+          DOCKER_RUN_ARGUMENTS: $brooklyn:config("docker.run.arguments")
+          DOCKER_RUN_VOLUMES: $brooklyn:config("docker.run.volumes")
+          DOCKER_RUN_ENV: $brooklyn:config("docker.run.env")
+          DOCKER_RESTART: $brooklyn:config("docker.restart")
+          DOCKER_RUN_ADDITIONAL_OPTIONS: $brooklyn:config("docker.run.additionaloptions")
+
+        pre.install.command: |
+          sudo yum -y install epel-release
+          sudo yum -y install jq
+
+        pre.launch.command: |
+          if [ -z "${DOCKER_IMAGE}" ]; then
+            echo "[CLOCKER] 'docker.image' not configured on the entity" >&2
+            exit 1
+          fi
+
+        post.launch.command: |
+          set -e
+          # Won't escape quotes in the arguments, but those are not expected
+          function parse_docker_volumes {
+            echo ${DOCKER_RUN_VOLUMES} |
+              jq -r '["-v \"" + .[] + "\" "] | add'
+          }
+          function parse_docker_env {
+            echo ${DOCKER_RUN_ENV} |
+              jq -r 'to_entries | map("-e \"" + .key + "=" + .value + "\" ") | add'
+          }
+          rm -f "${PID_FILE}" # docker won't overwrite
+          DOCKER="docker run -d --cidfile \"${PID_FILE}\" --net=host"
+          [ "${DOCKER_RUN_VOLUMES}" ] && DOCKER="${DOCKER} $( parse_docker_volumes )"
+          [ "${DOCKER_RUN_ENV}" ] && DOCKER="${DOCKER} $( parse_docker_env )"
+          DOCKER="${DOCKER} --restart=${DOCKER_RESTART:-unless-stopped}"
+          [ "${DOCKER_RUN_ADDITIONAL_OPTIONS}" ] && DOCKER="${DOCKER} ${DOCKER_RUN_ADDITIONAL_OPTIONS}"
+          DOCKER="${DOCKER} \"${DOCKER_IMAGE}\""
+          [ "${DOCKER_RUN_ARGUMENTS}" ] && DOCKER="${DOCKER} ${DOCKER_RUN_ARGUMENTS}"
+          echo "${DOCKER}"
+          echo "${DOCKER}" | bash
+
+        checkRunning.command: |
+          STATE=$(docker inspect --format "{{ .State.Status }}" $(cat "${PID_FILE}"))
+          sudo service docker status && [ "${STATE}" = "running" ]
+
+        stop.command: |
+          docker stop $(cat "${PID_FILE}")
+          sudo service docker stop
+          rm -f "${PID_FILE}"
+
+      brooklyn.initializers:
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: container.id
+            period: 5m
+            targetType: integer
+            command: |
+              test -f pid.txt &&
+                cat pid.txt
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: container.stats.cpu.percent
+            period: 1m
+            targetType: double
+            command: |
+              test -f pid.txt &&
+                ( docker stats --no-stream $(cat pid.txt) |
+                  tail -n +2 |
+                  cut -c21-40 )
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: container.stats.memory.percent
+            period: 1m
+            targetType: double
+            command: |
+              test -f pid.txt &&
+                ( docker stats --no-stream $(cat pid.txt) |
+                  tail -n +2 |
+                  cut -c63-82 )
+

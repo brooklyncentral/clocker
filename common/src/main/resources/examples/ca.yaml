@@ -1,0 +1,13 @@
+id: ca
+name: "Certificate Authority"
+description: |
+  Standalone Certificate Authority server.
+
+location:
+  jclouds:softlayer:
+    region: ams01
+
+services:
+  - type: ca-server
+    id: ca-server
+    name: "ca-server"

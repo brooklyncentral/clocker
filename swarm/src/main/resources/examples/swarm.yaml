@@ -1,0 +1,43 @@
+id: swarm
+name: "Docker Swarm Cluster"
+description: |
+  Includes built-in etcd discovery cluster, TLS protected endpoints,
+  HAProxy load balancer for Swarm managers and a CA server to create
+  certificates for the Swarm and etcd nodes and the load balancer.
+
+  Deploys on CentOS 7 VMs in SoftLayer, on a single VLAN segment.
+
+location:
+  jclouds:softlayer:
+    region: ams01
+    identity: xxxxxxxx
+    credential: XXXXXXXX
+    privateKeyFile: ~/.ssh/softlayer.pem
+    customizers:
+      - $brooklyn:object:
+          type: org.apache.brooklyn.location.jclouds.softlayer.SoftLayerSameVlanLocationCustomizer
+          brooklyn.config:
+            softlayer.vlan.scopeUid: "swarm"
+
+services:
+  - type: docker-swarm
+    id: swarm
+    name: "swarm"
+    brooklyn.config:
+      start.timeout: 30m
+      swarm.initial.size: 8
+      swarm.max.size: 16
+      swarm.manager.size: 3
+      etcd.initial.size: 3
+      swarm.port: 4000
+      swarm.defaultnetwork: "swarm"
+      swarm.scaling.cpu.limit: 0.80
+      swarm.strategy: "binpack"
+      swarm.overcommit: 0.50
+      swarm.recovery.stabilizationDelay: 10s
+      swarm.recovery.failOnRecurringFailuresInThisDuration: 5m
+      swarm.minRam: 32g
+      swarm.minCores: 4
+      provisioning.properties:
+        minRam: 2g
+        minCores: 1

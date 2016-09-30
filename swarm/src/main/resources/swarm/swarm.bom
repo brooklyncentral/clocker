@@ -1,0 +1,679 @@
+brooklyn.catalog:
+  version: "2.0.0-SNAPSHOT" # CLOCKER_VERSION
+  publish:
+    description: |
+      Resources for working with Docker Swarm from Apache Brooklyn
+    license_code: APACHE-2.0
+    overview: README.md
+    qa: tests/swarm.tests.bom
+
+  items:
+
+  - id: docker-swarm-template
+    name: "Docker Swarm with Discovery and CA"
+    description: |
+      Creates a Swarm of Docker engines, of configurable initial size, using an Etcd cluster for discovery.
+    itemType: template
+    iconUrl: https://raw.githubusercontent.com/docker-library/docs/471fa6e4cb58062ccbf91afc111980f9c7004981/swarm/logo.png
+    item:
+      services:
+        - type: docker-swarm
+
+  - id:  docker-swarm
+    name: "Docker Swarm with Discovery and CA"
+    description: |
+      Creates a Swarm of Docker engines, of configurable initial size, using an Etcd cluster for discovery.
+    itemType: entity
+    iconUrl: https://raw.githubusercontent.com/docker-library/docs/471fa6e4cb58062ccbf91afc111980f9c7004981/swarm/logo.png
+    item:
+      type: org.apache.brooklyn.entity.stock.BasicApplication
+
+      brooklyn.parameters:
+        # Duplicated parameters for UI visibility
+        - name: swarm.initial.size
+          label: Initial Swarm Size
+          description: |
+            Size of the swarm cluster when created initially
+          type: integer
+          default: 1
+        - name: swarm.manager.size
+          label: Swarm Manager Size
+          description: |
+            Number of swarm managers
+          type: integer
+          default: 1
+        - name: swarm.max.size
+          label: Maximum Swarm Size
+          description: |
+            Maximum size the swarm cluster can be scaled to
+          type: integer
+          default: 5
+        - name: etcd.initial.size
+          label: Initial Etcd Size
+          description: |
+            Size of the etcd cluster when created initially
+          type: integer
+          default: 1
+        - name: swarm.create.shared.securitygroup
+          label: "Swarm blueprint will configure security groups to allow access between docker nodes and to allow external access to deployed apps"
+          type: boolean
+          default: true
+
+      brooklyn.enrichers:
+        - type: org.apache.brooklyn.enricher.stock.Propagator
+          brooklyn.config:
+            uniqueTag: swarm-url-propagator
+            producer: $brooklyn:entity("swarm-manager-load-balancer")
+            propagating:
+              - $brooklyn:sensor("swarm.url")
+        - type: org.apache.brooklyn.enricher.stock.Propagator
+          brooklyn.config:
+            uniqueTag: swarm-main-uri-propagator
+            sensorMapping:
+              $brooklyn:sensor("swarm.url"):
+                $brooklyn:sensor("org.apache.brooklyn.core.entity.Attributes", "main.uri")
+
+      brooklyn.children:
+        - type: ca-server
+          id: ca-server
+          name: "ca-server"
+          brooklyn.config:
+            common.name: "Clocker"
+        - type: etcd-cluster
+          id: etcd-cluster
+          name: "etcd-cluster"
+          brooklyn.config:
+            cluster.initial.size: $brooklyn:parent().config("etcd.initial.size")
+            etcd.cluster.name: "clocker"
+            etcd.node.spec:
+              $brooklyn:entitySpec:
+                type: etcd-node
+                name: "etcd-node"
+                brooklyn.config:
+                  ca.request.root.url: $brooklyn:entity("ca-server").attributeWhenReady("main.uri")
+                  resources.preInstall.latch: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
+                  files.preinstall:
+                    "classpath://io.brooklyn.clocker.common:common/certificate-functions.sh": certificate-functions.sh
+                  shell.env:
+                    CA_REQUEST_ROOT_URL: $brooklyn:config("ca.request.root.url")
+                    HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
+                    SUBNET_ADDRESS: $brooklyn:attributeWhenReady("host.subnet.address")
+                    INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
+                    ETCDCTL_CA_FILE:
+                      $brooklyn:formatString:
+                        - "%s/certs/ca.pem"
+                        - $brooklyn:attributeWhenReady("install.dir")
+                    ETCDCTL_CERT_FILE:
+                      $brooklyn:formatString:
+                        - "%s/certs/cert.pem"
+                        - $brooklyn:attributeWhenReady("install.dir")
+                    ETCDCTL_KEY_FILE:
+                      $brooklyn:formatString:
+                        - "%s/certs/key.pem"
+                        - $brooklyn:attributeWhenReady("install.dir")
+                  pre.install.command: |
+                    set -e
+                    source ${INSTALL_DIR}/certificate-functions.sh
+
+                    mkdir -p ${INSTALL_DIR}/certs
+                    getcert ${CA_REQUEST_ROOT_URL}/cacert/ca.pem ${INSTALL_DIR}/certs/ca.pem
+                    generate_key ${INSTALL_DIR}/certs/key.pem
+                    generate_conf ${INSTALL_DIR}/certs/csr.cnf ${HOST_ADDRESS} ${SUBNET_ADDRESS}
+                    generate_csr ${INSTALL_DIR}/certs/csr.cnf ${INSTALL_DIR}/certs/key.pem ${INSTALL_DIR}/certs/csr.pem
+
+                    curl -X POST --data-binary @${INSTALL_DIR}/certs/csr.pem  ${CA_REQUEST_ROOT_URL}/sign > ${INSTALL_DIR}/certs/cert.pem
+                  etcd.client.secure: true
+                  etcd.peer.secure: true
+                  etcd.options.additional:
+                    $brooklyn:formatString:
+                      - >-
+                        --cert-file="%1$s/certs/cert.pem"
+                        --key-file="%1$s/certs/key.pem"
+                        --trusted-ca-file="%1$s/certs/ca.pem"
+                        --client-cert-auth
+                        --peer-cert-file="%1$s/certs/cert.pem"
+                        --peer-key-file="%1$s/certs/key.pem"
+                        --peer-trusted-ca-file="%1$s/certs/ca.pem"
+                        --peer-client-cert-auth
+                      - $brooklyn:attributeWhenReady("install.dir")
+        - type: docker-swarm-cluster
+          id: swarm-cluster
+          name: "swarm-cluster"
+          brooklyn.config:
+            swarm.discovery.url: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.authority")
+            docker.discovery.url: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.authority")
+            ca.cert: $brooklyn:entity("ca-server").attributeWhenReady("ca.cert")
+            ca.request.root.url: $brooklyn:entity("ca-server").attributeWhenReady("main.uri")
+            resources.preInstall.latch: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
+            launch.latch: $brooklyn:entity("etcd-cluster").attributeWhenReady("service.isUp")
+
+  - id:  docker-swarm-cluster
+    name: "Docker Swarm Cluster"
+    description: |
+      Creates a Swarm of Docker engines, of configurable initial size.
+      Requires a pre-existing discovery mechanism and references to a CA server entity.
+    itemType: entity
+    item:
+      type: org.apache.brooklyn.entity.stock.BasicStartable
+
+      brooklyn.parameters:
+        - name: swarm.initial.size
+          label: Initial Swarm Size
+          description: |
+            Size of the swarm cluster when created initially
+          type: integer
+          default: 1
+        - name: swarm.manager.size
+          label: Swarm Manager Size
+          description: |
+            Number of swarm managers
+          type: integer
+          default: 1
+        - name: swarm.max.size
+          label: Maximum Swarm Size
+          description: |
+            Maximum size the swarm cluster can be scaled to
+          type: integer
+          default: 5
+        - name: swarm.discovery.url
+          label: Discovery URL
+          description: |
+            URL of a provided discovery mechanism for the swarm
+          type: string
+        - name: ca.cert.url
+          label: CA Certificate URL
+          description: |
+            Location of the CA certificate to install for authentication of this engine
+          type: string
+        - name: node.cert.url
+          label: Certificate URL
+          description: |
+            Location of the public key certificate to install for this engine
+          type: string
+        - name: private.key.url
+          label: Private Key URL
+          description: |
+            Location of the private key to install for authentication of this engine
+        - name: swarm.port
+          label: Swarm Port
+          description: |
+            The TCP port the Swarm manager listens on
+          type: port
+          default: 3376
+        - name: swarm.scaling.cpu.limit
+          label: Swarm Scaling CPU Limit
+          description: |
+            The average CPU usage limit for the Swarm cluster, before another node
+            will automatically be added. The default is 0.95 or 95%
+          type: double
+          default: 0.95
+        - name: swarm.recovery.quarantineFailedEntities
+          label: Quarantine
+          description: |
+            Quarantine failed entities instead of destroying them
+          type: boolean
+          default: true
+
+      brooklyn.children:
+        - type: haproxy-load-balancer
+          id: swarm-manager-load-balancer
+          name: "swarm-manager-load-balancer"
+          brooklyn.config:
+            haproxy.port: $brooklyn:parent().config("swarm.port")
+            haproxy.protocol: "https"
+            haproxy.bind.options:
+              $brooklyn:formatString:
+                - "ssl ca-file %1$s/ca.pem crt %1$s/cert.pem"
+                - $brooklyn:attributeWhenReady("run.dir")
+            shell.env:
+              CA_REQUEST_ROOT_URL: $brooklyn:config("ca.request.root.url")
+            resources.preInstall.latch: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
+            files.preinstall:
+              "classpath://io.brooklyn.clocker.common:common/certificate-functions.sh": certificate-functions.sh
+            pre.launch.command: |
+              set -e
+              source ${INSTALL_DIR}/certificate-functions.sh
+
+              getcert ${CA_REQUEST_ROOT_URL}/cacert/ca.pem ${RUN_DIR}/ca.pem
+              generate_key ${RUN_DIR}/key.pem
+              generate_conf ${INSTALL_DIR}/csr.cnf ${HOST_ADDRESS} ${SUBNET_ADDRESS}
+              generate_csr ${INSTALL_DIR}/csr.cnf ${RUN_DIR}/key.pem ${INSTALL_DIR}/csr.pem
+
+              curl -X POST --data-binary @${INSTALL_DIR}/csr.pem  ${CA_REQUEST_ROOT_URL}/sign > ${RUN_DIR}/cert.pem
+              cat ${RUN_DIR}/key.pem >> ${RUN_DIR}/cert.pem
+          brooklyn.initializers:
+            - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+              brooklyn.config:
+                name: configureSwarm
+                description: |
+                  Generate HAProxy configuration from Swarm endpoint list
+                shell.env:
+                  SWARM_ENDPOINTS:
+                    $brooklyn:attributeWhenReady("swarm.endpoints")
+                command: |
+                  cat > servers.conf <<-EOF
+                  backend servers
+                    balance roundrobin
+                  EOF
+                  for endpoint in $(echo ${SWARM_ENDPOINTS} | tr ',' ' ') ; do
+                    echo "  server manager$((++n)) ${endpoint} maxconn 32 ssl \
+                      ca-file ${RUN_DIR}/ca.pem crt ${RUN_DIR}/cert.pem" >> servers.conf
+                  done
+                  haproxy -D -f haproxy.conf -f servers.conf -st $(cat ${RUN_DIR}/pid.txt)
+          brooklyn.policies:
+            - type: org.apache.brooklyn.policy.InvokeEffectorOnSensorChange
+              brooklyn.config:
+                effector: configureSwarm
+                sensor: $brooklyn:sensor("swarm.endpoints")
+          brooklyn.enrichers:
+            - type: org.apache.brooklyn.enricher.stock.Propagator
+              brooklyn.config:
+                uniqueTag: swarm-endpoints-propagator
+                producer: $brooklyn:entity("docker-swarm-managers")
+                propagating:
+                  - $brooklyn:sensor("swarm.endpoints")
+            - type: org.apache.brooklyn.enricher.stock.Transformer
+              brooklyn.config:
+                uniqueTag: cluster-swarm-endpoint-publisher
+                enricher.triggerSensors:
+                  - $brooklyn:sensor("host.address")
+                  - $brooklyn:sensor("haproxy.port")
+                enricher.targetSensor: $brooklyn:sensor("swarm.endpoint")
+                enricher.targetValue:
+                  $brooklyn:formatString:
+                    - "%s:%d"
+                    - $brooklyn:attributeWhenReady("host.address")
+                    - $brooklyn:attributeWhenReady("haproxy.port")
+            - type: org.apache.brooklyn.enricher.stock.Transformer
+              brooklyn.config:
+                uniqueTag: cluster-swarm-url-publisher
+                enricher.triggerSensors:
+                  - $brooklyn:sensor("swarm.endpoint")
+                enricher.targetSensor: $brooklyn:sensor("swarm.url")
+                enricher.targetValue:
+                  $brooklyn:formatString:
+                    - "tcp://%s"
+                    - $brooklyn:attributeWhenReady("swarm.endpoint")
+
+        - type: cluster
+          id: docker-swarm-managers
+          name: "docker-swarm-managers"
+          brooklyn.policies:
+            - type: org.apache.brooklyn.policy.ha.ServiceReplacer
+          brooklyn.enrichers:
+            - type: org.apache.brooklyn.enricher.stock.Aggregator
+              brooklyn.config:
+                uniqueTag: swarm-endpoint-aggregator
+                enricher.sourceSensor: $brooklyn:sensor("swarm.endpoint")
+                enricher.targetSensor: $brooklyn:sensor("swarm.endpoint.list")
+                enricher.aggregating.fromMembers: true
+            - type: org.apache.brooklyn.enricher.stock.Joiner
+              brooklyn.config:
+                uniqueTag: swarm-endpoint-joiner
+                enricher.sourceSensor: $brooklyn:sensor("swarm.endpoint.list")
+                enricher.targetSensor: $brooklyn:sensor("swarm.endpoints")
+                enricher.joiner.quote: false
+          brooklyn.config:
+            cluster.initial.size: $brooklyn:parent().config("swarm.manager.size")
+            dynamiccluster.quarantineFailedEntities:
+              $brooklyn:parent().config("swarm.recovery.quarantineFailedEntities")
+            dynamiccluster.memberspec:
+              $brooklyn:entitySpec:
+                type: docker-swarm-manager
+                id: swarm-manager
+                name: "swarm-manager"
+
+        - type: cluster
+          id: docker-swarm-nodes
+          name: "docker-swarm-nodes"
+          brooklyn.policies:
+            - type: org.apache.brooklyn.policy.ha.ServiceReplacer
+            - type: org.apache.brooklyn.policy.autoscaling.AutoScalerPolicy
+              brooklyn.config:
+                autoscaler.metric:
+                  $brooklyn:sensor("org.apache.brooklyn.entity.machine.MachineAttributes", "cpu.average")
+                autoscaler.metricLowerBound: 0.00
+                autoscaler.metricUpperBound:
+                  $brooklyn:entity("docker-swarm-nodes").parent().config("swarm.scaling.cpu.limit")
+                autoscaler.minPoolSize:
+                  $brooklyn:entity("docker-swarm-nodes").parent().config("swarm.initial.size")
+                autoscaler.maxPoolSize:
+                  $brooklyn:entity("docker-swarm-nodes").parent().config("swarm.max.size")
+                autoscaler.resizeUpStabilizationDelay: 30s
+                autoscaler.resizeDownIterationMax: 0 # Disable scaling down
+                autoscaler.resizeDownStabilizationDelay: forever
+          brooklyn.enrichers:
+            - type: org.apache.brooklyn.enricher.stock.Aggregator
+              brooklyn.config:
+                uniqueTag: swarm-cluster-cpu-averageing
+                enricher.sourceSensor:
+                  $brooklyn:sensor("org.apache.brooklyn.entity.machine.MachineAttributes", "machine.cpu")
+                enricher.targetSensor:
+                  $brooklyn:sensor("org.apache.brooklyn.entity.machine.MachineAttributes", "cpu.average")
+                enricher.aggregating.fromMembers: true
+                transformation: average
+          brooklyn.config:
+            cluster.initial.size: $brooklyn:parent().config("swarm.initial.size")
+            dynamiccluster.quarantineFailedEntities:
+              $brooklyn:parent().config("swarm.recovery.quarantineFailedEntities")
+            dynamiccluster.firstmemberspec:
+              $brooklyn:entitySpec:
+                type: docker-swarm-node
+                id: swarm-node
+                name: "swarm-node"
+                brooklyn.config:
+                  swarm.defaultnetwork.create: true
+            dynamiccluster.memberspec:
+              $brooklyn:entitySpec:
+                type: docker-swarm-node
+                id: swarm-node
+                name: "swarm-node"
+
+  - id: docker-engine-with-resilience
+    name: Docker Engine with Resilience
+    description: |
+      A docker-engine configured with resilience policies
+    itemType: entity
+    iconUrl: https://raw.githubusercontent.com/docker-library/docs/c350af05d3fac7b5c3f6327ac82fe4d990d8729c/docker/logo.png
+    item:
+      type: docker-engine-tls
+
+      brooklyn.parameters:
+        - name: swarm.recovery.stabilizationDelay
+          label: Stabilization Delay
+          description: |
+            Time period for which the service must be consistently in the same state to trigger an action
+          # A restart shouldn't trigger failure
+          type: org.apache.brooklyn.util.time.Duration
+          default: 5m
+        - name: swarm.recovery.failOnRecurringFailuresInThisDuration
+          label: Fail Duration
+          description: |
+            Reports entity as failed if it fails two or more times in this time window
+          type: org.apache.brooklyn.util.time.Duration
+          default: 15m
+
+      brooklyn.policies:
+        - type: org.apache.brooklyn.policy.ha.ServiceRestarter
+          brooklyn.config:
+            failOnRecurringFailuresInThisDuration:
+              $brooklyn:config("swarm.recovery.failOnRecurringFailuresInThisDuration")
+
+      brooklyn.enrichers:
+        - type: org.apache.brooklyn.policy.ha.ServiceFailureDetector
+          brooklyn.config:
+            serviceOnFire.stabilizationDelay:
+              $brooklyn:config("swarm.recovery.stabilizationDelay")
+            entityFailed.stabilizationDelay:
+              $brooklyn:config("swarm.recovery.stabilizationDelay")
+            entityRecovered.stabilizationDelay:
+              $brooklyn:config("swarm.recovery.stabilizationDelay")
+
+  - id: docker-engine-with-discovery
+    name: Docker Engine with TLS and discovery
+    description: |
+      A docker-engine customised with TLS and Discovery endpoint
+    itemType: entity
+    iconUrl: https://raw.githubusercontent.com/docker-library/docs/c350af05d3fac7b5c3f6327ac82fe4d990d8729c/docker/logo.png
+    item:
+      type: docker-engine-with-resilience
+
+      brooklyn.parameters:
+        - name: docker.discovery.url
+          label: Docker Discovery URL
+          description: |
+            URL of a KV store for Docker discovery
+          type: string
+
+      brooklyn.config:
+        docker.discovery.tlsoptions:
+          $brooklyn:formatString:
+            - >-
+              --cluster-store-opt "kv.cacertfile=%1$s/.certs/ca.pem"
+              --cluster-store-opt "kv.certfile=%1$s/.certs/cert.pem"
+              --cluster-store-opt "kv.keyfile=%1$s/.certs/key.pem"
+            - $brooklyn:attributeWhenReady("install.dir")
+        docker.discovery.advertise:
+          $brooklyn:formatString:
+            - >-
+              --cluster-advertise %s
+              --cluster-store %s
+            - $brooklyn:attributeWhenReady("docker.endpoint")
+            - $brooklyn:config("docker.discovery.url")
+        docker.additionaloptions.docker-engine-with-discovery:
+          $brooklyn:formatString:
+            - "%s %s %s"
+            - $brooklyn:config("docker.additionaloptions.docker-engine-tls")
+            - $brooklyn:config("docker.discovery.tlsoptions")
+            - $brooklyn:config("docker.discovery.advertise")
+        docker.additionaloptions: $brooklyn:config("docker.additionaloptions.docker-engine-with-discovery")
+
+  - id: docker-swarm-node
+    name: "Docker Swarm Node"
+    description:  |
+      A Docker Swarm member node
+    itemType: entity
+    iconUrl: https://raw.githubusercontent.com/docker-library/docs/471fa6e4cb58062ccbf91afc111980f9c7004981/swarm/logo.png
+    item:
+      type: docker-engine-with-discovery
+
+      brooklyn.parameters:
+        - name: swarm.defaultnetwork
+          label: Swarm Default Network
+          description: |
+            The name of the default network to use
+          type: string
+          default: "brooklyn"
+        - name: swarm.minCores
+          label: Swarm Minimum CPU Cores
+          description: |
+            Minimum CPU cores for provisioning Swarm nodes
+          default: 4
+        - name: swarm.minRam
+          label: Swarm Minimum RAM
+          description: |
+            Minimum RAM for provisioning Swarm nodes
+          default: 8g
+        - name: swarm.create.shared.securitygroup
+          label: "Swarm blueprint will configure security groups to allow access between docker nodes and to allow external access to deployed apps"
+          type: boolean
+          default: true
+
+      brooklyn.config:
+        # FIXME location cannot resolve provisioning.properties entries
+        #provisioning.properties.minRam:
+        #  $brooklyn:parent().config("swarm.minRam")
+        #provisioning.properties.minCores:
+        #  $brooklyn:parent().config("swarm.minCores")
+
+        provisioning.properties:
+          customizer:
+            $brooklyn:object:
+              type: org.apache.brooklyn.location.jclouds.networking.SharedLocationSecurityGroupCustomizer
+              object.fields:
+                tcpPortRanges:
+                  - "32768-65535"
+                enabled: $brooklyn:config("swarm.create.shared.securitygroup")
+
+        shell.env:
+          SWARM_DISCOVERY_URL: $brooklyn:config("swarm.discovery.url")
+          HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
+          SWARM_DEFAULT_NETWORK: $brooklyn:config("swarm.defaultnetwork")
+          CREATE_NETWORK: $brooklyn:config("swarm.defaultnetwork.create")
+
+        post.launch.command: |
+          echo "[CLOCKER] Join Swarm"
+          docker run -d \
+            --name swarm-${HOST_NAME} \
+            -v ${INSTALL_DIR}/.certs:/certs:ro \
+            --restart unless-stopped \
+            swarm join \
+              --addr=${DOCKER_ENDPOINT_PUBLIC} \
+              --discovery-opt kv.cacertfile="/certs/ca.pem" \
+              --discovery-opt kv.certfile="/certs/cert.pem" \
+              --discovery-opt kv.keyfile="/certs/key.pem" \
+              ${SWARM_DISCOVERY_URL}
+
+          if [[ "${CREATE_NETWORK}" ]] ; then
+            echo "[CLOCKER] Setup default ${SWARM_DEFAULT_NETWORK} overlay network"
+            docker network ls | grep "overlay.*${SWARM_DEFAULT_NETWORK}" ||
+              docker network create --driver=overlay "${SWARM_DEFAULT_NETWORK}"
+          fi
+
+        checkRunning.command: |
+          sudo service docker status &&
+            docker ps | grep swarm
+
+        stop.command: |
+          docker stop swarm-${HOST_NAME}
+          docker rm swarm-${HOST_NAME}
+          sudo service docker stop
+
+  - id: docker-swarm-manager
+    name: "Docker Swarm Manager"
+    description:  The Swarm manager engine for running Docker containers
+    itemType: entity
+    iconUrl: https://raw.githubusercontent.com/docker-library/docs/471fa6e4cb58062ccbf91afc111980f9c7004981/swarm/logo.png
+    item:
+      type: docker-engine-with-resilience
+
+      brooklyn.parameters:
+        - name: swarm.port
+          label: Swarm Port
+          description: |
+            The TCP port the Swarm manager listens on
+          type: port
+          default: 3376
+        - name: swarm.strategy
+          label: Swarm Strategy
+          description: |
+            The strategy to use when placing containers. Can be one of:
+            spread (default), binpack or random
+          type: string
+          default: "spread"
+        - name: swarm.overcommit
+          label: Swarm Overcommit
+          description: |
+            Set the fractional percentage by which to overcommit resources.
+            The default value is 0.05, or 5 percent
+          type: double
+          default: 0.05d
+
+      brooklyn.enrichers:
+        - type: org.apache.brooklyn.enricher.stock.Transformer
+          brooklyn.config:
+            uniqueTag: swarm-endpoint-publisher
+            enricher.triggerSensors:
+              - $brooklyn:sensor("host.subnet.address")
+              - $brooklyn:sensor("swarm.port")
+            enricher.targetSensor: $brooklyn:sensor("swarm.endpoint")
+            enricher.targetValue:
+              $brooklyn:formatString:
+                - "%s:%d"
+                - $brooklyn:attributeWhenReady("host.subnet.address")
+                - $brooklyn:attributeWhenReady("swarm.port")
+        - type: org.apache.brooklyn.enricher.stock.Transformer
+          brooklyn.config:
+            uniqueTag: swarm-public-endpoint-publisher
+            enricher.triggerSensors:
+              - $brooklyn:sensor("host.address")
+              - $brooklyn:sensor("swarm.port")
+            enricher.targetSensor: $brooklyn:sensor("swarm.endpoint.public")
+            enricher.targetValue:
+              $brooklyn:formatString:
+                - "%s:%d"
+                - $brooklyn:attributeWhenReady("host.address")
+                - $brooklyn:attributeWhenReady("swarm.port")
+        - type: org.apache.brooklyn.enricher.stock.Transformer
+          brooklyn.config:
+            uniqueTag: swarm-url-publisher
+            enricher.triggerSensors:
+              - $brooklyn:sensor("swarm.endpoint.public")
+            enricher.targetSensor: $brooklyn:sensor("swarm.url")
+            enricher.targetValue:
+              $brooklyn:formatString:
+                - "tcp://%s"
+                - $brooklyn:attributeWhenReady("swarm.endpoint.public")
+
+      brooklyn.initializers:
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: swarm.version
+            period: 5m
+            shell.env:
+              DOCKER_HOST: $brooklyn:attributeWhenReady("swarm.url")
+            command: |
+              docker info | grep "^Server Version:" | sed -e "s/^Server Version: //"
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: swarm.role
+            period: 5m
+            shell.env:
+              DOCKER_HOST: $brooklyn:attributeWhenReady("swarm.url")
+            command: |
+              docker info | grep "^Role:" | sed -e "s/^Role: //"
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: swarm.primary.endpoint
+            period: 5m
+            shell.env:
+              DOCKER_HOST: $brooklyn:attributeWhenReady("swarm.url")
+            command: |
+              docker info | grep "^Primary:" | sed -e "s/^Primary: //"
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: swarm.manager.name
+            period: 5m
+            shell.env:
+              DOCKER_HOST: $brooklyn:attributeWhenReady("swarm.url")
+            command: |
+              docker info | grep "^Name:" | sed -e "s/^Name: //"
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: swarm.container.count
+            period: 1m
+            targetType: integer
+            shell.env:
+              DOCKER_HOST: $brooklyn:attributeWhenReady("swarm.url")
+            command: |
+              docker info | grep "^Containers:" | sed -e "s/^Containers: //"
+
+      brooklyn.config:
+        shell.env:
+          SWARM_DISCOVERY_URL: $brooklyn:config("swarm.discovery.url")
+          SWARM_PORT: $brooklyn:attributeWhenReady("swarm.port")
+          SWARM_ENDPOINT: $brooklyn:attributeWhenReady("swarm.endpoint")
+          SWARM_URL: $brooklyn:attributeWhenReady("swarm.url")
+          SWARM_STRATEGY: $brooklyn:config("swarm.strategy")
+          SWARM_OVERCOMMIT: $brooklyn:config("swarm.overcommit")
+
+        post.launch.command: |
+          echo "[CLOCKER] Launch Swarm manager"
+          docker run -d \
+            -p ${SWARM_PORT}:${SWARM_PORT} \
+            -v ${INSTALL_DIR}/.certs:/certs:ro \
+            --name manager-${HOST_NAME} \
+            --restart unless-stopped \
+            swarm manage \
+              --tlsverify \
+              --tlscacert=/certs/ca.pem \
+              --tlscert=/certs/cert.pem \
+              --tlskey=/certs/key.pem \
+              --host=0.0.0.0:${SWARM_PORT} \
+              --strategy ${SWARM_STRATEGY} \
+              --cluster-opt swarm.overcommit=${SWARM_OVERCOMMIT} \
+              --replication \
+              --advertise ${SWARM_ENDPOINT} \
+              --discovery-opt kv.cacertfile="/certs/ca.pem" \
+              --discovery-opt kv.certfile="/certs/cert.pem" \
+              --discovery-opt kv.keyfile="/certs/key.pem" \
+              ${SWARM_DISCOVERY_URL}
+
+        checkRunning.command: |
+          sudo service docker status &&
+            docker ps | grep swarm
+
+        stop.command: |
+          docker stop manager-${HOST_NAME}
+          docker rm manager-${HOST_NAME}
+          sudo service docker stop

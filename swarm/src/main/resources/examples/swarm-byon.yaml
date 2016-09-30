@@ -1,0 +1,32 @@
+id: swarm-byon
+name: "Docker Swarm Cluster"
+description: |
+  Deploys to existing VMs (for example, that have been created using
+  Vagrant) using the given BYON configuration. Ensure that enough VMs
+  are available for the given maximum size of the Swarm cluster.
+
+location:
+  byon:
+    displayName: swarm-vagrant
+    loginUser: vagrant
+    user: vagrant
+    privateKeyFile: ~/.ssh/swarm.pem
+    loginUser.privateKeyFile: ~/.ssh/swarm.pem
+    hosts:
+      - 192.168.50.0/27
+
+services:
+  - type: docker-swarm
+    id: swarm
+    name: "swarm"
+    brooklyn.config:
+      start.timeout: 30m
+      swarm.initial.size: 5
+      swarm.max.size: 10
+      swarm.manager.size: 3
+      etcd.initial.size: 3
+      swarm.port: 4444
+      swarm.defaultnetwork: "swarm"
+      swarm.scaling.cpu.limit: 0.99
+      swarm.recovery.stabilizationDelay: 10s
+      swarm.recovery.failOnRecurringFailuresInThisDuration: 5m

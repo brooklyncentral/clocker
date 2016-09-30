@@ -1,0 +1,28 @@
+id: swarm-minimal
+name: "Docker Swarm Cluster"
+description: |
+  Uses the default settings for configuring the Swarm, apart from the initial
+  size of the cluster of Docker Engine nodes.
+
+  Deploys on AWS using only the default Swarm entity configuration. Requires
+  a security group to be deined in the AWS region or VPC, which should be
+  set in the 'templateOptions' of the location, as seen below. The VMs
+  must also have iptables disabled, which is accomplished by setting the
+  'stopIptables' configuration key to 'true' on the Swarm entity.
+
+location:
+  jclouds:aws-ec2:
+    region: eu-central-1
+    privateKeyFile: "~/.ssh/swarm.pem"
+    loginUser.privateKeyFile: "~/.ssh/swarm.pem"
+    keyPair: "swarm"
+    templateOptions:
+      securityGroups:
+        - "swarm"
+
+services:
+  - type: docker-swarm
+    name: "swarm-aws-ec2"
+    brooklyn.config:
+      stopIptables: true
+      swarm.initial.size: 2

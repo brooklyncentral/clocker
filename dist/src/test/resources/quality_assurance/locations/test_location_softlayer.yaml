@@ -1,7 +1,0 @@
-brooklyn.catalog:
-  id: soft
-  version: 1.3.0-SNAPSHOT # CLOCKER_VERSION
-  itemType: location
-  name: soft
-  item:
-    type: jclouds:softlayer:sea01

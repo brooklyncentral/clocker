@@ -1,0 +1,331 @@
+brooklyn.catalog:
+  version: "2.0.0-SNAPSHOT" # CLOCKER_VERSION
+  iconUrl: https://raw.githubusercontent.com/docker-library/docs/c350af05d3fac7b5c3f6327ac82fe4d990d8729c/docker/logo.png
+  dependsOn:
+    - tests/common.tests.bom
+  license_code: APACHE-2.0
+
+  items:
+
+  - id: docker-vm-container-happy-test
+    name: Docker Entity tests
+    description: Tests of wrapper-vm docker
+    itemType: entity
+    item:
+      type: org.apache.brooklyn.entity.stock.BasicApplication
+      name: Docker Entity test happy path
+
+      brooklyn.config:
+        timeout: 10m
+
+      brooklyn.children:
+      - type: docker-vm-container
+        name: Docker Entity
+        id: docker-entity
+        brooklyn.config:
+          # cloudsoft/centos:7 fails because it tries to bind to the already reserved (by the host) port 22
+          docker.image: redis:latest
+
+      - type: test-case
+        name: Docker Entity tests
+        targetId: docker-entity
+        brooklyn.children:
+        - type: assert-up-initial
+          name: "TEST-01 check service is running"
+        - type: test-stop-process
+          name: "TEST-02 stop process"
+        - type: test-start
+          name: "TEST-03 start process"
+        - type: test-restart-process
+          name: "TEST-04 restart process"
+        - type: test-restart-machine
+          name: "TEST-05 restart machine"
+        - type: test-reachable
+          name: "TEST-06 check service is reachable"
+          brooklyn.config:
+            endpoint:
+              $brooklyn:formatString:
+              - "%s:6379"
+              - $brooklyn:entity("docker-entity").attributeWhenReady("host.address")
+
+  - id: docker-vm-container-run-options
+    name: Docker Entity run options tests
+    description: Tests of wrapper-vm docker
+    itemType: entity
+    item:
+      type: org.apache.brooklyn.entity.stock.BasicApplication
+      name: Docker Entity test run options
+
+      brooklyn.config:
+        timeout: 10m
+
+      brooklyn.children:
+      - type: docker-vm-container
+        name: Docker Entity
+        id: docker-vm-entity-run-options
+        brooklyn.config:
+          docker.image: busybox:1.24
+          docker.run.arguments: /bin/nc -ll -p 1234 -e /bin/ls
+          docker.run.volumes:
+          - /tmp/vol1:/vol1
+          - named:/named1
+          - named:/named2
+          docker.run.env:
+            k1: v1
+            k2: v2
+            some weird key: multi space var
+          docker.run.additionaloptions: >-
+            --label "additional=option"
+
+          my.server.port: 1234
+
+      - type: test-case
+        name: Docker Entity run options tests
+        targetId: docker-vm-entity-run-options
+        brooklyn.children:
+        - type: assert-up
+          name: "TEST-01 check service is running"
+          brooklyn.parameters:
+          - name: timeout.initialStartup
+            description: The timeout for provisioning, installing and launching the app-under-test.
+            type: org.apache.brooklyn.util.time.Duration
+            default: 1h
+          brooklyn.config:
+            timeout: $brooklyn:config("timeout.initialStartup")
+        - type: ssh-test
+          name: "TEST-02 container arguments applied"
+          brooklyn.config:
+            env:
+              CONTAINER_ID: $brooklyn:entity("docker-vm-entity-run-options").attributeWhenReady("container.id")
+            command: |
+              COMMAND=$(docker inspect --format "{{ .Path }} {{ .Args }}" ${CONTAINER_ID})
+              [ "${COMMAND}" = "/bin/nc [-ll -p 1234 -e /bin/ls]" ]
+        - type: ssh-test
+          name: "TEST-03 volume arguments applied"
+          brooklyn.config:
+            env:
+              CONTAINER_ID: $brooklyn:entity("docker-vm-entity-run-options").attributeWhenReady("container.id")
+            command: |
+              ACTUAL=$(docker inspect --format "{{range .Mounts }}{{ .Name }}, {{ .Source }}, {{ .Destination }}
+              {{ end }}"  ${CONTAINER_ID} | sort)
+              echo "ACTUAL=$ACTUAL"
+              EXPECTED=$(printf "\nnamed, /var/lib/docker/volumes/named/_data, /named1\nnamed, /var/lib/docker/volumes/named/_data, /named2\n, /tmp/vol1, /vol1")
+              [ "${ACTUAL}" = "${EXPECTED}" ]
+        - type: ssh-test
+          name: "TEST-04 environment arguments applied"
+          brooklyn.config:
+            env:
+              CONTAINER_ID: $brooklyn:entity("docker-vm-entity-run-options").attributeWhenReady("container.id")
+            command: |
+              ACTUAL=$(docker inspect --format "{{ .Config.Env }}"  ${CONTAINER_ID})
+              echo "ACTUAL=$ACTUAL"
+              [ "${ACTUAL}" = "[k1=v1 k2=v2 some weird key=multi space var]" ]
+        - type: ssh-test
+          name: "TEST-05 default restart policy applied"
+          brooklyn.config:
+            env:
+              CONTAINER_ID: $brooklyn:entity("docker-vm-entity-run-options").attributeWhenReady("container.id")
+            command: |
+              ACTUAL=$(docker inspect --format "{{ .HostConfig.RestartPolicy.Name }}" ${CONTAINER_ID})
+              echo "ACTUAL=$ACTUAL"
+              [ "${ACTUAL}" = "unless-stopped" ]
+        - type: ssh-test
+          name: "TEST-06 Additional Options"
+          brooklyn.config:
+            env:
+              CONTAINER_ID: $brooklyn:entity("docker-vm-entity-run-options").attributeWhenReady("container.id")
+            command: |
+              ACTUAL=$(docker inspect --format "{{ .Config.Labels.additional }}" ${CONTAINER_ID})
+              echo "ACTUAL=$ACTUAL"
+              [ "${ACTUAL}" = "option" ]
+        - type: test-reachable
+          name: "TEST-07 Check service is reachable"
+          brooklyn.config:
+            endpoint:
+              $brooklyn:formatString:
+              - "%s:1234"
+              - $brooklyn:entity("docker-vm-entity-run-options").attributeWhenReady("host.address")
+
+  # TODO Unused, need to express that start effector is expected to fail
+  - id: docker-vm-container-fails-test
+    name: Docker Entity test failure on image exit
+    description: Tests of wrapper-vm docker
+    itemType: entity
+    item:
+      type: org.apache.brooklyn.entity.stock.BasicApplication
+      name: Docker Entity test no image configured
+      brooklyn.children:
+      # Doesn't propagate failures
+      - type: org.apache.brooklyn.entity.stock.BasicEntity
+        name: Ignore failure wrapper
+        brooklyn.children:
+        - type: docker-vm-container
+          name: Docker Entity
+          id: docker-entity-no-image
+
+      - type: test-case
+        name: Docker Entity tests
+        targetId: docker-entity-no-image
+        brooklyn.children:
+        - type: test-start
+          brooklyn.parameters:
+          - name: timeout.initialStartup
+            description: The timeout for provisioning, installing and launching the app-under-test.
+            type: org.apache.brooklyn.util.time.Duration
+            default: 1h
+          brooklyn.config:
+            timeout: $brooklyn:config("timeout.initialStartup")
+
+  # TODO Unused, need to express that start effector is expected to fail
+  - id: docker-vm-container-exits-test
+    name: Docker Entity test failure on image exit
+    description: Tests of wrapper-vm docker
+    itemType: entity
+    item:
+      type: org.apache.brooklyn.entity.stock.BasicApplication
+      name: Docker Entity test image exits immediately failure
+
+      brooklyn.config:
+        timeout: 10m
+
+      brooklyn.children:
+      # Doesn't propagate failures
+      - type: org.apache.brooklyn.entity.stock.BasicEntity
+        name: Ignore failure wrapper
+        brooklyn.children:
+        - type: docker-vm-container
+          name: Docker Entity
+          id: docker-entity-exits
+          brooklyn.config:
+            docker.image: busybox:1.24
+
+      - type: test-case
+        name: Docker Entity tests
+        targetId: docker-entity-exits
+        brooklyn.children:
+        - type: test-start
+          brooklyn.parameters:
+          - name: timeout.initialStartup
+            description: The timeout for provisioning, installing and launching the app-under-test.
+            type: org.apache.brooklyn.util.time.Duration
+            default: 1h
+          brooklyn.config:
+            timeout: $brooklyn:config("timeout.initialStartup")
+  - id: docker-vm-container-tests
+    item:
+      name: Docker VM Wrapper tests
+      type: org.apache.brooklyn.entity.stock.BasicApplication
+      brooklyn.children:
+      - type: docker-vm-container-happy-test
+      - type: docker-vm-container-run-options
+      #- type: docker-vm-container-fails-test
+      #- type: docker-vm-container-exits-test
+
+  - id: docker-preinstall-tests
+    name: Preinstalled Image Tests
+    description: Tests of pre-installed Docker image
+    itemType: entity
+    item:
+      type: org.apache.brooklyn.test.framework.TestCase
+
+      brooklyn.children:
+
+      - type: docker-engine
+        name: Docker Engine
+        id: preinstall-engine
+
+      - type: preinstall-image-tests
+        name: Preinstalled Image Tests
+        targetId: preinstall-engine
+
+  - id: docker-no-preinstall-tests
+    name: Preinstalled image tests
+    description: Tests of pre-installed Docker image
+    itemType: entity
+    item:
+      type: org.apache.brooklyn.test.framework.TestCase
+
+      brooklyn.children:
+
+      - type: docker-engine
+        name: Docker Engine
+        id: no-preinstall-engine
+        brooklyn.config:
+          image.preinstall:
+
+      - type: no-preinstall-image-tests
+        name: Empty Preinstalled Image Tests
+        targetId: no-preinstall-engine
+
+  - id: docker-engine-tests
+    name: Docker Engine Tests without TLS
+    description: Tests on Docker Engine without TLS
+    itemType: entity
+    item:
+      type: org.apache.brooklyn.test.framework.TestCase
+
+      brooklyn.children:
+
+      - type: docker-engine
+        name: Docker Engine
+        id: docker-engine
+
+      - type: docker-engine-test
+        name: Test Docker Engine
+        targetId: docker-engine
+
+      - type: docker-engine
+        id: docker-engine-with-centos
+        name: Docker Engine with Centos Container
+        brooklyn.children:
+        - type: docker-engine-container
+          image.details: cloudsoft/centos:7
+
+      - type: docker-engine-and-container-test
+        name: Test Docker with Container
+        targetId: docker-engine-with-centos
+
+  - id: docker-engine-tls-tests
+    name: Docker Engine Tests with TLS
+    description: Tests on Docker Engine with TLS
+    itemType: entity
+    item:
+      type: org.apache.brooklyn.test.framework.TestCase
+
+      brooklyn.children:
+
+      # A CA server
+      - type:  ca-server
+        name: CA
+        id:  ca-server
+
+      # the engine protected by TLS
+      - type: docker-engine-tls
+        name: Docker Engine with TLS
+        id: docker-engine-tls
+        brooklyn.config:
+          customize.latch: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
+          ca.request.root.url:
+            $brooklyn:formatString:
+            - "%s:%d"
+            - $brooklyn:entity("ca-server").attributeWhenReady("host.address")
+            - $brooklyn:entity("ca-server").attributeWhenReady("ca.server.port")
+
+
+      # A client for talking to the engine
+      - type: test-docker-client-with-tls
+        name: Docker client with TLS
+        id: tls-client
+        brooklyn.config:
+          customize.latch: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
+          client.address: $brooklyn:attributeWhenReady("host.address")
+          ca.url: $brooklyn:entity("ca-server").attributeWhenReady("main.uri")
+          docker.url:
+            $brooklyn:formatString:
+            - "tcp://%s:%s/"
+            - $brooklyn:entity("docker-engine-tls").attributeWhenReady("host.address")
+            - $brooklyn:entity("docker-engine-tls").attributeWhenReady("docker.port")
+
+      - type: docker-engine-test
+        name: Test Docker over TLS
+        targetId: tls-client
