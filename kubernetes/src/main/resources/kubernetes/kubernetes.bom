@@ -1028,13 +1028,6 @@ brooklyn.catalog:
         - name: kubernetes.pod.name
           label: "Kubernetes Pod Name"
           type: string
-        - name: kubernetes.pod.manifest
-          label: "Kubernetes Pod Manifest"
-          description: |
-            Set this to deploy the Pod YAML file into the '/etc/kubernetes/manifests'
-            directory instead of using the 'kubectl' command
-          type: boolean
-          default: false
         - name: template.substitutions
           label: "Template Substitutions"
           type: java.util.Map
@@ -1052,7 +1045,6 @@ brooklyn.catalog:
         shell.env:
           NAME: $brooklyn:config("kubernetes.pod.name")
           NAMESPACE: $brooklyn:config("kubernetes.pod.namespace")
-          MANIFEST: $brooklyn:config("kubernetes.pod.manifest")
           INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
 
         pre.install.command: |
@@ -1063,19 +1055,7 @@ brooklyn.catalog:
             ( kubectl create namespace ${NAMESPACE} || true )
 
         launch.command: |
-          if ${MANIFEST} ; then
-            sudo cp ${INSTALL_DIR}/pod.yaml /etc/kubernetes/manifests/${NAME}.yaml
-          else
-            kubectl create -f ${INSTALL_DIR}/pod.yaml
-          fi
-
-        stop.command: |
-          if ${MANIFEST} ; then
-            sudo rm /etc/kubernetes/manifests/${NAME}.yaml
-            kubectl delete pod -l app=${NAME} --namespace=${NAMESPACE}
-          else
-            kubectl delete -f ${INSTALL_DIR}/pod.yaml
-          fi
+          kubectl create -f ${INSTALL_DIR}/pod.yaml
 
         checkRunning.command: |
           kubectl get pod --namespace=${NAMESPACE} -l app=${NAME} |
@@ -1189,7 +1169,6 @@ brooklyn.catalog:
         kubernetes.pod.name: "policy-controller"
         kubernetes.pod.file: "classpath://io.brooklyn.clocker.kubernetes:kubernetes/policy-controller.yaml"
         kubernetes.pod.namespace: "kube-system"
-        kubernetes.pod.manifest: true
 
         template.substitutions:
           kubernetes_url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
