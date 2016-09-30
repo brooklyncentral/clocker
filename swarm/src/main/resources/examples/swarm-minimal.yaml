@@ -26,3 +26,4 @@ services:
     brooklyn.config:
       stopIptables: true
       swarm.initial.size: 2
+      swarm.sharedsecuritygroup.create: true
