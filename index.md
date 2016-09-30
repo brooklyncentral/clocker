@@ -14,7 +14,7 @@ Clocker for [Apache Brooklyn](https://brooklyn.apache.org/) is a set of open sou
 ## Getting started
 
 1. Firstly, you need to have Apache Brooklyn installed and running, if you have not already done this, please [follow these instructions](https://brooklyn.apache.org/v/latest/start/running.html).
-2. Once this is done, [download the `clocker.bom` file](clocker.bom). It contains all entities required to run containerised solutions. You need to add this file to your [Brooklyn catalog](http://brooklyn.apache.org/v/latest/ops/catalog/index.html). You can achieve this by either drag-and-dropping the file into the YAML editor (composer tab of the Brooklyn UI) or by using the [Brooklyn CLI](https://brooklyn.apache.org/v/latest/ops/cli/index.html) as follows:
+2. Once this is done, [download the `clocker.bom` file](https://raw.githubusercontent.com/brooklyncentral/clocker/master/clocker.bom). It contains all entities required to run containerised solutions. You need to add this file to your [Brooklyn catalog](http://brooklyn.apache.org/v/latest/ops/catalog/index.html). You can achieve this by either drag-and-dropping the file into the YAML editor (composer tab of the Brooklyn UI) or by using the [Brooklyn CLI](https://brooklyn.apache.org/v/latest/ops/cli/index.html) as follows:
 
    ```sh
    br add-catalog clocker.bom
