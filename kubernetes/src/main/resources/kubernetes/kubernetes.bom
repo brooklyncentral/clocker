@@ -268,10 +268,12 @@ brooklyn.catalog:
                 command: |
                   cat > ${RUN_DIR}/servers.conf <<-EOF
                   backend servers
+                    mode http
+                    option httpchk
                     balance roundrobin
                   EOF
                   for endpoint in $(echo ${KUBERNETES_ENDPOINTS} | tr ',' ' ') ; do
-                    echo "  server manager$((++n)) ${endpoint} maxconn 32" >> ${RUN_DIR}/servers.conf
+                    echo "  server master$((++n)) ${endpoint} check" >> ${RUN_DIR}/servers.conf
                   done
                   haproxy -D -f ${RUN_DIR}/haproxy.conf -f ${RUN_DIR}/servers.conf -st $(cat ${RUN_DIR}/pid.txt)
           brooklyn.policies:
@@ -549,6 +551,9 @@ brooklyn.catalog:
 
         checkRunning.command: |
           which kubectl
+
+        stop.command: |
+          kubectl delete node ${HOST_SUBNET_ADDRESS}
 
       brooklyn.children:
         - type: flannel-network-agent
