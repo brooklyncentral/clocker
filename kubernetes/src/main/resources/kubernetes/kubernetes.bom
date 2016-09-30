@@ -1138,6 +1138,7 @@ brooklyn.catalog:
 
         template.substitutions:
           kubernetes_url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
+          replicas: $brooklyn:entity("kubernetes-cluster").config("kubernetes.initial.size")
           dns_service_ip: $brooklyn:entity("kubernetes-cluster").config("kubernetes.dns.address")
           dns_service_domain: $brooklyn:entity("kubernetes-cluster").config("kubernetes.dns.domain")
 

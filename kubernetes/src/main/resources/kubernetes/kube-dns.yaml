@@ -31,7 +31,7 @@ metadata:
     version: v19
     kubernetes.io/cluster-service: "true"
 spec:
-  replicas: 1
+  replicas: ${config['template.substitutions']['replicas']}
   selector:
     app: kube-dns
     version: v19
