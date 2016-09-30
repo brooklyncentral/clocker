@@ -599,6 +599,12 @@ brooklyn.catalog:
               $brooklyn:config("kubernetes.recovery.failOnRecurringFailuresInThisDuration")
 
       brooklyn.enrichers:
+        - type: org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic$ComputeServiceIndicatorsFromChildrenAndMembers
+          brooklyn.config:
+            uniqueTag: worker-service-up-logic
+            enricher.aggregating.fromChildren: true
+            enricher.aggregating.fromMembers: false
+            enricher.suppressDuplicates: true
         - type: org.apache.brooklyn.policy.ha.ServiceFailureDetector
           brooklyn.config:
             serviceOnFire.stabilizationDelay:
