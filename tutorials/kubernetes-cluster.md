@@ -80,7 +80,7 @@ The following catalog items should enable you to quickly get started on some pop
 </div>
 
 #### Deploy a Kubernetes Cluster
-After the location is setup, it is time to deploy a Kubernetes cluster. From your Brooklyn Install, head to the Home tab. Click on "Add application" and select "Kubernetes cluster with a master node and worker nodes", then click on "Next". Select the location that that we setup in the previous step. You can also change some configuration options such as the minimum and maximum number of nodes. Once you are happy with the configuration, press "Deploy" and your Kubernetes cluster will be created.
+After the location is setup, it is time to deploy a Kubernetes cluster. From your Brooklyn Install, head to the Home tab. Click on "Add application" and select "Kubernetes cluster with a master node and worker nodes", then click on "Next". Select the location that that we setup in the previous step. You can also change some configuration options such as the minimum and maximum number of nodes. Once you are happy with the configuration, press "Deploy" and your Kubernetes cluster will be created.  See the location example for [IBM BlueBox](locations/bb-example-location.bom){:target="blank" class="button download"} for extra config that may be required.
 
 To interact with the Kubernetes cluster, log in into the Kubernetes Dashboard (URL will be available as "main uri" sensor into the brooklyn console)
 
