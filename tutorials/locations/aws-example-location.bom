@@ -1,0 +1,18 @@
+brooklyn.catalog:
+  id: aws-central-centos7
+  name: "AWS Frankfurt CentOS 7"
+  itemType: location
+  item:
+    type: jclouds:aws-ec2
+    brooklyn.config:
+      region: eu-central-1
+      identity: <IDENTITY>
+      credential: <CREDENTIAL>
+      installDevUrandom: true
+      minRam: 2000
+
+      imageId: eu-central-1/ami-9bf712f4
+      maxConcurrentMachineCreations: 3
+      loginUser: centos
+
+

@@ -1,0 +1,34 @@
+brooklyn.catalog:
+  id: ibm-bluebox-sng-centos7
+  name: "IBM BlueBox Singapore CentOS 7"
+  itemType: location
+  item:
+    type: jclouds:openstack-nova
+    brooklyn.config:
+      endpoint: <ENDPOINT>
+      identity:  <IDENTITY>
+      credential: <CREDENTIAL>
+      jclouds.keystone.credential-type: passwordCredentials
+
+      generate.hostname: true
+      installDevUrandom: true
+
+    # You need to make sure you have a image with name "Centos 7.0"
+      imageNameRegex: CentOS 7
+      loginUser: centos
+      minRam: 2000
+
+# By default open stack will use an existing network
+# We recommend creating one and specifying below
+      templateOptions:
+        networks:
+         - "<NETWORK ID>"
+
+# There are a couple of known issues with auto configuring security groups
+# on BlueBox using jclouds.  We recommend configuring a security group manually
+# that allows all internal communication between VMs and inbound traffic on
+# 22, 8080, and 32768-65534 (for swarm) or 30000-32767 (for kubernetes)
+# You will also need to set either kubernetes.sharedsecuritygroup.create or
+# swarm.sharedsecuritygroup.create to false when you deploy the swarm or kubernetes
+
+      securityGroups: VPN_local
