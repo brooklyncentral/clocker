@@ -1,0 +1,459 @@
+brooklyn.catalog:
+  version: "2.0.0-SNAPSHOT" # CLOCKER_VERSION
+  iconUrl: https://raw.githubusercontent.com/docker-library/docs/471fa6e4cb58062ccbf91afc111980f9c7004981/swarm/logo.png
+  dependsOn:
+    - tests/common.tests.bom
+    - tests/docker.tests.bom
+  license_code: APACHE-2.0
+
+  items:
+  - id: test-docker-run-pulls
+    item:
+      type: test-case
+      description: |
+        Test that Docker Swarm cluster can pull containers from Docker Hub
+        automatically
+      brooklyn.children:
+        - type: ssh-test
+          command: |
+            set -e
+            docker rmi --force busybox || true
+            ! docker images | grep busybox
+            docker run --rm busybox echo "Hello from busybox-image" | grep busybox-image
+            docker images | grep busybox
+          assertStatus:
+            equals: 0
+          assertOut:
+            contains: "busybox-image"
+
+  - id: test-swarm-networking
+    item:
+      type: test-case
+      description: |
+        Test Swarm networking between containers on different hosts, using
+        shared Docker overlay network
+      brooklyn.parameters:
+        - network.name
+      brooklyn.children:
+        - type: ssh-test
+          name: "TEST-06-1 Test network exists"
+          brooklyn.config:
+            shell.env:
+              NETWORK_NAME: $brooklyn:config("network.name")
+            command: |
+              echo "[TEST] Checking ID of network ${NETWORK_NAME}"
+              docker network inspect --format "{{.ID}}" ${NETWORK_NAME}
+            assertStatus:
+              equals: 0
+            assertErr:
+              isEmpty: true
+        - type: ssh-test
+          name: "TEST-06-2 Test network properties"
+          brooklyn.config:
+            shell.env:
+              NETWORK_NAME: $brooklyn:config("network.name")
+            command: |
+              echo "[TEST] Create container on ${NETWORK_NAME} network"
+              docker run -di --name workload_A --net ${NETWORK_NAME} cloudsoft/centos:7 /bin/bash
+              CONTAINER_NETWORK_ID=$(docker inspect --format "{{.NetworkSettings.Networks.${NETWORK_NAME}.NetworkID}}" workload_A)
+              NETWORK_ID=$(docker network inspect --format "{{.ID}}" ${NETWORK_NAME})
+              docker rm -f workload_A
+              [[ "${CONTAINER_NETWORK_ID}" == "${NETWORK_ID}" ]]
+            assertStatus:
+              equals: 0
+            assertErr:
+              isEmpty: true
+        - type: ssh-test
+          name: "TEST-06-3 Test same network connectivity"
+          brooklyn.config:
+            shell.env:
+              NETWORK_NAME: $brooklyn:config("network.name")
+            command: |
+              echo "[TEST] Creating two containers on ${NETWORK_NAME} network"
+              docker run -di --name workload_B --net ${NETWORK_NAME} cloudsoft/centos:7 /bin/bash
+              docker run -di --name workload_C --net ${NETWORK_NAME} -e affinity:container!=workload_B cloudsoft/centos:7 /bin/bash
+              docker exec workload_B ping -W 10 -c 4 workload_C.${NETWORK_NAME}
+              docker exec workload_C ping -W 10 -c 4 workload_B.${NETWORK_NAME}
+              docker rm -f workload_B
+              docker rm -f workload_C
+            assertOut:
+              - contains:
+                  $brooklyn:formatString:
+                    - "--- workload_B.%s ping statistics ---\n4 packets transmitted, 4 received"
+                    - $brooklyn:config("network.name")
+              - contains:
+                  $brooklyn:formatString:
+                    - "--- workload_C.%s ping statistics ---\n4 packets transmitted, 4 received"
+                    - $brooklyn:config("network.name")
+            assertErr:
+              isEmpty: true
+        - type: ssh-test
+          name: "TEST-06-4 Test different network connectivity failure"
+          brooklyn.config:
+            shell.env:
+              NETWORK_NAME: $brooklyn:config("network.name")
+            command: |
+              echo "[TEST] Creating two containers on different networks"
+              docker run -di --name workload_D --net ${NETWORK_NAME} cloudsoft/centos:7 /bin/bash
+              docker run -di --name workload_E --net bridge -e affinity:container!=workload_D cloudsoft/centos:7 /bin/bash
+              WORKLOAD_D_IP=$(docker inspect --format "{{.NetworkSettings.Networks.${NETWORK_NAME}.IPAddress}}" workload_D)
+              docker exec workload_E ping -W 10 -c 4 workload_D.${NETWORK_NAME} || true
+              docker exec workload_E ping -W 10 -c 4 ${WORKLOAD_D_IP} || true
+              docker rm -f workload_D
+              docker rm -f workload_E
+            assertErr:
+              contains:
+                $brooklyn:formatString:
+                  - "ping: unknown host workload_D.%s"
+                  - $brooklyn:config("network.name")
+            assertOut:
+              contains: "ping statistics ---\n4 packets transmitted, 0 received"
+
+  - id: test-swarm-scale-up
+    item:
+      type: test-case
+      description: |
+        Test Swarm can be scaled up
+      brooklyn.children:
+        - type: sensor-test
+          name: "TEST-07-1 Initial Size of cluster is 2"
+          targetId: docker-swarm-nodes
+          sensor: group.members.count
+          assert:
+            equals: 2
+        - type: ssh-test
+          name: "TEST-07-2 Create load on server"
+          brooklyn.config:
+            command: |
+              echo "[TEST] Creating load"
+              docker run -di --name TEST_7_2_LOAD_1 -e affinity:container!=TEST_7_2_LOAD_2  cloudsoft/centos:7 /bin/bash
+              docker run -di --name TEST_7_2_LOAD_2 -e affinity:container!=TEST_7_2_LOAD_1  cloudsoft/centos:7 /bin/bash
+              docker exec -d TEST_7_2_LOAD_1 dd if=/dev/zero of=/dev/null
+              docker exec -d TEST_7_2_LOAD_2 dd if=/dev/zero of=/dev/null
+        - type: sensor-test
+          name: "TEST-07-3 Final Size of cluster is 3"
+          targetId: docker-swarm-nodes
+          timeout: 20m
+          sensor: group.members.count
+          assert:
+            equals: 3
+        - type: ssh-test
+          name: "TEST-07-4 Tear down load"
+          brooklyn.config:
+            command: |
+              echo "[TEST] Removing load"
+              docker rm -f TEST_7_2_LOAD_1
+              docker rm -f TEST_7_2_LOAD_2
+
+  - id: test-swarm-etcd-tls
+    item:
+      type: ssh-test
+      name: "TEST-08-1 Swarm Etcd uses TLS"
+      brooklyn.config:
+        shell.env:
+          ETCD_ENDPOINT_LIST: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.endpoints")
+          CERT_PATH:
+            $brooklyn:formatString:
+            - "%s/.certs"
+            - $brooklyn:entity("swarm-client").attributeWhenReady("install.dir")
+        command: |
+          set -e
+          for endpoint in ${ETCD_ENDPOINT_LIST//,/ } ; do
+            ! curl https://${endpoint}/version --fail
+            ! curl http://${endpoint}/version --fail
+            curl --cacert "${CERT_PATH}/ca.pem" \
+              --cert "${CERT_PATH}/cert.pem" \
+              --key "${CERT_PATH}/key.pem" \
+              --fail \
+              https://${endpoint}/version
+          done
+
+  - id: test-swarm-restart
+    item:
+      type: test-case
+      description: |
+        Restart Swarm member (node/manager)
+      brooklyn.children:
+        - type: ssh-cmd-restart
+        - type: assert-failed
+        - type: assert-up
+
+  - id: test-swarm-node-restart
+    item:
+      type: test-case
+      brooklyn.children:
+        - type: loop-test-case
+          name: "TEST-09-1 Restart Swarm node"
+          brooklyn.config:
+            targetId: docker-swarm-nodes
+            test.spec:
+              $brooklyn:entitySpec:
+                type: test-swarm-restart
+        - type: loop-test-case
+          name: "TEST-09-2 Restart Swarm manager"
+          brooklyn.config:
+            targetId: docker-swarm-managers
+            test.spec:
+              $brooklyn:entitySpec:
+                type: test-swarm-restart
+        - type: ssh-test
+          name: "TEST-09-3 Assert Healthy Swarm"
+          brooklyn.config:
+            command:
+              $brooklyn:formatString:
+                - |
+                  NODES=$(docker info | grep "Nodes:")
+                  echo "${NODES}"
+                  [ "${NODES}" = "Nodes: %d" ]
+                - $brooklyn:entity("docker-swarm-nodes").attributeWhenReady("group.members.count")
+
+  - id: swarm-node-replacement-test
+    name: Swarm Node Replace
+    description: |
+      Tests restarting and replacing failed swarm nodes
+    itemType: entity
+    item:
+      type: test-case
+      brooklyn.children:
+      - type: assert-up
+        name: TEST-10 Wait for Swarm to deploy
+        targetId: swarm-cluster
+      - type: cluster
+        name: TEST-10 Swarm Node Lazy Holder
+        id: node-to-fail-lazy-holder
+        brooklyn.config:
+          dynamiccluster.memberspec:
+            $brooklyn:entitySpec:
+              # At the time an entity is created out of the spec the swarm-node should already exist
+              type: org.apache.brooklyn.entity.stock.BasicEntity
+              id: node-to-fail-holder
+              name: Swarm Node Holder
+              brooklyn.initializers:
+              - type: org.apache.brooklyn.core.sensor.StaticSensor
+                brooklyn.config:
+                  name: node-to-fail
+                  # Pick one node to fail and cache it
+                  static.value: $brooklyn:entity("swarm-node")
+                  targetType: org.apache.brooklyn.api.entity.Entity
+              - type: org.apache.brooklyn.core.sensor.StaticSensor
+                brooklyn.config:
+                  name: initial-cluster-size
+                  static.value: $brooklyn:entity("docker-swarm-nodes").attributeWhenReady("group.members.count")
+                  targetType: Integer
+              - type: org.apache.brooklyn.core.sensor.StaticSensor
+                brooklyn.config:
+                  name: service.isUp
+                  static.value: true
+                  targetType: Boolean
+
+      - type: test-case
+        name: TEST-10 Asserts
+        id: swarm-node-replacement-test
+        brooklyn.config:
+          target: $brooklyn:entity("node-to-fail-holder").attributeWhenReady("node-to-fail")
+        brooklyn.children:
+        - type: assert-up
+          name: TEST-10-01. Wait for Swarm Node Holder
+          target: $brooklyn:entity("node-to-fail-lazy-holder")
+          timeout: $brooklyn:config("timeout.initialStartup")
+        - type: ssh-test
+          name: TEST-10-02. Fail Swarm Node
+          brooklyn.config:
+            command: |
+              SWARM_ID=$(docker ps --filter name=swarm --format '{{ .ID }}' --no-trunc)
+              if [ -z "${SWARM_ID}" ]; then
+                echo "Swarm container not running" >&2
+                exit 1
+              fi
+              docker rm -f ${SWARM_ID}
+        - type: assert-down
+          name: TEST-10-03. Check Failed
+        - type: assert-up
+          name: TEST-10-04. Check Recovered
+        - type: ssh-test
+          name: TEST-10-05. Re-Fail Swarm Node
+          brooklyn.config:
+            command: |
+              # Wait for stabilization delay - 10s
+              sleep 15
+
+              SWARM_ID=$(docker ps --filter name=swarm --format '{{ .ID }}' --no-trunc)
+              if [ -z "${SWARM_ID}" ]; then
+                echo "Swarm container not running" >&2
+                exit 1
+              fi
+              docker rm -f ${SWARM_ID}
+        - type: assert-down
+          name: TEST-10-06. Check Failed
+        - type: sensor-test
+          name: TEST-10-07. Check spinning up replacement
+          brooklyn.config:
+            target: $brooklyn:entity("docker-swarm-nodes")
+            sensor: group.members.count
+            timeout: $brooklyn:config("timeout.initialStartup")
+            assert:
+            - notEqual: $brooklyn:entity("node-to-fail-holder").attributeWhenReady("initial-cluster-size")
+        - type: sensor-test
+          name: TEST-10-08. Check failed node removed
+          brooklyn.config:
+            target: $brooklyn:entity("docker-swarm-nodes")
+            sensor: group.members.count
+            timeout: $brooklyn:config("timeout.initialStartup")
+            assert:
+            - equals: $brooklyn:entity("node-to-fail-holder").attributeWhenReady("initial-cluster-size")
+        - type: sensor-test
+          name: TEST-10-09. Check failed node unmanaged
+          brooklyn.config:
+            sensor: service.state
+            assert:
+            - matches: stopped
+        - type: assert-running
+          name: TEST-10-10. Check cluster healthy
+          brooklyn.config:
+            target: $brooklyn:entity("docker-swarm-nodes")
+
+  # swarm manager failover tests
+  - id: test-swarm-manager-failover
+    item:
+      type: test-case
+      description: |
+        Test Swarm manager failover behaviour
+      brooklyn.children:
+        - type: sensor-test
+          name: "TEST-11-1 Size of manager cluster is 3"
+          targetId: docker-swarm-managers
+          sensor: group.members.count
+          assert:
+            equals: 3
+        - type: test-stop-machine
+          name: "TEST-11-2 Kill one node"
+          target: $brooklyn:entity("docker-swarm-managers").attributeWhenReady("cluster.first.entity")
+        - type: ssh-test
+          name: "TEST-11-3 Manager endpoints active now 2"
+          targetId: swarm-client
+          brooklyn.config:
+            shell.env:
+              SWARM_ENDPOINTS: $brooklyn:entity("docker-swarm-managers").attributeWhenReady("swarm.endpoints")
+            command: |
+              echo ${SWARM_ENDPOINTS} | tr ',' ' ' | wc -w
+            assertStatus:
+              equals: 0
+            assertOut:
+              contains: "2"
+        - type: ssh-test
+          name: "TEST-11-4 Can still connect"
+          timeout: 20m
+          targetId: swarm-client
+          brooklyn.config:
+            command: |
+              docker run -i hello-world
+            assertStatus:
+              equals: 0
+            assertOut:
+              contains: "Hello from Docker!"
+        - type: ssh-test
+          name: "TEST-11-5 Check load balancer"
+          timeout: 20m
+          targetId: swarm-client
+          brooklyn.config:
+            shell.env:
+              HAPROXY_URL:
+                $brooklyn:entity("swarm-manager-load-balancer").attributeWhenReady("swarm.url")
+              CERT_PATH:
+                $brooklyn:formatString:
+                  - "%s/.certs"
+                  - $brooklyn:entity("swarm-client").attributeWhenReady("install.dir")
+            command: |
+              SWARM_URL=${HAPROXY_URL/tcp/https}
+              curl --cacert "${CERT_PATH}/ca.pem" \
+                --cert "${CERT_PATH}/cert.pem" \
+                --key "${CERT_PATH}/key.pem" \
+                ${SWARM_URL}/_ping
+            assertStatus:
+              equals: 0
+            assertOut:
+              equals: "OK"
+
+  - id: docker-swarm-tests
+    name: Docker Swarm Tests
+    description: |
+      Tests on Docker Swarm over TLS
+    itemType: entity
+    item:
+      type: test-case
+      name: "docker-swarm-tests"
+
+      brooklyn.config:
+        timeout: 1h
+        timeout.initialStartup: 1h
+        timeout.runtimeAssertion: 1h
+        swarm.initial.size: 2
+        swarm.manager.size: 3
+        etcd.initial.size: 3
+        swarm.max.size: 5
+        swarm.scaling.cpu.limit: 0.95
+        swarm.defaultnetwork: "brooklyn"
+        swarm.port: 4000
+        swarm.recovery.stabilizationDelay: 10s
+        swarm.recovery.failOnRecurringFailuresInThisDuration: 5m
+
+      brooklyn.children:
+        - type: docker-swarm
+          id: swarm
+          name: "swarm"
+          description: |
+            The swarm to test
+
+        - type: test-docker-client-with-tls
+          id: swarm-client
+          name: "swarm-client"
+          description: |
+            A client for talking to the swarm
+          brooklyn.config:
+            customize.latch: $brooklyn:entity("swarm").attributeWhenReady("service.isUp")
+            client.address: $brooklyn:attributeWhenReady("host.address")
+            ca.url: $brooklyn:entity("ca-server").attributeWhenReady("main.uri")
+            docker.url: $brooklyn:entity("swarm").attributeWhenReady("swarm.url")
+
+        - type: test-case
+          name: "swarm-test-suite"
+          brooklyn.children:
+            - type: test-case
+              name: "GROUP-1 Test Swarm entity"
+              brooklyn.config:
+                targetId: swarm
+              brooklyn.children:
+                - type: assert-up
+                  name: "TEST-01 Assert up"
+                - type: assert-running
+                  name: "TEST-02 Assert running"
+            - type: test-case
+              name: "GROUP-2 Test Swarm client"
+              brooklyn.config:
+                targetId: swarm-client
+                start.latch: $brooklyn:entity("swarm-client").attributeWhenReady("service.isUp")
+              brooklyn.children:
+                - type: test-connect-fails-without-tls
+                  name: "TEST-03 Test connect fails without TLS"
+                - type: docker-engine-test
+                  name: "TEST-04 Test Swarm over TLS"
+                  description: |
+                    Runs the docker tests against the swarm
+                - type: test-docker-run-pulls
+                  name: "TEST-05 Test docker run pulls"
+                - type: test-swarm-networking
+                  name: "TEST-06 Test Swarm networking"
+                  brooklyn.config:
+                    network.name: $brooklyn:component("swarm").config("swarm.defaultnetwork")
+                - type: test-swarm-scale-up
+                  name: "TEST-07 Test Swarm scale up"
+                - type: test-swarm-etcd-tls
+                  name: "TEST-08 Test Swarm etcd TLS"
+                  brooklyn.config:
+                    ca.url: $brooklyn:entity("ca-server").attributeWhenReady("main.uri")
+                - type: test-swarm-node-restart
+                  name: "TEST-09 Test Swarm node restart"
+                - type: swarm-node-replacement-test
+                  name: "TEST-10 Test Swarm node replace"
+                - type: test-swarm-manager-failover
+                  name: "TEST-11 Test Swarm failover"

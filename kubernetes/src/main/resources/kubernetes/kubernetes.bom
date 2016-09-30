@@ -1,0 +1,939 @@
+brooklyn.catalog:
+  version: "2.0.0-SNAPSHOT" # CLOCKER_VERSION
+  publish:
+    description: |
+      Resources for working with Kubernetes from Apache Brooklyn
+    license_code: APACHE-2.0
+
+  items:
+  - id: kubernetes-cluster-template
+    name: "Kubernetes Cluster"
+    description: |
+      Kubernetes cluster with a master node and worker nodes
+    iconUrl: https://pbs.twimg.com/media/Bt_pEfqCAAAiVyz.png
+    itemType: template
+    item:
+      services:
+        - type: kubernetes-cluster-application
+          id: kubernetes-cluster-application
+          name: "kubernetes-cluster-application"
+
+  - id: kubernetes-cluster-application
+    name: "Kubernetes Cluster"
+    description: |
+      Kubernetes cluster with a master node and worker nodes
+    iconUrl: https://pbs.twimg.com/media/Bt_pEfqCAAAiVyz.png
+    itemType: entity
+    item:
+      type: org.apache.brooklyn.entity.stock.BasicApplication
+
+      brooklyn.parameters:
+        # Duplicated parameters for UI visibility
+        - name: kubernetes.initial.size
+          label: "Initial Cluster Size"
+          type: integer
+          default: 3
+        - name: kubernetes.max.size
+          label: "Maximum Cluster Size"
+          description: |
+            Maximum size the Kubernetes cluster can be scaled to
+          type: integer
+          default: 5
+        - name: etcd.initial.size
+          label: "Etcd Cluster Size"
+          type: integer
+          default: 3
+        - name: kubernetes.version
+          label: "Kubernetes Version"
+          type: string
+          default: "1.3.5"
+        - name: kubernetes.cluster.name
+          label: "Kubernetes Cluster Name"
+          type: string
+          default: "amp"
+        - name: kubernetes.pod.cidr
+          label: "Kubernetes Pod IP Range"
+          type: string
+          default: "172.16.0.0/16"
+        - name: kubernetes.apiserver.port
+          label: "Kubernetes API Server Port"
+          type: integer
+          default: 8080
+        - name: kubernetes.create.shared.securitygroup
+          label: "Kubernetes blueprint will configure security groups to allow access between workers and to allow external access to deployed apps"
+          type: boolean
+          default: true
+
+      brooklyn.enrichers:
+        - type: org.apache.brooklyn.enricher.stock.Transformer
+          brooklyn.config:
+            uniqueTag: kubernetes-main-uri-publisher
+            enricher.producer: $brooklyn:entity("kubernetes-cluster")
+            enricher.triggerSensors:
+              - $brooklyn:sensor("kubernetes.url")
+            enricher.targetSensor:
+              $brooklyn:sensor("org.apache.brooklyn.core.entity.Attributes", "main.uri")
+            enricher.targetValue:
+              $brooklyn:formatString:
+                - "%s/ui"
+                - $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
+
+      brooklyn.config:
+        start.timeout: 30m
+
+      brooklyn.children:
+        - type: kubernetes-hosts-file-generator
+          id: brooklyn-dns-etc-hosts-generator
+          name: "brooklyn-dns-etc-hosts-generator"
+        - type: ca-server
+          id: ca-server
+          name: "ca-server"
+          brooklyn.config:
+            common.name: "Kubernetes"
+        - type: etcd-cluster
+          id: etcd-cluster
+          name: "etcd-cluster"
+          brooklyn.config:
+            cluster.initial.size: $brooklyn:parent().config("etcd.initial.size")
+            etcd.cluster.name: "kubernetes"
+            provisioning.properties:
+              osFamily: centos
+              osVersionRegex: 7
+        - type: kubernetes-cluster
+          id: kubernetes-cluster
+          name: "kubernetes-cluster"
+          brooklyn.config:
+            ca.cert: $brooklyn:entity("ca-server").attributeWhenReady("ca.cert")
+            ca.request.root.url: $brooklyn:entity("ca-server").attributeWhenReady("main.uri")
+            resources.preInstall.latch: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
+            launch.latch: $brooklyn:entity("etcd-cluster").attributeWhenReady("service.isUp")
+
+  - id: kubernetes-hosts-file-generator
+    name: "Kubernetes Hosts File Generator"
+    description: |
+      Kubernetes /etc/hosts file generator for master and worker
+    itemType: entity
+    item:
+      type: brooklyn-dns-etc-hosts-generator
+      brooklyn.config:
+        brooklyn_dns.domain: "brooklyn.local"
+        brooklyn_dns.hosts.address.sensor: "host.subnet.address"
+        dynamicgroup.entityfilter:
+          $brooklyn:object:
+            type: com.google.common.base.Predicates
+            factoryMethod.name: "and"
+            factoryMethod.args:
+              - $brooklyn:object:
+                  type: org.apache.brooklyn.core.entity.EntityPredicates
+                  factoryMethod.name: "applicationIdEqualTo"
+                  factoryMethod.args:
+                    - $brooklyn:attributeWhenReady("application.id")
+              - $brooklyn:object:
+                  type: com.google.common.base.Predicates
+                  factoryMethod.name: "or"
+                  factoryMethod.args:
+                    - $brooklyn:object:
+                        type: org.apache.brooklyn.core.entity.EntityPredicates
+                        factoryMethod.name: "displayNameEqualTo"
+                        factoryMethod.args:
+                          - "kubernetes-master"
+                    - $brooklyn:object:
+                        type: org.apache.brooklyn.core.entity.EntityPredicates
+                        factoryMethod.name: "displayNameEqualTo"
+                        factoryMethod.args:
+                          - "kubernetes-worker"
+
+  - id: kubernetes-cluster
+    name: "Kubernetes Cluster"
+    description: |
+      Creates a Kubernetes cluster with a manager and a configurable number of workers.
+      Requires a pre-existing discovery mechanism and references to a CA server entity.
+    itemType: entity
+    item:
+      type: org.apache.brooklyn.entity.stock.BasicStartable
+
+      brooklyn.parameters:
+        - name: kubernetes.initial.size
+          label: "Initial Cluster Size"
+          description: |
+            Size of the cluster when created initially
+          type: integer
+          default: 1
+        - name: kubernetes.scaling.cpu.limit
+          label: "Kubernetes Scaling CPU Limit"
+          description: |
+            The average CPU usage limit for the Kubernetes cluster, before another node
+            will automatically be added. The default is 0.95 or 95%
+          type: double
+          default: 0.95
+        - name: kubernetes.max.size
+          label: "Maximum Cluster Size"
+          description: |
+            Maximum size the Kubernetes cluster can be scaled to
+          type: integer
+          default: 5
+        - name: kubernetes.cluster.name
+          label: "Kubernetes Cluster Name"
+          type: string
+          default: "amp"
+        - name: kubernetes.version
+          label: "Kubernetes Version"
+          type: string
+          default: "1.3.5"
+        - name: kubernetes.user
+          label: "Kubernetes User"
+          type: string
+          default: "guest"
+        - name: kubernetes.password
+          label: "Kubernetes Password"
+          type: string
+          default: "guest"
+        - name: kubernetes.authentication.file
+          label: "Kubernetes Authentication File"
+          type: string
+          description: |
+            Usernames and passwords in a CSV file. Used for Kubernetes API server basic authentication
+          default:
+            "classpath://io.brooklyn.clocker.kubernetes:kubernetes/basic_auth.csv"
+        - name: kubernetes.recovery.quarantineFailedEntities
+          label: "Quarantine"
+          description: |
+            Quarantine failed entities instead of destroying them
+          type: boolean
+          default: true
+        - name: kubernetes.pod.cidr
+          label: "Kubernetes Pod IP Range"
+          type: string
+          default: "172.16.0.0/16"
+        - name: kubernetes.service.cidr
+          label: "Kubernetes Service IP Range"
+          type: string
+          default: "192.168.3.0/24"
+        - name: kubernetes.address
+          label: "Kubernetes IP"
+          type: string
+          default: "192.168.3.1"
+        - name: kubernetes.dns.address
+          label: "Kubernetes DNS IP"
+          type: string
+          default: "192.168.3.254"
+        - name: kubernetes.dns.domain
+          label: "Kubernetes DNS Domain"
+          type: string
+          default: "cluster"
+
+      brooklyn.enrichers:
+        - type: org.apache.brooklyn.enricher.stock.Propagator
+          brooklyn.config:
+            uniqueTag: kubernetes-url-propagator
+            producer: $brooklyn:entity("kubernetes-master")
+            propagating:
+              - $brooklyn:sensor("kubernetes.url")
+              - $brooklyn:sensor("kubernetes.endpoint")
+
+      brooklyn.children:
+        - type: kubernetes-master
+          id: kubernetes-master
+          name: "kubernetes-master"
+          brooklyn.config:
+            install.latch: $brooklyn:entity("etcd-cluster").attributeWhenReady("service.isUp")
+            kubernetes.schedulable: false
+        - type: cluster
+          id: kubernetes-worker-cluster
+          name: "kubernetes-worker-cluster"
+          brooklyn.policies:
+            - type: org.apache.brooklyn.policy.ha.ServiceReplacer
+            - type: org.apache.brooklyn.policy.autoscaling.AutoScalerPolicy
+              brooklyn.config:
+                autoscaler.metric:
+                  $brooklyn:sensor("org.apache.brooklyn.entity.machine.MachineAttributes", "cpu.average")
+                autoscaler.metricLowerBound: 0.00
+                autoscaler.metricUpperBound:
+                  $brooklyn:entity("kubernetes-cluster").config("kubernetes.scaling.cpu.limit")
+                autoscaler.minPoolSize:
+                  $brooklyn:entity("kubernetes-cluster").config("kubernetes.initial.size")
+                autoscaler.maxPoolSize:
+                  $brooklyn:entity("kubernetes-cluster").config("kubernetes.max.size")
+                autoscaler.resizeUpStabilizationDelay: 30s
+                autoscaler.resizeDownIterationMax: 0 # Disable scaling down
+                autoscaler.resizeDownStabilizationDelay: forever
+          brooklyn.enrichers:
+            - type: org.apache.brooklyn.enricher.stock.Aggregator
+              brooklyn.config:
+                uniqueTag: kubernetes-cluster-cpu-averageing
+                enricher.sourceSensor:
+                  $brooklyn:sensor("org.apache.brooklyn.entity.machine.MachineAttributes", "machine.cpu")
+                enricher.targetSensor:
+                  $brooklyn:sensor("org.apache.brooklyn.entity.machine.MachineAttributes", "cpu.average")
+                enricher.aggregating.fromMembers: true
+                transformation: average
+          brooklyn.config:
+            cluster.initial.size: $brooklyn:entity("kubernetes-cluster").config("kubernetes.initial.size")
+            dynamiccluster.quarantineFailedEntities:
+              $brooklyn:parent().config("kubernetes.recovery.quarantineFailedEntities")
+            dynamiccluster.memberspec:
+              $brooklyn:entitySpec:
+                type: kubernetes-worker
+                id: kubernetes-worker
+                name: "kubernetes-worker"
+                brooklyn.config:
+                  launch.latch: $brooklyn:entity("kubernetes-master").attributeWhenReady("service.isUp")
+
+  - id: kubernetes-worker
+    name: "Kubernetes Worker"
+    description: |
+      Kubernetes worker node
+    itemType: entity
+    iconUrl: https://pbs.twimg.com/media/Bt_pEfqCAAAiVyz.png
+    item:
+      type: centos-software-process
+
+      brooklyn.parameters:
+        - name: kubernetes.recovery.stabilizationDelay
+          label: "Stabilization Delay"
+          description: |
+            Time period for which the service must be consistently in the same state to trigger an action
+          # A restart shouldn't trigger failure
+          type: org.apache.brooklyn.util.time.Duration
+          default: 5m
+        - name: kubernetes.recovery.failOnRecurringFailuresInThisDuration
+          label: "Fail Duration"
+          description: |
+            Reports entity as failed if it fails two or more times in this time window
+          type: org.apache.brooklyn.util.time.Duration
+          default: 15m
+        - name: kubernetes.create.shared.securitygroup
+          label: "Kubernetes blueprint will configure security groups to allow access between workers and to allow external access to deployed apps"
+          type: boolean
+          default: true
+
+      brooklyn.config:
+        childStartMode: foreground_late
+
+        provisioning.properties:
+          customizer:
+            $brooklyn:object:
+              type: org.apache.brooklyn.location.jclouds.networking.SharedLocationSecurityGroupCustomizer
+              object.fields:
+                tcpPortRanges:
+                  - "30000-32767"
+                enabled: $brooklyn:config("kubernetes.create.shared.securitygroup")
+
+        shell.env:
+          KUBERNETES_VERSION: $brooklyn:entity("kubernetes-cluster").config("kubernetes.version")
+          CLUSTER_NAME: $brooklyn:entity("kubernetes-cluster").config("kubernetes.cluster.name")
+          KUBERNETES_USER: $brooklyn:entity("kubernetes-cluster").config("kubernetes.user")
+          KUBERNETES_PASSWORD: $brooklyn:entity("kubernetes-cluster").config("kubernetes.password")
+          KUBECTL_DOWNLOAD_URL: $brooklyn:config("kubectl.download.url")
+          KUBERNETES_URL: $brooklyn:entity("kubernetes-master").attributeWhenReady("kubernetes.url")
+          KUBERNETES_ENDPOINT: $brooklyn:entity("kubernetes-master").attributeWhenReady("kubernetes.endpoint")
+          HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
+          HOST_SUBNET_ADDRESS: $brooklyn:attributeWhenReady("host.subnet.address")
+          ENTITY_ID: $brooklyn:attributeWhenReady("entity.id")
+
+        kubectl.download.url:
+          $brooklyn:formatString:
+            - "https://storage.googleapis.com/kubernetes-release/release/v%s/bin/linux/amd64/kubectl"
+            - $brooklyn:entity("kubernetes-cluster").config("kubernetes.version")
+
+        pre.install.command: |
+          sudo hostname ${ENTITY_ID}
+          echo ${ENTITY_ID} | sudo tee /etc/hostname
+
+        install.command: |
+          sudo yum install -y wget
+          wget ${KUBECTL_DOWNLOAD_URL}
+          chmod +x kubectl
+          sudo cp kubectl /usr/bin
+
+        launch.command: |
+          sudo mkdir -p /etc/kubernetes
+          sudo -E tee /etc/kubernetes/kubeconfig <<-EOF
+          current-context: default
+          apiVersion: v1
+          clusters:
+            - name: ${CLUSTER_NAME}
+              cluster:
+                api-version: v1
+                server: ${KUBERNETES_URL}
+          contexts:
+            - name: default
+              context:
+                cluster: ${CLUSTER_NAME}
+                namespace: default
+                user: default
+          users:
+            - name: default
+              user:
+                username: ${KUBERNETES_USER}
+                password: ${KUBERNETES_PASSWORD}
+          current-context: default
+          EOF
+          kubectl config set-cluster ${CLUSTER_NAME} --server=${KUBERNETES_URL}
+          kubectl config set-context default --cluster=${CLUSTER_NAME}
+          kubectl config use-context default
+          kubectl config set-credentials default --username=${KUBERNETES_USER} --password=${KUBERNETES_PASSWORD}
+
+        checkRunning.command: |
+          which kubectl
+
+      brooklyn.children:
+        - type: flannel-network-agent
+          id: flannel-network-agent
+          name: "flannel-network-agent"
+          brooklyn.config:
+            etcd.endpoints: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
+            flannel.network: $brooklyn:entity("kubernetes-cluster").config("kubernetes.pod.cidr")
+            flannel.transport: "vxlan"
+        - type: docker-engine-with-resilience
+          id: docker-engine
+          name: "docker-engine"
+          brooklyn.config:
+            start.latch: $brooklyn:sibling("flannel-network-agent").attributeWhenReady("service.isUp")
+            docker.additionaloptions:
+              $brooklyn:formatString:
+                - >-
+                  %s
+                  --selinux-enabled=false
+                  --mtu=%s
+                  --bip=%s
+                  --ip-masq=false
+                  --iptables=false
+                - $brooklyn:config("docker.additionaloptions.docker-engine-tls")
+                - $brooklyn:sibling("flannel-network-agent").attributeWhenReady("flannel.mtu")
+                - $brooklyn:sibling("flannel-network-agent").attributeWhenReady("flannel.subnet")
+        - type: calico-cni-plugin
+          id: calico-cni-plugin
+          name: "calico-cni-plugin"
+          brooklyn.config:
+            start.latch: $brooklyn:sibling("docker-engine").attributeWhenReady("service.isUp")
+            etcd.endpoints: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
+        - type: kube-proxy-service
+          id: kube-proxy
+          name: "kube-proxy"
+          brooklyn.config:
+            start.latch: $brooklyn:sibling("calico-cni-plugin").attributeWhenReady("service.isUp")
+        - type: kubelet-service
+          id: kubelet
+          name: "kubelet"
+          brooklyn.config:
+            start.latch: $brooklyn:sibling("calico-cni-plugin").attributeWhenReady("service.isUp")
+
+      brooklyn.policies:
+        - type: org.apache.brooklyn.policy.ha.ServiceRestarter
+          brooklyn.config:
+            failOnRecurringFailuresInThisDuration:
+              $brooklyn:config("kubernetes.recovery.failOnRecurringFailuresInThisDuration")
+
+      brooklyn.enrichers:
+        - type: org.apache.brooklyn.policy.ha.ServiceFailureDetector
+          brooklyn.config:
+            serviceOnFire.stabilizationDelay:
+              $brooklyn:config("kubernetes.recovery.stabilizationDelay")
+            entityFailed.stabilizationDelay:
+              $brooklyn:config("kubernetes.recovery.stabilizationDelay")
+            entityRecovered.stabilizationDelay:
+              $brooklyn:config("kubernetes.recovery.stabilizationDelay")
+        - type: org.apache.brooklyn.enricher.stock.Propagator
+          brooklyn.config:
+            uniqueTag: docker-machine-stats-propagator
+            producer: $brooklyn:child("docker-engine")
+            propagating:
+              - $brooklyn:sensor("org.apache.brooklyn.entity.machine.MachineAttributes", "machine.cpu")
+              - $brooklyn:sensor("org.apache.brooklyn.entity.machine.MachineAttributes", "machine.loadAverage")
+              - $brooklyn:sensor("org.apache.brooklyn.entity.machine.MachineAttributes", "machine.uptime")
+              - $brooklyn:sensor("org.apache.brooklyn.entity.machine.MachineAttributes", "machine.memory.free")
+              - $brooklyn:sensor("org.apache.brooklyn.entity.machine.MachineAttributes", "machine.memory.used")
+              - $brooklyn:sensor("org.apache.brooklyn.entity.machine.MachineAttributes", "machine.memory.total")
+              - $brooklyn:sensor("org.apache.brooklyn.entity.machine.MachineAttributes", "memory.used.delta")
+              - $brooklyn:sensor("org.apache.brooklyn.entity.machine.MachineAttributes", "memory.used.percent")
+
+      brooklyn.initializers:
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: kubernetes.node.status
+            description: |
+              Kubernetes node status
+            targetType: string
+            shell.env:
+              HOST_SUBNET_ADDRESS: $brooklyn:attributeWhenReady("host.subnet.address")
+            command: |
+              kubectl get node ${HOST_SUBNET_ADDRESS} \
+                -o jsonpath={.status.conditions[?\(@.type==\"Ready\"\)].status}
+        - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+          brooklyn.config:
+            name: kubectl
+            description: |
+              Kubernetes Command
+            parameters:
+              args:
+                description: |
+                  Command Arguments
+            command: |
+              kubectl ${args}
+
+  - id: kubernetes-master
+    name: "Kubernetes Master"
+    description: |
+      Kubernetes master node
+    itemType: entity
+    iconUrl: https://pbs.twimg.com/media/Bt_pEfqCAAAiVyz.png
+    item:
+      type: kubernetes-worker
+
+      brooklyn.parameters:
+        - name: kubernetes.apiserver.port
+          label: "Kubernetes API Server Port"
+          type: integer
+          default: 8080
+
+      brooklyn.children:
+        - type: child-software-process
+          id: calico-pool
+          name: "calico-pool"
+          brooklyn.config:
+            start.latch: $brooklyn:sibling("calico-cni-plugin").attributeWhenReady("service.isUp")
+            shell.env:
+              ETCD_ENDPOINTS: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
+              FLANNEL_NETWORK: $brooklyn:sibling("flannel-network-agent").config("flannel.network")
+            launch.command: |
+              sudo -E calicoctl pool add ${FLANNEL_NETWORK} --nat-outgoing
+            checkRunning.command: |
+              sudo -E calicoctl pool show --ipv4 | grep "${FLANNEL_NETWORK}"
+        - type: kube-apiserver-service
+          id: kube-apiserver
+          name: "kube-apiserver"
+          brooklyn.config:
+            start.latch: $brooklyn:sibling("kubelet").attributeWhenReady("service.isUp")
+        - type: kube-controller-manager-service
+          id: kube-controller-manager
+          name: "kube-controller-manager"
+          brooklyn.config:
+            start.latch: $brooklyn:sibling("kube-apiserver").attributeWhenReady("service.isUp")
+        - type: kube-scheduler-service
+          id: kube-scheduler
+          name: "kube-scheduler"
+          brooklyn.config:
+            start.latch: $brooklyn:sibling("kube-apiserver").attributeWhenReady("service.isUp")
+        - type: calico-policy-controller-pod
+          id: calico-policy-controller
+          name: "calico-policy-controller"
+          brooklyn.config:
+            start.latch: $brooklyn:sibling("kube-apiserver").attributeWhenReady("service.isUp")
+        - type: kube-dns-pod
+          id: kube-dns
+          name: "kube-dns"
+          brooklyn.config:
+            start.latch: $brooklyn:sibling("kube-apiserver").attributeWhenReady("service.isUp")
+        - type: kube-dashboard-pod
+          id: kube-dashboard
+          name: "kube-dashboard"
+          brooklyn.config:
+            start.latch: $brooklyn:sibling("kube-apiserver").attributeWhenReady("service.isUp")
+
+      brooklyn.enrichers:
+        - type: org.apache.brooklyn.enricher.stock.Transformer
+          brooklyn.config:
+            uniqueTag: kubernetes-apiserver-endpoint-publisher
+            enricher.triggerSensors:
+              - $brooklyn:sensor("host.address")
+            enricher.targetSensor: $brooklyn:sensor("kubernetes.endpoint")
+            enricher.targetValue:
+              $brooklyn:formatString:
+                - "%s:%d"
+                - $brooklyn:attributeWhenReady("host.address")
+                - $brooklyn:config("kubernetes.apiserver.port")
+        - type: org.apache.brooklyn.enricher.stock.Transformer
+          brooklyn.config:
+            uniqueTag: kubernetes-apiserver-url-publisher
+            enricher.triggerSensors:
+              - $brooklyn:sensor("kubernetes.endpoint")
+            enricher.targetSensor: $brooklyn:sensor("kubernetes.url")
+            enricher.targetValue:
+              $brooklyn:formatString:
+                - "http://%s"
+                - $brooklyn:attributeWhenReady("kubernetes.endpoint")
+
+  - id: kubernetes-service
+    name: "Kubernetes Service"
+    description: |
+      A software process running a Kubernetes service daemon
+    itemType: entity
+    iconUrl: https://pbs.twimg.com/media/Bt_pEfqCAAAiVyz.png
+    item:
+      type: child-software-process
+
+      brooklyn.config:
+        install.unique_label:
+          $brooklyn:formatString:
+            - "service-%s-%s"
+            - $brooklyn:config("kubernetes.service")
+            - $brooklyn:entity("kubernetes-cluster").config("kubernetes.version")
+
+        service.download.url:
+          $brooklyn:formatString:
+            - "https://storage.googleapis.com/kubernetes-release/release/v%s/bin/linux/amd64/%s"
+            - $brooklyn:entity("kubernetes-cluster").config("kubernetes.version")
+            - $brooklyn:config("kubernetes.service")
+
+        shell.env:
+          KUBERNETES_VERSION: $brooklyn:entity("kubernetes-cluster").config("kubernetes.version")
+          CLUSTER_NAME: $brooklyn:entity("kubernetes-cluster").config("kubernetes.cluster.name")
+          K8S_SERVICE_IP: $brooklyn:entity("kubernetes-cluster").config("kubernetes.address")
+          SERVICE_DOWNLOAD_URL: $brooklyn:config("service.download.url")
+          K8S_SERVICE: $brooklyn:config("kubernetes.service")
+          HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
+          HOST_SUBNET_ADDRESS: $brooklyn:attributeWhenReady("host.subnet.address")
+          KUBERNETES_URL: $brooklyn:entity("kubernetes-master").attributeWhenReady("kubernetes.url")
+          ETCD_ENDPOINTS: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
+          ENTITY_ID: $brooklyn:parent().attributeWhenReady("entity.id")
+
+        install.command: |
+          wget ${SERVICE_DOWNLOAD_URL}
+          chmod +x ${K8S_SERVICE}
+          sudo cp ${K8S_SERVICE} /usr/bin
+
+        launch.command: |
+          sudo systemctl daemon-reload
+          sudo systemctl enable ${K8S_SERVICE}
+          sudo systemctl start ${K8S_SERVICE}
+
+        stop.command: |
+          sudo systemctl stop ${K8S_SERVICE}
+
+        checkRunning.command: |
+          sudo systemctl status ${K8S_SERVICE}
+
+  - id: kube-proxy-service
+    name: "Kubernetes Proxy"
+    describtion: |
+      The Kubernetes proxy service
+    itemType: entity
+    item:
+      type: kubernetes-service
+
+      brooklyn.config:
+        kubernetes.service: "kube-proxy"
+
+        customize.command: |
+          sudo -E tee /etc/systemd/system/kube-proxy.service <<-EOF
+          [Unit]
+          Description=Kubernetes Proxy
+          After=network.target
+          [Service]
+          ExecStart=/usr/bin/kube-proxy \
+            --logtostderr=true \
+            --v=4 \
+            --masquerade-all=true \
+            --master=${KUBERNETES_URL}
+          Restart=on-failure
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+
+  - id: kubelet-service
+    name: "Kubelet"
+    describtion: |
+      The Kubernetes Kubelet service
+    itemType: entity
+    item:
+      type: kubernetes-service
+
+      brooklyn.parameters:
+        - name: kubernetes.schedulable
+          label: "Kubernetes Schedulable"
+          type: boolean
+          default: true
+
+      brooklyn.config:
+        kubernetes.service: "kubelet"
+
+        shell.env:
+          FLANNEL_SUBNET: $brooklyn:sibling("flannel-network-agent").attributeWhenReady("flannel.subnet")
+          KUBERNETES_URL: $brooklyn:entity("kubernetes-master").attributeWhenReady("kubernetes.url")
+          DNS_SERVICE_IP: $brooklyn:entity("kubernetes-cluster").config("kubernetes.dns.address")
+          DNS_LOCAL_DOMAIN: $brooklyn:entity("kubernetes-cluster").config("kubernetes.dns.domain")
+          SCHEDULABLE: $brooklyn:config("kubernetes.schedulable")
+
+        customize.command: |
+          sudo -E tee /etc/cni/net.d/10-calico.conf <<-EOF
+          {
+              "name": "calico",
+              "type": "flannel",
+              "delegate": {
+                  "type": "calico",
+                  "etcd_endpoints": "${ETCD_ENDPOINTS}",
+                  "log_level": "debug",
+                  "log_level_stderr": "info",
+                  "hostname": "${HOST_SUBNET_ADDRESS}",
+                  "policy": {
+                      "type": "k8s",
+                      "k8s_api_root": "${KUBERNETES_URL}/api/v1/"
+                  },
+                  "kubernetes": {
+                      "kubeconfig": "/etc/kubernetes/kubeconfig"
+                  },
+                  "isDefaultGateway": true
+              }
+          }
+          EOF
+          sudo mkdir -p /etc/kubernetes/manifests
+          sudo -E tee /etc/systemd/system/kubelet.service <<-EOF
+          [Unit]
+          Description=Kubernetes Kubelet
+          After=docker.service
+          Requires=docker.service
+          [Service]
+          Environment="DOCKER_HOST=${DOCKER_HOST}"
+          Environment="DOCKER_TLS_VERIFY=true"
+          Environment="DOCKER_CERT_PATH=${DOCKER_CERT_PATH}"
+          ExecStart=/usr/bin/kubelet \
+            --address=0.0.0.0 \
+            --allow-privileged=true \
+            --config=/etc/kubernetes/manifests \
+            --hostname-override=${HOST_SUBNET_ADDRESS} \
+            --api-servers=${KUBERNETES_URL} \
+            --kubeconfig=/etc/kubernetes/kubeconfig \
+            --network-plugin-dir=/etc/cni/net.d \
+            --network-plugin=cni \
+            --register-schedulable=${SCHEDULABLE} \
+            --pod-cidr=${FLANNEL_SUBNET} \
+            --container-runtime=docker \
+            --reconcile-cidr=true \
+            --serialize-image-pulls=false \
+            --cluster-dns=${DNS_SERVICE_IP} \
+            --cluster-domain=${DNS_LOCAL_DOMAIN}.local \
+            --logtostderr=true
+          Restart=always
+          RestartSec=10
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+
+  - id: kube-apiserver-service
+    name: "Kubernetes API Server"
+    describtion: |
+      The Kubernetes API server service
+    itemType: entity
+    item:
+      type: kubernetes-service
+
+      brooklyn.parameters:
+        - name: kubernetes.authentication.file
+          label: "Kubernetes Authentication File"
+          type: string
+          default:
+            "classpath://io.brooklyn.clocker.kubernetes:kubernetes/basic_auth.csv"
+        - name: kubernetes.admission.control
+          label: "Kubernetes Admission Control"
+          type: string
+          default: >-
+            NamespaceLifecycle,
+            NamespaceExists,
+            LimitRanger,
+            SecurityContextAllow,
+            ResourceQuota,
+            AlwaysAdmit,
+            ServiceAccount
+
+      brooklyn.config:
+        kubernetes.service: "kube-apiserver"
+
+        files.install:
+          $brooklyn:config("kubernetes.authentication.file"): basic_auth.csv
+
+        shell.env:
+          SERVICE_CLUSTER_IP_RANGE: $brooklyn:entity("kubernetes-cluster").config("kubernetes.service.cidr")
+          APISERVER_PORT: $brooklyn:entity("kubernetes-master").config("kubernetes.apiserver.port")
+          ADMISSION_CONTROL: $brooklyn:config("kubernetes.admission.control")
+          INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
+
+        post.install.command: |
+          sudo mv ${INSTALL_DIR}/basic_auth.csv /etc/kubernetes
+
+        customize.command: |
+          sudo -E tee /etc/systemd/system/kube-apiserver.service <<-EOF
+          [Unit]
+          Description=Kubernetes API Server
+          [Service]
+          ExecStart=/usr/bin/kube-apiserver \
+            --logtostderr=true \
+            --v=4 \
+            --etcd-servers=${ETCD_ENDPOINTS} \
+            --insecure-bind-address=0.0.0.0 \
+            --insecure-port=${APISERVER_PORT} \
+            --advertise-address=${HOST_SUBNET_ADDRESS} \
+            --basic-auth-file=/etc/kubernetes/basic_auth.csv \
+            --allow-privileged=true \
+            --service-cluster-ip-range=${SERVICE_CLUSTER_IP_RANGE} \
+            --runtime-config=extensions/v1beta1=true,extensions/v1beta1/networkpolicies=true \
+            --admission-control=${ADMISSION_CONTROL}
+          Restart=on-failure
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+
+  - id: kube-controller-manager-service
+    name: "Kubernetes Controller"
+    describtion: |
+      The Kubernetes controller-manager service
+    itemType: entity
+    item:
+      type: kubernetes-service
+
+      brooklyn.config:
+        kubernetes.service: "kube-controller-manager"
+
+        shell.env:
+          FLANNEL_NETWORK: $brooklyn:entity("kubernetes-cluster").config("kubernetes.pod.cidr")
+
+        customize.command: |
+          sudo -E tee /etc/systemd/system/kube-controller-manager.service <<-EOF
+          [Unit]
+          Description=Kubernetes Controller Manager
+          [Service]
+          ExecStart=/usr/bin/kube-controller-manager \
+            --logtostderr=true \
+            --v=4 \
+            --master=${KUBERNETES_ENDPOINT} \
+            --kubeconfig=/etc/kubernetes/kubeconfig \
+            --allocate-node-cidrs=true \
+            --configure-cloud-routes=true \
+            --leader-elect=true \
+            --cluster-name=${CLUSTER_NAME} \
+            --cluster-cidr=${FLANNEL_NETWORK}
+          Restart=on-failure
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+
+  - id: kube-scheduler-service
+    name: "Kubernetes Scheduler"
+    describtion: |
+      The Kubernetes scheduler service
+    itemType: entity
+    item:
+      type: kubernetes-service
+
+      brooklyn.config:
+        kubernetes.service: "kube-scheduler"
+
+        customize.command: |
+          sudo -E tee /etc/systemd/system/kube-scheduler.service <<-EOF
+          [Unit]
+          Description=Kubernetes Scheduler
+          [Service]
+          ExecStart=/usr/bin/kube-scheduler \
+            --logtostderr=true \
+            --v=4 \
+            --leader-elect=true \
+            --master=${KUBERNETES_ENDPOINT}
+          Restart=on-failure
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+
+  - id: kubernetes-pod
+    name: "Kubernetes Pod"
+    description: |
+      A Kubernetes pod deployment
+    itemType: entity
+    iconUrl: https://pbs.twimg.com/media/Bt_pEfqCAAAiVyz.png
+    item:
+      type: child-software-process
+
+      brooklyn.parameters:
+        - name: kubernetes.pod.file
+          label: "Kubernetes Pod File"
+          type: string
+        - name: kubernetes.pod.namespace
+          label: "Kubernetes Pod Namespace"
+          type: string
+          default: "default"
+        - name: kubernetes.pod.name
+          label: "Kubernetes Pod Name"
+          type: string
+        - name: template.substitutions
+          label: "Template Substitutions"
+          type: java.util.Map
+
+      brooklyn.config:
+        install.unique_label:
+          $brooklyn:formatString:
+            - "pod-%s-%s"
+            - $brooklyn:config("kubernetes.pod.name")
+            - $brooklyn:entity("kubernetes-cluster").config("kubernetes.version")
+
+        templates.install:
+          $brooklyn:config("kubernetes.pod.file"): "pod.yaml"
+
+        shell.env:
+          POD: $brooklyn:config("kubernetes.pod.name")
+          NAMESPACE: $brooklyn:config("kubernetes.pod.namespace")
+          INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
+
+        pre.install.command: |
+          mkdir -p ${INSTALL_DIR}
+
+        install.command: |
+          kubectl get namespace ${NAMESPACE} || ( kubectl create namespace ${NAMESPACE} || true )
+
+        launch.command: |
+          kubectl create -f ${INSTALL_DIR}/pod.yaml
+
+        checkRunning.command: |
+          kubectl get pod --namespace=${NAMESPACE} | grep ${POD}
+
+  - id: kube-dns-pod
+    name: "KubeDNS Pod"
+    description: |
+      KubeDNS pod deployment
+    itemType: entity
+    item:
+      type: kubernetes-pod
+
+      brooklyn.config:
+        kubernetes.pod.name: "kube-dns"
+        kubernetes.pod.file: "classpath://io.brooklyn.clocker.kubernetes:kubernetes/kube-dns.yaml"
+        kubernetes.pod.namespace: "kube-system"
+
+        template.substitutions:
+          kubernetes_url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
+          dns_service_ip: $brooklyn:entity("kubernetes-cluster").config("kubernetes.dns.address")
+          dns_service_domain: $brooklyn:entity("kubernetes-cluster").config("kubernetes.dns.domain")
+
+  - id: kube-dashboard-pod
+    name: "Kubernetes Dashboard Pod"
+    description: |
+      Kubernetes dashboard pod deployment
+    itemType: entity
+    item:
+      type: kubernetes-pod
+
+      brooklyn.config:
+        kubernetes.pod.name: "kubernetes-dashboard"
+        kubernetes.pod.file: "classpath://io.brooklyn.clocker.kubernetes:kubernetes/kubernetes-dashboard.yaml"
+        kubernetes.pod.namespace: "kube-system"
+
+        template.substitutions:
+          kubernetes_url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
+
+  - id: calico-policy-controller-pod
+    name: "Calico Policy Controller Pod"
+    description: |
+      Calico policy controller pod deployment
+    itemType: entity
+    item:
+      type: kubernetes-pod
+
+      brooklyn.config:
+        kubernetes.pod.name: "policy-controller"
+        kubernetes.pod.file: "classpath://io.brooklyn.clocker.kubernetes:kubernetes/policy-controller.yaml"
+        kubernetes.pod.namespace: "calico-system"
+
+        template.substitutions:
+          kubernetes_url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
+          etcd_endpoints: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
+
+        launch.command: |
+          sudo mv ${INSTALL_DIR}/pod.yaml /etc/kubernetes/manifests

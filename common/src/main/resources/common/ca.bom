@@ -1,0 +1,206 @@
+brooklyn.catalog:
+  version: "2.0.0-SNAPSHOT" # CLOCKER_VERSION
+  publish:
+    description: |
+      An X.509 Certificate Authority tool using OpenSSL
+    license_code: APACHE-2.0
+
+  items:
+
+  - id: ca-server-template
+    name: "Certificate Authority Server"
+    description: |
+      An X.509 Certificate Authority tool using OpenSSL
+    itemType: template
+    iconUrl: https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/OpenSSL_logo.png/320px-OpenSSL_logo.png
+    item:
+      services:
+        - type: ca-server
+
+  - id: ca-server
+    name: "Certificate Authority Server"
+    description:  |
+      An X.509 Certificate Authority tool with a simple REST API.
+
+      Request creation of a certificate for a client with a POST request to
+      '/generate/{nodeName}' with nodeName set to the IP address of the node.
+      Download the CA certificate, client certificate and private key with GET
+      requests to '/cert/{nodeName}/ca.pem' '/cert/{nodeName}/cert.pem' and
+      '/cert/{nodeName}/key.pem'
+    itemType: entity
+    iconUrl: https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/OpenSSL_logo.png/320px-OpenSSL_logo.png
+    item:
+      type: centos-software-process
+      name: "authority"
+
+      brooklyn.parameters:
+        - name: ca.server.port
+          label: CA Server Port
+          description: |
+            The external port the CA Server web service listens on
+          type: port
+          default: 8080
+
+      brooklyn.config:
+        shell.env:
+          COUNTRY: $brooklyn:config("country")
+          STATE: $brooklyn:config("state")
+          LOCALITY: $brooklyn:config("locality")
+          ORGANIZATION_NAME: $brooklyn:config("organization.name")
+          ORGANIZATION_UNIT: $brooklyn:config("organization.unit")
+          COMMON_NAME: $brooklyn:config("common.name")
+          EMAIL_ADDRESS: $brooklyn:config("email.address")
+          CHALLENGE_PASSWORD: $brooklyn:config("challenge.password")
+          OPTIONAL_COMPANY_NAME: $brooklyn:config("optional.company.name")
+          CA_SERVER_PORT: $brooklyn:attributeWhenReady("ca.server.port")
+          INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
+          NODE_PATH:
+            $brooklyn:formatString:
+              - "%s/node_modules"
+              - $brooklyn:attributeWhenReady("install.dir")
+
+        install.command: |
+          echo "[CLOCKER] Install OpenSSL"
+          sudo yum install -y openssl
+
+          echo "[CLOCKER] Install Node.js webapp prerequisites"
+          curl --silent --location https://rpm.nodesource.com/setup | sudo bash -
+          sudo yum install -y install nodejs
+          npm config set prefix ${INSTALL_DIR}
+          npm install express@4.13
+
+        customize.command: |
+          echo "[CLOCKER] Set up Bash OpenSSL scripts"
+          cat > functions.sh <<-'EOF'
+          function setup_structure() {
+            sed -e "/copy_extensions/s/^# *//" -e "/^dir/c dir = $(pwd)" -e '/^#unique/s/#//' /etc/pki/tls/openssl.cnf > openssl.cnf
+            mkdir certs crl newcerts private
+            openssl rand -hex 16 > serial
+            touch index.txt
+          }
+
+          function self_sign_ca_certificate () {
+            echo "[CLOCKER] Generate a CA root certificate"
+            openssl genrsa -out private/cakey.pem 2048
+            openssl req -config openssl.cnf -new -key private/cakey.pem -days 1825 -out ca.csr <<-EOC
+          ${COUNTRY:-.}
+          ${STATE:-.}
+          ${LOCALITY:-.}
+          ${ORGANIZATION_NAME:-.}
+          ${ORGANIZATION_UNIT:-.}
+          ${COMMON_NAME:-'*'}
+          ${EMAIL_ADDRESS:-.}
+          ${CHALLENGE_PASSWORD:-.}
+          ${OPTIONAL_COMPANY_NAME:-.}
+          EOC
+            yes | openssl ca -config openssl.cnf -selfsign -in ca.csr -out ca.pem -policy policy_anything -extensions v3_ca
+          }
+
+          function sign_cert () {
+            csr_file=$1
+            yes | openssl ca -config openssl.cnf -cert ca.pem  -extensions usr_cert -policy policy_anything -in ${csr_file}
+          }
+          EOF
+
+
+          cat > sign_cert.sh <<-'EOF'
+          #!/usr/bin/env bash
+          source functions.sh
+          temp_request=$(mktemp)
+
+          # cat all input to the temp request file
+          cat > ${temp_request}
+
+          sign_cert ${temp_request} || {
+             res=$?
+             echo Error signing certificate
+             exit res
+          }
+          EOF
+          chmod +x sign_cert.sh
+
+          source functions.sh
+
+          setup_structure
+
+          echo "[CLOCKER] Set up Node.js web service"
+          cat > webserver.js <<-EOF
+          var http = require('http');
+          var fs = require('fs');
+          var express = require('express');
+          const spawn = require('child_process').spawn;
+
+          const PORT=${CA_SERVER_PORT};
+
+          var server = express();
+          server.use('/cacert', express.static('cacert'));
+          server.post("/sign", function(request, response) {
+              console.log("POST received on " + request.url);
+                  var proc = spawn('./sign_cert.sh');
+                  request.pipe(proc.stdin);
+                  proc.stdout.pipe(response);
+          });
+
+          server.listen(PORT, function(req, res){
+              console.log("Server listening on port %s", PORT);
+          });
+          EOF
+
+          self_sign_ca_certificate
+          mkdir cacert
+          cp ca.pem cacert
+
+        launch.command: |
+          nohup node webserver.js  > webserver.out 2> webserver.err & echo $! > ${PID_FILE}
+
+        checkRunning.command: |
+          ps -p $(cat ${PID_FILE})
+
+        stop.command: |
+          kill -9 $(cat ${PID_FILE})
+
+      brooklyn.initializers:
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: ca.cert
+            description: |
+              Present the CA certificate for the ca-server
+            command: |
+              [ -f ca.pem ] && cat ca.pem
+        - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+          brooklyn.config:
+            name: generate
+            description: |
+              Generate public certificate and private key for a node
+            parameters:
+              nodeName:
+                description: |
+                  IP address for the node
+            command: |
+              source functions.sh
+              generate $(pwd) ${nodeName}
+        - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+          brooklyn.config:
+            name: sign
+            description: Take an X.509 Certificate Signing Request and return the signed certificate
+            parameters:
+              csr:
+                description: Text of an X.509 Certificate Signing Request in PEM format
+            command: |
+              source functions.sh
+              temp_request=$(mktemp)
+              echo "$csr" >> ${temp_request}
+              sign_cert ${temp_request} && rm -f ${temp_request}
+
+      brooklyn.enrichers:
+        - type: org.apache.brooklyn.enricher.stock.Transformer
+          brooklyn.config:
+            enricher.triggerSensors:
+              - host.address
+              - ca.server.port
+            enricher.targetSensor: $brooklyn:sensor("main.uri")
+            enricher.targetValue:
+              $brooklyn:formatString:
+                - "http://%s:%d"
+                - $brooklyn:attributeWhenReady("host.address")
+                - $brooklyn:attributeWhenReady("ca.server.port")

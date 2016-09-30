@@ -1,0 +1,492 @@
+brooklyn.catalog:
+  version: "2.0.0-SNAPSHOT" # CLOCKER_VERSION
+  iconUrl: https://raw.githubusercontent.com/docker-library/docs/c350af05d3fac7b5c3f6327ac82fe4d990d8729c/docker/logo.png
+  license_code: APACHE-2.0
+
+  items:
+  - id: test-case
+    item:
+      type: org.apache.brooklyn.test.framework.TestCase
+
+  - id: ssh-test
+    item:
+      type: org.apache.brooklyn.test.framework.TestSshCommand
+
+  - id: sensor-test
+    item:
+      type: org.apache.brooklyn.test.framework.TestSensor
+      # sensor: name
+
+  - id: assert-up-initial
+    item:
+      type: org.apache.brooklyn.test.framework.TestSensor
+      name: "TEST [service.isUp] IS [true]"
+      sensor: service.isUp
+      brooklyn.parameters:
+        - name: timeout.initialStartup
+          description: The timeout for provisioning, installing and launching the app-under-test.
+          type: org.apache.brooklyn.util.time.Duration
+          default: 1h
+      brooklyn.config:
+        timeout: $brooklyn:config("timeout.initialStartup")
+      assert:
+        - equals: true
+
+  - id: assert-up
+    item:
+      type: sensor-test
+      name: "TEST [service.isUp] IS [true]"
+      sensor: service.isUp
+      assert:
+        - equals: true
+
+  - id: assert-down
+    item:
+      type: sensor-test
+      name: TEST [service.isUp] IS [false]
+      sensor: service.isUp
+      assert:
+      - equals: false
+
+  - id: assert-running
+    item:
+      type: sensor-test
+      name: "TEST [service.state] IS [running]"
+      sensor: service.state
+      assert:
+        - matches: running
+
+  - id: assert-failed
+    item:
+      type: sensor-test
+      name: "TEST [service.state] IS [on-fire]"
+      sensor: service.state
+      assert:
+        - matches: on-fire
+
+  - id: test-stop-machine
+    item:
+      name: "Invoke [stop] effector (machine)"
+      type: org.apache.brooklyn.test.framework.TestEffector
+      effector: stop
+
+  - id: test-stop
+    item:
+      type: test-stop-machine
+
+  - id: test-stop-process
+    item:
+      name: "Invoke [stop] effector (process)"
+      type: org.apache.brooklyn.test.framework.TestEffector
+      effector: stop
+      brooklyn.config:
+        params:
+          stopMachineMode: NEVER
+
+  - id: test-start
+    item:
+      name: "Invoke [start] effector"
+      type: org.apache.brooklyn.test.framework.TestEffector
+      effector: start
+
+  - id: test-restart
+    item:
+      name: "Invoke [restart] effector"
+      type: org.apache.brooklyn.test.framework.TestEffector
+      effector: restart
+
+  - id: test-restart-process
+    item:
+      name: "Invoke [restart] effector (process)"
+      type: org.apache.brooklyn.test.framework.TestEffector
+      effector: restart
+      params:
+        restartMachine: false
+
+  - id: test-restart-machine
+    item:
+      name: "Invoke [restart] effector (machine)"
+      type: org.apache.brooklyn.test.framework.TestEffector
+      effector: restart
+      params:
+        restartMachine: true
+
+  - id: test-http-status-200
+    item:
+      name: "Check HTTP Response Status Code"
+      type: org.apache.brooklyn.test.framework.TestHttpCall
+      brooklyn.config:
+        applyAssertionTo: status
+        assert:
+          - isEqualTo: 200
+
+  - id: test-http-body
+    item:
+      name: "Check HTTP Response Body"
+      type: org.apache.brooklyn.test.framework.TestHttpCall
+      brooklyn.config:
+        applyAssertionTo: body
+
+  - id: test-reachable
+    item:
+      name: "TEST endpoint reachable"
+      type: org.apache.brooklyn.test.framework.TestEndpointReachable
+
+  - id: loop-test-case
+    item:
+      name: "Loop over members"
+      type: org.apache.brooklyn.test.framework.LoopOverGroupMembersTestCase
+
+  - id: ssh-cmd-restart
+    item:
+      type: ssh-test
+      name: "Restart Machine"
+      brooklyn.config:
+        command: |
+          nohup sudo bash -c "sleep 5; shutdown -r now" &
+
+  - id: test-docker-client
+    item:
+      type: centos-software-process
+      name: "test-docker-client"
+
+      brooklyn.config:
+        pre.install.command: |
+          echo "[TEST] Install docker so we can use it as a client"
+          sudo tee /etc/yum.repos.d/docker.repo <<-EOF
+          [dockerrepo]
+          name=Docker Repository
+          baseurl=https://yum.dockerproject.org/repo/main/centos/\$releasever/
+          enabled=1
+          gpgcheck=1
+          gpgkey=https://yum.dockerproject.org/gpg
+          EOF
+
+        install.command: |
+          sudo yum -y update
+          sudo yum -y install docker-engine
+
+        launch.command: |
+          while true ; do sleep 3600; done & echo $! > ${PID_FILE}
+
+  - id: test-docker-client-with-tls
+    item:
+      type: test-docker-client
+      name: "test-docker-client-with-tls"
+
+      brooklyn.parameters:
+        - name: docker.url
+          description: URL of the docker endpoint
+        - name: ca.url
+          description: URL of the CA server
+        - name: client.address
+          description: Public address of this test client
+
+      brooklyn.config:
+        shell.env:
+          INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
+          DOCKER_HOST: $brooklyn:config("docker.url")
+          DOCKER_TLS_VERIFY: true
+          DOCKER_CERT_PATH:
+            $brooklyn:formatString:
+              - "%s/.certs"
+              - $brooklyn:attributeWhenReady("install.dir")
+          IP: $brooklyn:config("client.address")
+          CA: $brooklyn:config("ca.url")
+
+        customize.command: |
+          set -e
+          CERT_DIR=${INSTALL_DIR}/.certs
+          echo [TEST] Generating certificate request in ${CERT_DIR}
+          mkdir -p ${CERT_DIR}
+          openssl genrsa -out ${CERT_DIR}/key.pem 2048
+          # provide defaults for most prompts as '.' below, meaning 'ignore'. CN is '*'
+          openssl req  -new -key ${CERT_DIR}/key.pem -days 1825 -out ${CERT_DIR}/csr.pem <<-EOF
+          .
+          .
+          .
+          .
+          .
+          *
+          .
+          .
+          .
+          EOF
+          echo [TEST] Getting certificates from ${CA}
+          curl -L ${CA}/cacert/ca.pem --output ${CERT_DIR}/ca.pem
+          curl -X POST --data-binary @${CERT_DIR}/csr.pem ${CA}/sign > ${CERT_DIR}/cert.pem
+          if ! grep docker_client ${HOME}/.bashrc ; then
+            echo ". docker_client.rc" >> ${HOME}/.bashrc
+          fi
+          cat > ${HOME}/docker_client.rc <<-EOF
+          export DOCKER_TLS_VERIFY=true
+          export DOCKER_CERT_PATH=${DOCKER_CERT_PATH}
+          export DOCKER_HOST=${DOCKER_HOST}
+          EOF
+
+  - id: test-connect-fails-without-tls
+    item:
+      type: ssh-test
+      name: "Verify Connect Fails without TLS"
+      command: |
+        unset DOCKER_TLS_VERIFY
+        unset DOCKER_CERT_PATH
+        docker ps -a
+      assertStatus:
+        equals: 1
+      assertErr:
+        notEmpty: true
+
+  - id: preinstall-image-tests
+    name: Preinstalled Image Tests
+    description: Tests on the default Docker image
+    item:
+      type: test-case
+
+      brooklyn.parameters:
+        - name: timeout.initialStartup
+          description: |
+            The timeout for provisioning, installing and launching the application
+            under test.
+          type: org.apache.brooklyn.util.time.Duration
+          default: 1h
+        - name: timeout.runtimeAssertion
+          type: org.apache.brooklyn.util.time.Duration
+          description: |
+            The timeout for any other operation e.g. invoking an effector or
+            waiting for a sensor to be updated.
+          default: 15m
+
+      brooklyn.config:
+        image.preinstall: cloudsoft/centos:7
+
+      brooklyn.children:
+        - type: ssh-test
+          name: "TEST-1 docker stock image"
+          brooklyn.config:
+            # Should already be pulled by the docker-engine blueprint
+            shell.env:
+              IMAGE_PREINSTALLED: $brooklyn:config("image.preinstall")
+            command: |
+              docker images --format "{{.Repository}}:{{.Tag}}" |
+                grep "${IMAGE_PREINSTALLED}"
+            assert.status:
+              equals: 0
+        - type: ssh-test
+          name: "TEST-2 Remove pre-installed image"
+          brooklyn.config:
+            # Should already be pulled by the docker-engine blueprint
+            shell.env:
+              IMAGE_PREINSTALLED: $brooklyn:config("image.preinstall")
+            command: |
+              docker rmi "${IMAGE_PREINSTALLED}"
+            assert.status:
+              equals: 0
+        - type: test-restart
+          name: "TEST-3 Restart to re-download image"
+        - type: ssh-test
+          name: "TEST-4 docker re-downloads stock images"
+          brooklyn.config:
+            # Should already be pulled by the docker-engine blueprint
+            shell.env:
+              IMAGE_PREINSTALLED: $brooklyn:config("image.preinstall")
+            command: |
+              docker images --format "{{.Repository}}:{{.Tag}}" |
+                grep "${IMAGE_PREINSTALLED}"
+            assert.status:
+              equals: 0
+
+  - id: no-preinstall-image-tests
+    name: Empty Preinstalled Image Tests
+    description: Tests empty image.preinstall will skip pull
+    item:
+      type: test-case
+
+      brooklyn.parameters:
+        - name: timeout.initialStartup
+          description: |
+            The timeout for provisioning, installing and launching the application
+            under test.
+          type: org.apache.brooklyn.util.time.Duration
+          default: 1h
+        - name: timeout.runtimeAssertion
+          type: org.apache.brooklyn.util.time.Duration
+          description: |
+            The timeout for any other operation e.g. invoking an effector or
+            waiting for a sensor to be updated.
+          default: 15m
+
+      brooklyn.children:
+        - type: ssh-test
+          name: "TEST-1 no docker images"
+          brooklyn.config:
+            command: |
+              # Only header expected
+              [ "$(docker images | wc -l)" -eq "1" ]
+            assert.status:
+              equals: 0
+
+  ###
+  # Tests that we can deploy a Docker Engine. We assert that it reports success, is reachable
+  # and basic health checks (via Docker CLI) also report success.
+  ##
+  - id: docker-engine-test
+    name: "Docker Engine test"
+    description: Test that Docker Engine is deployed correctly
+    item:
+      type: test-case
+
+      brooklyn.parameters:
+        - name: timeout.initialStartup
+          description: |
+            The timeout for provisioning, installing and launching the application
+            under test.
+          type: org.apache.brooklyn.util.time.Duration
+          default: 1h
+        - name: timeout.runtimeAssertion
+          type: org.apache.brooklyn.util.time.Duration
+          description: |
+            The timeout for any other operation e.g. invoking an effector or
+            waiting for a sensor to be updated.
+          default: 15m
+
+      brooklyn.children:
+        # Basic startup tests
+        - type: assert-up
+          name: "TEST-1-1 assert-up"
+          timeout: $brooklyn:config("timeout.initialStartup")
+        - type: assert-running
+          name: "TEST-1-2 assert-running"
+          timeout: $brooklyn:config("timeout.initialStartup")
+        - type: ssh-test
+          name: "TEST-1-3 docker CLI commands succeed"
+          brooklyn.config:
+            command: |
+              docker ps
+
+        # Test image pull and delete
+        - type: test-case
+          name: "TEST-2 image pull and delete"
+
+          brooklyn.children:
+          - type: ssh-test
+            name: "TEST-2-1 docker pull"
+            command: |
+              docker pull redis
+          - type: ssh-test
+            name: "TEST-2-2 docker images added"
+            command: |
+              docker images
+            assertOut:
+              contains: redis
+          - type: ssh-test
+            name: "TEST-2-3 docker rmi"
+            command: |
+              docker rmi redis
+          - type: ssh-test
+            name: "TEST-2-4 docker images removed"
+            command: |
+              docker images | grep -c redis
+            assertOut:
+                equals: "0"
+
+        # Test starting and stopping and restarting a container
+        - type: test-case
+          name: "TEST-3 docker containers"
+
+          brooklyn.children:
+            - type: ssh-test
+              name: "TEST-3-1 docker run MongoDB"
+              command: |
+                docker run -d --name "test-MongoDB" mongo
+            - type: ssh-test
+              name: "TEST-3-2 docker ps MongoDB is up"
+              command: |
+                docker ps
+              assertOut:
+                contains: test-MongoDB
+            - type: ssh-test
+              name: "TEST-3-4 docker stop MongoDB"
+              command: |
+                docker stop test-MongoDB
+            - type: ssh-test
+              name: "TEST-3-5 docker ps MongoDB is stopped"
+              command: |
+                docker ps | grep -c test-MongoDB
+              assertOut:
+                equals: "0"
+            - type: ssh-test
+              name: "TEST-3-6 docker start MongoDB"
+              command: |
+                docker start test-MongoDB
+            - type: ssh-test
+              name: "TEST-3-7 docker ps MongoDB is up again"
+              command: |
+                docker ps
+              assertOut:
+                contains: test-MongoDB
+
+        # Test building from a dockerfile
+        - type: test-case
+          name: "TEST-3-8 building from a dockerfile"
+          brooklyn.children:
+            - type: ssh-test
+              name: "TEST-3-8a Setup Dockerfile"
+              command: |
+                mkdir test_dockerfile_dir
+                printf "FROM ubuntu\nRUN echo hello world" > test_dockerfile_dir/Dockerfile
+            - type: ssh-test
+              name: "TEST-3-8b docker build"
+              command: |
+                docker build -t test_dockerfile:latest test_dockerfile_dir
+            - type: ssh-test
+              name: "TEST-3-8c docker images built"
+              command: |
+                docker images
+              assertOut:
+                contains: test_dockerfile
+
+        - type: ssh-test
+          name: "TEST-3-9 docker remove MongoDB"
+          command: |
+            docker rm -f test-MongoDB
+          assertOut:
+            contains: test-MongoDB
+
+  ###
+  # Tests that we can deploy a Docker Engine along with a long-running container.
+  # We assert that the container comes up (according to the CLI command `docker ps`).
+  ##
+  - id: docker-engine-and-container-test
+    name: "TEST-4 Docker Engine and Container test"
+    description: |
+      Test that can run a container on the Docker Engine
+    item:
+      type: test-case
+
+      brooklyn.parameters:
+        - name: timeout.initialStartup
+          description: |
+            The timeout for provisioning, installing and launching the application
+            under test.
+          type: org.apache.brooklyn.util.time.Duration
+          default: 1h
+        - name: timeout.runtimeAssertion
+          type: org.apache.brooklyn.util.time.Duration
+          description: |
+            The timeout for any other operation e.g. invoking an effector or
+            waiting for a sensor to be updated.
+          default: 15m
+
+      brooklyn.children:
+        - type: assert-up
+          name: "TEST-4-1 assert-up"
+          brooklyn.config:
+            timeout: $brooklyn:config("timeout.initialStartup")
+        - type: ssh-test
+          name: "TEST-4-2 assert-running"
+          brooklyn.config:
+            command: |
+              docker ps
+            assert.out:
+              contains: cloudsoft/centos:7

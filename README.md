@@ -1,150 +1,46 @@
-Clocker
+Clocker2
 =======
+## [Docker](./common/src/main/resources/docker/)
 
-Clocker creates and manages a **[Docker](https://docker.com/)** cloud infrastructure. Clocker supports
-single-click deployment and runtime management of multi-node applications that can run on
-containers distributed across multiple hosts. Plugins are included for both
-**[Project Calico](https://github.com/Metaswitch/calico-docker/)** and **[Weave](https://github.com/weaveworks/weave/)**
-to provide seamless Software-Defined Networking integration. Application blueprints written for
-**[Apache Brooklyn](https://brooklyn.apache.org/)** can thus be deployed to a distributed
-Docker Cloud infrastructure.
+## [Swarm](./swarm/src/main/resources/swarm/)
 
-This repository contains all of the required Brooklyn entities, locations and examples.
+## [Kubernetes](./kubernetes/src/main/resources/kubernetes/)
 
-<!-- CLOCKER_VERSION_BELOW -->
-[![Build Status](https://api.travis-ci.org/brooklyncentral/clocker.svg?branch=master)](https://travis-ci.org/brooklyncentral/clocker)&nbsp;[![Latest Builds](http://img.shields.io/badge/version-1.3.0--SNAPSHOT-blue.svg?style=flat)](http://clocker-latest.s3-website-eu-west-1.amazonaws.com/)&nbsp;[![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/brooklyncentral/clocker)&nbsp;[![Docker Image](https://badge.imagelayers.io/clockercentral/clocker:1.2.0.svg)](https://imagelayers.io/?images=clockercentral/clocker:1.2.0)
 
-## Getting started
+# Add Clocker to Brooklyn (Karaf Edition)
 
-To get started, you just have to download the Clocker distribution archive, deploy one of the
-**Docker Cloud** blueprints to the cloud or machines of your choice, and then use Clocker to
-deploy your applications. This will automatically create the required Docker containers.
+Add the yaml below (note this assumes clocker-swarm & clocker-kubernetes JARs hosted)
 
-You can create a Docker based cloud infrastructure on your favourite cloud provider or on a 
-private cloud using any of the jclouds supported APIs. Alternatively you can target one or 
-more existing machines for running Docker.
-
-If you are keen to peek under the covers, you will find the Docker Cloud infrastructure
-blueprints at either
-[docker-cloud-calico.yaml](https://raw.githubusercontent.com/brooklyncentral/clocker/master/dist/src/main/assembly/files/blueprints/docker-cloud-calico.yaml)
-or
-[docker-cloud-weave.yaml](https://raw.githubusercontent.com/brooklyncentral/clocker/master/dist/src/main/assembly/files/blueprints/docker-cloud-weave.yaml)
-depending on your choice of SDN provider. 
-
-### Using the latest Clocker release
-
-<!-- CLOCKER_VERSION_BELOW -->
-The latest version of Clocker is [1.2.0](https://github.com/brooklyncentral/clocker/releases/tag/v1.2.0).
-You can deploy your own **Docker Cloud** with a Weave SDN by running these commands with the _network_ argument
-st to `weave`, to use Project Calico as your SDN provider, change the last argument to `calico` instead:
-```Bash
-% wget --no-check-certificate --quiet \
-    -O brooklyn-clocker-dist.tar.gz http://git.io/vKrJr
-% tar zxf brooklyn-clocker-dist.tar.gz
-% cd brooklyn-clocker
-% ./bin/clocker.sh location network
-```
-The _location_ argument specifies the destination to deploy to, and the _network_ argument can be either `calico` or `weave`. If these are omitted then
-Brooklyn will start up without running Clocker, and you can choose the application to deploy using the web UI instead.
-
-*Please note that the Calico version does not currently work with AWS. Please use Weave with AWS*
-
-A Docker image is also available on [Docker Hub](https://hub.docker.com/r/clockercentral/clocker/). You must provide volume sources for a`.brooklyn`
-directory that is writeable, and your `.ssh` directory, and if you want to use a different port to 8080 or 8443 they must be forwarded on the host.
-A suitable startup command would be:
-
-```Bash
-% docker run -d -v ~/.brooklyn:/root/.brooklyn -v ~/.ssh:/root/.ssh -P \
-    clockercentral/clocker location network
-```
-For example, you can specify the jclouds provider for SoftLayer in San Jose by using
-_jclouds:softlayer:sjc01_, a group of machines as _byon:(hosts="10.1.2.3,10.1.2.4")_ or a specific
-location from your `brooklyn.properties` file as _named:alias_.
-
-For all cloud locations you must first configure the `~/.brooklyn/brooklyn.properties` file with any
-necessary credentials and security details, and select an SSH key (defaulting to `~/.ssh/id_rsa`).
-A basic `brooklyn.properties` file should look like the following:
-
-```properties
-brooklyn.ssh.config.privateKeyFile = ~/.ssh/id_rsa_clocker
-brooklyn.ssh.config.publicKeyFile = ~/.ssh/id_rsa_clocker.pub
-
-brooklyn.location.jclouds.softlayer.identity = user.name
-brooklyn.location.jclouds.softlayer.credential = softlayersecretapikey
-brooklyn.location.named.Softlayer-California = jclouds:softlayer:sjc01
-
-brooklyn.location.jclouds.aws-ec2.identity = ACCESS_KEY
-brooklyn.location.jclouds.aws-ec2.credential = awssecretkey
-brooklyn.location.named.Amazon-Ireland = jclouds:aws-ec2:eu-west-1
+```yaml
+brooklyn.catalog:
+  brooklyn.libraries:
+    - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.etcd&a=brooklyn-etcd&v=2.3.0-SNAPSHOT"
+#    TODO: Replace below URLs with link to release JARS    
+    - "http://localhost:8000/io/brooklyn/clocker/common/2.0.0-SNAPSHOT/common-2.0.0-SNAPSHOT.jar"
+    - "http://localhost:8000/io/brooklyn/clocker/swarm/2.0.0-SNAPSHOT/swarm-2.0.0-SNAPSHOT.jar"
+    - "http://localhost:8000/io/brooklyn/clocker/kubernetes/2.0.0-SNAPSHOT/kubernetes-2.0.0-SNAPSHOT.jar"
+  items:
+    - classpath://io.brooklyn.etcd.brooklyn-etcd:brooklyn-etcd/catalog.bom
+    - classpath://io.brooklyn.clocker.common:main/catalog.bom
+    - classpath://io.brooklyn.clocker.swarm:main/catalog.bom
+    - classpath://io.brooklyn.clocker.kubernetes:main/catalog.bom
 ```
 
-For more information on setting up locations, including supplying cloud provider credentials, see the
-[_Setting up Locations_ section of Brooklyn Getting Started](https://brooklyn.apache.org/quickstart/#configuring-a-location),
-and the more detailed [locations guide](https://brooklyn.apache.org/v/0.9.0/use/guide/locations/index.html).<!-- BROOKLYN_VERSION -->
-The Brooklyn documentation also covers setting up security for the web-console, and configuring users
-and passwords.
 
-The Brooklyn web-console, which will be deploying and managing your Docker Cloud, can be accessed at 
-[http://localhost:8081](http://localhost:8081) - this URL will have been written to standard out during startup.
-A preview of the new Clocker web-console, which shows a summary of the deployed Docker Clouds, is also available on the
-same server, at [http://localhost:8081/clocker/](http://localhost:8081/clocker/).
+# Add Clocker to Brooklyn (Standard Edition)
 
-Once the Docker Cloud application has started, a new location named `my-docker-cloud` will be
-available in the Locations drop-down list when adding new applications. Simply start a new application in this location
-and it will use Docker containers instead of virtual machines.
+You must add the following JARs to lib/dropins
+* [brooklyn-etcd](https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.etcd&a=brooklyn-etcd&v=2.3.0-SNAPSHOT)
+* [common](./common) 
+* [swarm](./swarm) 
+* [kubernetes](./kubernetes) 
 
-For more information on deploying applications from the Brooklyn catalog, see
-[Getting Started - Policies and Catalogs](https://brooklyn.apache.org/quickstart/policies-and-catalogs.html).
-
-You can also paste a YAML blueprint into the _YAML_ tab of the _Add Application_ dialog, as follows:
-```JS
-location: my-docker-cloud
-services:
-- type: org.apache.brooklyn.entity.webapp.tomcat.Tomcat8Server
-  wars.root: "https://s3-eu-west-1.amazonaws.com/brooklyn-clocker/hello-world.war"
+```yaml
+brooklyn.catalog:
+  items:
+    - classpath://io.brooklyn.etcd.brooklyn-etcd:brooklyn-etcd/catalog.bom
+    - classpath://io.brooklyn.clocker.common:main/catalog.bom
+    - classpath://io.brooklyn.clocker.swarm:swarm/swarm.bom
+    - classpath://io.brooklyn.clocker.kubernetes:kubernetes/plugins.bom
+    - classpath://io.brooklyn.clocker.kubernetes:kubernetes/kubernetes.bom
 ```
-
-A blueprint for a simple application using a Docker image would look like this:
-```JS
-location: my-docker-cloud
-services:
-- type: docker:redis:3
-  directPorts:
-  - 6379
-```
-
-### Building from source
-
-The master branch of Clocker is at version [1.3.0-SNAPSHOT](http://github.com/brooklyncentral/clocker/).
-Build and run this version of Clocker from source as follows:
-
-```Bash
-% git clone https://github.com/brooklyncentral/clocker.git
-...
-% cd clocker
-% mvn clean install
-...
-% tar zxf dist/target/brooklyn-clocker-dist.tar.gz
-% cd brooklyn-clocker
-% ./bin/clocker.sh location network
-...
-```
-
-If you just want to test the latest code, then our [Travis CI](https://travis-ci.org/brooklyncentral/clocker)
-build runs for every commit and the resulting distribution files are archived and made available for
-download on [Amazon S3](http://clocker-latest.s3-website-eu-west-1.amazonaws.com/).
-
-## Getting involved
-
-Clocker is [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0) licensed, and builds on  the
-[Apache Brooklyn](http://brooklyn.apache.org/) project. Please get involved and join the 
-discussion on [Freenode](http://freenode.net/), IRC `#brooklyncentral` or the Apache Brooklyn 
-community [mailing list](https://brooklyn.apache.org/community/). We also maintain a
-[Trello](https://trello.com/b/lhS7ltyi/clocker) board with the current roadmap and active tasks.
-
-### Documentation
-
-Please visit the [Wiki](https://github.com/brooklyncentral/clocker/wiki) for more details.
-
-----
-Copyright 2014-2016 by Cloudsoft Corporation Limited.

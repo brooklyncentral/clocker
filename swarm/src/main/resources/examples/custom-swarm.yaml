@@ -1,0 +1,57 @@
+id: custom-swarm
+name: "Docker Swarm Cluster"
+description: |
+  A custom Docker Swarm using a Consul cluster for discovery.
+
+  This is intended to illustrate the process of composing a blueprint to
+  create a Swarm, using pre-defined entities. For this purpose it uses both
+  entities from the catalog for the Swarm and the CA server, and entities
+  defined elsewhere for the Consul discovery cluster.
+
+  See <https://github.com/cloudsoft/consul/> for the Consul blueprints.
+
+location:
+  jclouds:softlayer:
+    region: ams01
+
+services:
+  - type: org.apache.brooklyn.entity.stock.BasicApplication
+    id: swarm
+    name: "swarm"
+    brooklyn.enrichers:
+      - type: org.apache.brooklyn.enricher.stock.Propagator
+        brooklyn.config:
+          producer: $brooklyn:child("swarm-cluster")
+          propagating:
+            - $brooklyn:sensor("swarm.url")
+    brooklyn.children:
+      - type: ca-server
+        id: ca-server
+        name: "ca-server"
+      - type: consul-cluster
+        id: consul-cluster
+        name: "consul-cluster"
+        brooklyn.config:
+          initialSize: 3
+        brooklyn.enrichers:
+          - type: org.apache.brooklyn.enricher.stock.Transformer
+            brooklyn.config:
+              enricher.triggerSensors:
+                - $brooklyn:sensor("cluster.nodeip.string")
+              enricher.targetSensor: $brooklyn:sensor("consul.url")
+              enricher.targetValue:
+                $brooklyn:formatString:
+                  - "consul://%s"
+                  - $brooklyn:attributeWhenReady("cluster.nodeip.string")
+      - type: docker-swarm-cluster
+        id: swarm-cluster
+        name: "swarm-cluster"
+        brooklyn.config:
+          swarm.manager.size: 3
+          swarm.initial.size: 3
+          swarm.max.size: 3
+          swarm.discovery.url: $brooklyn:entity("consul-cluster").attributeWhenReady("consul.url")
+          docker.discovery.url: $brooklyn:entity("consul-cluster").attributeWhenReady("consul.url")
+          launch.latch: $brooklyn:entity("consul-cluster").attributeWhenReady("service.isUp")
+          customize.latch: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
+          ca.request.root.url: $brooklyn:entity("ca-server").attributeWhenReady("main.uri")
