@@ -59,8 +59,11 @@ brooklyn.catalog:
           label: "Kubernetes API Server Port"
           type: integer
           default: 8080
-        - name: kubernetes.create.shared.securitygroup
-          label: "Kubernetes blueprint will configure security groups to allow access between workers and to allow external access to deployed apps"
+        - name: kubernetes.sharedsecuritygroup.create
+          label:  "Create Kubernetes SharedSecurityGroup"
+          description: |
+            Kubernetes blueprint will configure security groups to allow access
+            between workers and to allow external access to deployed apps
           type: boolean
           default: true
 
@@ -302,8 +305,11 @@ brooklyn.catalog:
             Reports entity as failed if it fails two or more times in this time window
           type: org.apache.brooklyn.util.time.Duration
           default: 15m
-        - name: kubernetes.create.shared.securitygroup
-          label: "Kubernetes blueprint will configure security groups to allow access between workers and to allow external access to deployed apps"
+        - name: kubernetes.sharedsecuritygroup.create
+          label:  "Create Kubernetes SharedSecurityGroup"
+          description: |
+            Kubernetes blueprint will configure security groups to allow access
+            between workers and to allow external access to deployed apps
           type: boolean
           default: true
 
@@ -317,7 +323,7 @@ brooklyn.catalog:
               object.fields:
                 tcpPortRanges:
                   - "30000-32767"
-                enabled: $brooklyn:config("kubernetes.create.shared.securitygroup")
+                enabled: $brooklyn:config("kubernetes.sharedsecuritygroup.create")
 
         shell.env:
           KUBERNETES_VERSION: $brooklyn:entity("kubernetes-cluster").config("kubernetes.version")

@@ -54,8 +54,11 @@ brooklyn.catalog:
             Size of the etcd cluster when created initially
           type: integer
           default: 1
-        - name: swarm.create.shared.securitygroup
-          label: "Swarm blueprint will configure security groups to allow access between docker nodes and to allow external access to deployed apps"
+        - name: swarm.sharedsecuritygroup.create
+          label: "Create Swarm SharedSecurityGroup"
+          description: |
+            Swarm blueprint will configure security groups to allow access between docker nodes and
+            to allow external access to deployed apps
           type: boolean
           default: true
 
@@ -493,7 +496,7 @@ brooklyn.catalog:
               object.fields:
                 tcpPortRanges:
                   - "32768-65535"
-                enabled: $brooklyn:config("swarm.create.shared.securitygroup")
+                enabled: $brooklyn:config("swarm.sharedsecuritygroup.create")
 
         shell.env:
           SWARM_DISCOVERY_URL: $brooklyn:config("swarm.discovery.url")
