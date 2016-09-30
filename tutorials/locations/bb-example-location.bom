@@ -31,4 +31,4 @@ brooklyn.catalog:
 # You will also need to set either kubernetes.sharedsecuritygroup.create or
 # swarm.sharedsecuritygroup.create to false when you deploy the swarm or kubernetes
 
-      securityGroups: VPN_local
+      securityGroups: <SECURITY GROUP ID>
