@@ -58,3 +58,6 @@ There are some configuration options that control Kubernetes specific parts:
 | kubernetes.cluster.name | Name of the Kubernetes cluster |
 | kubernetes.user         | Kubernetes username            |
 | kubernetes.password     | Kubernetes password            |
+
+#### Troubleshooting
+For any problems please consult the [troubleshooting section here](troubleshooting.html).
