@@ -23,3 +23,6 @@ Clocker for [Apache Brooklyn](https://brooklyn.apache.org/) is a set of open sou
 4. Job done, you should now be all set!
 
 The last thing to do is to deploy one (or more) of these new entities. They should be available as an application in the "Create Application" dialog. Check out [our tutorials](tutorials) or you use our [yaml examples](examples/swarm.yaml){:target="blank"} to get started.
+
+### Troubleshooting
+For any problems please consult the [troubleshooting section here](troubleshooting.html).
