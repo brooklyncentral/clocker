@@ -59,3 +59,6 @@ The Swarm nodes can be provisioned on with specific hardware requirements. There
 |----------------|------------------------------------------------|
 | swarm.minCores | Minimum CPU cores for provisioning Swarm nodes |
 | swarm.minRam   | Minimum RAM for provisioning Swarm nodes       |
+
+#### Troubleshooting
+For any problems please consult the [troubleshooting section here](troubleshooting.html).
