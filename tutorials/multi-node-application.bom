@@ -1,0 +1,44 @@
+location: swarm-location
+name: 3-Tier web app on swarm
+services:
+- type: org.apache.brooklyn.entity.group.DynamicCluster
+  id: cluster
+  name: "Webapp Cluster"
+  brooklyn.config:
+    initialSize: 2
+    memberSpec:
+      $brooklyn:entitySpec:
+        type: org.apache.brooklyn.entity.webapp.tomcat.TomcatServer
+        id: tomcat
+        name: "Tomcat Server"
+        brooklyn.config:
+          wars.root:
+            "http://search.maven.org/remotecontent?filepath=org/apache/brooklyn/example/brooklyn-example-hello-world-sql-webapp/0.9.0/brooklyn-example-hello-world-sql-webapp-0.9.0.war"
+          java.sysprops:
+            brooklyn.example.db.url:
+              $brooklyn:formatString:
+                - "jdbc:mysql://%s:%s/%s?user=%s&password=%s"
+                - $brooklyn:entity("db").attributeWhenReady("host.subnet.address")
+                - $brooklyn:entity("db").attributeWhenReady("mysql.port")
+                - "visitors"
+                - "brooklyn"
+                - "br00k11n"
+
+- type: org.apache.brooklyn.entity.proxy.nginx.NginxController
+  id: nginx
+  name: "Load Balancer (nginx)"
+  brooklyn.config:
+    loadbalancer.serverpool: $brooklyn:sibling("cluster")
+    nginx.sticky: false
+  brooklyn.enrichers:
+    - type: org.apache.brooklyn.core.network.OnPublicNetworkEnricher
+      brooklyn.config:
+        sensors:
+          - main.uri
+
+- type: org.apache.brooklyn.entity.database.mysql.MySqlNode
+  id: db
+  name: "Database (MySQL)"
+  brooklyn.config:
+    datastore.creation.script.url:
+      "https://github.com/apache/brooklyn-library/raw/master/examples/simple-web-cluster/src/main/resources/visitors-creation-script.sql"

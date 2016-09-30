@@ -1,0 +1,29 @@
+id: swarm
+name: "Docker Swarm Cluster"
+description: |
+  Uses the default settings for configuring the Swarm, apart from the initial
+  size of the cluster of Docker Engine nodes.
+
+  Deploys on AWS using only the default Swarm entity configuration. Requires
+  a security group to be deined in the AWS region or VPC, which should be
+  set in the 'templateOptions' of the location, as seen below. The VMs
+  must also have iptables disabled, which is accomplished by setting the
+  'stopIptables' configuration key to 'true' on the Swarm entity.
+
+location: <previously-downloaded-location>
+
+services:
+  - type: docker-swarm
+    name: "swarm"
+    brooklyn.config:
+      swarm.initial.size: 8
+      swarm.max.size: 16
+      swarm.manager.size: 3
+      etcd.initial.size: 3
+      swarm.port: 4000
+      swarm.defaultnetwork: "swarm"
+      swarm.scaling.cpu.limit: 0.80
+      swarm.strategy: "binpack"
+      swarm.overcommit: 0.50
+      swarm.recovery.stabilizationDelay: 10s
+      swarm.recovery.failOnRecurringFailuresInThisDuration: 5m

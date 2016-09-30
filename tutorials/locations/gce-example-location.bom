@@ -1,0 +1,18 @@
+brooklyn.catalog:
+  id: gce-europe-centos7
+  name: "Google Compute Engine Europe Centos 7"
+  itemType: location
+  item:
+    type: jclouds:google-compute-engine
+    brooklyn.config:
+      imageNameRegex: centos-7.*
+      region: europe-west1-b
+      installDevUrandom: true
+      minRam: 2000
+      identity: <IDENTITY>
+
+      # Use a pre-created everything open network to avoid quota limitations
+      templateOptions:
+        network: <NETWORK>
+
+      credential: <CREDENTIAL>

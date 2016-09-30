@@ -1,0 +1,25 @@
+brooklyn.catalog:
+  id: ibm-bluebox-sng-centos7
+  name: "IBM BlueBox Singapore CentOS 7"
+  itemType: location
+  item:
+    type: jclouds:openstack-nova
+    brooklyn.config:
+      endpoint: <ENDPOINT>
+      identity:  <IDENTITY>
+      credential: <CREDENTIAL>
+      jclouds.keystone.credential-type: passwordCredentials
+
+      generate.hostname: true
+      installDevUrandom: true
+
+    # You need to make sure you have a image with name "Centos 7.0"
+      imageNameRegex: CentOS 7
+      loginUser: centos
+      minRam: 2000
+
+# By default open stack will use an existing network
+# We recommend creating one and specifying below
+      templateOptions:
+        networks: [ "<NETWORK ID>" ]
+

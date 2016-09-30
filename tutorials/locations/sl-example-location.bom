@@ -1,0 +1,15 @@
+brooklyn.catalog:
+  id: sl-lon-centos7
+  name: "Softlayer London CentOS 7"
+  itemType: location
+  item:
+    type: jclouds:softlayer
+    brooklyn.config:
+      region: lon02
+      identity: <IDENTITY>
+      credential: <CREDENTIAL>
+
+      installDevUrandom: true
+      minRam: 2000
+      imageId: CENTOS_7_64
+

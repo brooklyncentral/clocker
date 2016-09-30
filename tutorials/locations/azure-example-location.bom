@@ -1,0 +1,25 @@
+brooklyn.catalog:
+  id: azure
+  name: "Azure North Europe"
+  itemType: location
+  item:
+    type: jclouds:azurecompute
+    brooklyn.config:
+      identity: <IDENTITY>
+      credential: <CREDENTIAL>
+      endpoint: <AZURE ENDPOINT>
+      vmNameMaxLength: 45
+      jclouds.azurecompute.operation.timeout: 120000
+      
+      # this line disables an invalid openlogic repo
+      # sudo yum-config-manager --disable openlogic
+      setup.script: data:text/plain;base64,c3VkbyB5dW0tY29uZmlnLW1hbmFnZXIgLS1kaXNhYmxlIG9wZW5sb2dpYw==
+      imageId: 5112500ae3b842c8b9c604889f8753c3__OpenLogic-CentOS-72-20160303/North Europe
+
+      regionId: North Europe
+      hardwareId: BASIC_A2
+      loginUser: user
+      installDevUrandom: true
+      templateOptions:
+        overrideAuthenticateSudo: true
+

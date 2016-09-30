@@ -1,0 +1,13 @@
+brooklyn.catalog:
+  version: "1.0.0"
+  items:
+  - id: swarm-location
+    itemType: location
+    item:
+      type: docker:https://<HOSTNAME>:<PORT>/
+      brooklyn.config:
+        templateOptions:
+          networkMode: brooklyn
+        identity: <path/to/cert.pem>
+        credential: <path/to/key.pem>
+
