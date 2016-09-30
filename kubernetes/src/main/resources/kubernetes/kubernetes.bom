@@ -320,6 +320,10 @@ brooklyn.catalog:
           name: "kubernetes-master-cluster"
           brooklyn.policies:
             - type: org.apache.brooklyn.policy.ha.ServiceReplacer
+              brooklyn.config:
+                failureSensorToMonitor: $brooklyn:sensor("ha.entityFailed")
+                failOnRecurringFailuresInThisDuration:
+                  $brooklyn:config("kubernetes.recovery.failOnRecurringFailuresInThisDuration")
           brooklyn.enrichers:
             - type: org.apache.brooklyn.enricher.stock.Aggregator
               brooklyn.config:
@@ -365,26 +369,24 @@ brooklyn.catalog:
                         sudo -E calicoctl pool add ${FLANNEL_NETWORK} --nat-outgoing
                       checkRunning.command: |
                         sudo -E calicoctl pool show --ipv4 | grep "${FLANNEL_NETWORK}"
-                  - type: calico-policy-controller-pod
-                    id: calico-policy-controller
-                    name: "calico-policy-controller"
+                  - type: empty-software-process
+                    id: kubernetes-pods
+                    name: "kubernetes-pods"
                     brooklyn.config:
-                      start.latch: $brooklyn:sibling("kube-apiserver").attributeWhenReady("service.isUp")
-                  - type: kube-dns-pod
-                    id: kube-dns
-                    name: "kube-dns"
-                    brooklyn.config:
-                      start.latch: $brooklyn:sibling("kube-apiserver").attributeWhenReady("service.isUp")
-                  - type: kubernetes-dashboard-pod
-                    id: kubernetes-dashboard
-                    name: "kubernetes-dashboard"
-                    brooklyn.config:
-                      start.latch: $brooklyn:sibling("kube-apiserver").attributeWhenReady("service.isUp")
-                  - type: prometheus-pod
-                    id: prometheus
-                    name: "prometheus"
-                    brooklyn.config:
-                      start.latch: $brooklyn:sibling("kube-apiserver").attributeWhenReady("service.isUp")
+                      start.latch: $brooklyn:entity("kubernetes-pods").sibling("kube-apiserver").attributeWhenReady("service.isUp")
+                    brooklyn.children:
+                      - type: calico-policy-controller-pod
+                        id: calico-policy-controller
+                        name: "calico-policy-controller"
+                      - type: kube-dns-pod
+                        id: kube-dns
+                        name: "kube-dns"
+                      - type: kubernetes-dashboard-pod
+                        id: kubernetes-dashboard
+                        name: "kubernetes-dashboard"
+                      - type: prometheus-pod
+                        id: prometheus
+                        name: "prometheus"
             dynamiccluster.memberspec:
               $brooklyn:entitySpec:
                 type: kubernetes-master
@@ -400,6 +402,10 @@ brooklyn.catalog:
           name: "kubernetes-worker-cluster"
           brooklyn.policies:
             - type: org.apache.brooklyn.policy.ha.ServiceReplacer
+              brooklyn.config:
+                failureSensorToMonitor: $brooklyn:sensor("ha.entityFailed")
+                failOnRecurringFailuresInThisDuration:
+                  $brooklyn:config("kubernetes.recovery.failOnRecurringFailuresInThisDuration")
             - type: org.apache.brooklyn.policy.autoscaling.AutoScalerPolicy
               brooklyn.config:
                 autoscaler.metric:
@@ -456,9 +462,10 @@ brooklyn.catalog:
         - name: kubernetes.recovery.failOnRecurringFailuresInThisDuration
           label: "Fail Duration"
           description: |
-            Reports entity as failed if it fails two or more times in this time window
-          type: org.apache.brooklyn.util.time.Duration
-          default: 15m
+            Reports entity as failed if it fails two or more times in this time window.
+            Value is duration in milliseconds.
+          type: long
+          default: 900000
         - name: kubernetes.sharedsecuritygroup.create
           label:  "Create Kubernetes SharedSecurityGroup"
           description: |
@@ -596,12 +603,6 @@ brooklyn.catalog:
           name: "kubelet"
           brooklyn.config:
             start.latch: $brooklyn:sibling("calico-cni-plugin").attributeWhenReady("service.isUp")
-
-      brooklyn.policies:
-        - type: org.apache.brooklyn.policy.ha.ServiceRestarter
-          brooklyn.config:
-            failOnRecurringFailuresInThisDuration:
-              $brooklyn:config("kubernetes.recovery.failOnRecurringFailuresInThisDuration")
 
       brooklyn.enrichers:
         - type: org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic$ComputeServiceIndicatorsFromChildrenAndMembers
