@@ -15,4 +15,11 @@ brooklyn.catalog:
       maxConcurrentMachineCreations: 3
       loginUser: centos
 
+# There are a couple of known issues with auto configuring security groups
+# on AWS using brooklyn. We recommend configuring a security group manually
+# that allows all internal communication between VMs and inbound traffic on
+# 22, 8080, and 32768-65534 (for swarm) or 30000-32767 (for kubernetes)
+# You will also need to set either kubernetes.sharedsecuritygroup.create or
+# swarm.sharedsecuritygroup.create to false when you deploy the swarm or kubernetes
 
+      securityGroups: <SECURITY GROUP ID>
