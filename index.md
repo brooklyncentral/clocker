@@ -18,7 +18,7 @@ To use these blueprints you have two options. You can build the open source [Apa
 
 1. Firstly, you need to have a build of Apache Brooklyn, if you have not already done this, please [follow these instructions](https://brooklyn.apache.org/v/latest/dev/env/maven-build.html) to build Brooklyn.
 2. You will need to manually build [brooklyn-etcd](https://github.com/brooklyncentral/brooklyn-etcd/) and [Clocker](https://github.com/brooklyncentral/clocker). You can do so by running `mvn clean install` for these 2 projects
-3. Copy the brooklyn-etcd, common, swarm and kubernetes jar into lib/dropins in your Brooklyn directory
+3. Copy the brooklyn-etcd, common, swarm and kubernetes jar into 'lib/dropins' in your Brooklyn directory
 4. Launch Brooklyn using [these instructions](https://brooklyn.apache.org/v/latest/start/running.html)
 5. [download the `clocker.bom` file](clocker.bom). It contains all entities required to run containerised solutions. You need to add this file to your [Brooklyn catalog](http://brooklyn.apache.org/v/latest/ops/catalog/index.html). You can achieve this by either drag-and-dropping the file into the YAML editor (composer tab of the Brooklyn UI) or by using the [Brooklyn CLI](https://brooklyn.apache.org/v/latest/ops/cli/index.html) as follows:
 
