@@ -1,0 +1,9 @@
+brooklyn.catalog:
+  items:
+    - classpath://io.brooklyn.etcd.brooklyn-etcd:brooklyn-etcd/catalog.bom
+    - classpath://io.brooklyn.clocker.common:common/common.bom
+    - classpath://io.brooklyn.clocker.common:common/ca.bom
+    - classpath://io.brooklyn.clocker.common:docker/docker.bom
+    - classpath://io.brooklyn.clocker.swarm:swarm/swarm.bom
+    - classpath://io.brooklyn.clocker.kubernetes:kubernetes/plugins.bom
+    - classpath://io.brooklyn.clocker.kubernetes:kubernetes/kubernetes.bom
