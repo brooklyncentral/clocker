@@ -28,18 +28,18 @@ metadata:
   labels:
     app: kube-dns
     name: kube-dns-replicationcontroller
-    version: v19
+    version: v20
     kubernetes.io/cluster-service: "true"
 spec:
   replicas: ${config['template.substitutions']['replicas']}
   selector:
     app: kube-dns
-    version: v19
+    version: v20
   template:
     metadata:
       labels:
         app: kube-dns
-        version: v19
+        version: v20
         kubernetes.io/cluster-service: "true"
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
@@ -47,7 +47,7 @@ spec:
     spec:
       containers:
       - name: kubedns
-        image: gcr.io/google_containers/kubedns-amd64:1.7
+        image: gcr.io/google_containers/kubedns-amd64:1.8
         resources:
           limits:
             cpu: 100m
