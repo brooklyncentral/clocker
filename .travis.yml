@@ -13,9 +13,6 @@
 # limitations under the License.
 
 sudo: false
-language: java
-jdk:
-  - oraclejdk8
 
 script: mvn clean install
 
@@ -34,3 +31,4 @@ notifications:
   email:
   - andrew.kennedy@cloudsoft.io
   - andrea.turli@cloudsoft.io
+  
