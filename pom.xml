@@ -7,11 +7,12 @@
     <groupId>io.brooklyn.clocker</groupId>
     <artifactId>clocker-parent</artifactId>
     <packaging>pom</packaging>
-    <version>2.0.0-SNAPSHOT</version> <!-- CLOCKER_VERSION -->
+    <version>2.0.0</version> <!-- CLOCKER_VERSION -->
 
     <name>Clocker</name>
-    <description>Clocker</description>
-
+    <description>Apache Brooklyn blueprints to deploy and manage Docker environments</description>
+    <url>https://github.com/brooklyncentral/clocker</url>
+    
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -46,6 +47,22 @@
         </license>
     </licenses>
 
+    <!-- For the full list of developers, see contributors to https://github.com/brooklyncentral/clocker -->
+    <developers>
+        <developer>
+            <name>Aled Sage</name>
+            <organizationUrl>https://github.com/aledsage</organizationUrl>
+        </developer>
+        <developer>
+            <name>Andrew Kennedy</name>
+            <organizationUrl>https://github.com/grkvlt</organizationUrl>
+        </developer>
+        <developer>
+            <name>Mark McKenna</name>
+            <organizationUrl>https://github.com/m4rkmckenna</organizationUrl>
+        </developer>
+    </developers>
+    
     <distributionManagement>
         <snapshotRepository>
             <id>sonatype-nexus-snapshots</id>
@@ -132,6 +149,10 @@
                     <artifactId>maven-jar-plugin</artifactId>
                     <version>${maven-jar-plugin.version}</version>
                 </plugin>
+                <plugin>
+                    <artifactId>maven-gpg-plugin</artifactId>
+                    <version>1.6</version>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -185,4 +206,46 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>sonatype-release</id>
+            <activation>
+                <property>
+                    <name>brooklyn.deployTo</name>
+                    <value>sonatype</value>
+                </property>
+            </activation>
+            <distributionManagement>
+                <repository>
+                    <id>sonatype-nexus-staging</id>
+                    <name>Nexus Release Repository</name>
+                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+                </repository>
+                <snapshotRepository>
+                    <id>sonatype-nexus-snapshots</id>
+                    <name>Sonatype Nexus Snapshots</name>
+                    <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+                </snapshotRepository>
+            </distributionManagement>
+            <build>
+               <plugins>
+                    <plugin>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+               </plugins>
+            </build>
+
+        </profile>
+    </profiles>
+
 </project>

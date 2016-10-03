@@ -1,5 +1,5 @@
 brooklyn.catalog:
-  version: "2.0.0-SNAPSHOT" # CLOCKER_VERSION
+  version: "2.0.0" # CLOCKER_VERSION
   publish:
     description: |
       Resources for working with Docker Swarm from Apache Brooklyn
