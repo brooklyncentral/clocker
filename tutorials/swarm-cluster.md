@@ -4,10 +4,10 @@ title: Swarm Cluster Tutorial
 ---
 
 ### Introduction
-This tutorial is focused on deploying a production ready swarm cluster.
+This tutorial is focused on deploying a production ready Docker Swarm.
 
 ### Pre-requisites
-This tutorial assumes you have [installed](https://brooklyn.apache.org/v/latest/start/running.html) Apache Brooklyn, and the [Apache Brooklyn CLI](https://brooklyn.apache.org/v/latest/ops/cli/index.html).
+This tutorial assumes you have installed [Apache Brooklyn](https://brooklyn.apache.org/v/latest/start/running.html) or [Cloudsoft AMP](http://docs.cloudsoft.io/ccs/tutorial/tutorial-get-amp-running.html), as well as the [Apache Brooklyn CLI](https://brooklyn.apache.org/v/latest/ops/cli/index.html).
 
 ### Overview
 The production ready swarm cluster is comprised of the following components:
@@ -29,13 +29,13 @@ This is used to provide TLS certificates for the swarm cluster. This component i
 ### Instructions
 
 #### Setup a cloud location
-Firstly, we need to setup a location to deploy the Swarm cluster to.  We recommend the following settings:
+Firstly, we need to setup a location to deploy the Swarm cluster to. We recommend the following settings:
 
 - use the `installDevUrandom` config to prevent installation speed being slowed by lack of entropy. See [Entropy Troubleshooting](https://brooklyn.apache.org/documentation/increase-entropy.html)
 - use at least 2GB RAM
 - use a CentOS 7 based image
 
-The following catalog items should enable you to quickly get started on some popular clouds. Download the .bom file of the relevant cloud, add your credentials, and then run:
+The following catalog items should enable you to quickly get started on some popular clouds. Download the `.bom` file of the relevant cloud, add your credentials, and then run:
 
     br add-catalog <CLOUD-PROVIDER>-example-location.bom
 
@@ -83,7 +83,23 @@ The following catalog items should enable you to quickly get started on some pop
 </div>
 
 #### Deploy a Swarm Cluster
-After the location is setup, it is time to deploy a Swarm cluster. From your Brooklyn Install, head to the Home tab. Click on "Add application" and select "Docker Swarm with Discovery and CA", then click on "Next". Select the location that that we setup in the previous step. You can also change some configuration options such as the minimum and maximum number of nodes. Once you are happy with the configuration, press "Deploy" and your Swarm cluster will be created.
+After the location is setup, it is time to deploy a Docker Swarm.
+
+{::options parse_block_html="true" /}
+
+<ul class="nav nav-tabs">
+    <li class="active brooklyn-tab"><a data-target="#brooklyn, .brooklyn-tab" data-toggle="tab" href="#">Brooklyn</a></li>
+    <li class="amp-tab"><a data-target="#amp, .amp-tab" data-toggle="tab" href="#">AMP</a></li>
+</ul>
+
+<div class="tab-content">
+<div id="brooklyn" class="tab-pane fade in active">
+From your Brooklyn Install, head to the Home tab. Click on "Add application" and select "Docker Swarm with Discovery and CA", then click on "Next". Select the location that that we setup in the previous step. You can also change some configuration options such as the minimum and maximum number of nodes. Once you are happy with the configuration, press "Deploy" and your Swarm cluster will be created.
+</div>
+<div id="amp" class="tab-pane fade">
+From your AMP Install, head to the AMP Welcome page. In the quick deploy section select "Docker Swarm with Discovery and CA" and select the location that that we setup in the previous step. You can also change some configuration options such as the minimum and maximum number of nodes. Once you are happy with the configuration press Deploy and your Swarm cluster will be created.
+</div>
+</div>
 
 To interact with the Swarm cluster, we first need to get certificates from the CA server. To do so, the following [script](getcert.sh){:target="blank"} can be used:
 {% highlight bash %}

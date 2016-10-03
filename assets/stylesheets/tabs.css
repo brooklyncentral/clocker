@@ -201,8 +201,11 @@
 .nav:after {
     clear: both;
 }
-.tab-content pre {
+.tab-content {
+    background-color: #ffffff;
+    padding: 20px;
+    border: 1px solid #D7D8C8;
     border-top: none;
-    border-top-left-radius: 0px;
-    border-top-right-radius: 0px;
+    border-radius: 0 0 4px 4px;
+    margin-bottom: 22px;
 }
