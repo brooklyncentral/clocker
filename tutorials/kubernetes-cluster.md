@@ -10,7 +10,7 @@ This tutorial is focused on deploying a production ready Kubernetes cluster.
 The production ready Kubernetes cluster is comprised of the following components:
 
 ### Pre-requisites
-This tutorial assumes you have [installed](https://brooklyn.apache.org/v/latest/start/running.html) Apache Brooklyn, and the [Apache Brooklyn CLI](https://brooklyn.apache.org/v/latest/ops/cli/index.html).
+This tutorial assumes you have installed [Apache Brooklyn](https://brooklyn.apache.org/v/latest/start/running.html) or [Cloudsoft AMP](http://docs.cloudsoft.io/ccs/tutorial/tutorial-get-amp-running.html), as well as the [Apache Brooklyn CLI](https://brooklyn.apache.org/v/latest/ops/cli/index.html).
 
 #### Kubernetes cluster
 This Kubernetes cluster contains a manager and a configurable number of workers.
@@ -80,7 +80,23 @@ The following catalog items should enable you to quickly get started on some pop
 </div>
 
 #### Deploy a Kubernetes Cluster
-After the location is setup, it is time to deploy a Kubernetes cluster. From your Brooklyn Install, head to the Home tab. Click on "Add application" and select "Kubernetes cluster with a master node and worker nodes", then click on "Next". Select the location that that we setup in the previous step. You can also change some configuration options such as the minimum and maximum number of nodes. Once you are happy with the configuration, press "Deploy" and your Kubernetes cluster will be created.  See the location example for [IBM BlueBox](locations/bb-example-location.bom) and [AWS](locations/aws-example-location.bom) for extra config that may be required.
+After the location is setup, it is time to deploy a Kubernetes cluster.
+
+<ul class="nav nav-tabs">
+    <li class="active brooklyn-tab"><a data-target="#brooklyn, .brooklyn-tab" data-toggle="tab" href="#">Brooklyn</a></li>
+    <li class="amp-tab"><a data-target="#amp, .amp-tab" data-toggle="tab" href="#">AMP</a></li>
+</ul>
+
+<div class="tab-content">
+<div id="brooklyn" class="tab-pane fade in active">
+<p>From your Brooklyn Install, head to the Home tab. Click on "Add application" and select "Kubernetes cluster with a master node and worker nodes", then click on "Next". Select the location that that we setup in the previous step. You can also change some configuration options such as the minimum and maximum number of nodes. Once you are happy with the configuration, press "Deploy" and your Kubernetes cluster will be created.</p>
+<p>See the location example for [IBM BlueBox](locations/bb-example-location.bom) and [AWS](locations/aws-example-location.bom) for extra config that may be required.</p>
+</div>
+<div id="amp" class="tab-pane fade">
+<p>From your AMP Install, head to the AMP Welcome page. In the quick deploy section select "Kubernetes cluster with a master node and worker nodes" and select the location that that we setup in the previous step Select the location that that we setup in the previous step. You can also change some configuration options such as the minimum and maximum number of nodes. Once you are happy with the configuration, press "Deploy" and your Kubernetes cluster will be created.</p>
+<p>See the location example for [IBM BlueBox](locations/bb-example-location.bom) and [AWS](locations/aws-example-location.bom) for extra config that may be required.</p>
+</div>
+</div>
 
 To interact with the Kubernetes cluster, log in into the Kubernetes Dashboard (URL will be available as "main uri" sensor into the brooklyn console)
 
