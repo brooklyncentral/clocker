@@ -24,8 +24,6 @@ You can find the source code for the blueprints in this repo at:
 
 # Add Clocker to Brooklyn (Karaf Edition)
 
-Add the yaml below (note this assumes clocker-swarm & clocker-kubernetes JARs hosted)
-
 ```yaml
 brooklyn.catalog:
   brooklyn.libraries:
