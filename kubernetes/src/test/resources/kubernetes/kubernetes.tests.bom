@@ -1,7 +1,7 @@
 brooklyn.catalog:
   items:
   - id: kubernetes-cluster-tests
-    version: "2.0.0-SNAPSHOT" # CLOCKER_VERSION
+    version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
     itemType: template
     iconUrl: https://twitter.com/kubernetesio/profile_image?size=original
     name: Kubernetes Cluster Tests

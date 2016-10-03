@@ -1,5 +1,5 @@
 brooklyn.catalog:
-  version: "2.0.0-SNAPSHOT" # CLOCKER_VERSION
+  version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
   iconUrl: https://raw.githubusercontent.com/docker-library/docs/c350af05d3fac7b5c3f6327ac82fe4d990d8729c/docker/logo.png
   dependsOn:
     - tests/common.tests.bom
