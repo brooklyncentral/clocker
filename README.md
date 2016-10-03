@@ -17,23 +17,24 @@ Add the yaml below (note this assumes clocker-swarm & clocker-kubernetes JARs ho
 brooklyn.catalog:
   brooklyn.libraries:
     - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.etcd&a=brooklyn-etcd&v=2.3.0-SNAPSHOT"
-    - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=common&v=LATEST&e=jar"
-    - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=swarm&v=LATEST&e=jar"
-    - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=kubernetes&v=LATEST&e=jar"
+    - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=releases&g=io.brooklyn.clocker&a=common&v=2.0.0"
+    - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=releases&g=io.brooklyn.clocker&a=swarm&v=2.0.0"
+    - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=releases&g=io.brooklyn.clocker&a=kubernetes&v=2.0.0"
   items:
     - classpath://io.brooklyn.etcd.brooklyn-etcd:brooklyn-etcd/catalog.bom
     - classpath://io.brooklyn.clocker.common:main/catalog.bom
-    - classpath://io.brooklyn.clocker.swarm:main/catalog.bom
-    - classpath://io.brooklyn.clocker.kubernetes:main/catalog.bom
+    - classpath://io.brooklyn.clocker.swarm:swarm/swarm.bom
+    - classpath://io.brooklyn.clocker.kubernetes:kubernetes/plugins.bom
+    - classpath://io.brooklyn.clocker.kubernetes:kubernetes/kubernetes.bom
 ```
 
 # Add Clocker to Brooklyn (Standard Edition)
 
 You must add the following JARs to lib/dropins
 * [brooklyn-etcd](https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.etcd&a=brooklyn-etcd&v=2.3.0-SNAPSHOT)
-* [common](./common) 
-* [swarm](./swarm) 
-* [kubernetes](./kubernetes) 
+* [common](https://oss.sonatype.org/service/local/artifact/maven/redirect?r=releases&g=io.brooklyn.clocker&a=common&v=2.0.0) 
+* [swarm](https://oss.sonatype.org/service/local/artifact/maven/redirect?r=releases&g=io.brooklyn.clocker&a=swarm&v=2.0.0) 
+* [kubernetes](https://oss.sonatype.org/service/local/artifact/maven/redirect?r=releases&g=io.brooklyn.clocker&a=kubernetes&v=2.0.0) 
 
 ```yaml
 brooklyn.catalog:
