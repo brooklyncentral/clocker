@@ -5,6 +5,11 @@ title: Troubleshooting
 
 ### General
 
+* Persisted State
+
+  If you have previously run AMP or Brooklyn you may have to remove the persisted state these have saved on your machine.
+  To do this, delete the folder `~/.brooklyn/brooklyn-persisted-state/` and all of it's contents.
+
 * AWS VPC / Classic
   
   It's recommended that you use [VPC mode](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-vpc.html) to run 
@@ -24,7 +29,7 @@ title: Troubleshooting
 * Failed to find machine-unique group on node
   
   This is caused because of a restrictive security group within your cloud. Add a new piece of config to your swarm or cluster 
-  in the form `kubernetes.create.shared.securitygroup` or `swarm.create.shared.securitygroup` and set this to `false`.
+  in the form `kubernetes.sharedsecuritygroup.create` or `swarm.sharedsecuritygroup.create` and set this to `false`.
   
   Then create a new security group in your cloud and specify this in your location using the [securityGroups](http://brooklyn.apache.org/v/latest/ops/locations/index.html#vm-creation) key.
   
