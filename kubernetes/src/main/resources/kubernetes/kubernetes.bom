@@ -458,7 +458,7 @@ brooklyn.catalog:
             Time period for which the service must be consistently in the same state to trigger an action
           # A restart shouldn't trigger failure
           type: org.apache.brooklyn.util.time.Duration
-          default: 5m
+          default: 1m
         - name: kubernetes.recovery.failOnRecurringFailuresInThisDuration
           label: "Fail Duration"
           description: |
