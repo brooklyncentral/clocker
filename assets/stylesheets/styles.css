@@ -167,6 +167,11 @@ code, pre {
     font-size: 14px;
 }
 
+code {
+    background-color: #ededed;
+    padding: 3px;
+}
+
 pre {
     padding: 4px 12px;
     background: #FDFEFB;
@@ -175,6 +180,9 @@ pre {
     overflow: auto;
     overflow-y: hidden;
     margin-bottom: 32px;
+}
+pre code {
+    background-color: inherit;
 }
 
 /* Tables */
