@@ -17,17 +17,15 @@ Add the yaml below (note this assumes clocker-swarm & clocker-kubernetes JARs ho
 brooklyn.catalog:
   brooklyn.libraries:
     - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.etcd&a=brooklyn-etcd&v=2.3.0-SNAPSHOT"
-#    TODO: Replace below URLs with link to release JARS    
-    - "http://localhost:8000/io/brooklyn/clocker/common/2.0.0-SNAPSHOT/common-2.0.0-SNAPSHOT.jar"
-    - "http://localhost:8000/io/brooklyn/clocker/swarm/2.0.0-SNAPSHOT/swarm-2.0.0-SNAPSHOT.jar"
-    - "http://localhost:8000/io/brooklyn/clocker/kubernetes/2.0.0-SNAPSHOT/kubernetes-2.0.0-SNAPSHOT.jar"
+    - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=common&v=LATEST&e=jar"
+    - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=swarm&v=LATEST&e=jar"
+    - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=kubernetes&v=LATEST&e=jar"
   items:
     - classpath://io.brooklyn.etcd.brooklyn-etcd:brooklyn-etcd/catalog.bom
     - classpath://io.brooklyn.clocker.common:main/catalog.bom
     - classpath://io.brooklyn.clocker.swarm:main/catalog.bom
     - classpath://io.brooklyn.clocker.kubernetes:main/catalog.bom
 ```
-
 
 # Add Clocker to Brooklyn (Standard Edition)
 
