@@ -256,15 +256,22 @@ a.name {
     white-space: nowrap;
 }
 
-header ul {
+header > ul {
     list-style: none;
     padding: 0;
 }
 
-header li {
-    list-style-type: none;
-    max-width: 132px;
-    margin-bottom: 12px;
+ul.menu > li {
+    border-top: 1px solid #C30000;
+    padding-top: 5px;
+}
+ul.menu > li > ul {
+    list-style: dics;
+}
+
+header a.button {
+    display: block;
+    width: 125px;
 }
 
 a.button {
@@ -311,11 +318,6 @@ a.github:before {
     background: url(../images/octocat-small.png) no-repeat 1px;
     content: '';
     padding: 2px 2px 2px 22px;
-}
-
-header a.button {
-    display: block;
-    width: 125px;
 }
 
 /* Section - for main page content */
@@ -365,8 +367,8 @@ footer {
     }
 
     header {
-        padding-right: 320px;
         padding-left: 50px;
+        padding-right: 50px;
         margin: 0;
         height: inherit;
     }
@@ -380,29 +382,40 @@ footer {
         display: inline;
     }
 
-    header ul.github {
-        position: absolute;
-        right: 40px;
-        top: 40px;
-    }
-
     header ul.menu {
         overflow: hidden;
-        margin: 0;
+        margin-bottom: 22px;
     }
     header ul.menu li {
         float: left;
         margin-right: 10px;
     }
+    header ul.menu > li > ul {
+        list-style: none;
+        padding-left: 0;
+    }
+    header ul.menu > li > ul > li:not(:first-of-type):before {
+        content: '|';
+        color: #C30000;
+        margin-right: 10px;
+    }
+    header ul.menu > li > ul:before {
+        float: left;
+        content: 'ᒪ';
+        margin-top: -3px;
+        padding-left: 5px;
+        padding-right: 5px;
+        color: #C30000;
+    }
 }
 
-@media print, screen and (max-width: 720px) {
+@media print, screen and (max-width: 750px) {
     body {
         word-wrap: break-word;
     }
 
     header {
-        padding: 20px 205px 0 20px;
+        padding: 20px;
     }
 
     section {
@@ -416,15 +429,19 @@ footer {
     header ul, header p.view {
         position: static;
     }
+    header ul.menu {
+        margin-bottom: 11px;
+    }
+    header ul.menu > li {
+        width: 100%;
+        margin-bottom: 11px;
+    }
 }
 
 @media print, screen and (max-width: 480px) {
 
     header {
         padding-right: 20px;
-    }
-    header ul li a.download {
-        display: none;
     }
 
     footer a {
