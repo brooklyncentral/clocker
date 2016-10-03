@@ -12,7 +12,7 @@ Clocker for [Apache Brooklyn](https://brooklyn.apache.org/) is a set of open sou
 * You can manage and scale Swarms or clusters in real time.
 
 ## Getting started
-To use these blueprints you have two options. You can build the open source [Apache Brooklyn](http://brooklyn.apache.org/) and add the BOM files manually. Alternatively you can use a pre-packed application management platform Cloudsoft AMP [AMP](http://www.cloudsoft.io/products/) which is built on the foundation of Brooklyn plus additional features such as a rich UX, blueprint QA and commercial support available from Cloudsoft.
+To use these blueprints you have two options. You can build the open source [Apache Brooklyn](http://brooklyn.apache.org/) and add the BOM files manually. Alternatively you can use a pre-packed application management platform [Cloudsoft AMP](http://www.cloudsoft.io/products/) which is built on the foundation of Brooklyn plus additional features such as a rich UX, blueprint QA and commercial support available from Cloudsoft.
 
 ### Apache Brooklyn
 
