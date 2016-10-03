@@ -12,7 +12,7 @@ Clocker for [Apache Brooklyn](https://brooklyn.apache.org/) is a set of open sou
 * You can manage and scale Swarms or clusters in real time.
 
 ## Getting started
-To use these blueprints you have two options. You can build the open source [Apache Brooklyn](http://brooklyn.apache.org/) and add the BOM files manually. Alternatively you can use a pre-packed application called [AMP](http://www.cloudsoft.io/products/).
+To use these blueprints you have two options. You can build the open source [Apache Brooklyn](http://brooklyn.apache.org/) and add the BOM files manually. Alternatively you can use a pre-packed application management platform [Cloudsoft AMP](http://www.cloudsoft.io/products/) which is built on the foundation of Brooklyn plus additional features such as a rich UX, blueprint QA and commercial support available from Cloudsoft.
 
 ### Apache Brooklyn
 
@@ -28,9 +28,9 @@ To use these blueprints you have two options. You can build the open source [Apa
 6. You will then need to [setup a location](https://brooklyn.apache.org/v/latest/ops/locations/index.html) to which you will deploy these entities. We came up with location's templates to add to your catalog, that you can use out of the box for [AWS](tutorial/locations/aws-example-location.bom), [SoftLayer]((tutorial/locations/sl-example-location.bom)), [Azure](tutorial/locations/azure-example-location.bom), [GCE](tutorial/locations/gce-example-location.bom) and [Blue Box](tutorial/locations/bb-example-location.bom). You can find more information about what is going on in those files [here](tutorial/swarm-cluster.html#setup-a-cloud-location).
 7. The last thing to do is to deploy one (or more) of these new entities. They should be available as an application in the "Create Application" dialog. 
 
-### AMP
-AMP is a piece of Software written by Cloudsoft Corp. A version of AMP which includes the open-sourced container service blueprints can be found  [here](http://download.cloudsoft.io/amp/4.1.0-20160930.1659/cloudsoft-amp-karaf-4.1.0-20160930.1659.tar.gz).
-Please note, this is a trial use of AMP and before downloading and using AMP, you must agree to the [CTSLA](http://www.cloudsoft.io/trial-software-license).
+### Cloudsoft AMP
+Cloudsoft AMP makes it easy to consume Brooklyn and adds a rich UX, Blueprint QA along with Cloudsoft support. You can use the full AMP  as a free trial with no time limit for non-production use. A version of AMP which includes the open-sourced container service blueprints can be found [here](http://download.cloudsoft.io/amp/4.1.0-20160930.1659/cloudsoft-amp-karaf-4.1.0-20160930.1659.tar.gz).
+
 If you are interested in exploring AMP further please visit [this website](http://www.cloudsoft.io/).
 
 1. Please see the [docs](http://docs.cloudsoft.io/tutorials/tutorial-get-amp-running.html) to get AMP running. As we have provided a tarbal, please see the "OSX / DIY" section.
