@@ -21,8 +21,8 @@ after_success:
 
 env:
   global:
-    - secure: "eixhldm0eCdKfO37uru2qpLRv22liokwd7HaY2JkJqx1LonDM25uWWJ2a51HLSDClt3PYdLzKRXPtsLWCNlGxzlbSjXngsANXg/LIG8aoyyJdk4Hg+oNZW/LI1cDb7iUQyV1xVkKbRIOPuEAZEPIc4kOYTqTRenncCYVrXaeHAk="
-    - secure: "EG+DuKB4+LwaOuPa8GOdjqPyfKfGjsCs677nQgKX9+PSn0c3Dw6kOweeCK8CSvQIhADs+oPOoqUFCAMu2kvrpsISsmWZJBtoM4JLAM7o6XKNKdqdBm1T/ZMuftaes16w4BLTTa0rBwJKNdcIHggnSh9ws7CbkbDBbTglOGNpJV8="
+    - secure: "NfjzLpDuRQozk7CXxiR+u9brsDn6j5CnAUwS0VGgVnGfR6p3TazemlhXCyDsYHzvc2CDm/R61lRe0KJ81ahUlDt6aQucjMfgRA1GOYJy9GuQQsIisr91bOrs3p1frsb0iYxqPU9Rp9uhhu6aG1Hk26hWu7uPR8wKlF0MX3v/QmY="
+    - secure: "L/iMDibl60hJX1Gax0n0mxNFbrIJ2Sg+KfagWEVpI0EgjF5VtwYkE+d0bTnC5jH/HpyDfA5SdnXMcSAyxcePJg2YHzk+bf2+55pc+os29dVSXRbL87bPJb9Rjl0IvxBOjREOXTLsA50ARnmrJElbAhYAdHJR0RaGhtRvQMiWpmA=" 
 
 cache:
   directories:
@@ -31,4 +31,3 @@ notifications:
   email:
   - andrew.kennedy@cloudsoft.io
   - andrea.turli@cloudsoft.io
-  
