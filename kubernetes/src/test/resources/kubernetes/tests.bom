@@ -1,5 +1,5 @@
 brooklyn.catalog:
-  version: "2.0.0-SNAPSHOT" # CLOCKER_VERSION
+  version: "2.0.0" # CLOCKER_VERSION
   iconUrl: https://twitter.com/kubernetesio/profile_image?size=original
   license_code: APACHE-2.0
   dependsOn:
