@@ -17,6 +17,19 @@ Clocker for [Apache Brooklyn](https://brooklyn.apache.org/) is a set of open sou
 ## How to use it?
 If you are new to Clocker, you can head for our [Getting Started guide](tutorials/getting-started.html). Otherwise, check out our more [in-depth tutorials](tutorials) or simply use our [yaml example](examples/swarm.yaml){:target="blank"} to deploy a swarm cluster to an existing location.
 
+<figure>
+  <img src="{{site.baseurl}}/assets/images/quick-launch-amp-swarm.png" alt="Quick launch for Docker Swarm in AMP">
+  <figcaption>Quick launch for Docker Swarm in AMP</figcaption>
+</figure>
+<figure>
+  <img src="{{site.baseurl}}/assets/images/quick-launch-amp-kubernetes.png" alt="Quick launch for Kubernetes in AMP">
+  <figcaption>Quick launch for Docker Swarm in AMP</figcaption>
+</figure>
+<figure>
+  <img src="{{site.baseurl}}/assets/images/quick-launch-brooklyn.png" alt="Quick launch for Docker Swarm or Kubernetes in Brooklyn">
+  <figcaption>Quick launch for Docker Swarm in AMP</figcaption>
+</figure>
+
 ## Troubleshooting
 For any problems please consult the [troubleshooting section](./docs/troubleshooting.html).
 

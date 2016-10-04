@@ -141,22 +141,30 @@ hr {
 
 /* Images */
 
-img {
+section img {
     position: relative;
     margin: 0 auto;
-    max-width: 650px;
-    padding: 5px;
-    margin: 10px 0 32px 0;
-    border: 1px solid #ccc;
+    width: 100%;
 }
 
-p img {
+section p img {
     display: inline;
     margin: 0;
     padding: 0;
     vertical-align: middle;
     text-align: center;
     border: none;
+}
+
+figure {
+    border: 1px solid #ccc;
+    margin-bottom: 22px;
+}
+figure > figcaption {
+    text-align: center;
+    color: #aaa;
+    font-style: italic;
+    margin-bottom: 11px;
 }
 
 /* Code blocks */
