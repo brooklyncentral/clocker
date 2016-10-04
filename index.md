@@ -23,11 +23,11 @@ If you are new to Clocker, you can head for our [Getting Started guide](tutorial
 </figure>
 <figure>
   <img src="{{site.baseurl}}/assets/images/quick-launch-amp-kubernetes.png" alt="Quick launch for Kubernetes in AMP">
-  <figcaption>Quick launch for Docker Swarm in AMP</figcaption>
+  <figcaption>Quick launch for Kubernetes cluster in AMP</figcaption>
 </figure>
 <figure>
   <img src="{{site.baseurl}}/assets/images/quick-launch-brooklyn.png" alt="Quick launch for Docker Swarm or Kubernetes in Brooklyn">
-  <figcaption>Quick launch for Docker Swarm in AMP</figcaption>
+  <figcaption>Quick launch for Docker Swarm or Kubernetes in Brooklyn</figcaption>
 </figure>
 
 ## Troubleshooting
