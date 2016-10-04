@@ -22,10 +22,7 @@ To use the Clocker blueprints you have two options:
 <div class="tab-content">
 <div id="amp" class="tab-pane fade in active">
 
-1. Download the appropriate AMP installer:
- * [RPM](http://download.cloudsoft.io/amp/4.1.0-20160930.1659/cloudsoft-amp-karaf-4.1.0-20160930.1659-noarch.rpm) 
- * [DEB](http://download.cloudsoft.io/amp/4.1.0-20160930.1659/cloudsoft-amp-karaf-4.1.0-20160930.1659-all.deb)
- * [tar ball](http://download.cloudsoft.io/amp/4.1.0-20160930.1659/cloudsoft-amp-karaf-4.1.0-20160930.1659.tar.gz)
+1. [Download AMP](http://www.cloudsoft.io/amp-container-service-early-access)
 2. Install AMP. For more detailed instructions, see the [docs](http://docs.cloudsoft.io/tutorials/tutorial-get-amp-running.html#install-cloudsoft-amp).
 3. Open the AMP UI in your favourite web browser (as per the detailed instructions within the link above) and [setup a location](http://docs.cloudsoft.io/tutorials/tutorial-get-amp-running.html#add-a-location) for where you want to deploy to (e.g. your preferred cloud, or a list of IPs for pre-existing machines). We came up with location's templates to add to your catalog, that you can use out of the box for [AWS](tutorials/locations/aws-example-location.bom), [SoftLayer]((tutorials/locations/sl-example-location.bom)), [Azure](tutorials/locations/azure-example-location.bom), [GCE](tutorials/locations/gce-example-location.bom) and [Blue Box](tutorials/locations/bb-example-location.bom). For more information, head to the [tutorial section](tutorials/swarm-cluster.html#setup-a-cloud-location).
 4. AMP includes a set of quick launch applications, for point-and-click deployment to your favourite location. These include `Docker Swarm with Discovery and CA` and `Kubernetes Cluster`. Choose the desired application, then your location, and any custom configuration options such as the size of cluster. Then click Deploy.
