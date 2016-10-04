@@ -366,6 +366,12 @@ footer {
         margin-bottom: 0;
     }
 
+    footer p.version {
+        position: absolute;
+        top: 44px;
+        left: 175px;
+    }
+
     header {
         padding-left: 50px;
         padding-right: 50px;
@@ -384,11 +390,14 @@ footer {
 
     header ul.menu {
         overflow: hidden;
-        margin-bottom: 22px;
+        margin-bottom: 11px;
     }
     header ul.menu li {
         float: left;
         margin-right: 10px;
+    }
+    header ul.menu > li {
+        margin-bottom: 11px;
     }
     header ul.menu > li > ul {
         list-style: none;
@@ -426,15 +435,16 @@ footer {
         padding: 20px;
     }
 
+    footer p.version {
+        top: 30px;
+        left: 145px;
+    }
+
     header ul, header p.view {
         position: static;
     }
-    header ul.menu {
-        margin-bottom: 11px;
-    }
     header ul.menu > li {
         width: 100%;
-        margin-bottom: 11px;
     }
 }
 
