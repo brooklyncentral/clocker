@@ -69,3 +69,8 @@ Check out [our tutorials](tutorials) or you use our [yaml examples](examples/swa
 
 ## Troubleshooting
 For any problems please consult the [troubleshooting section here](./docs/troubleshooting.html).
+
+## License and Support
+Clocker is released under the [Apache 2 License](https://www.apache.org/licenses/LICENSE-2.0).
+
+If you would like a commercial support contract, or professional services assistance when trialling or using Clocker, please [contact Cloudsoft](http://www.cloudsoft.io/contact).
