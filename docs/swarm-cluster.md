@@ -4,11 +4,9 @@ title: Docker Swarm Documentation
 ---
 
 ### Overview
-With Clocker, you can easily deploy and manage Docker Swarm clusters. They are production-ready infrastructure with TLS, high-availability and extensions like Flannel, Calico and Canal for networking.
+With Clocker, you can easily deploy and manage Docker Swarm clusters. They are production-ready infrastructure with TLS and high-availability.
 
 Can also connect to existing infrastructure provisioned and managed externally, by specifying appropriate API endpoints.
-
-You can containerize applications by simply deploying [Brooklyn blueprints](http://brooklyn.apache.org/v/latest/start/blueprints.html) to container-aware [Brooklyn locations](http://brooklyn.apache.org/v/latest/ops/locations/index.html) or build hybrid applications from virtual machines, containers and pods.
 
 ### Architecture
 ![Docker Swarm architecture]({{site.baseurl}}/assets/images/swarm-architecture.png)
