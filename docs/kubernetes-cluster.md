@@ -24,6 +24,16 @@ Used as a discovery backend for the Kubernetes cluster.
 #### CA Server
 This is used to provide TLS certificates for the Kubernetes cluster. This component is designed to be easily replaced. It is strongly recommended that this component is replaced with a production grade CA server of your choice.
 
+### Location
+Clocker currently supports deployments to **CentOS only**. We recommend to setup a location with the following setting:
+
+- use at least 2GB RAM
+- use a CentOS 7 based image
+
+If you are using Brooklyn, it might a good idea to increase the entropy of your server by using `installDevUrandom` config. This would prevent installation speed being slowed. For more information, see [Entropy Troubleshooting](https://brooklyn.apache.org/documentation/increase-entropy.html)
+
+Finally, be aware that you might get in trouble because of your cloud provider's security group. For more information, please see the [troubleshooting page](troubleshooting.html#failed-to-find-machine-unique-group-on-node).
+
 ### Configuration 
 The Kubernetes entity comes with built-in configuration that allows you to control how your Kubernetes cluster will be deployed and manage.
 

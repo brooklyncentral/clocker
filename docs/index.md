@@ -1,6 +1,10 @@
 ---
 layout: base
 title: Documentation
+children:
+- swarm-cluster.md
+- kubernetes-cluster.md
+- troubleshooting.md
 ---
 
 ## Overview

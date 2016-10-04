@@ -141,22 +141,30 @@ hr {
 
 /* Images */
 
-img {
+section img {
     position: relative;
     margin: 0 auto;
-    max-width: 650px;
-    padding: 5px;
-    margin: 10px 0 32px 0;
-    border: 1px solid #ccc;
+    width: 100%;
 }
 
-p img {
+section p img {
     display: inline;
     margin: 0;
     padding: 0;
     vertical-align: middle;
     text-align: center;
     border: none;
+}
+
+figure {
+    border: 1px solid #ccc;
+    margin-bottom: 22px;
+}
+figure > figcaption {
+    text-align: center;
+    color: #aaa;
+    font-style: italic;
+    margin-bottom: 11px;
 }
 
 /* Code blocks */
@@ -167,6 +175,11 @@ code, pre {
     font-size: 14px;
 }
 
+code {
+    background-color: #ededed;
+    padding: 3px;
+}
+
 pre {
     padding: 4px 12px;
     background: #FDFEFB;
@@ -175,6 +188,9 @@ pre {
     overflow: auto;
     overflow-y: hidden;
     margin-bottom: 32px;
+}
+pre code {
+    background-color: inherit;
 }
 
 /* Tables */
@@ -248,15 +264,22 @@ a.name {
     white-space: nowrap;
 }
 
-header ul {
+header > ul {
     list-style: none;
     padding: 0;
 }
 
-header li {
-    list-style-type: none;
-    max-width: 132px;
-    margin-bottom: 12px;
+ul.menu > li {
+    border-top: 1px solid #C30000;
+    padding-top: 5px;
+}
+ul.menu > li > ul {
+    list-style: dics;
+}
+
+header a.button {
+    display: block;
+    width: 125px;
 }
 
 a.button {
@@ -305,11 +328,6 @@ a.github:before {
     padding: 2px 2px 2px 22px;
 }
 
-header a.button {
-    display: block;
-    width: 125px;
-}
-
 /* Section - for main page content */
 
 section {
@@ -356,9 +374,15 @@ footer {
         margin-bottom: 0;
     }
 
+    footer p.version {
+        position: absolute;
+        top: 44px;
+        left: 175px;
+    }
+
     header {
-        padding-right: 320px;
         padding-left: 50px;
+        padding-right: 50px;
         margin: 0;
         height: inherit;
     }
@@ -372,29 +396,43 @@ footer {
         display: inline;
     }
 
-    header ul.github {
-        position: absolute;
-        right: 40px;
-        top: 40px;
-    }
-
     header ul.menu {
         overflow: hidden;
-        margin: 0;
+        margin-bottom: 11px;
     }
     header ul.menu li {
         float: left;
         margin-right: 10px;
     }
+    header ul.menu > li {
+        margin-bottom: 11px;
+    }
+    header ul.menu > li > ul {
+        list-style: none;
+        padding-left: 0;
+    }
+    header ul.menu > li > ul > li:not(:first-of-type):before {
+        content: '|';
+        color: #C30000;
+        margin-right: 10px;
+    }
+    header ul.menu > li > ul:before {
+        float: left;
+        content: 'ᒪ';
+        margin-top: -3px;
+        padding-left: 5px;
+        padding-right: 5px;
+        color: #C30000;
+    }
 }
 
-@media print, screen and (max-width: 720px) {
+@media print, screen and (max-width: 750px) {
     body {
         word-wrap: break-word;
     }
 
     header {
-        padding: 20px 205px 0 20px;
+        padding: 20px;
     }
 
     section {
@@ -405,8 +443,16 @@ footer {
         padding: 20px;
     }
 
+    footer p.version {
+        top: 30px;
+        left: 145px;
+    }
+
     header ul, header p.view {
         position: static;
+    }
+    header ul.menu > li {
+        width: 100%;
     }
 }
 
@@ -414,9 +460,6 @@ footer {
 
     header {
         padding-right: 20px;
-    }
-    header ul li a.download {
-        display: none;
     }
 
     footer a {

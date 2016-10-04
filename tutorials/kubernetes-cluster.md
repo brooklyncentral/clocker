@@ -83,17 +83,17 @@ The following catalog items should enable you to quickly get started on some pop
 After the location is setup, it is time to deploy a Kubernetes cluster.
 
 <ul class="nav nav-tabs">
-    <li class="active brooklyn-tab"><a data-target="#brooklyn, .brooklyn-tab" data-toggle="tab" href="#">Brooklyn</a></li>
-    <li class="amp-tab"><a data-target="#amp, .amp-tab" data-toggle="tab" href="#">AMP</a></li>
+    <li class="active amp-tab"><a data-target="#amp, .amp-tab" data-toggle="tab" href="#">AMP</a></li>
+    <li class="brooklyn-tab"><a data-target="#brooklyn, .brooklyn-tab" data-toggle="tab" href="#">Brooklyn</a></li>
 </ul>
 
 <div class="tab-content">
-<div id="brooklyn" class="tab-pane fade in active">
-<p>From your Brooklyn Install, head to the Home tab. Click on "Add application" and select "Kubernetes cluster with a master node and worker nodes", then click on "Next". Select the location that that we setup in the previous step. You can also change some configuration options such as the minimum and maximum number of nodes. Once you are happy with the configuration, press "Deploy" and your Kubernetes cluster will be created.</p>
+<div id="amp" class="tab-pane fade in active">
+<p>From your AMP Install, head to the AMP Welcome page. In the quick deploy section select "Kubernetes cluster with a master node and worker nodes" and select the location that that we setup in the previous step Select the location that that we setup in the previous step. You can also change some configuration options such as the minimum and maximum number of nodes. Once you are happy with the configuration, press "Deploy" and your Kubernetes cluster will be created.</p>
 <p>See the location example for [IBM BlueBox](locations/bb-example-location.bom) and [AWS](locations/aws-example-location.bom) for extra config that may be required.</p>
 </div>
-<div id="amp" class="tab-pane fade">
-<p>From your AMP Install, head to the AMP Welcome page. In the quick deploy section select "Kubernetes cluster with a master node and worker nodes" and select the location that that we setup in the previous step Select the location that that we setup in the previous step. You can also change some configuration options such as the minimum and maximum number of nodes. Once you are happy with the configuration, press "Deploy" and your Kubernetes cluster will be created.</p>
+<div id="brooklyn" class="tab-pane fade">
+<p>From your Brooklyn Install, head to the Home tab. Click on "Add application" and select "Kubernetes cluster with a master node and worker nodes", then click on "Next". Select the location that that we setup in the previous step. You can also change some configuration options such as the minimum and maximum number of nodes. Once you are happy with the configuration, press "Deploy" and your Kubernetes cluster will be created.</p>
 <p>See the location example for [IBM BlueBox](locations/bb-example-location.bom) and [AWS](locations/aws-example-location.bom) for extra config that may be required.</p>
 </div>
 </div>

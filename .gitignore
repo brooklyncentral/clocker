@@ -1,0 +1,8 @@
+# Ruby
+Gemfile.lock
+
+# Jekyll local build
+_site
+
+# IDE
+.idea

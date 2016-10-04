@@ -88,16 +88,16 @@ After the location is setup, it is time to deploy a Docker Swarm.
 {::options parse_block_html="true" /}
 
 <ul class="nav nav-tabs">
-    <li class="active brooklyn-tab"><a data-target="#brooklyn, .brooklyn-tab" data-toggle="tab" href="#">Brooklyn</a></li>
-    <li class="amp-tab"><a data-target="#amp, .amp-tab" data-toggle="tab" href="#">AMP</a></li>
+    <li class="active amp-tab"><a data-target="#amp, .amp-tab" data-toggle="tab" href="#">AMP</a></li>
+    <li class="brooklyn-tab"><a data-target="#brooklyn, .brooklyn-tab" data-toggle="tab" href="#">Brooklyn</a></li>
 </ul>
 
 <div class="tab-content">
-<div id="brooklyn" class="tab-pane fade in active">
-From your Brooklyn Install, head to the Home tab. Click on "Add application" and select "Docker Swarm with Discovery and CA", then click on "Next". Select the location that that we setup in the previous step. You can also change some configuration options such as the minimum and maximum number of nodes. Once you are happy with the configuration, press "Deploy" and your Swarm cluster will be created.
-</div>
-<div id="amp" class="tab-pane fade">
+<div id="amp" class="tab-pane fade in active">
 From your AMP Install, head to the AMP Welcome page. In the quick deploy section select "Docker Swarm with Discovery and CA" and select the location that that we setup in the previous step. You can also change some configuration options such as the minimum and maximum number of nodes. Once you are happy with the configuration press Deploy and your Swarm cluster will be created.
+</div>
+<div id="brooklyn" class="tab-pane fade">
+From your Brooklyn Install, head to the Home tab. Click on "Add application" and select "Docker Swarm with Discovery and CA", then click on "Next". Select the location that that we setup in the previous step. You can also change some configuration options such as the minimum and maximum number of nodes. Once you are happy with the configuration, press "Deploy" and your Swarm cluster will be created.
 </div>
 </div>
 
