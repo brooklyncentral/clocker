@@ -6,7 +6,7 @@ title: Docker Swarm Documentation
 ### Overview
 With Clocker, you can easily deploy and manage Docker Swarm clusters. They are production-ready infrastructure with TLS and high-availability.
 
-Can also connect to existing infrastructure provisioned and managed externally, by specifying appropriate API endpoints.
+You can also connect to existing infrastructure provisioned and managed externally, by specifying appropriate API endpoints.
 
 ### Architecture
 ![Docker Swarm architecture]({{site.baseurl}}/assets/images/swarm-architecture.png)
@@ -27,6 +27,16 @@ Used as a discovery backend for the swarm cluster.
 #### CA Server
 This is used to provide TLS certificates for the swarm cluster. This component is designed to be easily replaced. It is strongly recommended that this component is replaced with a production grade CA server of your choice.
 
+### Location
+Clocker currently supports deployments to **CentOS only**. We recommend to setup a location with the following setting:
+
+- use at least 2GB RAM
+- use a CentOS 7 based image
+
+If you are using Brooklyn, it might a good idea to increase the entropy of your server by using `installDevUrandom` config. This would prevent installation speed being slowed. For more information, see [Entropy Troubleshooting](https://brooklyn.apache.org/documentation/increase-entropy.html)
+
+Finally, be aware that you might get in trouble because of your cloud provider's security group. For more information, please see the [troubleshooting page](troubleshooting.html#failed-to-find-machine-unique-group-on-node).
+
 ### Configuration 
 The Docker Swarm entity comes with built-in configuration that allows you to control how your Docker Swarm will be deployed and manage.
 
@@ -38,7 +48,7 @@ There is auto-scaling functionality included with a deployed Swarm cluster by de
 | swarm.initial.size      | The initial number of swarm nodes to create                                                           |
 | swarm.max.size          | The maximum number of swarm nodes to scale up to                                                      |
 | swarm.scaling.cpu.limit | The percentage limit at which we should scale up. This should be a double value between 0.00 and 1.00 |
-| swarm.manager.size      | The number of swarm managers                                                                              |
+| swarm.manager.size      | The number of swarm managers                                                                          |
 
 
 #### Networking
