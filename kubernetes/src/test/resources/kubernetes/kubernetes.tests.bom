@@ -90,11 +90,12 @@ brooklyn.catalog:
           assertOut:
             contains: '0'
         - type: org.apache.brooklyn.test.framework.TestHttpCall
-           name: "11. Check Prometheus UI is Reachable"
-           url: >
-             $brooklyn:formatString("http://%s:%s",
-             $brooklyn:entity("prometheus").attributeWhenReady("host.address"),
-             $brooklyn:entity("prometheus").attributeWhenReady("kubernetes.service.port"))
+          name: "11. Check Prometheus UI is Reachable"
+          url:
+            $brooklyn:formatString:
+              - "http://%s:%s"
+              - $brooklyn:entity("prometheus").attributeWhenReady("host.address")
+              - $brooklyn:entity("prometheus").attributeWhenReady("kubernetes.service.port")
            applyAssertionTo: status
            assert:
            - equals: 200
