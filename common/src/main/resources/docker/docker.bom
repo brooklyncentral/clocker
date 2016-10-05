@@ -310,7 +310,6 @@ brooklyn.catalog:
           INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
           TLS_OPTIONS: $brooklyn:config("docker.tlsoptions")
           DOCKER_ENDPOINT: $brooklyn:attributeWhenReady("docker.endpoint")
-          DOCKER_ENDPOINT_PUBLIC: $brooklyn:attributeWhenReady("docker.endpoint.public")
           DOCKER_HOST: $brooklyn:attributeWhenReady("docker.url")
           DOCKER_TLS_VERIFY: true
           DOCKER_CERT_PATH: $brooklyn:config("docker.cert.path")
