@@ -23,7 +23,7 @@ brooklyn.catalog:
           description: |
             The Flannel version to install
           type: string
-          default: "0.6.0"
+          default: "0.6.2"
         - name: flannel.network
           label: "Flannel Network"
           description: |
@@ -62,6 +62,11 @@ brooklyn.catalog:
           type: string
 
       brooklyn.config:
+        install.unique_label:
+          $brooklyn:formatString:
+            - "plugin-flannel-%s"
+            - $brooklyn:config("flannel.version")
+
         shell.env:
           ETCD_VERSION: $brooklyn:config("etcd.client.version")
           ETCD_ENDPOINTS: $brooklyn:config("etcd.endpoints")
@@ -169,7 +174,7 @@ brooklyn.catalog:
           description: |
             The Project Calico driver version
           type: string
-          default: "0.21.0"
+          default: "0.22.0"
         - name: cni.version
           label: "CNI Version"
           description: |
@@ -181,7 +186,7 @@ brooklyn.catalog:
           description: |
             The Project Calico CNI version
           type: string
-          default: "1.4.0-rc4"
+          default: "1.4.2"
         - name: etcd.endpoints
           label: "Etcd Endpoints"
           description: |
@@ -189,6 +194,12 @@ brooklyn.catalog:
           type: string
 
       brooklyn.config:
+        install.unique_label:
+          $brooklyn:formatString:
+            - "plugin-calico-cni-%s-%s"
+            - $brooklyn:config("calico.version")
+            - $brooklyn:config("calico.cni.version")
+
         shell.env:
           CALICO_VERSION: $brooklyn:config("calico.version")
           CALICO_CNI_VERSION: $brooklyn:config("calico.cni.version")

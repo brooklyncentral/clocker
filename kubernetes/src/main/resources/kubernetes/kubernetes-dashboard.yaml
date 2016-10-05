@@ -1,11 +1,12 @@
 kind: Deployment
 apiVersion: extensions/v1beta1
 metadata:
-  labels:
-    app: kubernetes-dashboard
-    version: v1.4.0-beta1
   name: kubernetes-dashboard
   namespace: kube-system
+  labels:
+    app: kubernetes-dashboard
+    name: kubernetes-dashboard-deployment
+    version: v1.4.0
 spec:
   replicas: 1
   selector:
@@ -18,7 +19,7 @@ spec:
     spec:
       containers:
       - name: kubernetes-dashboard
-        image: gcr.io/google_containers/kubernetes-dashboard-amd64:v1.4.0-beta1
+        image: gcr.io/google_containers/kubernetes-dashboard-amd64:v1.4.0
         imagePullPolicy: Always
         ports:
         - containerPort: 9090
@@ -35,10 +36,11 @@ spec:
 kind: Service
 apiVersion: v1
 metadata:
-  labels:
-    app: kubernetes-dashboard
   name: kubernetes-dashboard
   namespace: kube-system
+  labels:
+    app: kubernetes-dashboard
+    name: kubernetes-dashboard-service
 spec:
   type: NodePort
   ports:

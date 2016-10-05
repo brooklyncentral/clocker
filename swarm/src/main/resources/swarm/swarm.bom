@@ -372,46 +372,6 @@ brooklyn.catalog:
                 id: swarm-node
                 name: "swarm-node"
 
-  - id: docker-engine-with-resilience
-    name: Docker Engine with Resilience
-    description: |
-      A docker-engine configured with resilience policies
-    itemType: entity
-    iconUrl: https://raw.githubusercontent.com/docker-library/docs/c350af05d3fac7b5c3f6327ac82fe4d990d8729c/docker/logo.png
-    item:
-      type: docker-engine-tls
-
-      brooklyn.parameters:
-        - name: swarm.recovery.stabilizationDelay
-          label: Stabilization Delay
-          description: |
-            Time period for which the service must be consistently in the same state to trigger an action
-          # A restart shouldn't trigger failure
-          type: org.apache.brooklyn.util.time.Duration
-          default: 5m
-        - name: swarm.recovery.failOnRecurringFailuresInThisDuration
-          label: Fail Duration
-          description: |
-            Reports entity as failed if it fails two or more times in this time window
-          type: org.apache.brooklyn.util.time.Duration
-          default: 15m
-
-      brooklyn.policies:
-        - type: org.apache.brooklyn.policy.ha.ServiceRestarter
-          brooklyn.config:
-            failOnRecurringFailuresInThisDuration:
-              $brooklyn:config("swarm.recovery.failOnRecurringFailuresInThisDuration")
-
-      brooklyn.enrichers:
-        - type: org.apache.brooklyn.policy.ha.ServiceFailureDetector
-          brooklyn.config:
-            serviceOnFire.stabilizationDelay:
-              $brooklyn:config("swarm.recovery.stabilizationDelay")
-            entityFailed.stabilizationDelay:
-              $brooklyn:config("swarm.recovery.stabilizationDelay")
-            entityRecovered.stabilizationDelay:
-              $brooklyn:config("swarm.recovery.stabilizationDelay")
-
   - id: docker-engine-with-discovery
     name: Docker Engine with TLS and discovery
     description: |
@@ -503,6 +463,7 @@ brooklyn.catalog:
           HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
           SWARM_DEFAULT_NETWORK: $brooklyn:config("swarm.defaultnetwork")
           CREATE_NETWORK: $brooklyn:config("swarm.defaultnetwork.create")
+          DOCKER_ENDPOINT_PUBLIC: $brooklyn:attributeWhenReady("docker.endpoint.public")
 
         post.launch.command: |
           echo "[CLOCKER] Join Swarm"
