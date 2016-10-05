@@ -1,3 +1,4 @@
 brooklyn.catalog:
   items:
+    - classpath://io.brooklyn.clocker.common:docker/catalog.bom
     - classpath://io.brooklyn.clocker.swarm:swarm/swarm.bom

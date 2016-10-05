@@ -1,5 +1,5 @@
 brooklyn.catalog:
-  version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+  version: "2.0.0-SNAPSHOT" # CLOCKER_VERSION
   publish:
     description: |
       Resources for working with Kubernetes from Apache Brooklyn
@@ -46,11 +46,11 @@ brooklyn.catalog:
         - name: kubernetes.version
           label: "Kubernetes Version"
           type: string
-          default: "1.3.5"
+          default: "1.4.0"
         - name: kubernetes.cluster.name
           label: "Kubernetes Cluster Name"
           type: string
-          default: "amp"
+          default: "clocker"
         - name: kubernetes.pod.cidr
           label: "Kubernetes Pod IP Range"
           type: string
@@ -99,6 +99,7 @@ brooklyn.catalog:
           brooklyn.config:
             cluster.initial.size: $brooklyn:parent().config("etcd.initial.size")
             etcd.cluster.name: "kubernetes"
+            install.version: "3.0.3"
             provisioning.properties:
               osFamily: centos
               osVersionRegex: 7
@@ -182,7 +183,7 @@ brooklyn.catalog:
         - name: kubernetes.version
           label: "Kubernetes Version"
           type: string
-          default: "1.3.5"
+          default: "1.4.0"
         - name: kubernetes.user
           label: "Kubernetes User"
           type: string
@@ -312,11 +313,20 @@ brooklyn.catalog:
             between workers and to allow external access to deployed apps
           type: boolean
           default: true
+        - name: kubernetes.cadvisor.port
+          label: "Kubernetes cAdvisor Port"
+          type: integer
+          default: 4194
+        - name: kubernetes.debug
+          label: "Kubernetes Debug"
+          type: boolean
+          default: false
 
       brooklyn.config:
         childStartMode: foreground_late
 
         provisioning.properties:
+          # TODO change merge status for customizers config key
           customizer:
             $brooklyn:object:
               type: org.apache.brooklyn.location.jclouds.networking.SharedLocationSecurityGroupCustomizer
@@ -336,6 +346,7 @@ brooklyn.catalog:
           HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
           HOST_SUBNET_ADDRESS: $brooklyn:attributeWhenReady("host.subnet.address")
           ENTITY_ID: $brooklyn:attributeWhenReady("entity.id")
+          KUBERNETES_DEBUG: $brooklyn:config("kubernetes.debug")
 
         kubectl.download.url:
           $brooklyn:formatString:
@@ -345,6 +356,13 @@ brooklyn.catalog:
         pre.install.command: |
           sudo hostname ${ENTITY_ID}
           echo ${ENTITY_ID} | sudo tee /etc/hostname
+
+          sudo yum update -y
+
+          if  ${KUBERNETES_DEBUG:-false} ; then
+            echo "[CLOCKER] Installing debugging tools"
+            sudo yum install -y net-tools traceroute telnet bash-completion
+          fi
 
         install.command: |
           sudo yum install -y wget
@@ -360,25 +378,23 @@ brooklyn.catalog:
           clusters:
             - name: ${CLUSTER_NAME}
               cluster:
-                api-version: v1
                 server: ${KUBERNETES_URL}
+          users:
+            - name: ${KUBERNETES_USER}
+              user:
+                username: ${KUBERNETES_USER}
+                password: ${KUBERNETES_PASSWORD}
           contexts:
             - name: default
               context:
                 cluster: ${CLUSTER_NAME}
+                user: ${KUBERNETES_USER}
                 namespace: default
-                user: default
-          users:
-            - name: default
-              user:
-                username: ${KUBERNETES_USER}
-                password: ${KUBERNETES_PASSWORD}
-          current-context: default
           EOF
           kubectl config set-cluster ${CLUSTER_NAME} --server=${KUBERNETES_URL}
-          kubectl config set-context default --cluster=${CLUSTER_NAME}
+          kubectl config set-credentials ${KUBERNETES_USER} --username=${KUBERNETES_USER} --password=${KUBERNETES_PASSWORD}
+          kubectl config set-context default --cluster=${CLUSTER_NAME} --user=${KUBERNETES_USER} --namespace=default
           kubectl config use-context default
-          kubectl config set-credentials default --username=${KUBERNETES_USER} --password=${KUBERNETES_PASSWORD}
 
         checkRunning.command: |
           which kubectl
@@ -453,6 +469,17 @@ brooklyn.catalog:
               - $brooklyn:sensor("org.apache.brooklyn.entity.machine.MachineAttributes", "machine.memory.total")
               - $brooklyn:sensor("org.apache.brooklyn.entity.machine.MachineAttributes", "memory.used.delta")
               - $brooklyn:sensor("org.apache.brooklyn.entity.machine.MachineAttributes", "memory.used.percent")
+        - type: org.apache.brooklyn.enricher.stock.Transformer
+          brooklyn.config:
+            uniqueTag: kubernetes-cadvisor-url-publisher
+            enricher.triggerSensors:
+              - $brooklyn:sensor("host.address")
+            enricher.targetSensor: $brooklyn:sensor("kubernetes.cadvisor.url")
+            enricher.targetValue:
+              $brooklyn:formatString:
+                - "http://%s:%d/containers/"
+                - $brooklyn:attributeWhenReady("host.address")
+                - $brooklyn:config("kubernetes.cadvisor.port")
 
       brooklyn.initializers:
         - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
@@ -464,8 +491,8 @@ brooklyn.catalog:
             shell.env:
               HOST_SUBNET_ADDRESS: $brooklyn:attributeWhenReady("host.subnet.address")
             command: |
-              kubectl get node ${HOST_SUBNET_ADDRESS} \
-                -o jsonpath={.status.conditions[?\(@.type==\"Ready\"\)].status}
+              kubectl get node ${HOST_SUBNET_ADDRESS} -o jsonpath='{range @.status.conditions[*]}{@.type}={@.status}
+              ' | grep True | cut -d= -f1
         - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
           brooklyn.config:
             name: kubectl
@@ -531,9 +558,14 @@ brooklyn.catalog:
           name: "kube-dns"
           brooklyn.config:
             start.latch: $brooklyn:sibling("kube-apiserver").attributeWhenReady("service.isUp")
-        - type: kube-dashboard-pod
-          id: kube-dashboard
-          name: "kube-dashboard"
+        - type: kubernetes-dashboard-pod
+          id: kubernetes-dashboard
+          name: "kubernetes-dashboard"
+          brooklyn.config:
+            start.latch: $brooklyn:sibling("kube-apiserver").attributeWhenReady("service.isUp")
+        - type: prometheus-pod
+          id: prometheus
+          name: "prometheus"
           brooklyn.config:
             start.latch: $brooklyn:sibling("kube-apiserver").attributeWhenReady("service.isUp")
 
@@ -590,9 +622,11 @@ brooklyn.catalog:
           K8S_SERVICE: $brooklyn:config("kubernetes.service")
           HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
           HOST_SUBNET_ADDRESS: $brooklyn:attributeWhenReady("host.subnet.address")
+          KUBERNETES_ENDPOINT: $brooklyn:entity("kubernetes-master").attributeWhenReady("kubernetes.endpoint")
           KUBERNETES_URL: $brooklyn:entity("kubernetes-master").attributeWhenReady("kubernetes.url")
           ETCD_ENDPOINTS: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
           ENTITY_ID: $brooklyn:parent().attributeWhenReady("entity.id")
+          APPLICATION_ID: $brooklyn:attributeWhenReady("application.id")
 
         install.command: |
           wget ${SERVICE_DOWNLOAD_URL}
@@ -659,7 +693,9 @@ brooklyn.catalog:
           KUBERNETES_URL: $brooklyn:entity("kubernetes-master").attributeWhenReady("kubernetes.url")
           DNS_SERVICE_IP: $brooklyn:entity("kubernetes-cluster").config("kubernetes.dns.address")
           DNS_LOCAL_DOMAIN: $brooklyn:entity("kubernetes-cluster").config("kubernetes.dns.domain")
+          CADVISOR_PORT: $brooklyn:parent().config("kubernetes.cadvisor.port")
           SCHEDULABLE: $brooklyn:config("kubernetes.schedulable")
+          CLOCKER_VERSION: "2.0.0-SNAPSHOT"
 
         customize.command: |
           sudo -E tee /etc/cni/net.d/10-calico.conf <<-EOF
@@ -683,6 +719,11 @@ brooklyn.catalog:
               }
           }
           EOF
+          LABELS="org.label-schema.schema-version=1.0,\
+          org.label-schema.version=${CLOCKER_VERSION},\
+          org.label-schema.name=${HOST_ADDRESS},\
+          io.brooklyn.clocker.entity=${ENTITY_ID},\
+          io.brooklyn.clocker.application=${APPLICATION_ID}"
           sudo mkdir -p /etc/kubernetes/manifests
           sudo -E tee /etc/systemd/system/kubelet.service <<-EOF
           [Unit]
@@ -697,6 +738,8 @@ brooklyn.catalog:
             --address=0.0.0.0 \
             --allow-privileged=true \
             --config=/etc/kubernetes/manifests \
+            --cadvisor-port=${CADVISOR_PORT} \
+            --node-ip=${HOST_ADDRESS} \
             --hostname-override=${HOST_SUBNET_ADDRESS} \
             --api-servers=${KUBERNETES_URL} \
             --kubeconfig=/etc/kubernetes/kubeconfig \
@@ -709,6 +752,7 @@ brooklyn.catalog:
             --serialize-image-pulls=false \
             --cluster-dns=${DNS_SERVICE_IP} \
             --cluster-domain=${DNS_LOCAL_DOMAIN}.local \
+            --node-labels=${LABELS} \
             --logtostderr=true
           Restart=always
           RestartSec=10
@@ -733,14 +777,8 @@ brooklyn.catalog:
         - name: kubernetes.admission.control
           label: "Kubernetes Admission Control"
           type: string
-          default: >-
-            NamespaceLifecycle,
-            NamespaceExists,
-            LimitRanger,
-            SecurityContextAllow,
-            ResourceQuota,
-            AlwaysAdmit,
-            ServiceAccount
+          default:
+            NamespaceLifecycle,NamespaceExists,LimitRanger,ResourceQuota,AlwaysAdmit
 
       brooklyn.config:
         kubernetes.service: "kube-apiserver"
@@ -842,7 +880,7 @@ brooklyn.catalog:
   - id: kubernetes-pod
     name: "Kubernetes Pod"
     description: |
-      A Kubernetes pod deployment
+      A Kubernetes YAML pod deployment
     itemType: entity
     iconUrl: https://pbs.twimg.com/media/Bt_pEfqCAAAiVyz.png
     item:
@@ -859,6 +897,13 @@ brooklyn.catalog:
         - name: kubernetes.pod.name
           label: "Kubernetes Pod Name"
           type: string
+        - name: kubernetes.pod.manifest
+          label: "Kubernetes Pod Manifest"
+          description: |
+            Set this to deploy the Pod YAML file into the '/etc/kubernetes/manifests'
+            directory instead of using the 'kubectl' command
+          type: boolean
+          default: false
         - name: template.substitutions
           label: "Template Substitutions"
           type: java.util.Map
@@ -874,26 +919,103 @@ brooklyn.catalog:
           $brooklyn:config("kubernetes.pod.file"): "pod.yaml"
 
         shell.env:
-          POD: $brooklyn:config("kubernetes.pod.name")
+          NAME: $brooklyn:config("kubernetes.pod.name")
           NAMESPACE: $brooklyn:config("kubernetes.pod.namespace")
+          MANIFEST: $brooklyn:config("kubernetes.pod.manifest")
           INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
 
         pre.install.command: |
           mkdir -p ${INSTALL_DIR}
 
         install.command: |
-          kubectl get namespace ${NAMESPACE} || ( kubectl create namespace ${NAMESPACE} || true )
+          kubectl get namespace ${NAMESPACE} ||
+            ( kubectl create namespace ${NAMESPACE} || true )
 
         launch.command: |
-          kubectl create -f ${INSTALL_DIR}/pod.yaml
+          if ${MANIFEST} ; then
+            sudo cp ${INSTALL_DIR}/pod.yaml /etc/kubernetes/manifests/${NAME}.yaml
+          else
+            kubectl create -f ${INSTALL_DIR}/pod.yaml
+          fi
+
+        stop.command: |
+          if ${MANIFEST} ; then
+            sudo rm /etc/kubernetes/manifests/${NAME}.yaml
+            kubectl delete pod -l app=${NAME} --namespace=${NAMESPACE}
+          else
+            kubectl delete -f ${INSTALL_DIR}/pod.yaml
+          fi
 
         checkRunning.command: |
-          kubectl get pod --namespace=${NAMESPACE} | grep ${POD}
+          kubectl get pod --namespace=${NAMESPACE} -l app=${NAME} |
+              grep "Pending\|ContainerCreating\|Running"
+
+      brooklyn.initializers:
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: kubernetes.pod.name
+            description: |
+              Kubernetes pod name
+            targetType: string
+            command: |
+              kubectl get pod --namespace=${NAMESPACE} -l app=${NAME} --output=jsonpath='{range .items[0]}{.metadata.name}'
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: kubernetes.pod.status
+            description: |
+              Kubernetes pod status
+            targetType: string
+            command: |
+              kubectl get pod --namespace=${NAMESPACE} -l app=${NAME} -o wide | grep ${NAME}
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: kubernetes.pod.node
+            description: |
+              Kubernetes host IP address for the service
+            targetType: string
+            command: |
+              kubectl get pod --namespace=${NAMESPACE} -l app=${NAME} --output=jsonpath='{range .items[0]}{.status.hostIP}'
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: kubernetes.service.port
+            description: |
+              Kubernetes exposed NodePort for a service
+            targetType: integer
+            command: |
+              kubectl get service ${NAME} --namespace=${NAMESPACE} --output=jsonpath='{range .spec.ports[0]}{.nodePort}'
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: kubernetes.pod.phase
+            description: |
+              Kubernetes pod status phase
+            targetType: string
+            command: |
+              kubectl get pod --namespace=${NAMESPACE} -l app=${NAME} --output=jsonpath='{range .items[0]}{.status.phase}'
+
+      brooklyn.enrichers:
+        - type: org.apache.brooklyn.enricher.stock.Transformer
+          brooklyn.config:
+            uniqueTag: kubernetes-pod-url-publisher
+            enricher.triggerSensors:
+              - $brooklyn:sensor("kubernetes.pod.node")
+              - $brooklyn:sensor("kubernetes.service.port")
+            enricher.targetSensor: $brooklyn:sensor("kubernetes.service.url")
+            enricher.targetValue:
+              $brooklyn:formatString:
+                - "http://%s:%d/"
+                - $brooklyn:attributeWhenReady("kubernetes.pod.node")
+                - $brooklyn:attributeWhenReady("kubernetes.service.port")
+        - type: org.apache.brooklyn.enricher.stock.Propagator
+          brooklyn.config:
+            uniqueTag: kubernetes-pod-url-propagator
+            enricher.propagating.sensorMapping:
+              $brooklyn:sensor("kubernetes.service.url"):
+                $brooklyn:sensor("org.apache.brooklyn.core.entity.Attributes", "main.uri")
 
   - id: kube-dns-pod
     name: "KubeDNS Pod"
     description: |
-      KubeDNS pod deployment
+      KubeDNS service pod
     itemType: entity
     item:
       type: kubernetes-pod
@@ -908,10 +1030,10 @@ brooklyn.catalog:
           dns_service_ip: $brooklyn:entity("kubernetes-cluster").config("kubernetes.dns.address")
           dns_service_domain: $brooklyn:entity("kubernetes-cluster").config("kubernetes.dns.domain")
 
-  - id: kube-dashboard-pod
+  - id: kubernetes-dashboard-pod
     name: "Kubernetes Dashboard Pod"
     description: |
-      Kubernetes dashboard pod deployment
+      Kubernetes dashboard UI service pod
     itemType: entity
     item:
       type: kubernetes-pod
@@ -927,7 +1049,7 @@ brooklyn.catalog:
   - id: calico-policy-controller-pod
     name: "Calico Policy Controller Pod"
     description: |
-      Calico policy controller pod deployment
+      Calico policy controller pod
     itemType: entity
     item:
       type: kubernetes-pod
@@ -935,11 +1057,26 @@ brooklyn.catalog:
       brooklyn.config:
         kubernetes.pod.name: "policy-controller"
         kubernetes.pod.file: "classpath://io.brooklyn.clocker.kubernetes:kubernetes/policy-controller.yaml"
-        kubernetes.pod.namespace: "calico-system"
+        kubernetes.pod.namespace: "kube-system"
+        kubernetes.pod.manifest: true
 
         template.substitutions:
           kubernetes_url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
           etcd_endpoints: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
 
-        launch.command: |
-          sudo mv ${INSTALL_DIR}/pod.yaml /etc/kubernetes/manifests
+  - id: prometheus-pod
+    name: "Prometheus Monitoring Pod"
+    description: |
+      Prometheus monitoring service pod
+    itemType: entity
+    iconUrl: https://avatars1.githubusercontent.com/u/3380462
+    item:
+      type: kubernetes-pod
+
+      brooklyn.config:
+        kubernetes.pod.name: "prometheus"
+        kubernetes.pod.file: "classpath://io.brooklyn.clocker.kubernetes:kubernetes/prometheus.yaml"
+        kubernetes.pod.namespace: "kube-system"
+
+        template.substitutions:
+          kubernetes_url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")

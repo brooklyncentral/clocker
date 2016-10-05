@@ -394,8 +394,8 @@ brooklyn.catalog:
         swarm.scaling.cpu.limit: 0.95
         swarm.defaultnetwork: "brooklyn"
         swarm.port: 4000
-        swarm.recovery.stabilizationDelay: 10s
-        swarm.recovery.failOnRecurringFailuresInThisDuration: 5m
+        docker.recovery.stabilizationDelay: 10s
+        docker.recovery.failOnRecurringFailuresInThisDuration: 5m
 
       brooklyn.children:
         - type: docker-swarm
