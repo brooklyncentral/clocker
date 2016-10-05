@@ -24,7 +24,7 @@ You can find the source code for the blueprints in this repo at:
 
 # Add Clocker to Brooklyn (Karaf Edition)
 
-```YAML
+```yaml
 brooklyn.catalog:
   brooklyn.libraries:
     - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.etcd&a=brooklyn-etcd&v=2.3.0-SNAPSHOT"
@@ -33,9 +33,10 @@ brooklyn.catalog:
     - "https://oss.sonatype.org/service/local/repositories/releases/content/io/brooklyn/clocker/kubernetes/2.0.0/kubernetes-2.0.0.jar"
   items:
     - classpath://io.brooklyn.etcd.brooklyn-etcd:brooklyn-etcd/catalog.bom
-    - classpath://io.brooklyn.clocker.common:docker/catalog.bom
-    - classpath://io.brooklyn.clocker.swarm:swarm/catalog.bom
-    - classpath://io.brooklyn.clocker.kubernetes:kubernetes/catalog.bom
+    - classpath://io.brooklyn.clocker.common:main/catalog.bom
+    - classpath://io.brooklyn.clocker.swarm:swarm/swarm.bom
+    - classpath://io.brooklyn.clocker.kubernetes:kubernetes/plugins.bom
+    - classpath://io.brooklyn.clocker.kubernetes:kubernetes/kubernetes.bom
 ```
 
 # Add Clocker to Brooklyn (Classic Edition)
@@ -46,11 +47,12 @@ You must add the following JARs to `./lib/dropins`:
 * [swarm](https://oss.sonatype.org/service/local/artifact/maven/redirect?r=releases&g=io.brooklyn.clocker&a=swarm&v=2.0.0) 
 * [kubernetes](https://oss.sonatype.org/service/local/artifact/maven/redirect?r=releases&g=io.brooklyn.clocker&a=kubernetes&v=2.0.0) 
 
-```YAML
+```yaml
 brooklyn.catalog:
   items:
     - classpath://io.brooklyn.etcd.brooklyn-etcd:brooklyn-etcd/catalog.bom
-    - classpath://io.brooklyn.clocker.common:docker/catalog.bom
-    - classpath://io.brooklyn.clocker.swarm:swarm/catalog.bom
-    - classpath://io.brooklyn.clocker.kubernetes:kubernetes/catalog.bom
+    - classpath://io.brooklyn.clocker.common:main/catalog.bom
+    - classpath://io.brooklyn.clocker.swarm:swarm/swarm.bom
+    - classpath://io.brooklyn.clocker.kubernetes:kubernetes/plugins.bom
+    - classpath://io.brooklyn.clocker.kubernetes:kubernetes/kubernetes.bom
 ```
