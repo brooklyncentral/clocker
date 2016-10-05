@@ -1,5 +1,5 @@
 brooklyn.catalog:
   items:
-    - classpath://io.brooklyn.clocker.docker:docker/catalog.bom
+    - classpath://io.brooklyn.clocker.common:docker/catalog.bom
     - classpath://io.brooklyn.clocker.kubernetes:kubernetes/plugins.bom
     - classpath://io.brooklyn.clocker.kubernetes:kubernetes/kubernetes.bom
