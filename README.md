@@ -51,6 +51,8 @@ You must add the following JARs to `./lib/dropins`:
 brooklyn.catalog:
   items:
     - classpath://io.brooklyn.etcd.brooklyn-etcd:brooklyn-etcd/catalog.bom
+    - classpath://io.brooklyn.clocker.common:common/common.bom
+    - classpath://io.brooklyn.clocker.common:docker/docker.bom
     - classpath://io.brooklyn.clocker.common:main/catalog.bom
     - classpath://io.brooklyn.clocker.swarm:swarm/swarm.bom
     - classpath://io.brooklyn.clocker.kubernetes:kubernetes/plugins.bom
