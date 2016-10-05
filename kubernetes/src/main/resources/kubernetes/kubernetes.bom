@@ -739,8 +739,8 @@ brooklyn.catalog:
             --allow-privileged=true \
             --config=/etc/kubernetes/manifests \
             --cadvisor-port=${CADVISOR_PORT} \
-            --node-ip=${HOST_ADDRESS} \
-            --hostname-override=${HOST_SUBNET_ADDRESS} \
+            --node-ip=${HOST_SUBNET_ADDRESS} \
+            --hostname-override=${HOST_ADDRESS} \
             --api-servers=${KUBERNETES_URL} \
             --kubeconfig=/etc/kubernetes/kubeconfig \
             --network-plugin-dir=/etc/cni/net.d \
