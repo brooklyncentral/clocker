@@ -47,14 +47,14 @@ brooklyn.catalog:
           name: "5. Assert [A] running"
           target: $brooklyn:entity("kubernetes-master")
           command: |
-            kubectl get deployments
+            kubectl get pods | grep -i running
           assertOut:
             contains: 'workload-a'
         - type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
           name: "6. Assert [B] running"
           target: $brooklyn:entity("kubernetes-master")
           command: |
-            kubectl get deployments
+            kubectl get pods | grep -i running
           assertOut:
             contains: 'workload-b'
 
