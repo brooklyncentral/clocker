@@ -50,19 +50,22 @@
     <!-- For the full list of developers, see contributors to https://github.com/brooklyncentral/clocker -->
     <developers>
         <developer>
-            <name>Aled Sage</name>
-            <organizationUrl>https://github.com/aledsage</organizationUrl>
-        </developer>
-        <developer>
             <name>Andrew Kennedy</name>
             <organizationUrl>https://github.com/grkvlt</organizationUrl>
+            <roles>
+                <role>founder</role>
+            </roles>
+        </developer>
+        <developer>
+            <name>Aled Sage</name>
+            <organizationUrl>https://github.com/aledsage</organizationUrl>
         </developer>
         <developer>
             <name>Mark McKenna</name>
             <organizationUrl>https://github.com/m4rkmckenna</organizationUrl>
         </developer>
     </developers>
-    
+
     <distributionManagement>
         <snapshotRepository>
             <id>sonatype-nexus-snapshots</id>
