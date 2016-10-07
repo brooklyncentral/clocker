@@ -3,8 +3,9 @@
 Clocker
 =======
 
-For more information, see the [official Clocker site](http://www.clocker.io/), including the 
-[docs](http://www.clocker.io/docs/) and [tutorials](http://www.clocker.io/tutorials/).
+The current version is **2.0.0**, available in Maven Central. For more information, see the [official Clocker site](http://www.clocker.io/), including the [docs](http://www.clocker.io/docs/) and [tutorials](http://www.clocker.io/tutorials/).
+
+# Overview
 
 Clocker for [Apache Brooklyn](https://brooklyn.apache.org/) is a set of open source, Apache 
 Licensed tools designed to make working with [Docker](https://www.docker.com/) containers 
@@ -14,13 +15,9 @@ deployment and management of [Docker Swarm](https://www.docker.com/products/dock
 and [Kubernetes clusters](http://kubernetes.io/).
 
 You can find the source code for the blueprints in this repo at:
-
 * [Docker](./common/src/main/resources/docker/)
-
 * [Swarm](./swarm/src/main/resources/swarm/)
-
 * [Kubernetes](./kubernetes/src/main/resources/kubernetes/)
-
 
 # Add Clocker to Brooklyn (Karaf Edition)
 
@@ -51,6 +48,9 @@ You must add the following JARs to `./lib/dropins`:
 brooklyn.catalog:
   items:
     - classpath://io.brooklyn.etcd.brooklyn-etcd:brooklyn-etcd/catalog.bom
+    - classpath://io.brooklyn.clocker.common:common/common.bom
+    - classpath://io.brooklyn.clocker.common:common/ca.bom
+    - classpath://io.brooklyn.clocker.common:docker/docker.bom
     - classpath://io.brooklyn.clocker.common:main/catalog.bom
     - classpath://io.brooklyn.clocker.swarm:swarm/swarm.bom
     - classpath://io.brooklyn.clocker.kubernetes:kubernetes/plugins.bom
