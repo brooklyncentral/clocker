@@ -3,7 +3,7 @@
 Clocker
 =======
 
-The current version is **2.0.0**, available in Maven Central*. For more information, see the [official Clocker site](http://www.clocker.io/), including the [docs](http://www.clocker.io/docs/) and [tutorials](http://www.clocker.io/tutorials/).
+The current version is **2.0.0**, available in Maven Central. For more information, see the [official Clocker site](http://www.clocker.io/), including the [docs](http://www.clocker.io/docs/) and [tutorials](http://www.clocker.io/tutorials/).
 
 # Overview
 
