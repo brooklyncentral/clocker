@@ -46,11 +46,6 @@
                         <configuration>
                             <artifacts>
                                 <artifact>
-                                    <file>${project.basedir}/src/main/resources/docker/catalog.bom</file>
-                                    <type>bom</type>
-                                    <classifier>catalog</classifier>
-                                </artifact>
-                                <artifact>
                                     <file>${project.basedir}/src/main/resources/docker/docker.bom</file>
                                     <type>bom</type>
                                     <classifier>docker</classifier>

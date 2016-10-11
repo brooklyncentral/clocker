@@ -46,11 +46,6 @@
                         <configuration>
                             <artifacts>
                                 <artifact>
-                                    <file>${project.basedir}/src/main/resources/swarm/catalog.bom</file>
-                                    <type>bom</type>
-                                    <classifier>catalog</classifier>
-                                </artifact>
-                                <artifact>
                                     <file>${project.basedir}/src/main/resources/swarm/swarm.bom</file>
                                     <type>bom</type>
                                     <classifier>swarm</classifier>
