@@ -230,6 +230,7 @@ brooklyn.catalog:
                 - $brooklyn:attributeWhenReady("run.dir")
             shell.env:
               CA_REQUEST_ROOT_URL: $brooklyn:config("ca.request.root.url")
+              SWARM_ENDPOINTS: $brooklyn:attributeWhenReady("swarm.endpoints")
             resources.preInstall.latch: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
             files.preinstall:
               "classpath://io.brooklyn.clocker.common:common/certificate-functions.sh": certificate-functions.sh
@@ -244,6 +245,17 @@ brooklyn.catalog:
 
               curl -X POST --data-binary @${INSTALL_DIR}/csr.pem  ${CA_REQUEST_ROOT_URL}/sign > ${RUN_DIR}/cert.pem
               cat ${RUN_DIR}/key.pem >> ${RUN_DIR}/cert.pem
+            post.launch.command: |
+              cd ${RUN_DIR}
+              cat > servers.conf <<-EOF
+              backend servers
+                balance roundrobin
+              EOF
+              for endpoint in $(echo ${SWARM_ENDPOINTS} | tr ',' ' ') ; do
+                echo "  server manager$((++n)) ${endpoint} maxconn 32 ssl \
+                  ca-file ${RUN_DIR}/ca.pem crt ${RUN_DIR}/cert.pem" >> servers.conf
+              done
+              haproxy -D -f haproxy.conf -f servers.conf -st $(cat ${RUN_DIR}/pid.txt)
           brooklyn.initializers:
             - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
               brooklyn.config:
