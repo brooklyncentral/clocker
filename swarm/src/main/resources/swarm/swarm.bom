@@ -253,7 +253,8 @@ brooklyn.catalog:
                 shell.env:
                   SWARM_ENDPOINTS:
                     $brooklyn:attributeWhenReady("swarm.endpoints")
-                command: |
+                command: |                  
+                  cd ${RUN_DIR}
                   cat > servers.conf <<-EOF
                   backend servers
                     balance roundrobin
@@ -325,6 +326,8 @@ brooklyn.catalog:
                 type: docker-swarm-manager
                 id: swarm-manager
                 name: "swarm-manager"
+                brooklyn.config:
+                    provision.latch: $brooklyn:entity("swarm-manager-load-balancer").attributeWhenReady("service.isUp")
 
         - type: cluster
           id: docker-swarm-nodes
