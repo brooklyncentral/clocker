@@ -158,8 +158,13 @@ brooklyn.catalog:
               option tcplog
               log 127.0.0.1 syslog
             EOF
-            echo "backend servers" > servers.conf
-
+            if [ ! -f servers.conf ]; then
+              if [ -f ${HOME}/servers.conf ]
+                mv ${HOME}/servers.conf servers.conf
+              then
+                echo "backend servers" > servers.conf
+              fi
+            fi
           launch.command: |
             haproxy -f haproxy.conf -f servers.conf -c &&
               haproxy -D -f haproxy.conf -f servers.conf -sf $(cat ${PID_FILE})
