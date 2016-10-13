@@ -101,6 +101,8 @@ brooklyn.catalog:
 
           sudo yum -y update
 
+          sudo yum install -y curl
+
           echo "[CLOCKER] Configuring package manager"
           if [[ "${DOCKER_REPOSITORY_URL}" && "${DOCKER_GPG_KEY_URL}" ]] ; then
             # Commercially Supported Docker Engine
