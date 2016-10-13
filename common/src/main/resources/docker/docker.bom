@@ -433,6 +433,10 @@ brooklyn.catalog:
 
         launch.command: |
           docker run -d ${IMAGE_DETAILS}
+          
+        checkRunning.command: |  
+          result="$(docker ps | grep ${IMAGE_DETAILS} | wc -l)"
+          if [ $result -ne 0 ]; then exit 0; else exit 1; fi;
 
   - id: docker-vm-container
     name: Docker Entity
@@ -509,8 +513,8 @@ brooklyn.catalog:
           }
           rm -f "${PID_FILE}" # docker won't overwrite
           DOCKER="docker run -d --cidfile \"${PID_FILE}\" --net=host"
-          [ "${DOCKER_RUN_VOLUMES}" ] && DOCKER="${DOCKER} $( parse_docker_volumes )"
-          [ "${DOCKER_RUN_ENV}" ] && DOCKER="${DOCKER} $( parse_docker_env )"
+          [[ $DOCKER_RUN_VOLUMES != [] ]] && DOCKER="${DOCKER} $( parse_docker_volumes )"
+          [[ $DOCKER_RUN_ENV != {} ]] && DOCKER="${DOCKER} $( parse_docker_env )"
           DOCKER="${DOCKER} --restart=${DOCKER_RESTART:-unless-stopped}"
           [ "${DOCKER_RUN_ADDITIONAL_OPTIONS}" ] && DOCKER="${DOCKER} ${DOCKER_RUN_ADDITIONAL_OPTIONS}"
           DOCKER="${DOCKER} \"${DOCKER_IMAGE}\""
@@ -532,7 +536,7 @@ brooklyn.catalog:
           brooklyn.config:
             name: container.id
             period: 5m
-            targetType: integer
+            targetType: String
             command: |
               test -f pid.txt &&
                 cat pid.txt
