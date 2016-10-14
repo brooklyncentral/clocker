@@ -16,7 +16,7 @@ brooklyn.catalog:
       name: Docker Entity test happy path
 
       brooklyn.config:
-        timeout: 10m
+        timeout: 1h
 
       brooklyn.children:
       - type: docker-vm-container
@@ -25,6 +25,8 @@ brooklyn.catalog:
         brooklyn.config:
           # cloudsoft/centos:7 fails because it tries to bind to the already reserved (by the host) port 22
           docker.image: redis:latest
+
+          my.server.port: 6379
 
       - type: test-case
         name: Docker Entity tests
@@ -57,7 +59,7 @@ brooklyn.catalog:
       name: Docker Entity test run options
 
       brooklyn.config:
-        timeout: 10m
+        timeout: 1h
 
       brooklyn.children:
       - type: docker-vm-container
@@ -186,7 +188,7 @@ brooklyn.catalog:
       name: Docker Entity test image exits immediately failure
 
       brooklyn.config:
-        timeout: 10m
+        timeout: 1h
 
       brooklyn.children:
       # Doesn't propagate failures
