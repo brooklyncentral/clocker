@@ -254,16 +254,15 @@ brooklyn.catalog:
                   SWARM_ENDPOINTS:
                     $brooklyn:attributeWhenReady("swarm.endpoints")
                 command: |                  
-                  cd ${RUN_DIR}
-                  cat > servers.conf <<-EOF
+                  cat > ${RUN_DIR}/servers.conf <<-EOF
                   backend servers
                     balance roundrobin
                   EOF
                   for endpoint in $(echo ${SWARM_ENDPOINTS} | tr ',' ' ') ; do
                     echo "  server manager$((++n)) ${endpoint} maxconn 32 ssl \
-                      ca-file ${RUN_DIR}/ca.pem crt ${RUN_DIR}/cert.pem" >> servers.conf
+                      ca-file ${RUN_DIR}/ca.pem crt ${RUN_DIR}/cert.pem" >> ${RUN_DIR}/servers.conf
                   done
-                  haproxy -D -f haproxy.conf -f servers.conf -st $(cat ${RUN_DIR}/pid.txt)
+                  haproxy -D -f ${RUN_DIR}/haproxy.conf -f ${RUN_DIR}/servers.conf -st $(cat ${RUN_DIR}/pid.txt)
           brooklyn.policies:
             - type: org.apache.brooklyn.policy.InvokeEffectorOnSensorChange
               brooklyn.config:

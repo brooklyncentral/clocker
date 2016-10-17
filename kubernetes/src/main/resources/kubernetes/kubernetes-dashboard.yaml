@@ -16,6 +16,9 @@ spec:
     metadata:
       labels:
         app: kubernetes-dashboard
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
     spec:
       containers:
       - name: kubernetes-dashboard

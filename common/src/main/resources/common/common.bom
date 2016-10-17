@@ -26,6 +26,15 @@ brooklyn.catalog:
         type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
         id: child-software-process
 
+    - id: empty-software-process
+      name: "Empty Software Process"
+      description: |
+        A startable entity to group child entities
+      itemType: entity
+      item:
+        type: org.apache.brooklyn.entity.software.base.EmptySoftwareProcess
+        id: empty-software-process
+
     - id: centos-software-process
       name: "CentOS Software Process"
       description: |
