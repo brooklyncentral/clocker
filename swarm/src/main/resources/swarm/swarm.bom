@@ -53,7 +53,7 @@ brooklyn.catalog:
           description: |
             Size of the etcd cluster when created initially
           type: integer
-          default: 1
+          default: 2
         - name: swarm.sharedsecuritygroup.create
           label: "Create Swarm SharedSecurityGroup"
           description: |
