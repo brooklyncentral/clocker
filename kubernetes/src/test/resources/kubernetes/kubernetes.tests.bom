@@ -96,6 +96,6 @@ brooklyn.catalog:
               - "http://%s:%s"
               - $brooklyn:entity("prometheus").attributeWhenReady("host.address")
               - $brooklyn:entity("prometheus").attributeWhenReady("kubernetes.service.port")
-           applyAssertionTo: status
-           assert:
-           - equals: 200
+          applyAssertionTo: status
+          assert:
+          - equals: 200
