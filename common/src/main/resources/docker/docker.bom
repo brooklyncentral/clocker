@@ -560,4 +560,3 @@ brooklyn.catalog:
                 ( docker stats --no-stream $(cat pid.txt) |
                   tail -n +2 |
                   cut -c63-82 )
-
