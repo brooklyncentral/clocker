@@ -1,0 +1,33 @@
+id: ecs-cluster
+name: "Amazon ECS Docker Cluster"
+description: |
+  Creates a cluster of Docker Engines with the Amazon ECS Agent.
+
+  Deploys on AWS using the configuread IAM profile set in 'templateOptions'
+  for the instances. See the ECS documentation for detailed instructions:
+
+  http://docs.aws.amazon.com/AmazonECS/latest/developerguide/instance_IAM_role.html
+
+location:
+  jclouds:aws-ec2:
+    region: eu-west-1
+    privateKeyFile: "~/.ssh/ecs.pem"
+    loginUser.privateKeyFile: "~/.ssh/ecs.pem"
+    keyPair: "ecs"
+    templateOptions:
+      iamInstanceProfileArn:
+        "arn:aws:iam::12345678:instance-profile/clocker"
+      securityGroups:
+        - "sg-xxxxxx"
+
+services:
+  - type: ecs-cluster
+    name: "ecs-cluster"
+    brooklyn.config:
+      ecs.cluster.name: "clocker"
+      docker.initial.size: 2
+      docker.max.size: 5
+      docker.sharedsecuritygroup.create: true
+      provisioning.properties:
+        minRam: 10g
+        minCores: 4

@@ -1,0 +1,230 @@
+brooklyn.catalog:
+  version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+  publish:
+    description: |
+      Resources for working with Docker and Amazon ECS from Apache Brooklyn
+    license_code: APACHE-2.0
+    overview: README.md
+
+  items:
+    - id: ecs-cluster-template
+      name: "EC2 Container Service Docker Cluster"
+      description: |
+        Creates a cluster of Docker engines for use with Amazon ECS
+      itemType: template
+      iconUrl: https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/AWS_Simple_Icons_Compute_ECS.svg/240px-AWS_Simple_Icons_Compute_ECS.svg.png
+      item:
+        services:
+          - type: ecs-cluster
+
+    - id:  ecs-cluster
+      name: "EC2 Container Service Docker Cluster"
+      description: |
+        Creates a cluster of Docker engines for use with Amazon ECS
+      itemType: entity
+      iconUrl: https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/AWS_Simple_Icons_Compute_ECS.svg/240px-AWS_Simple_Icons_Compute_ECS.svg.png
+      item:
+        type: org.apache.brooklyn.entity.stock.BasicApplication
+
+        brooklyn.parameters:
+          # Duplicated parameters for UI visibility
+          - name: docker.initial.size
+            label: "Initial Cluster Size"
+            description: |
+              Size of the docker cluster when created initially
+            type: integer
+            default: 1
+          - name: docker.max.size
+            label: "Maximum Cluster Size"
+            description: |
+              Maximum size the docker cluster can be scaled to
+            type: integer
+            default: 5
+          - name: docker.sharedsecuritygroup.create
+            label: "Create Docker SharedSecurityGroup"
+            description: |
+              Clocker blueprint will configure security groups to allow access between docker nodes and
+              to allow external access to deployed apps
+            type: boolean
+            default: true
+          - name: ecs.cluster.name
+            label: "ECS Cluster Name"
+            description: |
+              The name of the ECS cluster
+            type: string
+            default: "clocker"
+
+        brooklyn.children:
+          - type: docker-cluster
+            id: docker-cluster
+            name: "docker-cluster"
+
+    - id:  docker-cluster
+      name: "Docker Cluster"
+      description: |
+        Creates a cluster of Docker engines, of configurable initial size, and
+        configures them for use with the Amazon EC2 comtainer service.
+      itemType: entity
+      item:
+        type: cluster
+
+        brooklyn.parameters:
+          - name: docker.initial.size
+            label: "Initial Cluster Size"
+            description: |
+              Size of the Docker cluster when created initially
+            type: integer
+            default: 1
+          - name: docker.max.size
+            label: "Maximum Cluster Size"
+            description: |
+              Maximum size the Docker cluster can be scaled to
+            type: integer
+            default: 5
+          - name: docker.scaling.cpu.limit
+            label: "Docker Scaling CPU Limit"
+            description: |
+              The average CPU usage limit for the Docker cluster, before another node
+              will automatically be added. The default is 0.95 or 95%
+            type: double
+            default: 0.95
+          - name: docker.recovery.quarantineFailedEntities
+            label: "Quarantine"
+            description: |
+              Quarantine failed entities instead of destroying them
+            type: boolean
+            default: true
+          - name: docker.recovery.failOnRecurringFailuresInThisDuration
+            label: "Fail Duration"
+            description: |
+              Reports entity as failed if it fails two or more times in this time window
+            type: long
+            default: 300000
+
+        brooklyn.policies:
+          - type: org.apache.brooklyn.policy.ha.ServiceReplacer
+            brooklyn.config:
+              failureSensorToMonitor: $brooklyn:sensor("ha.entityFailed")
+              failOnRecurringFailuresInThisDuration:
+                $brooklyn:config("docker.recovery.failOnRecurringFailuresInThisDuration")
+          - type: org.apache.brooklyn.policy.autoscaling.AutoScalerPolicy
+            brooklyn.config:
+              autoscaler.metric:
+                $brooklyn:sensor("org.apache.brooklyn.entity.machine.MachineAttributes", "cpu.average")
+              autoscaler.metricLowerBound: 0.00
+              autoscaler.metricUpperBound:
+                $brooklyn:config("docker.scaling.cpu.limit")
+              autoscaler.minPoolSize:
+                $brooklyn:config("docker.initial.size")
+              autoscaler.maxPoolSize:
+                $brooklyn:config("docker.max.size")
+              autoscaler.resizeUpStabilizationDelay: 30s
+              autoscaler.resizeDownIterationMax: 0 # Disable scaling down
+              autoscaler.resizeDownStabilizationDelay: forever
+
+        brooklyn.enrichers:
+          - type: org.apache.brooklyn.enricher.stock.Aggregator
+            brooklyn.config:
+              uniqueTag: docker-cluster-cpu-averageing
+              enricher.sourceSensor:
+                $brooklyn:sensor("org.apache.brooklyn.entity.machine.MachineAttributes", "machine.cpu")
+              enricher.targetSensor:
+                $brooklyn:sensor("org.apache.brooklyn.entity.machine.MachineAttributes", "cpu.average")
+              enricher.aggregating.fromMembers: true
+              transformation: average
+
+        brooklyn.config:
+          cluster.initial.size: $brooklyn:config("docker.initial.size")
+          dynamiccluster.quarantineFailedEntities:
+            $brooklyn:config("docker.recovery.quarantineFailedEntities")
+          dynamiccluster.memberspec:
+            $brooklyn:entitySpec:
+              type: docker-engine-with-ecs
+              id: docker-engine
+              name: "docker-engine"
+
+    - id: docker-engine-with-ecs
+      name: Docker Engine with ECS
+      description: |
+        A docker-engine customised with the ECS agent
+      itemType: entity
+      iconUrl: https://raw.githubusercontent.com/docker-library/docs/c350af05d3fac7b5c3f6327ac82fe4d990d8729c/docker/logo.png
+      item:
+        type: docker-engine
+
+        brooklyn.parameters:
+          - name: docker.recovery.stabilizationDelay
+            label: "Stabilization Delay"
+            description: |
+              Time period for which the service must be consistently in the same state to trigger an action
+            # A restart shouldn't trigger failure
+            type: org.apache.brooklyn.util.time.Duration
+            default: 5m
+
+        brooklyn.enrichers:
+          - type: org.apache.brooklyn.policy.ha.ServiceFailureDetector
+            brooklyn.config:
+              serviceOnFire.stabilizationDelay:
+                $brooklyn:config("docker.recovery.stabilizationDelay")
+              entityFailed.stabilizationDelay:
+                $brooklyn:config("docker.recovery.stabilizationDelay")
+              entityRecovered.stabilizationDelay:
+                $brooklyn:config("docker.recovery.stabilizationDelay")
+
+        brooklyn.config:
+          provisioning.properties:
+            customizer:
+              $brooklyn:object:
+                type: org.apache.brooklyn.location.jclouds.networking.SharedLocationSecurityGroupCustomizer
+                object.fields:
+                  tcpPortRanges:
+                    - "32768-65535"
+                  enabled: $brooklyn:config("docker.sharedsecuritygroup.create")
+
+        brooklyn.children:
+          - type: child-software-process
+            id: ecs-agent
+            name: "ecs-agent"
+
+            brooklyn.parameters:
+              - name: ecs.agent.version
+                label: "ECS Agent Version"
+                type: string
+                default: "1.13.0"
+              - name: ecs.cluster.name
+                label: "ECS Cluster Name"
+                description: |
+                  The name of the ECS cluster
+                type: string
+                default: "clocker"
+
+            brooklyn.config:
+              shell.env:
+                ECS_AGENT_VERSION: $brooklyn:config("ecs.agent.version")
+                ECS_CLUSTER_NAME: $brooklyn:config("ecs.cluster.name")
+
+              install.command: |
+                sudo mkdir -p /var/log/ecs
+                sudo mkdir -p /var/lib/ecs/data
+                sudo sysctl -w net.ipv4.conf.all.route_localnet=1
+                sudo iptables -t nat -A PREROUTING -p tcp -d 169.254.170.2 --dport 80 -j DNAT --to-destination 127.0.0.1:51679
+                sudo iptables -t nat -A OUTPUT -d 169.254.170.2 -p tcp -m tcp --dport 80 -j REDIRECT --to-ports 51679
+
+              launch.command: |
+                docker run --name ecs-agent \
+                  --detach=true \
+                  --restart=on-failure:10 \
+                  --volume=/var/run/docker.sock:/var/run/docker.sock \
+                  --volume=/var/log/ecs/:/log \
+                  --volume=/var/lib/ecs/data:/data \
+                  --net=host \
+                  --env=ECS_LOGFILE=/log/ecs-agent.log \
+                  --env=ECS_LOGLEVEL=info \
+                  --env=ECS_DATADIR=/data \
+                  --env=ECS_CLUSTER=${ECS_CLUSTER_NAME} \
+                  --env=ECS_ENABLE_TASK_IAM_ROLE=true \
+                  --env=ECS_ENABLE_TASK_IAM_ROLE_NETWORK_HOST=true \
+                  amazon/amazon-ecs-agent:v${ECS_AGENT_VERSION}
+
+              checkRunning.command: |
+                [[ $(docker inspect --format "{{ .State.Running }}" ecs-agent) == "true" ]]
