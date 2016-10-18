@@ -1,0 +1,56 @@
+brooklyn.catalog:
+  version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+  iconUrl: https://raw.githubusercontent.com/docker-library/docs/471fa6e4cb58062ccbf91afc111980f9c7004981/swarm/logo.png
+  dependsOn:
+    - tests/common.tests.bom
+    - tests/docker.tests.bom
+  license_code: APACHE-2.0
+
+# NOTE This test requires a location in an Amazon EC2 region that has had an
+# ECS cluster created already, named 'clocker-qa-test' and an IAM profile
+# to access it also named 'clocker-qa-test' as in the following YAML fragment:
+#
+# location:
+#   jclouds:aws-ec2:
+#     region: eu-west-1
+#     templateOptions:
+#       iamInstanceProfileName: "clocker-qa-test"
+
+  items:
+    - id: ecs-cluster-tests
+      name: "ECS Cluster Tests"
+      description: |
+        Tests on the ECS cluster of Docker Engine entities
+      itemType: entity
+      item:
+        type: test-case
+        name: "ecs-cluster-tests"
+
+        brooklyn.config:
+          docker.initial.size: 2
+          docker.max.size: 3
+          docker.scaling.cpu.limit: 0.95
+          docker.recovery.stabilizationDelay: 10s
+          docker.recovery.failOnRecurringFailuresInThisDuration: 5m
+
+        brooklyn.children:
+          - type: ecs-cluster
+            id: ecs-cluster
+            name: "ecs-cluster"
+            description: |
+              The ECS cluster to test
+            brooklyn.config:
+              ecs.cluster.name: "clocker-qa-test"
+
+          - type: test-case
+            name: "ecs-test-suite"
+            brooklyn.children:
+              - type: test-case
+                name: "GROUP-1 Test ECS entity"
+                brooklyn.config:
+                  targetId: ecs-cluster
+                brooklyn.children:
+                  - type: assert-up
+                    name: "TEST-01 Assert up"
+                  - type: assert-running
+                    name: "TEST-02 Assert running"

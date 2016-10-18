@@ -14,12 +14,13 @@ repository. To install this, follow the instructions below.
 Clocker for [Apache Brooklyn](https://brooklyn.apache.org/) is a set of open
 source, Apache Licensed tools designed to make working with [Docker](https://www.docker.com/)
 containers as simple as a few clicks. Clocker contains [Brooklyn blueprints](http://brooklyn.apache.org/v/latest/start/blueprints.html)
-to enable deployment and management of [Docker Swarm](https://www.docker.com/products/docker-swarm)
-and [Kubernetes](http://kubernetes.io/) clusters.
+to enable deployment and management of [Docker Swarm](https://www.docker.com/products/docker-swarm),
+[Amazon ECS](https://aws.amazon.com/ecs/) and [Kubernetes](http://kubernetes.io/) clusters.
 
 You will find the source code for the blueprints in this repository.
 
 *   [Docker](./common/catalog/docker/)
+*   [ECS](./ecs/src/main/resources/ecs/)
 *   [Swarm](./swarm/catalog/swarm/)
 *   [Kubernetes](./kubernetes/catalog/kubernetes/)
 
@@ -34,9 +35,11 @@ brooklyn.catalog:
   brooklyn.libraries:
     - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.etcd&a=brooklyn-etcd&v=2.3.0-SNAPSHOT"
     - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=clocker-common&v=2.1.0-SNAPSHOT"
+    - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=clocker-ecs&v=2.1.0-SNAPSHOT"
     - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=clocker-swarm&v=2.1.0-SNAPSHOT"
     - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=clocker-kubernetes&v=2.1.0-SNAPSHOT"
   items:
+    - classpath://io.brooklyn.clocker.ecs:ecs/catalog.bom
     - classpath://io.brooklyn.clocker.swarm:swarm/catalog.bom
     - classpath://io.brooklyn.clocker.kubernetes:kubernetes/catalog.bom
 ```
@@ -47,6 +50,7 @@ You must add the following JARs to `./lib/dropins`:
 
 *   [brooklyn-etcd](https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.etcd&a=brooklyn-etcd&v=2.3.0-SNAPSHOT)
 *   [common](https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=clocker-common&v=2.1.0-SNAPSHOT)
+*   [ecs](https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=clocker-ecs&v=2.1.0-SNAPSHOT)
 *   [swarm](https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=clocker-swarm&v=2.1.0-SNAPSHOT)
 *   [kubernetes](https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=clocker-kubernetes&v=2.1.0-SNAPSHOT)
 
@@ -55,6 +59,7 @@ Then add the catalog entries using the following YAML:
 ```YAML
 brooklyn.catalog:
   items:
+    - classpath://ecs/catalog.bom
     - classpath://swarm/catalog.bom
     - classpath://kubernetes/catalog.bom
 ```
