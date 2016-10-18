@@ -54,7 +54,7 @@ brooklyn.catalog:
         - name: kubernetes.version
           label: "Kubernetes Version"
           type: string
-          default: "1.4.0"
+          default: "1.4.3"
         - name: kubernetes.cluster.name
           label: "Kubernetes Cluster Name"
           type: string
@@ -197,7 +197,7 @@ brooklyn.catalog:
         - name: kubernetes.version
           label: "Kubernetes Version"
           type: string
-          default: "1.4.0"
+          default: "1.4.3"
         - name: kubernetes.user
           label: "Kubernetes User"
           type: string

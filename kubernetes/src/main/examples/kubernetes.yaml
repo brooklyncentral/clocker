@@ -23,7 +23,7 @@ services:
     name: "kubernetes"
     brooklyn.config:
       kubernetes.debug: true
-      kubernetes.version: 1.4.0
+      kubernetes.version: 1.4.3
       start.timeout: 30m
       kubernetes.master.size: 2
       kubernetes.initial.size: 4
@@ -35,7 +35,7 @@ services:
       kubernetes.recovery.failOnRecurringFailuresInThisDuration: 300000
       docker.recovery.stabilizationDelay: 30s
       docker.recovery.failOnRecurringFailuresInThisDuration: 5m
-      flannel.network: 10.254.0.0/16
+      kubernetes.pod.cidr: "10.250.0.0/16"
       provisioning.properties:
         minRam: 8g
         minCores: 2
