@@ -36,6 +36,8 @@ services:
       docker.recovery.stabilizationDelay: 30s
       docker.recovery.failOnRecurringFailuresInThisDuration: 5m
       kubernetes.pod.cidr: "10.250.0.0/16"
+      kubernetes.minRam: 10g
+      kubernetes.minCores: 4
       provisioning.properties:
-        minRam: 8g
-        minCores: 2
+        minRam: 2g
+        minCores: 1

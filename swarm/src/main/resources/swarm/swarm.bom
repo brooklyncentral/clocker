@@ -415,19 +415,18 @@ brooklyn.catalog:
           description: |
             Minimum RAM for provisioning Swarm nodes
           default: 8g
-        - name: swarm.create.shared.securitygroup
-          label: "Swarm blueprint will configure security groups to allow access between docker nodes and to allow external access to deployed apps"
+        - name: swarm.sharedsecuritygroup.create
+          label:  "Create Swarm SharedSecurityGroup"
+          description: |
+            Swarm blueprint will configure security groups to allow access between
+            Docker nodes and to allow external access to deployed apps
           type: boolean
           default: true
 
       brooklyn.config:
-        # FIXME location cannot resolve provisioning.properties entries
-        #provisioning.properties.minRam:
-        #  $brooklyn:parent().config("swarm.minRam")
-        #provisioning.properties.minCores:
-        #  $brooklyn:parent().config("swarm.minCores")
-
         provisioning.properties:
+          minRam: $brooklyn:config("swarm.minRam")
+          minCores: $brooklyn:config("swarm.minCores")
           customizer:
             $brooklyn:object:
               type: org.apache.brooklyn.location.jclouds.networking.SharedLocationSecurityGroupCustomizer

@@ -437,6 +437,16 @@ brooklyn.catalog:
           # A restart shouldn't trigger failure
           type: org.apache.brooklyn.util.time.Duration
           default: 1m
+        - name: kubernetes.minCores
+          label: "Kubernetes Minimum CPU Cores"
+          description: |
+            Minimum CPU cores for provisioning Kubernetes nodes
+          default: 4
+        - name: kubernetes.minRam
+          label: "Kubernetes Minimum RAM"
+          description: |
+            Minimum RAM for provisioning Kubernetes nodes
+          default: 8g
         - name: kubernetes.sharedsecuritygroup.create
           label:  "Create Kubernetes SharedSecurityGroup"
           description: |
@@ -457,7 +467,8 @@ brooklyn.catalog:
         childStartMode: foreground_late
 
         provisioning.properties:
-          # TODO change merge status for customizers config key
+          minRam: $brooklyn:config("kubernetes.minRam")
+          minCores: $brooklyn:config("kubernetes.minCores")
           customizer:
             $brooklyn:object:
               type: org.apache.brooklyn.location.jclouds.networking.SharedLocationSecurityGroupCustomizer
