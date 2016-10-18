@@ -65,25 +65,25 @@ brooklyn.catalog:
             brooklyn.parameters:
               # Duplicated parameters for UI visibility
               - name: haproxy.version
-                label: HAProxy Version
+                label: "HAProxy Version"
                 description: |
                   The HAProxy version to install
                 type: string
                 default: "1.6.7"
               - name: haproxy.port
-                label: HAProxy Port
+                label: "HAProxy Port"
                 description: |
                   Port that HAProxy should listen on
                 type: port
                 default: 8000
               - name: haproxy.protocol
-                label: HAProxy Protocol
+                label: "HAProxy Protocol"
                 description: |
                   Protocol to forward (either http or https)
                 type: string
                 default: "http"
               - name: haproxy.bind.options
-                label: HAProxy Bind Options
+                label: "HAProxy Bind Options"
                 description: |
                   Extra bind configuration for HAProxy
                 type: string
@@ -103,25 +103,25 @@ brooklyn.catalog:
 
         brooklyn.parameters:
           - name: haproxy.version
-            label: HAProxy Version
+            label: "HAProxy Version"
             description: |
               The HAProxy version to install
             type: string
             default: "1.6.7"
           - name: haproxy.port
-            label: HAProxy Port
+            label: "HAProxy Port"
             description: |
               Port that HAProxy should listen on
             type: port
             default: 8000
           - name: haproxy.protocol
-            label: HAProxy Protocol
+            label: "HAProxy Protocol"
             description: |
               Protocol to forward (either http or https)
             type: string
             default: "http"
           - name: haproxy.bind.options
-            label: HAProxy Bind Options
+            label: "HAProxy Bind Options"
             description: |
               Extra bind configuration such as TLS certificate paths
             type: string
