@@ -131,6 +131,13 @@ brooklyn.catalog:
                 $brooklyn:sensor("org.apache.brooklyn.entity.machine.MachineAttributes", "cpu.average")
               enricher.aggregating.fromMembers: true
               transformation: average
+          - type: org.apache.brooklyn.enricher.stock.Aggregator
+            brooklyn.config:
+              uniqueTag: ecs-docker-cluster-tasks-total
+              enricher.sourceSensor: $brooklyn:sensor("ecs.tasks.count")
+              enricher.targetSensor: $brooklyn:sensor("ecs.tasks.total")
+              enricher.aggregating.fromMembers: true
+              transformation: sum
 
         brooklyn.config:
           cluster.initial.size: $brooklyn:config("docker.initial.size")
@@ -155,8 +162,8 @@ brooklyn.catalog:
           - name: docker.recovery.stabilizationDelay
             label: "Stabilization Delay"
             description: |
-              Time period for which the service must be consistently in the same state to trigger an action
-            # A restart shouldn't trigger failure
+              Time period for which the service must be consistently in the same state to trigger an action.
+              Should be long enough that restart will not trigger failure.
             type: org.apache.brooklyn.util.time.Duration
             default: 5m
 
@@ -169,6 +176,12 @@ brooklyn.catalog:
                 $brooklyn:config("docker.recovery.stabilizationDelay")
               entityRecovered.stabilizationDelay:
                 $brooklyn:config("docker.recovery.stabilizationDelay")
+          - type: org.apache.brooklyn.enricher.stock.Propagator
+            brooklyn.config:
+              uniqueTag: ecs-agent-tasks-propagator
+              producer: $brooklyn:child("ecs-agent")
+              propagating:
+                - $brooklyn:sensor("ecs.tasks.count")
 
         brooklyn.config:
           provisioning.properties:
@@ -203,11 +216,16 @@ brooklyn.catalog:
                 ECS_CLUSTER_NAME: $brooklyn:config("ecs.cluster.name")
 
               install.command: |
+                sudo yum install -y jq
                 sudo mkdir -p /var/log/ecs
                 sudo mkdir -p /var/lib/ecs/data
                 sudo sysctl -w net.ipv4.conf.all.route_localnet=1
-                sudo iptables -t nat -A PREROUTING -p tcp -d 169.254.170.2 --dport 80 -j DNAT --to-destination 127.0.0.1:51679
-                sudo iptables -t nat -A OUTPUT -d 169.254.170.2 -p tcp -m tcp --dport 80 -j REDIRECT --to-ports 51679
+                sudo iptables -t nat -A PREROUTING \
+                  -p tcp -d 169.254.170.2 --dport 80 \
+                  -j DNAT --to-destination 127.0.0.1:51679
+                sudo iptables -t nat -A OUTPUT \
+                  -d 169.254.170.2 -p tcp -m tcp \
+                  --dport 80 -j REDIRECT --to-ports 51679
 
               launch.command: |
                 docker run --name ecs-agent \
@@ -227,3 +245,33 @@ brooklyn.catalog:
 
               checkRunning.command: |
                 [[ $(docker inspect --format "{{ .State.Running }}" ecs-agent) == "true" ]]
+
+            brooklyn.initializers:
+              - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+                brooklyn.config:
+                  name: ecs.agent.version
+                  description: |
+                    ECS installed version details
+                  targetType: string
+                  command: |
+                    curl http://localhost:51678/v1/metadata |
+                      jq '.Version'
+              - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+                brooklyn.config:
+                  name: ecs.instance.arn
+                  description: |
+                    ECS instance ARN identifier
+                  targetType: string
+                  command: |
+                    curl http://localhost:51678/v1/metadata |
+                      jq '.ContainerInstanceArn'
+              - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+                brooklyn.config:
+                  name: ecs.task.count
+                  description: |
+                    ECS task count for the instance
+                  targetType: integer
+                  command: |
+                    curl http://localhost:51678/v1/tasks |
+                      jq '.Tasks[] | .Arn' ~/tmp/ecs/tasks.json |
+                      wc -l
