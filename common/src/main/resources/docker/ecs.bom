@@ -55,12 +55,12 @@ brooklyn.catalog:
             default: "clocker"
 
         brooklyn.children:
-          - type: docker-cluster
-            id: docker-cluster
-            name: "docker-cluster"
+          - type: ecs-docker-cluster
+            id: ecs-docker-cluster
+            name: "ecs-docker-cluster"
 
-    - id:  docker-cluster
-      name: "Docker Cluster"
+    - id:  ecs-docker-cluster
+      name: "ECS Docker Cluster"
       description: |
         Creates a cluster of Docker engines, of configurable initial size, and
         configures them for use with the Amazon EC2 comtainer service.
@@ -120,12 +120,11 @@ brooklyn.catalog:
                 $brooklyn:config("docker.max.size")
               autoscaler.resizeUpStabilizationDelay: 30s
               autoscaler.resizeDownIterationMax: 0 # Disable scaling down
-              autoscaler.resizeDownStabilizationDelay: forever
 
         brooklyn.enrichers:
           - type: org.apache.brooklyn.enricher.stock.Aggregator
             brooklyn.config:
-              uniqueTag: docker-cluster-cpu-averageing
+              uniqueTag: ecs-docker-cluster-cpu-averageing
               enricher.sourceSensor:
                 $brooklyn:sensor("org.apache.brooklyn.entity.machine.MachineAttributes", "machine.cpu")
               enricher.targetSensor:
