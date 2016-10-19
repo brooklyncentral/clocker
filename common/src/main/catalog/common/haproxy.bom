@@ -2,55 +2,11 @@ brooklyn.catalog:
   version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
   publish:
     description: |
-      Resources for common Apache Brooklyn entities
+      HAProxy load balancer
     license_code: APACHE-2.0
 
   items:
     - https://raw.githubusercontent.com/brooklyncentral/brooklyn-dns/master/brooklyn-dns-etc-hosts-generator.bom
-
-    - id: conditional-entity
-      name: "Conditional Entity"
-      description: |
-        An entity that creates a child only if a configuration key is set
-      itemType: entity
-      item:
-        type: org.apache.brooklyn.entity.stock.ConditionalEntity
-        id: conditional-entity
-
-    - id: child-software-process
-      name: "Child Software Process"
-      description: |
-        A child entity that executes commands to run a process
-      itemType: entity
-      item:
-        type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-        id: child-software-process
-
-    - id: empty-software-process
-      name: "Empty Software Process"
-      description: |
-        A startable entity to group child entities
-      itemType: entity
-      item:
-        type: org.apache.brooklyn.entity.software.base.EmptySoftwareProcess
-        id: empty-software-process
-
-    - id: centos-software-process
-      name: "CentOS Software Process"
-      description: |
-        An entity that executes commands to run a process
-
-        Uses a CentOS 7.x Virtual Machine
-      itemType: entity
-      iconUrl: https://raw.githubusercontent.com/docker-library/docs/c4df0024e2cad985326dc38f6b6ce39abeab59c5/centos/logo.png
-      item:
-        type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-        id: centos-software-process
-        brooklyn.config:
-          dontRequireTtyForSudo: true
-          provisioning.properties:
-            osFamily: centos
-            osVersionRegex: 7
 
     - id: haproxy-load-balancer-template
       name: "HAProxy Load Balancer"

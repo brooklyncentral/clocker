@@ -17,12 +17,17 @@
     <build>
         <resources>
             <resource>
+                <directory>src/main/catalog</directory>
+                <filtering>false</filtering>
+            </resource>
+            <resource>
                 <directory>src/main/resources</directory>
                 <filtering>false</filtering>
             </resource>
             <resource>
                 <directory>src/main/examples</directory>
                 <filtering>false</filtering>
+                <targetPath>examples</targetPath>
             </resource>
             <resource>
                 <directory>src/test/resources</directory>
@@ -46,12 +51,12 @@
                         <configuration>
                             <artifacts>
                                 <artifact>
-                                    <file>${project.basedir}/src/main/resources/kubernetes/kubernetes.bom</file>
+                                    <file>${project.basedir}/src/main/catalog/kubernetes/kubernetes.bom</file>
                                     <type>bom</type>
                                     <classifier>kubernetes</classifier>
                                 </artifact>
                                 <artifact>
-                                    <file>${project.basedir}/src/main/resources/kubernetes/plugins.bom</file>
+                                    <file>${project.basedir}/src/main/catalog/kubernetes/plugins.bom</file>
                                     <type>bom</type>
                                     <classifier>plugins</classifier>
                                 </artifact>

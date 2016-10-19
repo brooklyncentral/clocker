@@ -19,9 +19,9 @@ and [Kubernetes](http://kubernetes.io/) clusters.
 
 You will find the source code for the blueprints in this repository.
 
-*   [Docker](./common/src/main/resources/docker/)
-*   [Swarm](./swarm/src/main/resources/swarm/)
-*   [Kubernetes](./kubernetes/src/main/resources/kubernetes/)
+*   [Docker](./common/src/main/catalog/docker/)
+*   [Swarm](./swarm/src/main/catalog/swarm/)
+*   [Kubernetes](./kubernetes/src/main/catalog/kubernetes/)
 
 ## Getting Started
 
@@ -37,8 +37,6 @@ brooklyn.catalog:
     - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=clocker-swarm&v=2.1.0-SNAPSHOT"
     - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=clocker-kubernetes&v=2.1.0-SNAPSHOT"
   items:
-    - classpath://io.brooklyn.etcd.brooklyn-etcd:brooklyn-etcd/catalog.bom
-    - classpath://io.brooklyn.clocker.common:docker/catalog.bom
     - classpath://io.brooklyn.clocker.swarm:swarm/catalog.bom
     - classpath://io.brooklyn.clocker.kubernetes:kubernetes/catalog.bom
 ```
@@ -57,11 +55,6 @@ Then add the catalog entries using the following YAML:
 ```YAML
 brooklyn.catalog:
   items:
-    - classpath://io.brooklyn.etcd.brooklyn-etcd:brooklyn-etcd/catalog.bom
-    - classpath://io.brooklyn.clocker.common:common/common.bom
-    - classpath://io.brooklyn.clocker.common:common/ca.bom
-    - classpath://io.brooklyn.clocker.common:docker/docker.bom
-    - classpath://io.brooklyn.clocker.swarm:swarm/swarm.bom
-    - classpath://io.brooklyn.clocker.kubernetes:kubernetes/plugins.bom
-    - classpath://io.brooklyn.clocker.kubernetes:kubernetes/kubernetes.bom
+    - classpath://swarm/catalog.bom
+    - classpath://kubernetes/catalog.bom
 ```

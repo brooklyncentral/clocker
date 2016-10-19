@@ -5,7 +5,5 @@ brooklyn.catalog:
     - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=clocker-swarm&v=2.1.0-SNAPSHOT"
     - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=clocker-kubernetes&v=2.1.0-SNAPSHOT"
   items:
-    - classpath://io.brooklyn.etcd.brooklyn-etcd:brooklyn-etcd/catalog.bom
-    - classpath://io.brooklyn.clocker.common:docker/catalog.bom
     - classpath://io.brooklyn.clocker.swarm:swarm/catalog.bom
     - classpath://io.brooklyn.clocker.kubernetes:kubernetes/catalog.bom
