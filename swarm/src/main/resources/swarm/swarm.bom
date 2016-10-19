@@ -322,7 +322,6 @@ brooklyn.catalog:
                   $brooklyn:entity("docker-swarm-nodes").parent().config("swarm.max.size")
                 autoscaler.resizeUpStabilizationDelay: 30s
                 autoscaler.resizeDownIterationMax: 0 # Disable scaling down
-                autoscaler.resizeDownStabilizationDelay: forever
           brooklyn.enrichers:
             - type: org.apache.brooklyn.enricher.stock.Aggregator
               brooklyn.config:
