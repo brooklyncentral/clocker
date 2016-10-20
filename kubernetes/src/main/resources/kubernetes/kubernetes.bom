@@ -239,6 +239,13 @@ brooklyn.catalog:
           label: "Kubernetes DNS Domain"
           type: string
           default: "cluster"
+        - name: kubernetes.recovery.failOnRecurringFailuresInThisDuration
+          label: "Fail Duration"
+          description: |
+            Reports entity as failed if it fails two or more times in this time window.
+            Value is duration in milliseconds.
+          type: long
+          default: 900000
 
       brooklyn.enrichers:
         - type: org.apache.brooklyn.enricher.stock.Propagator
@@ -323,7 +330,7 @@ brooklyn.catalog:
               brooklyn.config:
                 failureSensorToMonitor: $brooklyn:sensor("ha.entityFailed")
                 failOnRecurringFailuresInThisDuration:
-                  $brooklyn:config("kubernetes.recovery.failOnRecurringFailuresInThisDuration")
+                  $brooklyn:parent().config("kubernetes.recovery.failOnRecurringFailuresInThisDuration")
           brooklyn.enrichers:
             - type: org.apache.brooklyn.enricher.stock.Aggregator
               brooklyn.config:
@@ -405,7 +412,7 @@ brooklyn.catalog:
               brooklyn.config:
                 failureSensorToMonitor: $brooklyn:sensor("ha.entityFailed")
                 failOnRecurringFailuresInThisDuration:
-                  $brooklyn:config("kubernetes.recovery.failOnRecurringFailuresInThisDuration")
+                  $brooklyn:parent().config("kubernetes.recovery.failOnRecurringFailuresInThisDuration")
             - type: org.apache.brooklyn.policy.autoscaling.AutoScalerPolicy
               brooklyn.config:
                 autoscaler.metric:
@@ -459,13 +466,6 @@ brooklyn.catalog:
           # A restart shouldn't trigger failure
           type: org.apache.brooklyn.util.time.Duration
           default: 1m
-        - name: kubernetes.recovery.failOnRecurringFailuresInThisDuration
-          label: "Fail Duration"
-          description: |
-            Reports entity as failed if it fails two or more times in this time window.
-            Value is duration in milliseconds.
-          type: long
-          default: 900000
         - name: kubernetes.sharedsecuritygroup.create
           label:  "Create Kubernetes SharedSecurityGroup"
           description: |
