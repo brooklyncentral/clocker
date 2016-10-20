@@ -254,6 +254,8 @@ brooklyn.catalog:
                   SWARM_ENDPOINTS:
                     $brooklyn:attributeWhenReady("swarm.endpoints")
                 command: |                  
+                  (
+                  flock 9
                   cat > ${RUN_DIR}/servers.conf <<-EOF
                   backend servers
                     balance roundrobin
@@ -263,6 +265,8 @@ brooklyn.catalog:
                       ca-file ${RUN_DIR}/ca.pem crt ${RUN_DIR}/cert.pem" >> ${RUN_DIR}/servers.conf
                   done
                   haproxy -D -f ${RUN_DIR}/haproxy.conf -f ${RUN_DIR}/servers.conf -st $(cat ${RUN_DIR}/pid.txt)
+                  flock -u 9
+                  ) 9>>/tmp/configureSwarm.lock
           brooklyn.policies:
             - type: org.apache.brooklyn.policy.InvokeEffectorOnSensorChange
               brooklyn.config:
