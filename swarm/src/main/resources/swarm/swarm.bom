@@ -255,7 +255,7 @@ brooklyn.catalog:
                     $brooklyn:attributeWhenReady("swarm.endpoints")
                 command: |                  
                   (
-                  flock 9
+                  flock -o 9
                   cat > ${RUN_DIR}/servers.conf <<-EOF
                   backend servers
                     balance roundrobin
@@ -264,7 +264,10 @@ brooklyn.catalog:
                     echo "  server manager$((++n)) ${endpoint} maxconn 32 ssl \
                       ca-file ${RUN_DIR}/ca.pem crt ${RUN_DIR}/cert.pem" >> ${RUN_DIR}/servers.conf
                   done
-                  haproxy -D -f ${RUN_DIR}/haproxy.conf -f ${RUN_DIR}/servers.conf -st $(cat ${RUN_DIR}/pid.txt)
+                  OLD_PID=$(cat ${RUN_DIR}/pid.txt)
+                  haproxy -D -f ${RUN_DIR}/haproxy.conf -f ${RUN_DIR}/servers.conf -st $OLD_PID
+                  # wait for the old process to die before leaving the critical section
+                  while test -d "/proc/$OLD_PID" 2> /dev/null; do sleep 1; done;
                   flock -u 9
                   ) 9>>/tmp/configureSwarm.lock
           brooklyn.policies:
