@@ -13,7 +13,6 @@ brooklyn.catalog:
           kubernetes.initial.size: 3
           kubernetes.max.size: 5
           etcd.initial.size: 3
-          kubernetes.version: 1.3.5
           kubernetes.cluster.name: amp
           kubernetes.pod.cidr: 172.16.0.0/16
           kubernetes.apiserver.port: 8080
