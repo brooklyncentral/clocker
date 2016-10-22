@@ -25,11 +25,6 @@
                 <filtering>false</filtering>
             </resource>
             <resource>
-                <directory>examples</directory>
-                <filtering>false</filtering>
-                <targetPath>examples</targetPath>
-            </resource>
-            <resource>
                 <directory>tests</directory>
                 <filtering>false</filtering>
                 <targetPath>tests</targetPath>
