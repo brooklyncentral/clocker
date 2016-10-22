@@ -19,9 +19,9 @@ and [Kubernetes](http://kubernetes.io/) clusters.
 
 You will find the source code for the blueprints in this repository.
 
-*   [Docker](./common/src/main/catalog/docker/)
-*   [Swarm](./swarm/src/main/catalog/swarm/)
-*   [Kubernetes](./kubernetes/src/main/catalog/kubernetes/)
+*   [Docker](./common/catalog/docker/)
+*   [Swarm](./swarm/catalog/swarm/)
+*   [Kubernetes](./kubernetes/catalog/kubernetes/)
 
 ## Getting Started
 

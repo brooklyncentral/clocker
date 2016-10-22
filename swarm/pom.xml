@@ -17,20 +17,20 @@
     <build>
         <resources>
             <resource>
-                <directory>src/main/catalog</directory>
+                <directory>catalog</directory>
                 <filtering>false</filtering>
             </resource>
             <resource>
-                <directory>src/main/resources</directory>
+                <directory>resources</directory>
                 <filtering>false</filtering>
             </resource>
             <resource>
-                <directory>src/main/examples</directory>
+                <directory>examples</directory>
                 <filtering>false</filtering>
                 <targetPath>examples</targetPath>
             </resource>
             <resource>
-                <directory>src/test/resources</directory>
+                <directory>tests</directory>
                 <filtering>false</filtering>
                 <targetPath>tests</targetPath>
             </resource>
@@ -51,7 +51,7 @@
                         <configuration>
                             <artifacts>
                                 <artifact>
-                                    <file>${project.basedir}/src/main/catalog/swarm/swarm.bom</file>
+                                    <file>catalog/swarm/swarm.bom</file>
                                     <type>bom</type>
                                     <classifier>swarm</classifier>
                                 </artifact>
