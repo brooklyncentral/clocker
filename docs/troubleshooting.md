@@ -30,7 +30,7 @@ After a few hours of management of a swarm or cluster, AMP or Brooklyn may start
 <div class="tab-content">
 <div id="classic" class="tab-pane fade in active">
 
-Open `bin/brooklyn` and add `-XX:SoftRefLRUPolicyMSPerMB=1` the `JAVA_OPTS` line:
+Open `bin/brooklyn` and add `-XX:SoftRefLRUPolicyMSPerMB=1` to the `JAVA_OPTS` line:
 
 ```sh
 JAVA_OPTS="-Xms256m -Xmx2g -XX:MaxPermSize=256m -XX:SoftRefLRUPolicyMSPerMB=1"
@@ -54,7 +54,7 @@ Launching Clocker within some environments may require RAM to be made available.
 
 <ul class="nav nav-tabs">
     <li class="active classic-tab"><a data-target="#classic, .classic-tab" data-toggle="tab" href="#">Brooklyn classic</a></li>
-    <li class="karaf-tab"><a data-target="#karaf, .karaf-tab" data-toggle="tab" href="#">Brooklyn Karaf</a></li>
+    <li class="karaf-tab"><a data-target="#karaf, .karaf-tab" data-toggle="tab" href="#">AMP / Brooklyn Karaf</a></li>
 </ul>
 
 <div class="tab-content">
