@@ -20,6 +20,8 @@ It's recommended that you use [VPC mode](http://docs.aws.amazon.com/AWSEC2/lates
 
 After a few hours of management of a swarm or cluster, AMP or Brooklyn may start to suffer from high CPU and memory usage. This is because of a known issue in the Java garbage collection system. To fix this add the following to your AMP or Brooklyn: 
 
+{::options parse_block_html="true" /}
+
 <ul class="nav nav-tabs">
     <li class="active classic-tab"><a data-target="#classic, .classic-tab" data-toggle="tab" href="#">Brooklyn classic</a></li>
     <li class="karaf-tab"><a data-target="#karaf, .karaf-tab" data-toggle="tab" href="#">AMP / Brooklyn Karaf</a></li>
@@ -49,8 +51,6 @@ export EXTRA_JAVA_OPTS="-XX:SoftRefLRUPolicyMSPerMB=1 ${EXTRA_JAVA_OPTS}"
 #### RAM Usage
   
 Launching Clocker within some environments may require RAM to be made available. This can be set to more than `2G` by editing the following:
-
-{::options parse_block_html="true" /}
 
 <ul class="nav nav-tabs">
     <li class="active classic-tab"><a data-target="#classic, .classic-tab" data-toggle="tab" href="#">Brooklyn classic</a></li>
