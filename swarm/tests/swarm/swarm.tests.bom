@@ -396,6 +396,7 @@ brooklyn.catalog:
         swarm.port: 4000
         docker.recovery.stabilizationDelay: 10s
         docker.recovery.failOnRecurringFailuresInThisDuration: 5m
+        swarm.sharedsecuritygroup.create: true
 
       brooklyn.children:
         - type: docker-swarm
@@ -451,8 +452,7 @@ brooklyn.catalog:
                   name: "TEST-08 Test Swarm etcd TLS"
                   brooklyn.config:
                     ca.url: $brooklyn:entity("ca-server").attributeWhenReady("main.uri")
-                - type: test-swarm-node-restart
-                  name: "TEST-09 Test Swarm node restart"
+                
                 - type: swarm-node-replacement-test
                   name: "TEST-10 Test Swarm node replace"
                 - type: test-swarm-manager-failover
