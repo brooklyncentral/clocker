@@ -16,6 +16,36 @@ To do this, delete the folder `~/.brooklyn/brooklyn-persisted-state/` and all of
   
 It's recommended that you use [VPC mode](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-vpc.html) to run Clocker within [AWS](http://aws.amazon.com/). This is because problems have been recorded with DNS and starting instances withn AWS Classic. For more information on doing this, see the [Brooklyn docs](http://brooklyn.apache.org/v/latest/ops/locations/index.html#ec2-classic-problems-with-vpc-only-hardware-instance-types).
   
+#### High CPU usage
+
+After a few hours of management of a swarm or cluster, AMP or Brooklyn may start to suffer from high CPU and memory usage. This is because of a known issue in the Java garbage collection system. To fix this add the following to your AMP or Brooklyn: 
+
+<ul class="nav nav-tabs">
+    <li class="active classic-tab"><a data-target="#classic, .classic-tab" data-toggle="tab" href="#">Brooklyn classic</a></li>
+    <li class="karaf-tab"><a data-target="#karaf, .karaf-tab" data-toggle="tab" href="#">AMP / Brooklyn Karaf</a></li>
+</ul>
+
+<div class="tab-content">
+<div id="classic" class="tab-pane fade in active">
+
+Open `bin/brooklyn` and add `-XX:SoftRefLRUPolicyMSPerMB=1` the `JAVA_OPTS` line:
+
+```sh
+JAVA_OPTS="-Xms256m -Xmx2g -XX:MaxPermSize=256m -XX:SoftRefLRUPolicyMSPerMB=1"
+```
+
+</div>
+<div id="karaf" class="tab-pane fade">
+
+Open `bin/setenv` and edit or add the following line to the start
+
+```sh
+export EXTRA_JAVA_OPTS="-XX:SoftRefLRUPolicyMSPerMB=1 ${EXTRA_JAVA_OPTS}"
+``` 
+
+</div>
+</div>
+  
 #### RAM Usage
   
 Launching Clocker within some environments may require RAM to be made available. This can be set to more than `2G` by editing the following:
