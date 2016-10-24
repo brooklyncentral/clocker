@@ -233,6 +233,9 @@ brooklyn.catalog:
             resources.preInstall.latch: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
             files.preinstall:
               "classpath://io.brooklyn.clocker.common:common/certificate-functions.sh": certificate-functions.sh
+            post.install.command: |
+              # ensure flock is installed
+              sudo yum install -y util-linux
             pre.launch.command: |
               set -e
               source ${INSTALL_DIR}/certificate-functions.sh
