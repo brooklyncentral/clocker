@@ -76,20 +76,55 @@ brooklyn.catalog:
           assertOut:
             contains: '1 received'
         - type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
-          name: "09. Kill deployments [A,B]"
+          name: "09. Install Netcat"
+          target: $brooklyn:entity("kubernetes-master")
+          command: |
+            POD_A="$(kubectl get pods -o wide | grep workload-a | tr -s ' ' | cut -d ' ' -f1)"
+            POD_B="$(kubectl get pods -o wide | grep workload-b | tr -s ' ' | cut -d ' ' -f1)"
+            kubectl exec ${POD_A} -- yum install -y nc
+            kubectl exec ${POD_B} -- yum install -y nc
+        - type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
+          name: "10. Check TCP"
+          target: $brooklyn:entity("kubernetes-master")
+          command: |
+            POD_A="$(kubectl get pods -o wide | grep workload-a | tr -s ' ' | cut -d ' ' -f1)"
+            POD_B="$(kubectl get pods -o wide | grep workload-b | tr -s ' ' | cut -d ' ' -f1)"
+            IP_A="$(kubectl get pods -o wide | grep workload-a | tr -s ' ' | cut -d ' ' -f6)"
+            kubectl exec ${POD_A} -- bash -c "nohup nc -l -k 5000 >> /tmp/nohup.out 2>&1" &
+            kubectl exec ${POD_A} -- bash -c "echo connect_from_A | nc -C localhost 5000"
+            kubectl exec ${POD_B} -- bash -c "echo connect_from_B | nc -C ${IP_A} 5000"
+            kubectl exec ${POD_A} -- cat /tmp/nohup.out | tr -d "\n\r"
+          assertOut:
+            contains: 'connect_from_Aconnect_from_B'
+        - type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
+          name: "11. Check UDP"
+          target: $brooklyn:entity("kubernetes-master")
+          command: |
+            POD_A="$(kubectl get pods -o wide | grep workload-a | tr -s ' ' | cut -d ' ' -f1)"
+            POD_B="$(kubectl get pods -o wide | grep workload-b | tr -s ' ' | cut -d ' ' -f1)"
+            IP_A="$(kubectl get pods -o wide | grep workload-a | tr -s ' ' | cut -d ' ' -f6)"
+            kubectl exec ${POD_A} -- bash -c "nohup nc -u -l 5000 >> /tmp/nohup2.out 2>&1" &
+            kubectl exec ${POD_A} -- bash -c "echo connect_from_A | nc -u -C localhost 5000"
+            kubectl exec ${POD_A} -- bash -c "nohup nc -u -l 5001 >> /tmp/nohup2.out 2>&1" &
+            kubectl exec ${POD_B} -- bash -c "echo connect_from_B | nc -u -C ${IP_A} 5001"
+            kubectl exec ${POD_A} -- cat /tmp/nohup2.out | tr -d "\n\r"
+          assertOut:
+            contains: 'connect_from_Aconnect_from_B'
+        - type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
+          name: "12. Kill deployments [A,B]"
           target: $brooklyn:entity("kubernetes-master")
           command: |
             kubectl delete deployment workload-a
             kubectl delete deployment workload-b
         - type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
-          name: "10. Assert [A,B] NOT running"
+          name: "13. Assert [A,B] NOT running"
           target: $brooklyn:entity("kubernetes-master")
           command: |
             kubectl get deployments | grep workload- | wc -l
           assertOut:
             contains: '0'
         - type: org.apache.brooklyn.test.framework.TestHttpCall
-          name: "11. Check Prometheus UI is Reachable"
+          name: "14. Check Prometheus UI is Reachable"
           url:
             $brooklyn:formatString:
               - "http://%s:%s"
@@ -99,25 +134,48 @@ brooklyn.catalog:
           assert:
           - equals: 200
         - type: org.apache.brooklyn.test.framework.TestSensor
-          name: "12. Size of kubernetes master cluster is 3"
+          name: "15. Size of kubernetes master cluster is 3"
           targetId: kubernetes-master-cluster
           sensor: group.members.count
           assert:
             equals: 3
         - type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
-          name: "13. Kill a master node"
+          name: "16. Kill a master node"
           target: $brooklyn:entity("kubernetes-master")
           command: |
             nohup sudo bash -c 'sleep 10 && shutdown -h -t0 now' &
         - type: org.apache.brooklyn.test.framework.TestSensor
-          name: "14. Size of kubernetes master cluster increased to 4"
+          name: "17. Size of kubernetes master cluster increased to 4"
           targetId: kubernetes-master-cluster
           sensor: group.members.count
           assert:
             equals: 4
         - type: org.apache.brooklyn.test.framework.TestSensor
-          name: "15. Size of kubernetes master cluster decreased to 3"
+          name: "18. Size of kubernetes master cluster decreased to 3"
           targetId: kubernetes-master-cluster
+          sensor: group.members.count
+          assert:
+            equals: 3
+        - type: org.apache.brooklyn.test.framework.TestSensor
+          name: "19. Size of kubernetes worker cluster is 3"
+          targetId: kubernetes-worker-cluster
+          sensor: group.members.count
+          assert:
+            equals: 3
+        - type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
+          name: "20. Kill a worker node"
+          target: $brooklyn:entity("kubernetes-worker")
+          command: |
+            nohup sudo bash -c 'sleep 10 && shutdown -h -t0 now' &
+        - type: org.apache.brooklyn.test.framework.TestSensor
+          name: "21. Size of kubernetes worker cluster increased to 4"
+          targetId: kubernetes-worker-cluster
+          sensor: group.members.count
+          assert:
+            equals: 4
+        - type: org.apache.brooklyn.test.framework.TestSensor
+          name: "22. Size of kubernetes worker cluster decreased to 3"
+          targetId: kubernetes-worker-cluster
           sensor: group.members.count
           assert:
             equals: 3
