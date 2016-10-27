@@ -233,9 +233,6 @@ brooklyn.catalog:
             resources.preInstall.latch: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
             files.preinstall:
               "classpath://io.brooklyn.clocker.common:common/certificate-functions.sh": certificate-functions.sh
-            post.install.command: |
-              # ensure flock is installed
-              sudo yum install -y util-linux
             pre.launch.command: |
               set -e
               source ${INSTALL_DIR}/certificate-functions.sh
@@ -247,44 +244,13 @@ brooklyn.catalog:
 
               curl -X POST --data-binary @${INSTALL_DIR}/csr.pem  ${CA_REQUEST_ROOT_URL}/sign > ${RUN_DIR}/cert.pem
               cat ${RUN_DIR}/key.pem >> ${RUN_DIR}/cert.pem
-          brooklyn.initializers:
-            - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
-              brooklyn.config:
-                name: configureSwarm
-                description: |
-                  Generate HAProxy configuration from Swarm endpoint list
-                shell.env:
-                  SWARM_ENDPOINTS:
-                    $brooklyn:attributeWhenReady("swarm.endpoints")
-                command: |                  
-                  (
-                  flock -o 9
-                  cat > ${RUN_DIR}/servers.conf <<-EOF
-                  backend servers
-                    balance roundrobin
-                  EOF
-                  for endpoint in $(echo ${SWARM_ENDPOINTS} | tr ',' ' ') ; do
-                    echo "  server manager$((++n)) ${endpoint} maxconn 32 ssl \
-                      ca-file ${RUN_DIR}/ca.pem crt ${RUN_DIR}/cert.pem" >> ${RUN_DIR}/servers.conf
-                  done
-                  OLD_PID=$(cat ${RUN_DIR}/pid.txt)
-                  haproxy -D -f ${RUN_DIR}/haproxy.conf -f ${RUN_DIR}/servers.conf -st $OLD_PID
-                  # wait for the old process to die before leaving the critical section
-                  while test -d "/proc/$OLD_PID" 2> /dev/null; do sleep 1; done;
-                  flock -u 9
-                  ) 9>>/tmp/configureSwarm.lock
-          brooklyn.policies:
-            - type: org.apache.brooklyn.policy.InvokeEffectorOnSensorChange
-              brooklyn.config:
-                effector: configureSwarm
-                sensor: $brooklyn:sensor("swarm.endpoints")
           brooklyn.enrichers:
             - type: org.apache.brooklyn.enricher.stock.Propagator
               brooklyn.config:
                 uniqueTag: swarm-endpoints-propagator
                 producer: $brooklyn:entity("docker-swarm-managers")
-                propagating:
-                  - $brooklyn:sensor("swarm.endpoints")
+                sensorMapping:
+                  $brooklyn:sensor("swarm.endpoints"): $brooklyn:sensor("haproxy.endpoints")
             - type: org.apache.brooklyn.enricher.stock.Transformer
               brooklyn.config:
                 uniqueTag: cluster-swarm-endpoint-publisher
