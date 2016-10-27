@@ -198,8 +198,11 @@ brooklyn.catalog:
                 balance roundrobin
               EOF
               for endpoint in $(echo ${HAPROXY_ENDPOINTS} | tr ',' ' ') ; do
-                echo "  server manager$((++n)) ${endpoint} maxconn 32 ssl \
-                  ca-file ${RUN_DIR}/ca.pem crt ${RUN_DIR}/cert.pem" >> ${RUN_DIR}/servers.conf
+                if [ "${HAPROXY_PROTOCOL}" == "http" ]; then
+                  echo "  server master$((++n)) ${endpoint} check" >> ${RUN_DIR}/servers.conf
+                else
+                  echo "  server manager$((++n)) ${endpoint} maxconn 32 ssl ca-file ${RUN_DIR}/ca.pem crt ${RUN_DIR}/cert.pem" >> ${RUN_DIR}/servers.conf
+                fi
               done
               OLD_PID=$(cat ${RUN_DIR}/pid.txt)
               haproxy -D -f ${RUN_DIR}/haproxy.conf -f ${RUN_DIR}/servers.conf -st $OLD_PID
