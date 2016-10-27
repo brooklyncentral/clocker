@@ -46,7 +46,7 @@
                         <configuration>
                             <artifacts>
                                 <artifact>
-                                    <file>catalog/swarm/swarm.bom</file>
+                                    <file>${project.basedir}/catalog/swarm/swarm.bom</file>
                                     <type>bom</type>
                                     <classifier>swarm</classifier>
                                 </artifact>

@@ -46,22 +46,22 @@
                         <configuration>
                             <artifacts>
                                 <artifact>
-                                    <file>catalog/docker/docker.bom</file>
+                                    <file>${project.basedir}/catalog/docker/docker.bom</file>
                                     <type>bom</type>
                                     <classifier>docker</classifier>
                                 </artifact>
                                 <artifact>
-                                    <file>catalog/common/ca.bom</file>
+                                    <file>${project.basedir}/catalog/common/ca.bom</file>
                                     <type>bom</type>
                                     <classifier>ca</classifier>
                                 </artifact>
                                 <artifact>
-                                    <file>catalog/common/haproxy.bom</file>
+                                    <file>${project.basedir}/catalog/common/haproxy.bom</file>
                                     <type>bom</type>
                                     <classifier>haproxy</classifier>
                                 </artifact>
                                 <artifact>
-                                    <file>catalog/common/common.bom</file>
+                                    <file>${project.basedir}/catalog/common/common.bom</file>
                                     <type>bom</type>
                                     <classifier>common</classifier>
                                 </artifact>

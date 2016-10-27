@@ -46,12 +46,17 @@
                         <configuration>
                             <artifacts>
                                 <artifact>
-                                    <file>catalog/kubernetes/kubernetes.bom</file>
+                                    <file>${project.basedir}/catalog/kubernetes/kubernetes.bom</file>
                                     <type>bom</type>
                                     <classifier>kubernetes</classifier>
                                 </artifact>
                                 <artifact>
-                                    <file>catalog/kubernetes/plugins.bom</file>
+                                    <file>${project.basedir}/catalog/kubernetes/pods.bom</file>
+                                    <type>bom</type>
+                                    <classifier>pods</classifier>
+                                </artifact>
+                                <artifact>
+                                    <file>${project.basedir}/catalog/kubernetes/plugins.bom</file>
                                     <type>bom</type>
                                     <classifier>plugins</classifier>
                                 </artifact>
