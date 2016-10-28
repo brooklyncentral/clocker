@@ -140,7 +140,7 @@ brooklyn.catalog:
             HAPROXY_BIND_OPTIONS: $brooklyn:config("haproxy.bind.options")
 
           install.command: |
-            sudo yum install -y gcc make openssl-devel wget
+            sudo yum install -y gcc make openssl-devel wget util-linux
             haproxy_major_minor=$(echo ${HAPROXY_VERSION} | cut -d. -f1,2)
             wget "http://www.haproxy.org/download/${haproxy_major_minor}/src/haproxy-${HAPROXY_VERSION}.tar.gz"
             tar zxf haproxy-${HAPROXY_VERSION}.tar.gz
@@ -172,3 +172,52 @@ brooklyn.catalog:
           launch.command: |
             haproxy -f haproxy.conf -f servers.conf -c &&
               haproxy -D -f haproxy.conf -f servers.conf -sf $(cat ${PID_FILE})
+
+        brooklyn.initializers:
+        - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+          brooklyn.config:
+            name: configureEndpoints
+            description: |
+              Generate HAProxy configuration from endpoint list
+            shell.env:
+              HAPROXY_PROTOCOL: $brooklyn:config("haproxy.protocol")
+              HAPROXY_ENDPOINTS: $brooklyn:attributeWhenReady("haproxy.endpoints")
+              ENTITY_ID: $brooklyn:attributeWhenReady("entity.id")
+            command: |
+              (
+              flock -o 9
+              cat > ${RUN_DIR}/servers.conf <<-EOF
+              backend servers
+              EOF
+              if [ "${HAPROXY_PROTOCOL}" == "http" ]; then
+              cat >> ${RUN_DIR}/servers.conf <<-EOF
+                mode http
+                option httpchk
+              EOF
+              fi
+              cat >> ${RUN_DIR}/servers.conf <<-EOF
+                balance roundrobin
+              EOF
+              for endpoint in $(echo ${HAPROXY_ENDPOINTS} | tr ',' ' ') ; do
+                if [ "${HAPROXY_PROTOCOL}" == "http" ]; then
+                  echo "  server node$((++n)) ${endpoint} check" >> ${RUN_DIR}/servers.conf
+                else
+                  echo "  server node$((++n)) ${endpoint} maxconn 32 ssl ca-file ${RUN_DIR}/ca.pem crt ${RUN_DIR}/cert.pem" >> ${RUN_DIR}/servers.conf
+                fi
+              done
+              old_pid=$(cat ${RUN_DIR}/pid.txt)
+              haproxy -D -f ${RUN_DIR}/haproxy.conf -f ${RUN_DIR}/servers.conf -st ${old_pid}
+              # wait for the old process to die before leaving the critical section
+              while test -d "/proc/${old_pid}" 2> /dev/null; do sleep 1; done;
+              flock -u 9
+              ) 9>>/tmp/configure.${ENTITY_ID}.lock
+
+        brooklyn.policies:
+        - type: org.apache.brooklyn.policy.InvokeEffectorOnSensorChange
+          brooklyn.config:
+            effector: configureEndpoints
+            sensor: $brooklyn:sensor("haproxy.endpoints")
+        - type: org.apache.brooklyn.policy.InvokeEffectorOnSensorChange
+          brooklyn.config:
+            effector: configureEndpoints
+            sensor: $brooklyn:sensor("service.isUp")

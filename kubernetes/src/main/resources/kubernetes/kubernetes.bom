@@ -263,42 +263,13 @@ brooklyn.catalog:
           brooklyn.config:
             haproxy.port: $brooklyn:parent().config("kubernetes.apiserver.port")
             haproxy.protocol: "http"
-          brooklyn.initializers:
-            - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
-              brooklyn.config:
-                name: configureKubernetes
-                description: |
-                  Generate HAProxy configuration from Kubernetes endpoint list
-                shell.env:
-                  KUBERNETES_ENDPOINTS:
-                    $brooklyn:attributeWhenReady("kubernetes.endpoints")
-                command: |
-                  cat > ${RUN_DIR}/servers.conf <<-EOF
-                  backend servers
-                    mode http
-                    option httpchk
-                    balance roundrobin
-                  EOF
-                  for endpoint in $(echo ${KUBERNETES_ENDPOINTS} | tr ',' ' ') ; do
-                    echo "  server master$((++n)) ${endpoint} check" >> ${RUN_DIR}/servers.conf
-                  done
-                  haproxy -D -f ${RUN_DIR}/haproxy.conf -f ${RUN_DIR}/servers.conf -st $(cat ${RUN_DIR}/pid.txt)
-          brooklyn.policies:
-            - type: org.apache.brooklyn.policy.InvokeEffectorOnSensorChange
-              brooklyn.config:
-                effector: configureKubernetes
-                sensor: $brooklyn:sensor("kubernetes.endpoints")
-            - type: org.apache.brooklyn.policy.InvokeEffectorOnSensorChange
-              brooklyn.config:
-                effector: configureKubernetes
-                sensor: $brooklyn:sensor("service.isUp")
           brooklyn.enrichers:
             - type: org.apache.brooklyn.enricher.stock.Propagator
               brooklyn.config:
                 uniqueTag: master-cluster-endpoints-propagator
                 producer: $brooklyn:entity("kubernetes-master-cluster")
-                propagating:
-                  - $brooklyn:sensor("kubernetes.endpoints")
+                sensorMapping:
+                  $brooklyn:sensor("kubernetes.endpoints"): $brooklyn:sensor("haproxy.endpoints")
             - type: org.apache.brooklyn.enricher.stock.Transformer
               brooklyn.config:
                 uniqueTag: master-cluster-endpoint-publisher
