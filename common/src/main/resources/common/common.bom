@@ -176,12 +176,13 @@ brooklyn.catalog:
         brooklyn.initializers:
         - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
           brooklyn.config:
-            name: configureHaproxy
+            name: configureEndpoints
             description: |
               Generate HAProxy configuration from endpoint list
             shell.env:
               HAPROXY_PROTOCOL: $brooklyn:config("haproxy.protocol")
               HAPROXY_ENDPOINTS: $brooklyn:attributeWhenReady("haproxy.endpoints")
+              ENTITY_ID: $brooklyn:attributeWhenReady("entity.id")
             command: |
               (
               flock -o 9
@@ -199,25 +200,24 @@ brooklyn.catalog:
               EOF
               for endpoint in $(echo ${HAPROXY_ENDPOINTS} | tr ',' ' ') ; do
                 if [ "${HAPROXY_PROTOCOL}" == "http" ]; then
-                  echo "  server master$((++n)) ${endpoint} check" >> ${RUN_DIR}/servers.conf
+                  echo "  server node$((++n)) ${endpoint} check" >> ${RUN_DIR}/servers.conf
                 else
-                  echo "  server manager$((++n)) ${endpoint} maxconn 32 ssl ca-file ${RUN_DIR}/ca.pem crt ${RUN_DIR}/cert.pem" >> ${RUN_DIR}/servers.conf
+                  echo "  server node$((++n)) ${endpoint} maxconn 32 ssl ca-file ${RUN_DIR}/ca.pem crt ${RUN_DIR}/cert.pem" >> ${RUN_DIR}/servers.conf
                 fi
               done
-              OLD_PID=$(cat ${RUN_DIR}/pid.txt)
-              haproxy -D -f ${RUN_DIR}/haproxy.conf -f ${RUN_DIR}/servers.conf -st $OLD_PID
+              old_pid=$(cat ${RUN_DIR}/pid.txt)
+              haproxy -D -f ${RUN_DIR}/haproxy.conf -f ${RUN_DIR}/servers.conf -st ${old_pid}
               # wait for the old process to die before leaving the critical section
-              while test -d "/proc/$OLD_PID" 2> /dev/null; do sleep 1; done;
+              while test -d "/proc/${old_pid}" 2> /dev/null; do sleep 1; done;
               flock -u 9
-              ) 9>>/tmp/configureSwarm.lock
+              ) 9>>/tmp/configure.${ENTITY_ID}.lock
 
         brooklyn.policies:
         - type: org.apache.brooklyn.policy.InvokeEffectorOnSensorChange
           brooklyn.config:
-            effector: configureHaproxy
+            effector: configureEndpoints
             sensor: $brooklyn:sensor("haproxy.endpoints")
         - type: org.apache.brooklyn.policy.InvokeEffectorOnSensorChange
           brooklyn.config:
-            effector: configureHaproxy
+            effector: configureEndpoints
             sensor: $brooklyn:sensor("service.isUp")
-
