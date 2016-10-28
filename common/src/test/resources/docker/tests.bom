@@ -7,8 +7,8 @@ brooklyn.catalog:
   license_code: APACHE-2.0
 
   items:
-    - id: docker-and-swarm-engine-tests
-      name: "Docker Engine and Swarm Tests"
+    - id: docker-engine-common-tests
+      name: "Docker Engine Common Tests"
       description: |
         Tests on Docker Engine with and without TLS, and on Swarm (with TLS)
       itemType: template
