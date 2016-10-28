@@ -6,8 +6,6 @@ brooklyn.catalog:
     license_code: APACHE-2.0
 
   items:
-    - https://raw.githubusercontent.com/brooklyncentral/brooklyn-dns/master/brooklyn-dns-etc-hosts-generator.bom
-
     - id: haproxy-load-balancer-template
       name: "HAProxy Load Balancer"
       description: |
@@ -16,36 +14,7 @@ brooklyn.catalog:
       iconUrl: https://media.licdn.com/mpr/mpr/shrink_200_200/AAEAAQAAAAAAAAhhAAAAJGMyYWJjZWExLTljZGMtNDA3ZS05YjU3LTU2ODdmZTk2YTlmNg.png
       item:
         services:
-          - type: org.apache.brooklyn.entity.stock.BasicApplication
-
-            brooklyn.parameters:
-              # Duplicated parameters for UI visibility
-              - name: haproxy.version
-                label: "HAProxy Version"
-                description: |
-                  The HAProxy version to install
-                type: string
-                default: "1.6.7"
-              - name: haproxy.port
-                label: "HAProxy Port"
-                description: |
-                  Port that HAProxy should listen on
-                type: port
-                default: 8000
-              - name: haproxy.protocol
-                label: "HAProxy Protocol"
-                description: |
-                  Protocol to forward (either http or https)
-                type: string
-                default: "http"
-              - name: haproxy.bind.options
-                label: "HAProxy Bind Options"
-                description: |
-                  Extra bind configuration for HAProxy
-                type: string
-
-            brooklyn.children:
-              - type: haproxy-load-balancer
+          - type: haproxy-load-balancer
 
     - id: haproxy-load-balancer
       name: "HAProxy Load Balancer"
@@ -146,7 +115,7 @@ brooklyn.catalog:
               backend servers
               EOF
               if [ "${HAPROXY_PROTOCOL}" == "http" ]; then
-              cat >> ${RUN_DIR}/servers.conf <<-EOF
+                cat >> ${RUN_DIR}/servers.conf <<-EOF
                 mode http
                 option httpchk
               EOF
@@ -164,9 +133,9 @@ brooklyn.catalog:
               old_pid=$(cat ${RUN_DIR}/pid.txt)
               haproxy -D -f ${RUN_DIR}/haproxy.conf -f ${RUN_DIR}/servers.conf -st ${old_pid}
               # wait for the old process to die before leaving the critical section
-              while test -d "/proc/${old_pid}" 2> /dev/null; do sleep 1; done;
+              while test -d /proc/${old_pid} 2> /dev/null; do sleep 1; done
               flock -u 9
-              ) 9>>/tmp/configure.${ENTITY_ID}.lock
+              ) 9>> /tmp/configure.${ENTITY_ID}.lock
 
         brooklyn.policies:
         - type: org.apache.brooklyn.policy.InvokeEffectorOnSensorChange
