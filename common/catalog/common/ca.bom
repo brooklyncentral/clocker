@@ -202,5 +202,5 @@ brooklyn.catalog:
             enricher.targetValue:
               $brooklyn:formatString:
                 - "http://%s:%d"
-                - $brooklyn:attributeWhenReady("host.subnet.address")
+                - $brooklyn:attributeWhenReady("host.address")
                 - $brooklyn:attributeWhenReady("ca.server.port")
