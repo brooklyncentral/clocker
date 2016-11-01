@@ -17,15 +17,11 @@
     <build>
         <resources>
             <resource>
-                <directory>src/main/resources</directory>
+                <directory>catalog</directory>
                 <filtering>false</filtering>
             </resource>
             <resource>
-                <directory>src/main/examples</directory>
-                <filtering>false</filtering>
-            </resource>
-            <resource>
-                <directory>src/test/resources</directory>
+                <directory>tests</directory>
                 <filtering>false</filtering>
                 <targetPath>tests</targetPath>
             </resource>
@@ -46,7 +42,7 @@
                         <configuration>
                             <artifacts>
                                 <artifact>
-                                    <file>${project.basedir}/src/main/resources/ecs/ecs.bom</file>
+                                    <file>${project.basedir}/catalog/ecs/ecs.bom</file>
                                     <type>bom</type>
                                     <classifier>ecs</classifier>
                                 </artifact>
