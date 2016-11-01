@@ -41,6 +41,7 @@ brooklyn.catalog:
               The ECS cluster to test
             brooklyn.config:
               ecs.cluster.name: "clocker-qa-test"
+              ecs.agent.version: "1.13.0"
 
           - type: test-case
             name: "ecs-test-suite"
@@ -54,3 +55,30 @@ brooklyn.catalog:
                     name: "TEST-01 Assert up"
                   - type: assert-running
                     name: "TEST-02 Assert running"
+                  - type: sensor-test
+                    name: "TEST-03 Size of cluster is 2"
+                    targetId: ecs-docker-cluster
+                    timeout: 20m
+                    sensor: group.members.count
+                    assert:
+                      equals: $brooklyn:config("docker.initial.size")
+                  - type: sensor-test
+                    name: "TEST-04 Number of tasks is 0"
+                    targetId: ecs-docker-cluster
+                    timeout: 20m
+                    sensor: ecs.tasks.total
+                    assert:
+                      equals: 0
+                  - type: loop-test-case
+                    name: "TEST-05 Check agent version"
+                    brooklyn.config:
+                      targetId: ecs-docker-cluster
+                      test.spec:
+                        $brooklyn:entitySpec:
+                          type: sensor-test
+                          name: "TEST-05-a Agent version sensor same as config"
+                          targetId: ecs-agent
+                          timeout: 20m
+                          sensor: ecs.agent.versoin
+                          assert:
+                            contains: $brooklyn:config("ecs.agent.version")

@@ -267,7 +267,7 @@ brooklyn.catalog:
                       jq '.ContainerInstanceArn'
               - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
                 brooklyn.config:
-                  name: ecs.task.count
+                  name: ecs.tasks.count
                   description: |
                     ECS task count for the instance
                   targetType: integer
