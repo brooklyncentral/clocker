@@ -395,8 +395,7 @@ brooklyn.catalog:
         swarm.defaultnetwork: "brooklyn"
         swarm.port: 4000
         docker.recovery.stabilizationDelay: 10s
-        docker.recovery.failOnRecurringFailuresInThisDuration: 5m
-        swarm.sharedsecuritygroup.create: true
+        docker.recovery.failOnRecurringFailuresInThisDuration: 5m        
 
       brooklyn.children:
         - type: docker-swarm
