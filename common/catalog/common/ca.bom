@@ -35,7 +35,7 @@ brooklyn.catalog:
 
       brooklyn.parameters:
         - name: ca.server.port
-          label: CA Server Port
+          label: "CA Server Port"
           description: |
             The external port the CA Server web service listens on
           type: port

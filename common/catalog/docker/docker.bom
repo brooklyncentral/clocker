@@ -31,32 +31,32 @@ brooklyn.catalog:
 
       brooklyn.parameters:
         - name: docker.package
-          label: Docker Package
+          label: "Docker Package"
           description: |
             The Docker Engine package to install
           type: string
         - name: docker.version
-          label: Docker Version
+          label: "Docker Version"
           description: |
             The Docker Engine version to install
           type: string
         - name: docker.repository.url
-          label: Docker Repository URL
+          label: "Docker Repository URL"
           description: |
             The Docker repository URL to use for installation
           type: string
         - name: docker.gpgkey.url
-          label: Docker GPG Key URL
+          label: "Docker GPG Key URL"
           description: |
             The Docker GPG key URL to use to authenticate the installation
           type: string
         - name: docker.additionaloptions
-          label: Docker Additional Options
+          label: "Docker Additional Options"
           description: |
             The additional options to pass to the engine on startup
           type: string
         - name: image.preinstall
-          label: Image Pre-install
+          label: "Image Pre-install"
           description: |
             A docker hub image id to pull after installation
           type: string
@@ -189,19 +189,19 @@ brooklyn.catalog:
 
       brooklyn.parameters:
         - name: docker.port
-          label: Docker Port
+          label: "Docker Port"
           description: |
             The TCP port for Docker to listen on
           type: port
           default: 2376
         - name: docker.bindaddress
-          label: Docker Bind Address
+          label: "Docker Bind Address"
           description: |
             The docker network address to to listen on.
           type: string
           default: 0.0.0.0
         - name: ca.request.root.url
-          label: CA Request Root URL
+          label: "CA Request Root URL"
           description: |
             Optional root URL for a CA server.
 
@@ -209,22 +209,22 @@ brooklyn.catalog:
             URLs separately.
           type: string
         - name: ca.cert.url
-          label: CA Certificate URL
+          label: "CA Certificate URL"
           description: |
             Optional URL for the CA certificate
           type: string
         - name: ca.cert
-          label: CA Certificate
+          label: "CA Certificate"
           description: |
             Optional CA certificate data
           type: string
         - name: node.cert.url
-          label: Node Certificate URL
+          label: "Node Certificate URL"
           description: |
             Optional URL for the TLS certificate for this Docker engine
           type: string
         - name: private.key.url
-          label: Private Key URL
+          label: "Private Key URL"
           description: |
             Optional URL for the private key of this Docker engine
           type: string
@@ -365,7 +365,7 @@ brooklyn.catalog:
               cat ${DOCKER_CERT_PATH}/csr.pem
 
   - id: docker-engine-with-resilience
-    name: Docker Engine with Resilience
+    name: "Docker Engine with Resilience"
     description: |
       A docker-engine configured with resilience policies
     itemType: entity
@@ -375,14 +375,14 @@ brooklyn.catalog:
 
       brooklyn.parameters:
         - name: docker.recovery.stabilizationDelay
-          label: Stabilization Delay
+          label: "Stabilization Delay"
           description: |
-            Time period for which the service must be consistently in the same state to trigger an action
-          # A restart shouldn't trigger failure
+            Time period for which the service must be consistently in the same state to trigger an action.
+            Should be long enough that a restart will not trigger failure
           type: org.apache.brooklyn.util.time.Duration
           default: 5m
         - name: docker.recovery.failOnRecurringFailuresInThisDuration
-          label: Fail Duration
+          label: "Fail Duration"
           description: |
             Reports entity as failed if it fails two or more times in this time window
           type: org.apache.brooklyn.util.time.Duration
@@ -415,7 +415,7 @@ brooklyn.catalog:
 
       brooklyn.parameters:
         - name: image.details
-          label: Image Details
+          label: "Image Details"
           description: |
             The Docker Container image details.
 
@@ -433,13 +433,13 @@ brooklyn.catalog:
 
         launch.command: |
           docker run -d ${IMAGE_DETAILS}
-          
-        checkRunning.command: |  
+
+        checkRunning.command: |
           result="$(docker ps | grep ${IMAGE_DETAILS} | wc -l)"
           if [ $result -ne 0 ]; then exit 0; else exit 1; fi;
 
   - id: docker-vm-container
-    name: Docker Entity
+    name: "Docker Entity"
     description: |
       An easy way to launch a single Docker container on a VM
     itemType: entity
@@ -448,33 +448,33 @@ brooklyn.catalog:
 
       brooklyn.parameters:
         - name: docker.image
-          label: Docker Image
+          label: "Docker Image"
           description: |
             The docker image to use when running the container
         - name: docker.run.arguments
-          label: Docker Run Arguments
+          label: "Docker Run Arguments"
           description: |
             Arguments to pass to the docker run command
         - name: docker.run.volumes
-          label: Container Volumns
+          label: "Container Volumns"
           type: java.util.List
           description: |
             List of volumes to mount. Items follow the documented docker format
             for the '-v' option
           default: [ ]
         - name: docker.run.env
-          label: Container Environment
+          label: "Container Environment"
           type: java.util.Map
           description: |
             Map of environment variables to pass to the container
           default: { }
         - name: docker.restart
-          label: Restart policy
+          label: "Restart policy"
           description: |
             Restart policy on the container. One of no, on-failure[:max-retries],
             always or unless-stopped
         - name: docker.run.additionaloptions
-          label: Run command additional options
+          label: "Run Additional Options"
           description: |
             Additional options to pass to the 'docker run' command
 

@@ -2,56 +2,10 @@ brooklyn.catalog:
   version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
   publish:
     description: |
-      Resources for common Apache Brooklyn entities
+      HAProxy load balancer
     license_code: APACHE-2.0
 
   items:
-    - https://raw.githubusercontent.com/brooklyncentral/brooklyn-dns/master/brooklyn-dns-etc-hosts-generator.bom
-
-    - id: conditional-entity
-      name: "Conditional Entity"
-      description: |
-        An entity that creates a child only if a configuration key is set
-      itemType: entity
-      item:
-        type: org.apache.brooklyn.entity.stock.ConditionalEntity
-        id: conditional-entity
-
-    - id: child-software-process
-      name: "Child Software Process"
-      description: |
-        A child entity that executes commands to run a process
-      itemType: entity
-      item:
-        type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-        id: child-software-process
-
-    - id: empty-software-process
-      name: "Empty Software Process"
-      description: |
-        A startable entity to group child entities
-      itemType: entity
-      item:
-        type: org.apache.brooklyn.entity.software.base.EmptySoftwareProcess
-        id: empty-software-process
-
-    - id: centos-software-process
-      name: "CentOS Software Process"
-      description: |
-        An entity that executes commands to run a process
-
-        Uses a CentOS 7.x Virtual Machine
-      itemType: entity
-      iconUrl: https://raw.githubusercontent.com/docker-library/docs/c4df0024e2cad985326dc38f6b6ce39abeab59c5/centos/logo.png
-      item:
-        type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
-        id: centos-software-process
-        brooklyn.config:
-          dontRequireTtyForSudo: true
-          provisioning.properties:
-            osFamily: centos
-            osVersionRegex: 7
-
     - id: haproxy-load-balancer-template
       name: "HAProxy Load Balancer"
       description: |
@@ -60,36 +14,7 @@ brooklyn.catalog:
       iconUrl: https://media.licdn.com/mpr/mpr/shrink_200_200/AAEAAQAAAAAAAAhhAAAAJGMyYWJjZWExLTljZGMtNDA3ZS05YjU3LTU2ODdmZTk2YTlmNg.png
       item:
         services:
-          - type: org.apache.brooklyn.entity.stock.BasicApplication
-
-            brooklyn.parameters:
-              # Duplicated parameters for UI visibility
-              - name: haproxy.version
-                label: HAProxy Version
-                description: |
-                  The HAProxy version to install
-                type: string
-                default: "1.6.7"
-              - name: haproxy.port
-                label: HAProxy Port
-                description: |
-                  Port that HAProxy should listen on
-                type: port
-                default: 8000
-              - name: haproxy.protocol
-                label: HAProxy Protocol
-                description: |
-                  Protocol to forward (either http or https)
-                type: string
-                default: "http"
-              - name: haproxy.bind.options
-                label: HAProxy Bind Options
-                description: |
-                  Extra bind configuration for HAProxy
-                type: string
-
-            brooklyn.children:
-              - type: haproxy-load-balancer
+          - type: haproxy-load-balancer
 
     - id: haproxy-load-balancer
       name: "HAProxy Load Balancer"
@@ -103,25 +28,25 @@ brooklyn.catalog:
 
         brooklyn.parameters:
           - name: haproxy.version
-            label: HAProxy Version
+            label: "HAProxy Version"
             description: |
               The HAProxy version to install
             type: string
             default: "1.6.7"
           - name: haproxy.port
-            label: HAProxy Port
+            label: "HAProxy Port"
             description: |
               Port that HAProxy should listen on
             type: port
             default: 8000
           - name: haproxy.protocol
-            label: HAProxy Protocol
+            label: "HAProxy Protocol"
             description: |
               Protocol to forward (either http or https)
             type: string
             default: "http"
           - name: haproxy.bind.options
-            label: HAProxy Bind Options
+            label: "HAProxy Bind Options"
             description: |
               Extra bind configuration such as TLS certificate paths
             type: string
@@ -190,7 +115,7 @@ brooklyn.catalog:
               backend servers
               EOF
               if [ "${HAPROXY_PROTOCOL}" == "http" ]; then
-              cat >> ${RUN_DIR}/servers.conf <<-EOF
+                cat >> ${RUN_DIR}/servers.conf <<-EOF
                 mode http
                 option httpchk
               EOF
@@ -208,9 +133,9 @@ brooklyn.catalog:
               old_pid=$(cat ${RUN_DIR}/pid.txt)
               haproxy -D -f ${RUN_DIR}/haproxy.conf -f ${RUN_DIR}/servers.conf -st ${old_pid}
               # wait for the old process to die before leaving the critical section
-              while test -d "/proc/${old_pid}" 2> /dev/null; do sleep 1; done;
+              while test -d /proc/${old_pid} 2> /dev/null; do sleep 1; done
               flock -u 9
-              ) 9>>/tmp/configure.${ENTITY_ID}.lock
+              ) 9>> /tmp/configure.${ENTITY_ID}.lock
 
         brooklyn.policies:
         - type: org.apache.brooklyn.policy.InvokeEffectorOnSensorChange

@@ -31,25 +31,25 @@ brooklyn.catalog:
       brooklyn.parameters:
         # Duplicated parameters for UI visibility
         - name: swarm.initial.size
-          label: Initial Swarm Size
+          label: "Initial Swarm Size"
           description: |
             Size of the swarm cluster when created initially
           type: integer
           default: 1
         - name: swarm.manager.size
-          label: Swarm Manager Size
+          label: "Swarm Manager Size"
           description: |
             Number of swarm managers
           type: integer
           default: 1
         - name: swarm.max.size
-          label: Maximum Swarm Size
+          label: "Maximum Swarm Size"
           description: |
             Maximum size the swarm cluster can be scaled to
           type: integer
           default: 5
         - name: etcd.initial.size
-          label: Initial Etcd Size
+          label: "Initial Etcd Size"
           description: |
             Size of the etcd cluster when created initially
           type: integer
@@ -161,57 +161,57 @@ brooklyn.catalog:
 
       brooklyn.parameters:
         - name: swarm.initial.size
-          label: Initial Swarm Size
+          label: "Initial Swarm Size"
           description: |
             Size of the swarm cluster when created initially
           type: integer
           default: 1
         - name: swarm.manager.size
-          label: Swarm Manager Size
+          label: "Swarm Manager Size"
           description: |
             Number of swarm managers
           type: integer
           default: 1
         - name: swarm.max.size
-          label: Maximum Swarm Size
+          label: "Maximum Swarm Size"
           description: |
             Maximum size the swarm cluster can be scaled to
           type: integer
           default: 5
         - name: swarm.discovery.url
-          label: Discovery URL
+          label: "Discovery URL"
           description: |
             URL of a provided discovery mechanism for the swarm
           type: string
         - name: ca.cert.url
-          label: CA Certificate URL
+          label: "CA Certificate URL"
           description: |
             Location of the CA certificate to install for authentication of this engine
           type: string
         - name: node.cert.url
-          label: Certificate URL
+          label: "Certificate URL"
           description: |
             Location of the public key certificate to install for this engine
           type: string
         - name: private.key.url
-          label: Private Key URL
+          label: "Private Key URL"
           description: |
             Location of the private key to install for authentication of this engine
         - name: swarm.port
-          label: Swarm Port
+          label: "Swarm Port"
           description: |
             The TCP port the Swarm manager listens on
           type: port
           default: 3376
         - name: swarm.scaling.cpu.limit
-          label: Swarm Scaling CPU Limit
+          label: "Swarm Scaling CPU Limit"
           description: |
             The average CPU usage limit for the Swarm cluster, before another node
             will automatically be added. The default is 0.95 or 95%
           type: double
           default: 0.95
         - name: swarm.recovery.quarantineFailedEntities
-          label: Quarantine
+          label: "Quarantine"
           description: |
             Quarantine failed entities instead of destroying them
           type: boolean
@@ -322,7 +322,6 @@ brooklyn.catalog:
                   $brooklyn:entity("docker-swarm-nodes").parent().config("swarm.max.size")
                 autoscaler.resizeUpStabilizationDelay: 30s
                 autoscaler.resizeDownIterationMax: 0 # Disable scaling down
-                autoscaler.resizeDownStabilizationDelay: forever
           brooklyn.enrichers:
             - type: org.apache.brooklyn.enricher.stock.Aggregator
               brooklyn.config:
@@ -351,7 +350,7 @@ brooklyn.catalog:
                 name: "swarm-node"
 
   - id: docker-engine-with-discovery
-    name: Docker Engine with TLS and discovery
+    name: "Docker Engine with TLS and Discovery"
     description: |
       A docker-engine customised with TLS and Discovery endpoint
     itemType: entity
@@ -361,7 +360,7 @@ brooklyn.catalog:
 
       brooklyn.parameters:
         - name: docker.discovery.url
-          label: Docker Discovery URL
+          label: "Docker Discovery URL"
           description: |
             URL of a KV store for Docker discovery
           type: string
@@ -400,34 +399,33 @@ brooklyn.catalog:
 
       brooklyn.parameters:
         - name: swarm.defaultnetwork
-          label: Swarm Default Network
+          label: "Swarm Default Network"
           description: |
             The name of the default network to use
           type: string
           default: "brooklyn"
         - name: swarm.minCores
-          label: Swarm Minimum CPU Cores
+          label: "Swarm Minimum CPU Cores"
           description: |
             Minimum CPU cores for provisioning Swarm nodes
           default: 4
         - name: swarm.minRam
-          label: Swarm Minimum RAM
+          label: "Swarm Minimum RAM"
           description: |
             Minimum RAM for provisioning Swarm nodes
           default: 8g
-        - name: swarm.create.shared.securitygroup
-          label: "Swarm blueprint will configure security groups to allow access between docker nodes and to allow external access to deployed apps"
+        - name: swarm.sharedsecuritygroup.create
+          label: "Create Swarm SharedSecurityGroup"
+          description: |
+            Swarm blueprint will configure security groups to allow access between
+            Docker nodes and to allow external access to deployed apps
           type: boolean
           default: true
 
       brooklyn.config:
-        # FIXME location cannot resolve provisioning.properties entries
-        #provisioning.properties.minRam:
-        #  $brooklyn:parent().config("swarm.minRam")
-        #provisioning.properties.minCores:
-        #  $brooklyn:parent().config("swarm.minCores")
-
         provisioning.properties:
+          minRam: $brooklyn:config("swarm.minRam")
+          minCores: $brooklyn:config("swarm.minCores")
           customizer:
             $brooklyn:object:
               type: org.apache.brooklyn.location.jclouds.networking.SharedLocationSecurityGroupCustomizer
@@ -481,20 +479,20 @@ brooklyn.catalog:
 
       brooklyn.parameters:
         - name: swarm.port
-          label: Swarm Port
+          label: "Swarm Port"
           description: |
             The TCP port the Swarm manager listens on
           type: port
           default: 3376
         - name: swarm.strategy
-          label: Swarm Strategy
+          label: "Swarm Strategy"
           description: |
             The strategy to use when placing containers. Can be one of:
             spread (default), binpack or random
           type: string
           default: "spread"
         - name: swarm.overcommit
-          label: Swarm Overcommit
+          label: "Swarm Overcommit"
           description: |
             Set the fractional percentage by which to overcommit resources.
             The default value is 0.05, or 5 percent

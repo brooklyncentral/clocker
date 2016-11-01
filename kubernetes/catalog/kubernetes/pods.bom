@@ -1,0 +1,191 @@
+brooklyn.catalog:
+  version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+  publish:
+    description: |
+      Resources for working with Kubernetes Pod deployments from Apache Brooklyn
+    license_code: APACHE-2.0
+
+  items:
+  - id: kubernetes-pod
+    name: "Kubernetes Pod"
+    description: |
+      A Kubernetes YAML pod deployment
+    itemType: entity
+    iconUrl: https://pbs.twimg.com/media/Bt_pEfqCAAAiVyz.png
+    item:
+      type: child-software-process
+
+      brooklyn.parameters:
+        - name: kubernetes.pod.file
+          label: "Kubernetes Pod File"
+          type: string
+        - name: kubernetes.pod.namespace
+          label: "Kubernetes Pod Namespace"
+          type: string
+          default: "default"
+        - name: kubernetes.pod.name
+          label: "Kubernetes Pod Name"
+          type: string
+        - name: template.substitutions
+          label: "Template Substitutions"
+          type: java.util.Map
+
+      brooklyn.config:
+        install.unique_label:
+          $brooklyn:formatString:
+            - "pod-%s-%s"
+            - $brooklyn:config("kubernetes.pod.name")
+            - $brooklyn:entity("kubernetes-cluster").config("kubernetes.version")
+
+        templates.install:
+          $brooklyn:config("kubernetes.pod.file"): "pod.yaml"
+
+        shell.env:
+          NAME: $brooklyn:config("kubernetes.pod.name")
+          NAMESPACE: $brooklyn:config("kubernetes.pod.namespace")
+          INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
+
+        pre.install.command: |
+          mkdir -p ${INSTALL_DIR}
+
+        install.command: |
+          kubectl get namespace ${NAMESPACE} ||
+            ( kubectl create namespace ${NAMESPACE} || true )
+
+        launch.command: |
+          kubectl create -f ${INSTALL_DIR}/pod.yaml
+
+        checkRunning.command: |
+          kubectl get pod --namespace=${NAMESPACE} -l app=${NAME} |
+              grep "Pending\|ContainerCreating\|Running"
+
+      brooklyn.initializers:
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: kubernetes.pod.name
+            description: |
+              Kubernetes pod name
+            targetType: string
+            command: |
+              kubectl get pod --namespace=${NAMESPACE} -l app=${NAME} --output=jsonpath='{range .items[0]}{.metadata.name}'
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: kubernetes.pod.status
+            description: |
+              Kubernetes pod status
+            targetType: string
+            command: |
+              kubectl get pod --namespace=${NAMESPACE} -l app=${NAME} -o wide | grep ${NAME}
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: kubernetes.pod.node
+            description: |
+              Kubernetes host IP address for the service
+            targetType: string
+            command: |
+              kubectl get pod --namespace=${NAMESPACE} -l app=${NAME} --output=jsonpath='{range .items[0]}{.status.hostIP}'
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: kubernetes.service.port
+            description: |
+              Kubernetes exposed NodePort for a service
+            targetType: integer
+            command: |
+              kubectl get service ${NAME} --namespace=${NAMESPACE} --output=jsonpath='{range .spec.ports[0]}{.nodePort}'
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: kubernetes.pod.phase
+            description: |
+              Kubernetes pod status phase
+            targetType: string
+            command: |
+              kubectl get pod --namespace=${NAMESPACE} -l app=${NAME} --output=jsonpath='{range .items[0]}{.status.phase}'
+
+      brooklyn.enrichers:
+        - type: org.apache.brooklyn.enricher.stock.Transformer
+          brooklyn.config:
+            uniqueTag: kubernetes-pod-url-publisher
+            enricher.triggerSensors:
+              - $brooklyn:sensor("kubernetes.pod.node")
+              - $brooklyn:sensor("kubernetes.service.port")
+            enricher.targetSensor: $brooklyn:sensor("kubernetes.service.url")
+            enricher.targetValue:
+              $brooklyn:formatString:
+                - "http://%s:%d/"
+                - $brooklyn:attributeWhenReady("kubernetes.pod.node")
+                - $brooklyn:attributeWhenReady("kubernetes.service.port")
+        - type: org.apache.brooklyn.enricher.stock.Propagator
+          brooklyn.config:
+            uniqueTag: kubernetes-pod-url-propagator
+            enricher.propagating.sensorMapping:
+              $brooklyn:sensor("kubernetes.service.url"):
+                $brooklyn:sensor("org.apache.brooklyn.core.entity.Attributes", "main.uri")
+
+  - id: kube-dns-pod
+    name: "KubeDNS Pod"
+    description: |
+      KubeDNS service pod
+    itemType: entity
+    item:
+      type: kubernetes-pod
+
+      brooklyn.config:
+        kubernetes.pod.name: "kube-dns"
+        kubernetes.pod.file: "classpath://io.brooklyn.clocker.kubernetes:kubernetes/kube-dns.yaml"
+        kubernetes.pod.namespace: "kube-system"
+
+        template.substitutions:
+          kubernetes_url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
+          replicas: $brooklyn:entity("kubernetes-cluster").config("kubernetes.initial.size")
+          dns_service_ip: $brooklyn:entity("kubernetes-cluster").config("kubernetes.dns.address")
+          dns_service_domain: $brooklyn:entity("kubernetes-cluster").config("kubernetes.dns.domain")
+
+  - id: kubernetes-dashboard-pod
+    name: "Kubernetes Dashboard Pod"
+    description: |
+      Kubernetes dashboard UI service pod
+    itemType: entity
+    item:
+      type: kubernetes-pod
+
+      brooklyn.config:
+        kubernetes.pod.name: "kubernetes-dashboard"
+        kubernetes.pod.file: "classpath://io.brooklyn.clocker.kubernetes:kubernetes/kubernetes-dashboard.yaml"
+        kubernetes.pod.namespace: "kube-system"
+
+        template.substitutions:
+          kubernetes_url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
+
+  - id: calico-policy-controller-pod
+    name: "Calico Policy Controller Pod"
+    description: |
+      Calico policy controller pod
+    itemType: entity
+    item:
+      type: kubernetes-pod
+
+      brooklyn.config:
+        kubernetes.pod.name: "policy-controller"
+        kubernetes.pod.file: "classpath://io.brooklyn.clocker.kubernetes:kubernetes/policy-controller.yaml"
+        kubernetes.pod.namespace: "kube-system"
+
+        template.substitutions:
+          kubernetes_url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
+          etcd_endpoints: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
+
+  - id: prometheus-pod
+    name: "Prometheus Monitoring Pod"
+    description: |
+      Prometheus monitoring service pod
+    itemType: entity
+    iconUrl: https://avatars1.githubusercontent.com/u/3380462
+    item:
+      type: kubernetes-pod
+
+      brooklyn.config:
+        kubernetes.pod.name: "prometheus"
+        kubernetes.pod.file: "classpath://io.brooklyn.clocker.kubernetes:kubernetes/prometheus.yaml"
+        kubernetes.pod.namespace: "kube-system"
+
+        template.substitutions:
+          kubernetes_url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")

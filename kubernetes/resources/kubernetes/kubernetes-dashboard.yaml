@@ -6,7 +6,7 @@ metadata:
   labels:
     app: kubernetes-dashboard
     name: kubernetes-dashboard-deployment
-    version: v1.4.0
+    version: v1.4.1
 spec:
   replicas: 1
   selector:
@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: kubernetes-dashboard
-        image: gcr.io/google_containers/kubernetes-dashboard-amd64:v1.4.0
+        image: gcr.io/google_containers/kubernetes-dashboard-amd64:v1.4.1
         imagePullPolicy: Always
         ports:
         - containerPort: 9090

@@ -17,15 +17,15 @@
     <build>
         <resources>
             <resource>
-                <directory>src/main/examples</directory>
+                <directory>catalog</directory>
                 <filtering>false</filtering>
             </resource>
             <resource>
-                <directory>src/main/resources</directory>
+                <directory>resources</directory>
                 <filtering>false</filtering>
             </resource>
             <resource>
-                <directory>src/test/resources</directory>
+                <directory>tests</directory>
                 <filtering>false</filtering>
                 <targetPath>tests</targetPath>
             </resource>
@@ -46,17 +46,22 @@
                         <configuration>
                             <artifacts>
                                 <artifact>
-                                    <file>${project.basedir}/src/main/resources/docker/docker.bom</file>
+                                    <file>${project.basedir}/catalog/docker/docker.bom</file>
                                     <type>bom</type>
                                     <classifier>docker</classifier>
                                 </artifact>
                                 <artifact>
-                                    <file>${project.basedir}/src/main/resources/common/ca.bom</file>
+                                    <file>${project.basedir}/catalog/common/ca.bom</file>
                                     <type>bom</type>
                                     <classifier>ca</classifier>
                                 </artifact>
                                 <artifact>
-                                    <file>${project.basedir}/src/main/resources/common/common.bom</file>
+                                    <file>${project.basedir}/catalog/common/haproxy.bom</file>
+                                    <type>bom</type>
+                                    <classifier>haproxy</classifier>
+                                </artifact>
+                                <artifact>
+                                    <file>${project.basedir}/catalog/common/common.bom</file>
                                     <type>bom</type>
                                     <classifier>common</classifier>
                                 </artifact>
