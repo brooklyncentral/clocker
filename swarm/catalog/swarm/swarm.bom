@@ -422,15 +422,12 @@ brooklyn.catalog:
           default: true
 
       brooklyn.config:
-<<<<<<< db8d5b38d6303677f4f64a7c103282f56574f0fb:swarm/catalog/swarm/swarm.bom
-=======
         # FIXME location cannot resolve provisioning.properties entries
         #provisioning.properties.minRam:
         #  $brooklyn:parent().config("swarm.minRam")
         #provisioning.properties.minCores:
         #  $brooklyn:parent().config("swarm.minCores")
 
->>>>>>> Revert "Made swarm.create.shared.securitygroup a config value as well as a parameter":swarm/src/main/resources/swarm/swarm.bom
         provisioning.properties:
           minRam: $brooklyn:config("swarm.minRam")
           minCores: $brooklyn:config("swarm.minCores")
