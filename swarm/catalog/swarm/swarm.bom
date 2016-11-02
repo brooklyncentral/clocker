@@ -423,12 +423,6 @@ brooklyn.catalog:
           default: true
 
       brooklyn.config:
-        # FIXME location cannot resolve provisioning.properties entries
-        #provisioning.properties.minRam:
-        #  $brooklyn:parent().config("swarm.minRam")
-        #provisioning.properties.minCores:
-        #  $brooklyn:parent().config("swarm.minCores")
-
         provisioning.properties:
           minRam: $brooklyn:config("swarm.minRam")
           minCores: $brooklyn:config("swarm.minCores")
