@@ -388,15 +388,14 @@ brooklyn.catalog:
         timeout.initialStartup: 1h
         timeout.runtimeAssertion: 1h
         swarm.initial.size: 2
-        swarm.manager.size: 3
-        etcd.initial.size: 3
+        swarm.manager.size: 1
+        etcd.initial.size: 2
         swarm.max.size: 5
         swarm.scaling.cpu.limit: 0.95
         swarm.defaultnetwork: "brooklyn"
         swarm.port: 4000
         docker.recovery.stabilizationDelay: 10s
-        docker.recovery.failOnRecurringFailuresInThisDuration: 5m
-        swarm.sharedsecuritygroup.create: true
+        docker.recovery.failOnRecurringFailuresInThisDuration: 5m        
 
       brooklyn.children:
         - type: docker-swarm
