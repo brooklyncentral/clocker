@@ -1,0 +1,62 @@
+brooklyn.catalog:
+  version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+  publish:
+    description: |
+      Resources for working with OpenShift Origin from Apache Brooklyn
+    license_code: APACHE-2.0
+
+  items:
+    - id: openshift-pod
+      name: "OpenShift Origin Pod"
+      description: |
+        OpenShift Origin pod
+      itemType: entity
+      iconUrl: https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/OpenShift-LogoType.svg/225px-OpenShift-LogoType.svg.png
+      item:
+        type: kubernetes-pod
+
+        brooklyn.parameters:
+          - name: openshift.version
+            label: "OpenShift Version"
+            description: |
+              The version of OpenShift Origin that will be deployed in the Pod
+            type: string
+            default: "1.3.1"
+
+        brooklyn.config:
+          kubernetes.pod.name: "openshift-origin"
+          kubernetes.pod.file: "classpath://io.brooklyn.clocker.kubernetes:kubernetes/openshift.yaml"
+          kubernetes.pod.namespace: "openshift-origin"
+
+          shell.env:
+            OPENSHIFT_VERSION: $brooklyn:config("openshift.bersion")
+            KUBERNETES_URL: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
+            ETCD_ENDPOINTS: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
+
+          customize.command: |
+            mkdir -p ${RUN_DIR}/config
+            docker run --privileged -v ${RUN_DIR}/config:/config \
+              openshift/origin:v${OPENSHIFT_VERSION} start master \
+              --write-config=/config \
+              --kubeconfig=/config/kubeconfig \
+              --master=${KUBERNETES_URL} \
+              --public-master=${KUBERNETES_URL} \
+              --etcd=${ETCD_ENDPOINTS}
+            sudo -E chown -R ${USER} ${RUN_DIR}/config
+            docker run -it --privileged \
+              -e="KUBECONFIG=/config/admin.kubeconfig" \
+              -v ${RUN_DIR}/config:/config \
+              openshift/origin cli secrets new openshift-config /config -o json &> ${RUN_DIR}/secret.json
+            kubectl create -f ${RUN_DIR}/secret.json --namespace=${NAMERSPACE}
+
+          template.substitutions:
+            kubernetes_url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
+            etcd_endpoints: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
+
+    - type: kubernetes-default-pods
+      id: kubernetes-openshift-pods
+      name: "kubernetes-openshift-pods"
+      brooklyn.children:
+        - type: openshift-pod
+          id: openshift-origin
+          name: "openshift-origin"

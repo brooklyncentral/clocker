@@ -1,0 +1,40 @@
+id: openshift
+name: "openshift"
+description: |
+  Creates an OpenShift Origin cluster with redundant master servers.
+
+  Deploys on CentOS 7 VMs in SoftLayer, on a single VLAN segment.
+
+location:
+  jclouds:softlayer:
+    region: ams01
+    privateKeyFile: "~/.ssh/softlayer.pem"
+    identity: username
+    credential: 0000000000000000000000000000000000000000000000000000000000000000
+    customizers:
+      - $brooklyn:object:
+          type: org.apache.brooklyn.location.jclouds.softlayer.SoftLayerSameVlanLocationCustomizer
+          brooklyn.config:
+            softlayer.vlan.scopeUid: "openshift"
+
+services:
+  - type: kubernetes-cluster-application
+    id: openshift
+    name: "openshift"
+    brooklyn.config:
+      start.timeout: 30m
+      kubernetes.sharedsecuritygroup.create: false
+      kubernetes.version: 1.4.3
+      kubernetes.cluster.name: "openshift"
+      kubernetes.master.size: 2
+      kubernetes.initial.size: 3
+      kubernetes.max.size: 6
+      etcd.initial.size: 3
+      kubernetes.pod.cidr: "10.120.0.0/16"
+      kubernetes.pods.spec:
+        $brooklyn:entitySpec:
+          type: kubernetes-openshift-pods
+          brooklyn.config:
+            openshift.version: 3.0.0
+      kubernetes.minRam: 7g
+      kubernetes.minCores: 2

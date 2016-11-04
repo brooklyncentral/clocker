@@ -191,7 +191,7 @@ brooklyn.catalog:
         - name: kubernetes.cluster.name
           label: "Kubernetes Cluster Name"
           type: string
-          default: "amp"
+          default: "clocker"
         - name: kubernetes.version
           label: "Kubernetes Version"
           type: string
@@ -244,12 +244,20 @@ brooklyn.catalog:
             Value is duration in milliseconds.
           type: long
           default: 900000
+        - name: kubernetes.pods.spec
+          label: Kubernetes Pods Spec
+          description: |
+            An EntitySpec for the set of Kubernetes Pods to create initially
+          type: org.apache.brooklyn.api.entity.EntitySpec
+          default:
+            $brooklyn:entitySpec:
+              type: kubernetes-default-pods
 
       brooklyn.enrichers:
         - type: org.apache.brooklyn.enricher.stock.Propagator
           brooklyn.config:
             uniqueTag: kubernetes-url-and-endpoint-propagator
-            producer: $brooklyn:entity("kubernetes-manager-load-balancer")
+            producer: $brooklyn:entity("kubernetes-master-load-balancer")
             propagating:
               - $brooklyn:sensor("kubernetes.url")
               - $brooklyn:sensor("kubernetes.endpoint")
@@ -328,7 +336,7 @@ brooklyn.catalog:
                 id: kubernetes-master
                 name: "kubernetes-master"
                 brooklyn.config:
-                  install.latch: $brooklyn:entity("kubernetes-manager-load-balancer").attributeWhenReady("service.isUp")
+                  install.latch: $brooklyn:entity("kubernetes-master-load-balancer").attributeWhenReady("service.isUp")
                   launch.latch: $brooklyn:entity("etcd-cluster").attributeWhenReady("service.isUp")
                   kubernetes.schedulable: false
                 brooklyn.children:
@@ -344,24 +352,14 @@ brooklyn.catalog:
                         sudo -E calicoctl pool add ${FLANNEL_NETWORK} --nat-outgoing
                       checkRunning.command: |
                         sudo -E calicoctl pool show --ipv4 | grep "${FLANNEL_NETWORK}"
-                  - type: empty-software-process
+                  - type: conditional-entity
                     id: kubernetes-pods
                     name: "kubernetes-pods"
                     brooklyn.config:
+                      conditional.entity.create: true
+                      conditional.entity.propagate: false
+                      conditional.entity.spec: $brooklyn:entity("kubernetes-cluster").config("kubernetes.pods.spec")
                       start.latch: $brooklyn:entity("kubernetes-pods").sibling("kube-apiserver").attributeWhenReady("service.isUp")
-                    brooklyn.children:
-                      - type: calico-policy-controller-pod
-                        id: calico-policy-controller
-                        name: "calico-policy-controller"
-                      - type: kube-dns-pod
-                        id: kube-dns
-                        name: "kube-dns"
-                      - type: kubernetes-dashboard-pod
-                        id: kubernetes-dashboard
-                        name: "kubernetes-dashboard"
-                      - type: prometheus-pod
-                        id: prometheus
-                        name: "prometheus"
             dynamiccluster.memberspec:
               $brooklyn:entitySpec:
                 type: kubernetes-master
