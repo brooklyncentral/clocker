@@ -388,7 +388,7 @@ brooklyn.catalog:
         timeout.initialStartup: 1h
         timeout.runtimeAssertion: 1h
         swarm.initial.size: 2
-        swarm.manager.size: 1
+        swarm.manager.size: 3
         etcd.initial.size: 2
         swarm.max.size: 5
         swarm.scaling.cpu.limit: 0.95
