@@ -1,0 +1,4 @@
+brooklyn.catalog:
+  items:
+    - classpath://io.brooklyn.clocker.kubernetes:kubernetes/catalog.bom
+    - classpath://io.brooklyn.clocker.openshift:openshift/openshift.bom
