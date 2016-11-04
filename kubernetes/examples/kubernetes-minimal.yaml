@@ -22,5 +22,7 @@ services:
   - type: kubernetes-cluster-application
     name: "kubernetes-aws-ec2"
     brooklyn.config:
+      kubernetes.master.size: 1
       kubernetes.initial.size: 2
+      etcd.initial.size: 1
       kubernetes.sharedsecuritygroup.create: true

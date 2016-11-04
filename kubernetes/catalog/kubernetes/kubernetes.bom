@@ -191,7 +191,7 @@ brooklyn.catalog:
         - name: kubernetes.cluster.name
           label: "Kubernetes Cluster Name"
           type: string
-          default: "clocker"
+          default: "amp"
         - name: kubernetes.version
           label: "Kubernetes Version"
           type: string

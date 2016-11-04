@@ -5,5 +5,5 @@ brooklyn.catalog:
     - classpath://io.brooklyn.clocker.common:common/haproxy.bom
     - classpath://io.brooklyn.clocker.kubernetes:kubernetes/plugins.bom
     - classpath://io.brooklyn.clocker.kubernetes:kubernetes/pods.bom
-    - classpath://io.brooklyn.clocker.kubernetes:kubernetes/openshift.bom
     - classpath://io.brooklyn.clocker.kubernetes:kubernetes/kubernetes.bom
+    - classpath://io.brooklyn.clocker.kubernetes:kubernetes/openshift.bom

@@ -190,19 +190,24 @@ brooklyn.catalog:
         template.substitutions:
           kubernetes_url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
 
-  - type: empty-software-process
-    id: kubernetes-default-pods
-    name: "kubernetes-default-pods"
-    brooklyn.children:
-      - type: calico-policy-controller-pod
-        id: calico-policy-controller
-        name: "calico-policy-controller"
-      - type: kube-dns-pod
-        id: kube-dns
-        name: "kube-dns"
-      - type: kubernetes-dashboard-pod
-        id: kubernetes-dashboard
-        name: "kubernetes-dashboard"
-      - type: prometheus-pod
-        id: prometheus
-        name: "prometheus"
+  - id: kubernetes-default-pods
+    name: "Kubernetes Default Pods"
+    description: |
+      Default set of Kubernetes pods to launch at startup
+    itemType: entity
+    item:
+      type: empty-software-process
+
+      brooklyn.children:
+        - type: calico-policy-controller-pod
+          id: calico-policy-controller
+          name: "calico-policy-controller"
+        - type: kube-dns-pod
+          id: kube-dns
+          name: "kube-dns"
+        - type: kubernetes-dashboard-pod
+          id: kubernetes-dashboard
+          name: "kubernetes-dashboard"
+        - type: prometheus-pod
+          id: prometheus
+          name: "prometheus"

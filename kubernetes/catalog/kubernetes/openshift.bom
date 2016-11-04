@@ -6,6 +6,45 @@ brooklyn.catalog:
     license_code: APACHE-2.0
 
   items:
+    - id: openshift-origin-cluster-template
+      name: "OpenShift Origin Cluster"
+      description: |
+        OpenShift Origin cluster with a master node and worker nodes
+      iconUrl: https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/OpenShift-LogoType.svg/225px-OpenShift-LogoType.svg.png
+      itemType: template
+      item:
+        services:
+          - type: openshift-origin-cluster-application
+            id: openshift-origin-cluster-application
+            name: "openshift-origin-cluster-application"
+
+    - id: openshift-origin-cluster-application
+      name: "OpenShift Origin Cluster"
+      description: |
+        OpenShift Origin cluster with a master node and worker nodes
+      iconUrl: https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/OpenShift-LogoType.svg/225px-OpenShift-LogoType.svg.png
+      itemType: entity
+      item:
+        type: kubernetes-cluster-application
+
+        brooklyn.parameters:
+          # Duplicated parameters for UI visibility
+          - name: openshift.version
+            label: "OpenShift Version"
+            description: |
+              The version of OpenShift Origin that will be deployed
+            type: string
+            default: "1.3.1"
+          - name: kubernetes.cluster.name
+            label: "Kubernetes Cluster Name"
+            type: string
+            default: "openshift"
+
+        brooklyn.config:
+          kubernetes.pods.spec:
+            $brooklyn:entitySpec:
+              type: kubernetes-openshift-pods
+
     - id: openshift-pod
       name: "OpenShift Origin Pod"
       description: |
@@ -19,7 +58,7 @@ brooklyn.catalog:
           - name: openshift.version
             label: "OpenShift Version"
             description: |
-              The version of OpenShift Origin that will be deployed in the Pod
+              The version of OpenShift Origin that will be deployed
             type: string
             default: "1.3.1"
 
@@ -33,30 +72,67 @@ brooklyn.catalog:
             KUBERNETES_URL: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
             ETCD_ENDPOINTS: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
 
-          customize.command: |
-            mkdir -p ${RUN_DIR}/config
-            docker run --privileged -v ${RUN_DIR}/config:/config \
-              openshift/origin:v${OPENSHIFT_VERSION} start master \
-              --write-config=/config \
-              --kubeconfig=/config/kubeconfig \
-              --master=${KUBERNETES_URL} \
-              --public-master=${KUBERNETES_URL} \
-              --etcd=${ETCD_ENDPOINTS}
-            sudo -E chown -R ${USER} ${RUN_DIR}/config
-            docker run -it --privileged \
-              -e="KUBECONFIG=/config/admin.kubeconfig" \
-              -v ${RUN_DIR}/config:/config \
-              openshift/origin cli secrets new openshift-config /config -o json &> ${RUN_DIR}/secret.json
-            kubectl create -f ${RUN_DIR}/secret.json --namespace=${NAMERSPACE}
-
           template.substitutions:
             kubernetes_url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
             etcd_endpoints: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
 
-    - type: kubernetes-default-pods
-      id: kubernetes-openshift-pods
-      name: "kubernetes-openshift-pods"
-      brooklyn.children:
-        - type: openshift-pod
-          id: openshift-origin
-          name: "openshift-origin"
+        brooklyn.children:
+          - type: child-software-process
+            id: configure-openshift-origin
+            name: "configure-openshift-origin"
+            brooklyn.config:
+              shell.env:
+                OPENSHIFT_CONFIG:
+                  $brooklyn:formatString:
+                    - "%s/config"
+                    - $brooklyn:parent().attributeWhenReady("run.dir")
+              launch.command: |
+                mkdir -p ${OPENSHIFT_CONFIG}
+                docker run --privileged \
+                  -v ${OPENSHIFT_CONFIG}:/config \
+                  openshift/origin:v${OPENSHIFT_VERSION} start master \
+                    --write-config=/config \
+                    --kubeconfig=/config/kubeconfig \
+                    --master=${KUBERNETES_URL} \
+                    --public-master=${KUBERNETES_URL} \
+                    --etcd=${ETCD_ENDPOINTS}
+                sudo -E chown -R ${USER} ${OPENSHIFT_CONFIG}
+                docker run -it --privileged \
+                  -e="KUBECONFIG=/config/admin.kubeconfig" \
+                  -v ${OPENSHIFT_CONFIG}:/config \
+                  openshift/origin:v${OPENSHIFT_VERSION} cli secrets \
+                    new openshift-config /config \
+                    -o json &> ${RUN_DIR}/secret.json
+                kubectl create -f ${RUN_DIR}/secret.json --namespace=${NAMERSPACE}
+
+              checkRunning.command: |
+                # TODO fix this command
+                # kubectl secret show --namespace=${NAMESPACE}
+                true
+
+          - type: child-software-process
+            id: something-openshift-origin
+            name: "something-openshift-origin"
+            brooklyn.config:
+              start.latch: $brooklyn:sibling("configure-openshift-origin").attributeWhenReady("service.isUp")
+              launch.command: |
+                # TODO fix this command
+                # kubectl --namespace=${NAMESPACE}
+                true
+              checkRunning.command: |
+                # TODO fix this command
+                # kubectl --namespace=${NAMESPACE}
+                true
+
+    - id: kubernetes-openshift-pods
+      name: "Kubernetes OpenShift Pods"
+      description: |
+        OpenShift Origin pod added to the default Kubernetes pods to launch at startup
+      itemType: entity
+      item:
+        type: kubernetes-default-pods
+
+        brooklyn.children:
+          - type: openshift-pod
+            id: openshift-origin
+            name: "openshift-origin"
