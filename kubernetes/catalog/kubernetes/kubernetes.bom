@@ -142,24 +142,21 @@ brooklyn.catalog:
                   factoryMethod.args:
                     - $brooklyn:attributeWhenReady("application.id")
               - $brooklyn:object:
-                  type: com.google.common.base.Predicates
-                  factoryMethod.name: "or"
+                  type: org.apache.brooklyn.core.entity.EntityPredicates
+                  factoryMethod.name: "displayNameSatisfies"
                   factoryMethod.args:
                     - $brooklyn:object:
-                        type: org.apache.brooklyn.core.entity.EntityPredicates
-                        factoryMethod.name: "displayNameEqualTo"
+                        type: com.google.common.base.Predicates
+                        factoryMethod.name: "in"
                         factoryMethod.args:
-                          - "kubernetes-master"
-                    - $brooklyn:object:
-                        type: org.apache.brooklyn.core.entity.EntityPredicates
-                        factoryMethod.name: "displayNameEqualTo"
-                        factoryMethod.args:
-                          - "kubernetes-worker"
+                          - [ "kubernetes-master", "kubernetes-worker", kubernetes-master-load-balancer ]
 
   - id: kubernetes-cluster
     name: "Kubernetes Cluster"
     description: |
-      Creates a Kubernetes cluster with a manager and a configurable number of workers.
+      Creates a Kubernetes cluster with a configurable number of masters and workers
+      and an HAProxy load balancer for the masters.
+
       Requires a pre-existing discovery mechanism and references to a CA server entity.
     itemType: entity
     item:
@@ -259,8 +256,8 @@ brooklyn.catalog:
 
       brooklyn.children:
         - type: haproxy-load-balancer
-          id: kubernetes-manager-load-balancer
-          name: "kubernetes-manager-load-balancer"
+          id: kubernetes-master-load-balancer
+          name: "kubernetes-master-load-balancer"
           brooklyn.config:
             haproxy.port: $brooklyn:parent().parent().config("kubernetes.apiserver.port")
             haproxy.protocol: "http"
@@ -318,7 +315,7 @@ brooklyn.catalog:
             - type: org.apache.brooklyn.enricher.stock.Propagator
               brooklyn.config:
                 uniqueTag: kubernetes-url-propagator
-                producer: $brooklyn:entity("kubernetes-manager-load-balancer")
+                producer: $brooklyn:entity("kubernetes-master-load-balancer")
                 propagating:
                   - $brooklyn:sensor("kubernetes.url")
           brooklyn.config:
@@ -371,7 +368,7 @@ brooklyn.catalog:
                 id: kubernetes-master
                 name: "kubernetes-master"
                 brooklyn.config:
-                  install.latch: $brooklyn:entity("kubernetes-manager-load-balancer").attributeWhenReady("service.isUp")
+                  install.latch: $brooklyn:entity("kubernetes-master-load-balancer").attributeWhenReady("service.isUp")
                   launch.latch: $brooklyn:entity("etcd-cluster").attributeWhenReady("service.isUp")
                   kubernetes.schedulable: false
 
@@ -542,6 +539,15 @@ brooklyn.catalog:
 
         stop.command: |
           kubectl delete node ${HOST_SUBNET_ADDRESS}
+
+      brooklyn.initializers:
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: kubernetes.kubeconfig.yaml
+            description: |
+              Returns contents of a kubeconfig YAML file
+            command: |
+              kubectl config view --output=yaml --flatten=true --minify=true
 
       brooklyn.children:
         - type: flannel-network-agent
