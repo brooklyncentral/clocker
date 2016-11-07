@@ -45,14 +45,14 @@ brooklyn.catalog:
             $brooklyn:entitySpec:
               type: kubernetes-openshift-pods
 
-    - id: openshift-pod
-      name: "OpenShift Origin Pod"
+    - id: openshift-origin
+      name: "OpenShift Origin"
       description: |
-        OpenShift Origin pod
+        OpenShift Origin
       itemType: entity
       iconUrl: https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/OpenShift-LogoType.svg/225px-OpenShift-LogoType.svg.png
       item:
-        type: kubernetes-pod
+        type: empty-software-process
 
         brooklyn.parameters:
           - name: openshift.version
@@ -64,62 +64,75 @@ brooklyn.catalog:
 
         brooklyn.config:
           kubernetes.pod.name: "openshift-origin"
-          kubernetes.pod.file: "classpath://io.brooklyn.clocker.kubernetes:kubernetes/openshift.yaml"
           kubernetes.pod.namespace: "openshift-origin"
 
-          shell.env:
-            OPENSHIFT_VERSION: $brooklyn:config("openshift.version")
-            OPENSHIFT_CONFIG:
-              $brooklyn:formatString:
-                - "%s/config"
-                - $brooklyn:attributeWhenReady("run.dir")
-            KUBERNETES_URL: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
-            ETCD_ENDPOINTS: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
-
-          kubernetes.url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
-          etcd.endpoints: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
-
         brooklyn.children:
-          - type: child-software-process
-            id: configure-openshift-origin
-            name: "configure-openshift-origin"
+          - type: kubernetes-pod
+            id: openshift-service
+            name: "openshift-service"
+            description: |
+              OpenShift Origin service
+
             brooklyn.config:
-              launch.command: |
+              kubernetes.pod.file: "classpath://io.brooklyn.clocker.kubernetes:openshift/openshift-service.yaml"
+
+              checkRunning.command: |
+                kubectl get service --namespace=${NAMESPACE} -l app=${NAME} -o wide |
+                  grep "${NAME}"
+
+          - type: child-software-process
+            id: openshift-config
+            name: "openshift-config"
+            brooklyn.config:
+              start.latch: $brooklyn:sibling("openshift-service").attributeWhenReady("service.isUp")
+
+              shell.env:
+                OPENSHIFT_VERSION: $brooklyn:config("openshift.version")
+                OPENSHIFT_CONFIG:
+                  $brooklyn:formatString:
+                    - "%s/config"
+                    - $brooklyn:attributeWhenReady("run.dir")
+                OPENSHIFT_URL:
+                  $brooklyn:formatString:
+                    - "http://%s"
+                    - $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.endpoint")
+                ETCD_AUTHORITY: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.authority")
+                NAMESPACE: $brooklyn:config("kubernetes.pod.namespace")
+
+              customize.command: |
                 mkdir -p ${OPENSHIFT_CONFIG}
+                cp /etc/kubernetes/kubeconfig ${OPENSHIFT_CONFIG}
+              launch.command: |
                 docker run --privileged \
                   -v ${OPENSHIFT_CONFIG}:/config \
                   openshift/origin:v${OPENSHIFT_VERSION} start master \
                     --write-config=/config \
                     --kubeconfig=/config/kubeconfig \
-                    --master=${KUBERNETES_URL} \
-                    --public-master=${KUBERNETES_URL} \
-                    --etcd=${ETCD_ENDPOINTS}
+                    --master=${OPENSHIFT_URL} \
+                    --public-master=${OPENSHIFT_URL} \
+                    --etcd=${ETCD_AUTHORITY}
                 sudo -E chown -R ${USER} ${OPENSHIFT_CONFIG}
-                docker run -it --privileged \
+                docker run --privileged \
                   -e="KUBECONFIG=/config/admin.kubeconfig" \
                   -v ${OPENSHIFT_CONFIG}:/config \
                   openshift/origin:v${OPENSHIFT_VERSION} cli secrets \
                     new openshift-config /config \
                     -o json &> ${RUN_DIR}/secret.json
-                kubectl create -f ${RUN_DIR}/secret.json --namespace=${NAMERSPACE}
+                kubectl create -f ${RUN_DIR}/secret.json --namespace=${NAMESPACE}
               checkRunning.command: |
-                # TODO fix this command
-                # kubectl secret show --namespace=${NAMESPACE}
-                true
+                kubectl get secret --namespace=${NAMESPACE} |
+                  grep "openshift-config"
 
-          - type: child-software-process
-            id: something-openshift-origin
-            name: "something-openshift-origin"
+          - type: kubernetes-pod
+            id: openshift-controller
+            name: "openshift-controller"
+            description: |
+              OpenShift Origin controller
+
             brooklyn.config:
-              start.latch: $brooklyn:sibling("configure-openshift-origin").attributeWhenReady("service.isUp")
-              launch.command: |
-                # TODO fix this command
-                # kubectl --namespace=${NAMESPACE}
-                true
-              checkRunning.command: |
-                # TODO fix this command
-                # kubectl --namespace=${NAMESPACE}
-                true
+              start.latch: $brooklyn:sibling("openshift-config").attributeWhenReady("service.isUp")
+
+              kubernetes.pod.file: "classpath://io.brooklyn.clocker.kubernetes:openshift/openshift-controller.yaml"
 
     - id: kubernetes-openshift-pods
       name: "Kubernetes OpenShift Pods"
@@ -132,6 +145,6 @@ brooklyn.catalog:
         name: "kubernetes-openshift-pods"
 
         brooklyn.children:
-          - type: openshift-pod
+          - type: openshift-origin
             id: openshift-origin
             name: "openshift-origin"
