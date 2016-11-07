@@ -261,7 +261,7 @@ brooklyn.catalog:
           id: kubernetes-manager-load-balancer
           name: "kubernetes-manager-load-balancer"
           brooklyn.config:
-            haproxy.port: $brooklyn:parent().config("kubernetes.apiserver.port")
+            haproxy.port: $brooklyn:parent().parent().config("kubernetes.apiserver.port")
             haproxy.protocol: "http"
           brooklyn.enrichers:
             - type: org.apache.brooklyn.enricher.stock.Propagator
