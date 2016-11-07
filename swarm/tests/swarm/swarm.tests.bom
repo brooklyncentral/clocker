@@ -254,10 +254,11 @@ brooklyn.catalog:
         brooklyn.children:
         - type: assert-up
           name: TEST-10-01. Wait for Swarm Node Holder
-          target: $brooklyn:entity("node-to-fail-lazy-holder")
-          timeout: $brooklyn:config("timeout.initialStartup")
+          target: $brooklyn:entity("node-to-fail-lazy-holder")          
+        - type: assert-up
+          name: TEST-10-02. Wait for Swarm Node                  
         - type: ssh-test
-          name: TEST-10-02. Fail Swarm Node
+          name: TEST-10-03. Fail Swarm Node
           brooklyn.config:
             command: |
               SWARM_ID=$(docker ps --filter name=swarm --format '{{ .ID }}' --no-trunc)
@@ -267,11 +268,11 @@ brooklyn.catalog:
               fi
               docker rm -f ${SWARM_ID}
         - type: assert-down
-          name: TEST-10-03. Check Failed
+          name: TEST-10-04. Check Failed
         - type: assert-up
-          name: TEST-10-04. Check Recovered
+          name: TEST-10-05. Check Recovered
         - type: ssh-test
-          name: TEST-10-05. Re-Fail Swarm Node
+          name: TEST-10-06. Re-Fail Swarm Node
           brooklyn.config:
             command: |
               # Wait for stabilization delay - 10s
@@ -284,9 +285,9 @@ brooklyn.catalog:
               fi
               docker rm -f ${SWARM_ID}
         - type: assert-down
-          name: TEST-10-06. Check Failed
+          name: TEST-10-07. Check Failed
         - type: sensor-test
-          name: TEST-10-07. Check spinning up replacement
+          name: TEST-10-08. Check spinning up replacement
           brooklyn.config:
             target: $brooklyn:entity("docker-swarm-nodes")
             sensor: group.members.count
@@ -294,7 +295,7 @@ brooklyn.catalog:
             assert:
             - notEqual: $brooklyn:entity("node-to-fail-holder").attributeWhenReady("initial-cluster-size")
         - type: sensor-test
-          name: TEST-10-08. Check failed node removed
+          name: TEST-10-09. Check failed node removed
           brooklyn.config:
             target: $brooklyn:entity("docker-swarm-nodes")
             sensor: group.members.count
@@ -302,13 +303,13 @@ brooklyn.catalog:
             assert:
             - equals: $brooklyn:entity("node-to-fail-holder").attributeWhenReady("initial-cluster-size")
         - type: sensor-test
-          name: TEST-10-09. Check failed node unmanaged
+          name: TEST-10-10. Check failed node unmanaged
           brooklyn.config:
             sensor: service.state
             assert:
             - matches: stopped
         - type: assert-running
-          name: TEST-10-10. Check cluster healthy
+          name: TEST-10-11. Check cluster healthy
           brooklyn.config:
             target: $brooklyn:entity("docker-swarm-nodes")
 
