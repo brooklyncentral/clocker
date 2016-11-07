@@ -1,0 +1,37 @@
+brooklyn.catalog:
+  items:
+  - id: openshift-cluster-tests
+    version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+    itemType: template
+    iconUrl: https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/OpenShift-LogoType.svg/225px-OpenShift-LogoType.svg.png
+    name: "OpenShift Cluster Tests"
+    description: |
+      Basic smoke test for OpenShift cluster.
+
+      This test should be updatedn once the Kubernetes test suite has been
+      refactored to use a shared 'common.tests.bom' file and has a suite of
+      individual tests as catalog items that can be configured with an
+      appropriate Kubernetes or OpenShift cluster entity as the target entity.
+    item:
+      services:
+      - type: openshift-origin-cluster-template
+        id: openshift-cluster
+        brooklyn.config:
+          kubernetes.master.size: 2
+          kubernetes.initial.size: 3
+          kubernetes.max.size: 5
+          etcd.initial.size: 3
+          kubernetes.pod.cidr: "10.200.0.0/16"
+      - type: org.apache.brooklyn.test.framework.TestCase
+        name: "OpenShift Smoke Tests"
+        brooklyn.config:
+          timeout: 1h
+          targetId: openshift-cluster
+        brooklyn.children:
+        - type: assert-up-and-running-initial
+          name: "01. OpenShift cluster up and running"
+        - type: assert-reachable
+          name: "02. OpenShift UI Reachable"
+          brooklyn.config:
+            endpointSensor: main.uri
+            timeout: 5m
