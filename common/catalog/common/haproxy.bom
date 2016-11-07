@@ -37,7 +37,7 @@ brooklyn.catalog:
             label: "HAProxy Port"
             description: |
               Port that HAProxy should listen on
-            type: port
+            type: integer
             default: 8000
           - name: haproxy.protocol
             label: "HAProxy Protocol"
@@ -60,7 +60,7 @@ brooklyn.catalog:
             INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
             RUN_DIR: $brooklyn:attributeWhenReady("run.dir")
             HAPROXY_VERSION: $brooklyn:config("haproxy.version")
-            HAPROXY_PORT: $brooklyn:attributeWhenReady("haproxy.port")
+            HAPROXY_PORT: $brooklyn:config("haproxy.port")
             HAPROXY_PROTOCOL: $brooklyn:config("haproxy.protocol")
             HAPROXY_BIND_OPTIONS: $brooklyn:config("haproxy.bind.options")
 
