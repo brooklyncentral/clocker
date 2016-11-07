@@ -11,7 +11,7 @@ metadata:
 spec:
   selector:
     app: kube-dns
-  clusterIP: ${config['template.substitutions']['dns_service_ip']}
+  clusterIP: ${config['dns.service.ip']}
   ports:
     - name: dns
       port: 53
@@ -31,7 +31,7 @@ metadata:
     version: v20
     kubernetes.io/cluster-service: "true"
 spec:
-  replicas: ${config['template.substitutions']['replicas']}
+  replicas: ${config['dns.replicas']}
   selector:
     app: kube-dns
     version: v20
@@ -72,9 +72,9 @@ spec:
           initialDelaySeconds: 30
           timeoutSeconds: 5
         args:
-          - --domain=${config['template.substitutions']['dns_service_domain']}.local.
+          - --domain=${config['dns.service.domain']}.local.
           - --dns-port=10053
-          - --kube-master-url=${config['template.substitutions']['kubernetes_url']}
+          - --kube-master-url=${config['kubernetes.url']}
         ports:
           - containerPort: 10053
             name: dns-local
@@ -106,8 +106,8 @@ spec:
             memory: 50Mi
         args:
           - >-
-            -cmd=nslookup kubernetes.default.svc.${config['template.substitutions']['dns_service_domain']}.local 127.0.0.1 > /dev/null &&
-              nslookup kubernetes.default.svc.${config['template.substitutions']['dns_service_domain']}.local 127.0.0.1:10053 > /dev/null
+            -cmd=nslookup kubernetes.default.svc.${config['dns.service.domain']}.local 127.0.0.1 > /dev/null &&
+              nslookup kubernetes.default.svc.${config['dns.service.domain']}.local 127.0.0.1:10053 > /dev/null
           - -port=8080
           - -quiet
         ports:
