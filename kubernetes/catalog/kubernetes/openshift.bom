@@ -66,7 +66,7 @@ brooklyn.catalog:
 
         brooklyn.config:
           kubernetes.pod.name: "openshift-origin"
-          kubernetes.pod.namespace: "openshift-origin"
+          kubernetes.pod.namespace: "openshift"
 
         brooklyn.children:
           - type: kubernetes-pod
@@ -96,27 +96,30 @@ brooklyn.catalog:
                     - $brooklyn:attributeWhenReady("run.dir")
                 OPENSHIFT_URL:
                   $brooklyn:formatString:
-                    - "http://%s"
-                    - $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.endpoint")
+                    - "http://%s:%d"
+                    - $brooklyn:attributeWhenReady("host.address")
+                    - $brooklyn:sibling("openshift-service").attributeWhenReady("kubernetes.service.port")
                 ETCD_URLS: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
                 NAMESPACE: $brooklyn:config("kubernetes.pod.namespace")
 
               customize.command: |
                 mkdir -p ${OPENSHIFT_CONFIG}
-                cp /etc/kubernetes/kubeconfig ${OPENSHIFT_CONFIG}
               launch.command: |
                 ETCD_URL=$(echo ${ETCD_URLS} | cut -d, -f1)
                 docker run --privileged \
+                  -e KUBECONFIG=/kubeconfig \
+                  -v /etc/kubernetes/kubeconfig:/kubeconfig \
                   -v ${OPENSHIFT_CONFIG}:/config \
                   openshift/origin:v${OPENSHIFT_VERSION} start master \
                     --write-config=/config \
-                    --kubeconfig=/config/kubeconfig \
-                    --master=${OPENSHIFT_URL} \
+                    --master=https://localhost:8443 \
                     --public-master=${OPENSHIFT_URL} \
+                    --kubeconfig=/kubeconfig \
                     --etcd=${ETCD_URL}
                 sudo -E chown -R ${USER} ${OPENSHIFT_CONFIG}
                 docker run --privileged \
-                  -e="KUBECONFIG=/config/admin.kubeconfig" \
+                  -e KUBECONFIG=/kubeconfig \
+                  -v /etc/kubernetes/kubeconfig:/kubeconfig \
                   -v ${OPENSHIFT_CONFIG}:/config \
                   openshift/origin:v${OPENSHIFT_VERSION} cli secrets \
                     new openshift-config /config \
