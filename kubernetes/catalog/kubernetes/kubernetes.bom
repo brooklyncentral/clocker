@@ -10,7 +10,7 @@ brooklyn.catalog:
   - id: kubernetes-cluster-template
     name: "Kubernetes Cluster"
     description: |
-      Kubernetes cluster with a master node and worker nodes
+      Kubernetes cluster with a load-balanced master cluster and worker nodes
     iconUrl: https://pbs.twimg.com/media/Bt_pEfqCAAAiVyz.png
     itemType: template
     item:
@@ -22,7 +22,7 @@ brooklyn.catalog:
   - id: kubernetes-cluster-application
     name: "Kubernetes Cluster"
     description: |
-      Kubernetes cluster with a master node and worker nodes
+      Kubernetes cluster with a load-balanced master cluster and worker nodes
     iconUrl: https://pbs.twimg.com/media/Bt_pEfqCAAAiVyz.png
     itemType: entity
     item:

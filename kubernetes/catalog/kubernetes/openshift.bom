@@ -9,7 +9,7 @@ brooklyn.catalog:
     - id: openshift-origin-cluster-template
       name: "OpenShift Origin Cluster"
       description: |
-        OpenShift Origin cluster with a master node and worker nodes
+        OpenShift Origin cluster with a single master node and worker nodes
       iconUrl: https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/OpenShift-LogoType.svg/225px-OpenShift-LogoType.svg.png
       itemType: template
       item:
@@ -21,7 +21,7 @@ brooklyn.catalog:
     - id: openshift-origin-cluster-application
       name: "OpenShift Origin Cluster"
       description: |
-        OpenShift Origin cluster with a master node and worker nodes
+        OpenShift Origin cluster with a single master node and worker nodes
       iconUrl: https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/OpenShift-LogoType.svg/225px-OpenShift-LogoType.svg.png
       itemType: entity
       item:
@@ -41,6 +41,8 @@ brooklyn.catalog:
             default: "openshift"
 
         brooklyn.config:
+          kubernetes.master.size: 1
+          etcd.initial.size: 1
           kubernetes.pods.spec:
             $brooklyn:entitySpec:
               type: kubernetes-openshift-pods
@@ -96,13 +98,14 @@ brooklyn.catalog:
                   $brooklyn:formatString:
                     - "http://%s"
                     - $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.endpoint")
-                ETCD_AUTHORITY: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.authority")
+                ETCD_URLS: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
                 NAMESPACE: $brooklyn:config("kubernetes.pod.namespace")
 
               customize.command: |
                 mkdir -p ${OPENSHIFT_CONFIG}
                 cp /etc/kubernetes/kubeconfig ${OPENSHIFT_CONFIG}
               launch.command: |
+                ETCD_URL=$(echo ${ETCD_URLS} | cut -d, -f1)
                 docker run --privileged \
                   -v ${OPENSHIFT_CONFIG}:/config \
                   openshift/origin:v${OPENSHIFT_VERSION} start master \
@@ -110,7 +113,7 @@ brooklyn.catalog:
                     --kubeconfig=/config/kubeconfig \
                     --master=${OPENSHIFT_URL} \
                     --public-master=${OPENSHIFT_URL} \
-                    --etcd=${ETCD_AUTHORITY}
+                    --etcd=${ETCD_URL}
                 sudo -E chown -R ${USER} ${OPENSHIFT_CONFIG}
                 docker run --privileged \
                   -e="KUBECONFIG=/config/admin.kubeconfig" \

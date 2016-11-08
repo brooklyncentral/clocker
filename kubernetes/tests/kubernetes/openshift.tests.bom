@@ -17,10 +17,8 @@ brooklyn.catalog:
       - type: openshift-origin-cluster-template
         id: openshift-cluster
         brooklyn.config:
-          kubernetes.master.size: 2
           kubernetes.initial.size: 3
           kubernetes.max.size: 5
-          etcd.initial.size: 3
           kubernetes.pod.cidr: "10.200.0.0/16"
       - type: org.apache.brooklyn.test.framework.TestCase
         name: "OpenShift Smoke Tests"
