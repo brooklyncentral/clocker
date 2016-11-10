@@ -8,8 +8,8 @@ brooklyn.catalog:
     description: |
       Basic smoke test for OpenShift cluster.
 
-      This test should be updatedn once the Kubernetes test suite has been
-      refactored to use a shared 'common.tests.bom' file and has a suite of
+      This test should be updated once the Kubernetes test suite has been
+      refactored to use the shared 'common.tests.bom' file and has a suite of
       individual tests as catalog items that can be configured with an
       appropriate Kubernetes or OpenShift cluster entity as the target entity.
     item:
@@ -17,7 +17,7 @@ brooklyn.catalog:
       - type: openshift-origin-cluster-template
         id: openshift-cluster
         brooklyn.config:
-          kubernetes.initial.size: 3
+          kubernetes.initial.size: 1
           kubernetes.max.size: 5
           kubernetes.pod.cidr: "10.200.0.0/16"
       - type: org.apache.brooklyn.test.framework.TestCase
@@ -33,3 +33,7 @@ brooklyn.catalog:
           brooklyn.config:
             endpointSensor: main.uri
             timeout: 5m
+        - type: assert-up
+          name: "03. OpenShift controller Pod up and running"
+          brooklyn.config:
+            target: $brooklyn:entity("openshift-cluster").child("openshift-controller")
