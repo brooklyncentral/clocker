@@ -17,34 +17,36 @@ spec:
     spec:
       containers:
         - args:
-            - start
-            - master
-            - --kubeconfig=/kubeconfig
-            - --config=/config/master-config.yaml
+            - "start"
+            - "master"
+            - "--kubeconfig=/kubeconfig"
+            - "--config=/config/master-config.yaml"
           image: "openshift/origin:v${config['openshift.version']}"
           name: origin
           env:
             - name: KUBECONFIG
               value: "/kubeconfig"
           ports:
-            - containerPort: 8443
+            - containerPort: ${config['openshift.master.port']?c}
               name: openshift
           volumeMounts:
-            - mountPath: /config
+            - mountPath: "/config"
               name: config
               readOnly: true
             - mountPath: "/kubeconfig"
               name: kubeconfig
           readinessProbe:
             httpGet:
-              path: /healthz/ready
-              port: 8443
+              path: "/healthz/ready"
+              port: ${config['openshift.master.port']?c}
+              scheme: ${config['openshift.master.protocol']}
             initialDelaySeconds: 15
             timeoutSeconds: 1
           livenessProbe:
             httpGet:
-              path: /healthz
-              port: 8443
+              path: "/healthz"
+              port: ${config['openshift.master.port']?c}
+              scheme: ${config['openshift.master.protocol']}
             initialDelaySeconds: 15
             timeoutSeconds: 1
       volumes:

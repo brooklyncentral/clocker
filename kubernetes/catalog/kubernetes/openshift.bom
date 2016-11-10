@@ -63,10 +63,25 @@ brooklyn.catalog:
               The version of OpenShift Origin that will be deployed
             type: string
             default: "1.3.1"
+          - name: openshift.master.port
+            label: "OpenShift Master Port"
+            description: |
+              The port number for OpenShift master to bind to
+            type: integer
+            default: 8443
+          - name: openshift.master.protocol
+            label: "OpenShift Master Protocol"
+            description: |
+              The protocol for OpenShift master to use
+            type: string
+            default: "https"
 
         brooklyn.config:
           kubernetes.pod.name: "openshift-origin"
           kubernetes.pod.namespace: "openshift"
+          openshift.master.port:
+            $brooklyn:entity("kubernetes-master").config("kubernetes.apiserver.port")
+          openshift.master.protocol: "http"
 
         brooklyn.children:
           - type: kubernetes-pod
@@ -96,7 +111,18 @@ brooklyn.catalog:
                     - $brooklyn:attributeWhenReady("run.dir")
                 OPENSHIFT_URL:
                   $brooklyn:formatString:
-                    - "http://%s:%d"
+                    - "%s://localhost:%d"
+                    - $brooklyn:config("openshift.master.protocol")
+                    - $brooklyn:config("openshift.master.port")
+                OPENSHIFT_BIND_URL:
+                  $brooklyn:formatString:
+                    - "%s://0.0.0.0:%d"
+                    - $brooklyn:config("openshift.master.protocol")
+                    - $brooklyn:config("openshift.master.port")
+                OPENSHIFT_PUBLIC_URL:
+                  $brooklyn:formatString:
+                    - "%s://%s:%d"
+                    - $brooklyn:config("openshift.master.protocol")
                     - $brooklyn:attributeWhenReady("host.address")
                     - $brooklyn:sibling("openshift-service").attributeWhenReady("kubernetes.service.port")
                 ETCD_URLS: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
@@ -112,8 +138,9 @@ brooklyn.catalog:
                   -v ${OPENSHIFT_CONFIG}:/config \
                   openshift/origin:v${OPENSHIFT_VERSION} start master \
                     --write-config=/config \
-                    --master=https://localhost:8443 \
-                    --public-master=${OPENSHIFT_URL} \
+                    --listen=${OPENSHIFT_BIND_URL} \
+                    --master=${OPENSHIFT_URL} \
+                    --public-master=${OPENSHIFT_PUBLIC_URL} \
                     --kubeconfig=/kubeconfig \
                     --etcd=${ETCD_URL}
                 sudo -E chown -R ${USER} ${OPENSHIFT_CONFIG}

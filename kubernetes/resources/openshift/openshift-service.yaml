@@ -11,6 +11,6 @@ spec:
     app: openshift-origin
   ports:
     - name: openshift
-      port: 8443
-      targetPort: 8443
+      port: ${config['openshift.master.port']?c}
+      targetPort: ${config['openshift.master.port']?c}
   type: NodePort
