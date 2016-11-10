@@ -1,5 +1,6 @@
 brooklyn.catalog:
   items:
+  - https://raw.githubusercontent.com/brooklyncentral/common-catalog-utils/master/common-tests/src/main/resources/commontests/common.tests.bom
   - id: kubernetes-cluster-tests
     version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
     itemType: template
