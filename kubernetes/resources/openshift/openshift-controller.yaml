@@ -35,20 +35,20 @@ spec:
               readOnly: true
             - mountPath: "/kubeconfig"
               name: kubeconfig
-          readinessProbe:
-            httpGet:
-              path: "/healthz/ready"
-              port: ${config['openshift.master.port']?c}
-              scheme: ${config['openshift.master.protocol']}
-            initialDelaySeconds: 15
-            timeoutSeconds: 1
-          livenessProbe:
-            httpGet:
-              path: "/healthz"
-              port: ${config['openshift.master.port']?c}
-              scheme: ${config['openshift.master.protocol']}
-            initialDelaySeconds: 15
-            timeoutSeconds: 1
+          #readinessProbe:
+          #  httpGet:
+          #    path: "/healthz/ready"
+          #    port: ${config['openshift.master.port']?c}
+          #    scheme: ${config['openshift.master.protocol']}
+          #  initialDelaySeconds: 15
+          #  timeoutSeconds: 1
+          #livenessProbe:
+          #  httpGet:
+          #    path: "/healthz"
+          #    port: ${config['openshift.master.port']?c}
+          #    scheme: ${config['openshift.master.protocol']}
+          #  initialDelaySeconds: 15
+          #  timeoutSeconds: 1
       volumes:
         - name: config
           secret:
