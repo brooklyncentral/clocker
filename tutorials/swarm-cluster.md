@@ -7,7 +7,7 @@ title: Swarm Cluster Tutorial
 This tutorial is focused on deploying a production ready Docker Swarm.
 
 ### Pre-requisites
-This tutorial assumes you have installed [Apache Brooklyn](https://brooklyn.apache.org/v/latest/start/running.html) or [Cloudsoft AMP](http://docs.cloudsoft.io/ccs/tutorial/tutorial-get-amp-running.html), as well as the [Apache Brooklyn CLI](https://brooklyn.apache.org/v/latest/ops/cli/index.html).
+This tutorial assumes you have completed the [getting started](getting-started.html) section of this website and have installed the [Apache Brooklyn CLI](https://brooklyn.apache.org/v/latest/ops/cli/index.html).
 
 ### Overview
 The production ready swarm cluster is comprised of the following components:
@@ -34,6 +34,8 @@ Firstly, we need to setup a location to deploy the Swarm cluster to. We recommen
 - use the `installDevUrandom` config to prevent installation speed being slowed by lack of entropy. See [Entropy Troubleshooting](https://brooklyn.apache.org/documentation/increase-entropy.html)
 - use at least 2GB RAM
 - use a CentOS 7 based image
+
+Please note that we recommend the [official Centos 7 images](https://wiki.centos.org/Cloud/AWS). Images from other providers may be less functional or incompatible.
 
 The following catalog items should enable you to quickly get started on some popular clouds. Download the `.bom` file of the relevant cloud, add your credentials, and then run:
 
