@@ -6,6 +6,7 @@ brooklyn.catalog:
     license_code: APACHE-2.0
 
   items:
+  - https://raw.githubusercontent.com/brooklyncentral/brooklyn-dns/master/brooklyn-dns-etc-hosts-generator.bom
   - id: kubernetes-cluster-template
     name: "Kubernetes Cluster"
     description: |
