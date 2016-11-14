@@ -852,7 +852,7 @@ brooklyn.catalog:
             --config=/etc/kubernetes/manifests \
             --cadvisor-port=${CADVISOR_PORT} \
             --node-ip=${HOST_SUBNET_ADDRESS} \
-            --hostname-override=${HOST_ADDRESS} \
+            --hostname-override=${HOST_SUBNET_ADDRESS} \
             --api-servers=${KUBERNETES_URL} \
             --kubeconfig=/etc/kubernetes/kubeconfig \
             --network-plugin-dir=/etc/cni/net.d \
