@@ -28,4 +28,3 @@ brooklyn.catalog:
           kubernetes.minCores: 1
         services:
           - type: kubernetes-cluster-tests
-          - type: openshift-cluster-tests

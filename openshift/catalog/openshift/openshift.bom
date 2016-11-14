@@ -93,6 +93,8 @@ brooklyn.catalog:
             brooklyn.config:
               kubernetes.pod.file: "classpath://io.brooklyn.clocker.kubernetes:openshift/openshift-service.yaml"
 
+              openshift.version: $brooklyn:parent().config("openshift.version")
+
               checkRunning.command: |
                 kubectl get service --namespace=${NAMESPACE} -l app=${NAME} -o wide |
                   grep "${NAME}"
@@ -104,11 +106,13 @@ brooklyn.catalog:
               start.latch: $brooklyn:sibling("openshift-service").attributeWhenReady("service.isUp")
 
               shell.env:
-                OPENSHIFT_VERSION: $brooklyn:config("openshift.version")
+                OPENSHIFT_VERSION: $brooklyn:parent().config("openshift.version")
                 OPENSHIFT_CONFIG:
                   $brooklyn:formatString:
                     - "%s/config"
                     - $brooklyn:attributeWhenReady("run.dir")
+                KUBERNETES_URL:
+                  $brooklyn:entity("kubernetes-master-load-balancer").attributeWhenReady("kubernetes.url")
                 OPENSHIFT_URL:
                   $brooklyn:formatString:
                     - "%s://localhost:%d"
@@ -139,7 +143,7 @@ brooklyn.catalog:
                   openshift/origin:v${OPENSHIFT_VERSION} start master \
                     --write-config=/config \
                     --listen=${OPENSHIFT_BIND_URL} \
-                    --master=${OPENSHIFT_URL} \
+                    --master=${KUBERNETES_URL} \
                     --public-master=${OPENSHIFT_PUBLIC_URL} \
                     --kubeconfig=/kubeconfig \
                     --etcd=${ETCD_URL}
@@ -166,6 +170,8 @@ brooklyn.catalog:
               start.latch: $brooklyn:sibling("openshift-config").attributeWhenReady("service.isUp")
 
               kubernetes.pod.file: "classpath://io.brooklyn.clocker.kubernetes:openshift/openshift-controller.yaml"
+
+              openshift.version: $brooklyn:parent().config("openshift.version")
 
     - id: kubernetes-openshift-pods
       name: "Kubernetes OpenShift Pods"

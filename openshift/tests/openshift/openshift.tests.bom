@@ -1,0 +1,36 @@
+brooklyn.catalog:
+  version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+  publish:
+    description: |
+      OpenShift Cluster Tests
+    license_code: APACHE-2.0
+
+  items:
+    - https://raw.githubusercontent.com/brooklyncentral/common-catalog-utils/master/common-tests/src/main/resources/commontests/common.tests.bom
+
+    - id: openshift-cluster-tests
+      name: "OpenShift Cluster Tests"
+      itemType: template
+      iconUrl: https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/OpenShift-LogoType.svg/225px-OpenShift-LogoType.svg.png
+      description: |
+        Basic tests for OpenShift cluster.
+      item:
+        services:
+          - type: openshift-origin-cluster-template
+            id: openshift-cluster
+            brooklyn.config:
+              kubernetes.initial.size: 1
+              kubernetes.max.size: 5
+              kubernetes.pod.cidr: "10.200.0.0/16"
+          - type: kubernetes-smoke-tests
+            name: "kubernetes-smoke-tests"
+            brooklyn.config:
+              timeout: 1h
+              targetId: openshift-cluster
+          - type: test-case
+            name: "openshift-tests"
+            brooklyn.children:
+              - type: assert-up
+                name: "OpenShift controller Pod up and running"
+                brooklyn.config:
+                  target: $brooklyn:entity("openshift-cluster").child("openshift-controller")
