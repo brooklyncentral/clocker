@@ -913,6 +913,11 @@ brooklyn.catalog:
           type: string
           default:
             NamespaceLifecycle,NamespaceExists,LimitRanger,ResourceQuota,AlwaysAdmit
+        - name: kubernetes.runtime.config
+          label: "Kubernetes Runtime Config"
+          type: string
+          default:
+            extensions/v1beta1=true,extensions/v1beta1/networkpolicies=true,rbac.authorization.k8s.io/v1alpha1=true
 
       brooklyn.config:
         kubernetes.service: "kube-apiserver"
@@ -924,6 +929,7 @@ brooklyn.catalog:
           SERVICE_CLUSTER_IP_RANGE: $brooklyn:entity("kubernetes-cluster").config("kubernetes.service.cidr")
           APISERVER_PORT: $brooklyn:entity("kubernetes-master").config("kubernetes.apiserver.port")
           ADMISSION_CONTROL: $brooklyn:config("kubernetes.admission.control")
+          RUNTIME_CONFIG: $brooklyn:config("kubernetes.runtime.config")
           INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
 
         post.install.command: |
@@ -944,7 +950,7 @@ brooklyn.catalog:
             --basic-auth-file=/etc/kubernetes/basic_auth.csv \
             --allow-privileged=true \
             --service-cluster-ip-range=${SERVICE_CLUSTER_IP_RANGE} \
-            --runtime-config=extensions/v1beta1=true,extensions/v1beta1/networkpolicies=true \
+            --runtime-config=${RUNTIME_CONFIG} \
             --admission-control=${ADMISSION_CONTROL}
           Restart=on-failure
           [Install]
