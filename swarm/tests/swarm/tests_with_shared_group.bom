@@ -12,11 +12,12 @@ brooklyn.catalog:
       description: |
         Tests on Docker Engine with and without TLS, and on Swarm (with TLS)
       itemType: template
-      item:
+      item:   
         brooklyn.config:
           timeout: 1h
           timeout.initialStartup: 1h
           timeout.runtimeAssertion: 1h
+          swarm.sharedsecuritygroup.create: true
 
         services:
           - type: docker-swarm-tests
