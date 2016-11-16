@@ -110,7 +110,7 @@ brooklyn.catalog:
               ENTITY_ID: $brooklyn:attributeWhenReady("entity.id")
             command: |
               (
-              flock -o 9
+              flock 9
               cat > ${RUN_DIR}/servers.conf <<-EOF
               backend servers
               EOF
@@ -131,10 +131,9 @@ brooklyn.catalog:
                 fi
               done
               old_pid=$(cat ${RUN_DIR}/pid.txt)
-              haproxy -D -f ${RUN_DIR}/haproxy.conf -f ${RUN_DIR}/servers.conf -st ${old_pid}
+              haproxy -D -f ${RUN_DIR}/haproxy.conf -f ${RUN_DIR}/servers.conf -st ${old_pid} 9>/dev/null
               # wait for the old process to die before leaving the critical section
               while test -d /proc/${old_pid} 2> /dev/null; do sleep 1; done
-              flock -u 9
               ) 9>> /tmp/configure.${ENTITY_ID}.lock
 
         brooklyn.policies:
