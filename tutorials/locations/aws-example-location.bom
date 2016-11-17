@@ -8,18 +8,21 @@ brooklyn.catalog:
       region: eu-central-1
       identity: <IDENTITY>
       credential: <CREDENTIAL>
-      installDevUrandom: true
       minRam: 2000
 
+# Make sure you've accepted the TOC for the image before using it. To do so
+# go to https://aws.amazon.com/marketplace/pp/B00O7WM7QW and try to start
+# an instance with the image. In the process the UI will ask you to accept
+# the TOC. There is no need to actually launch the instance.
+# If you have not accepted the TOC you'll get 401 responses from EC2'a API.
+#
+# To find the AMIs for different regions go to (login required):
+# https://aws.amazon.com/marketplace/fulfillment?productId=b7ee8a69-ee97-4a49-9e68-afaee216db2e
+# and click on "Manual Launch". There you'll see a list of regions and the corresponding image IDs.
       imageId: eu-central-1/ami-9bf712f4
+
+# Provision a maximum of 3 machines in parallel to avoid hitting the
+# maximum allowed request limit rate.
       maxConcurrentMachineCreations: 3
+
       loginUser: centos
-
-# There are a couple of known issues with auto configuring security groups
-# on AWS using brooklyn. We recommend configuring a security group manually
-# that allows all internal communication between VMs and inbound traffic on
-# 22, 8080, and 32768-65534 (for swarm) or 30000-32767 (for kubernetes)
-# You will also need to set either kubernetes.sharedsecuritygroup.create or
-# swarm.sharedsecuritygroup.create to false when you deploy the swarm or kubernetes
-
-      securityGroups: <SECURITY GROUP ID>

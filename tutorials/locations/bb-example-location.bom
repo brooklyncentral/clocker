@@ -11,7 +11,6 @@ brooklyn.catalog:
       jclouds.keystone.credential-type: passwordCredentials
 
       generate.hostname: true
-      installDevUrandom: true
 
     # You need to make sure you have a image with name "Centos 7.0"
       imageNameRegex: CentOS 7

@@ -33,7 +33,7 @@ Clocker currently supports deployments to **CentOS only**. We recommend to setup
 - use at least 2GB RAM
 - use a CentOS 7 based image
 
-If you are using Brooklyn, it might a good idea to increase the entropy of your server by using `installDevUrandom` config. This would prevent installation speed being slowed. For more information, see [Entropy Troubleshooting](https://brooklyn.apache.org/documentation/increase-entropy.html)
+If you are using Brooklyn, it might a good idea to increase the entropy of your server. This would prevent installation speed being slowed. For more information, see [Entropy Troubleshooting](https://brooklyn.apache.org/documentation/increase-entropy.html)
 
 Finally, be aware that you might get in trouble because of your cloud provider's security group. For more information, please see the [troubleshooting page](troubleshooting.html#failed-to-find-machine-unique-group-on-node).
 
