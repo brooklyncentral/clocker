@@ -201,7 +201,7 @@ brooklyn.catalog:
           label: "Swarm Port"
           description: |
             The TCP port the Swarm manager listens on
-          type: port
+          type: integer
           default: 3376
         - name: swarm.scaling.cpu.limit
           label: "Swarm Scaling CPU Limit"
@@ -481,7 +481,7 @@ brooklyn.catalog:
           label: "Swarm Port"
           description: |
             The TCP port the Swarm manager listens on
-          type: port
+          type: integer
           default: 3376
         - name: swarm.strategy
           label: "Swarm Strategy"
