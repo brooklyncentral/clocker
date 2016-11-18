@@ -6,7 +6,7 @@ brooklyn.catalog:
     - tests/kubernetes.tests.bom
   items:
     - id: kubernetes-tests
-      name: name: "Clocker Kubernetes Tests (NO SHARED SECURITY GROUP)"
+      name: "Clocker Kubernetes Tests (NO SHARED SECURITY GROUP)"
       description: |
         Tests on Kubernetes
       itemType: template
