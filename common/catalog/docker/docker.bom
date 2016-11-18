@@ -192,7 +192,7 @@ brooklyn.catalog:
           label: "Docker Port"
           description: |
             The TCP port for Docker to listen on
-          type: port
+          type: integer
           default: 2376
         - name: docker.bindaddress
           label: "Docker Bind Address"

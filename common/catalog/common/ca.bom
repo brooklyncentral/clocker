@@ -38,7 +38,7 @@ brooklyn.catalog:
           label: "CA Server Port"
           description: |
             The external port the CA Server web service listens on
-          type: port
+          type: integer
           default: 8080
 
       brooklyn.config:
