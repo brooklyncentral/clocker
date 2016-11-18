@@ -1,0 +1,28 @@
+brooklyn.catalog:
+  version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+  iconUrl: https://twitter.com/kubernetesio/profile_image?size=original
+  license_code: APACHE-2.0
+  dependsOn:
+    - tests/kubernetes.tests.bom
+  items:
+    - id: kubernetes-tests
+      name: "Clocker Kubernetes Tests (DEFAULT)"
+      description: |
+        Tests on Kubernetes
+      itemType: template
+      item:
+        brooklyn.config:
+          timeout: 1h
+          timeout.initialStartup: 1h
+          timeout.runtimeAssertion: 1h
+          kubernetes.master.size: 3
+          kubernetes.initial.size: 3
+          kubernetes.max.size: 5
+          etcd.initial.size: 3
+          kubernetes.version: 1.4.3
+          kubernetes.cluster.name: clocker
+          kubernetes.pod.cidr: 172.16.0.0/16
+          kubernetes.apiserver.port: 8080
+          kubernetes.sharedsecuritygroup.create: true
+        services:
+          - type: kubernetes-cluster-tests

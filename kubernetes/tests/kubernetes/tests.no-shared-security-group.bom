@@ -6,7 +6,7 @@ brooklyn.catalog:
     - tests/kubernetes.tests.bom
   items:
     - id: kubernetes-tests
-      name: "Kubernetes Tests"
+      name: name: "Clocker Kubernetes Tests (NO SHARED SECURITY GROUP)"
       description: |
         Tests on Kubernetes
       itemType: template
@@ -15,5 +15,14 @@ brooklyn.catalog:
           timeout: 1h
           timeout.initialStartup: 1h
           timeout.runtimeAssertion: 1h
+          kubernetes.master.size: 3
+          kubernetes.initial.size: 3
+          kubernetes.max.size: 5
+          etcd.initial.size: 3
+          kubernetes.version: 1.4.3
+          kubernetes.cluster.name: clocker
+          kubernetes.pod.cidr: 172.16.0.0/16
+          kubernetes.apiserver.port: 8080
+          kubernetes.sharedsecuritygroup.create: false
         services:
           - type: kubernetes-cluster-tests
