@@ -52,7 +52,7 @@ brooklyn.catalog:
           EMAIL_ADDRESS: $brooklyn:config("email.address")
           CHALLENGE_PASSWORD: $brooklyn:config("challenge.password")
           OPTIONAL_COMPANY_NAME: $brooklyn:config("optional.company.name")
-          CA_SERVER_PORT: $brooklyn:attributeWhenReady("ca.server.port")
+          CA_SERVER_PORT: $brooklyn:config("ca.server.port")
           INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
           NODE_PATH:
             $brooklyn:formatString:
@@ -197,10 +197,9 @@ brooklyn.catalog:
           brooklyn.config:
             enricher.triggerSensors:
               - host.address
-              - ca.server.port
             enricher.targetSensor: $brooklyn:sensor("main.uri")
             enricher.targetValue:
               $brooklyn:formatString:
                 - "http://%s:%d"
                 - $brooklyn:attributeWhenReady("host.address")
-                - $brooklyn:attributeWhenReady("ca.server.port")
+                - $brooklyn:config("ca.server.port")
