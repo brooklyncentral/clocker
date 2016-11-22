@@ -236,26 +236,24 @@ brooklyn.catalog:
             enricher.suppressDuplicates: false
             enricher.triggerSensors:
               - $brooklyn:sensor("host.address")
-              - $brooklyn:sensor("docker.port")
             enricher.targetSensor: $brooklyn:sensor("docker.endpoint.public")
             enricher.targetValue:
               $brooklyn:formatString:
                 - "%s:%d"
                 - $brooklyn:attributeWhenReady("host.address")
-                - $brooklyn:attributeWhenReady("docker.port")
+                - $brooklyn:config("docker.port")
         - type: org.apache.brooklyn.enricher.stock.Transformer
           brooklyn.config:
             uniqueTag: docker-endpoint-generator
             enricher.suppressDuplicates: false
             enricher.triggerSensors:
               - $brooklyn:sensor("host.subnet.address")
-              - $brooklyn:sensor("docker.port")
             enricher.targetSensor: $brooklyn:sensor("docker.endpoint")
             enricher.targetValue:
               $brooklyn:formatString:
                 - "%s:%d"
                 - $brooklyn:attributeWhenReady("host.subnet.address")
-                - $brooklyn:attributeWhenReady("docker.port")
+                - $brooklyn:config("docker.port")
         - type: org.apache.brooklyn.enricher.stock.Transformer
           brooklyn.config:
             uniqueTag: docker-url-generator
@@ -267,18 +265,6 @@ brooklyn.catalog:
               $brooklyn:formatString:
                 - "tcp://%s"
                 - $brooklyn:attributeWhenReady("docker.endpoint")
-        - type: org.apache.brooklyn.enricher.stock.Transformer
-          brooklyn.config:
-            uniqueTag: docker-bind-url-generator
-            enricher.suppressDuplicates: false
-            enricher.triggerSensors:
-              - $brooklyn:sensor("docker.port")
-            enricher.targetSensor: $brooklyn:sensor("docker.bind.url")
-            enricher.targetValue:
-              $brooklyn:formatString:
-                - "tcp://%s:%d"
-                - $brooklyn:config("docker.bindaddress")
-                - $brooklyn:attributeWhenReady("docker.port")
 
       brooklyn.config:
         docker.cert.path:
@@ -363,6 +349,14 @@ brooklyn.catalog:
             period: 5m
             command: |
               cat ${DOCKER_CERT_PATH}/csr.pem
+        - type: org.apache.brooklyn.core.sensor.StaticSensor
+          brooklyn.config:
+            name: docker.bind.url
+            static.value:
+              $brooklyn:formatString:
+                - "tcp://%s:%d"
+                - $brooklyn:config("docker.bindaddress")
+                - $brooklyn:config("docker.port")
 
   - id: docker-engine-with-resilience
     name: "Docker Engine with Resilience"

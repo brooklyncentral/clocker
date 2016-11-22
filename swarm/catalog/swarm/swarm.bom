@@ -504,25 +504,23 @@ brooklyn.catalog:
             uniqueTag: swarm-endpoint-publisher
             enricher.triggerSensors:
               - $brooklyn:sensor("host.subnet.address")
-              - $brooklyn:sensor("swarm.port")
             enricher.targetSensor: $brooklyn:sensor("swarm.endpoint")
             enricher.targetValue:
               $brooklyn:formatString:
                 - "%s:%d"
                 - $brooklyn:attributeWhenReady("host.subnet.address")
-                - $brooklyn:attributeWhenReady("swarm.port")
+                - $brooklyn:config("swarm.port")
         - type: org.apache.brooklyn.enricher.stock.Transformer
           brooklyn.config:
             uniqueTag: swarm-public-endpoint-publisher
             enricher.triggerSensors:
               - $brooklyn:sensor("host.address")
-              - $brooklyn:sensor("swarm.port")
             enricher.targetSensor: $brooklyn:sensor("swarm.endpoint.public")
             enricher.targetValue:
               $brooklyn:formatString:
                 - "%s:%d"
                 - $brooklyn:attributeWhenReady("host.address")
-                - $brooklyn:attributeWhenReady("swarm.port")
+                - $brooklyn:config("swarm.port")
         - type: org.apache.brooklyn.enricher.stock.Transformer
           brooklyn.config:
             uniqueTag: swarm-url-publisher
@@ -580,7 +578,7 @@ brooklyn.catalog:
       brooklyn.config:
         shell.env:
           SWARM_DISCOVERY_URL: $brooklyn:config("swarm.discovery.url")
-          SWARM_PORT: $brooklyn:attributeWhenReady("swarm.port")
+          SWARM_PORT: $brooklyn:config("swarm.port")
           SWARM_ENDPOINT: $brooklyn:attributeWhenReady("swarm.endpoint")
           SWARM_URL: $brooklyn:attributeWhenReady("swarm.url")
           SWARM_STRATEGY: $brooklyn:config("swarm.strategy")

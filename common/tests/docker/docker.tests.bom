@@ -311,7 +311,7 @@ brooklyn.catalog:
             $brooklyn:formatString:
             - "%s:%d"
             - $brooklyn:entity("ca-server").attributeWhenReady("host.address")
-            - $brooklyn:entity("ca-server").attributeWhenReady("ca.server.port")
+            - $brooklyn:entity("ca-server").config("ca.server.port")
 
 
       # A client for talking to the engine
@@ -326,7 +326,7 @@ brooklyn.catalog:
             $brooklyn:formatString:
             - "tcp://%s:%s/"
             - $brooklyn:entity("docker-engine-tls").attributeWhenReady("host.address")
-            - $brooklyn:entity("docker-engine-tls").attributeWhenReady("docker.port")
+            - $brooklyn:entity("docker-engine-tls").config("docker.port")
 
       - type: docker-engine-test
         name: Test Docker over TLS
