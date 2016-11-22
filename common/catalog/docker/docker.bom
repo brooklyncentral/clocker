@@ -236,26 +236,24 @@ brooklyn.catalog:
             enricher.suppressDuplicates: false
             enricher.triggerSensors:
               - $brooklyn:sensor("host.address")
-              - $brooklyn:sensor("docker.port")
             enricher.targetSensor: $brooklyn:sensor("docker.endpoint.public")
             enricher.targetValue:
               $brooklyn:formatString:
                 - "%s:%d"
                 - $brooklyn:attributeWhenReady("host.address")
-                - $brooklyn:attributeWhenReady("docker.port")
+                - $brooklyn:config("docker.port")
         - type: org.apache.brooklyn.enricher.stock.Transformer
           brooklyn.config:
             uniqueTag: docker-endpoint-generator
             enricher.suppressDuplicates: false
             enricher.triggerSensors:
               - $brooklyn:sensor("host.subnet.address")
-              - $brooklyn:sensor("docker.port")
             enricher.targetSensor: $brooklyn:sensor("docker.endpoint")
             enricher.targetValue:
               $brooklyn:formatString:
                 - "%s:%d"
                 - $brooklyn:attributeWhenReady("host.subnet.address")
-                - $brooklyn:attributeWhenReady("docker.port")
+                - $brooklyn:config("docker.port")
         - type: org.apache.brooklyn.enricher.stock.Transformer
           brooklyn.config:
             uniqueTag: docker-url-generator
@@ -271,14 +269,12 @@ brooklyn.catalog:
           brooklyn.config:
             uniqueTag: docker-bind-url-generator
             enricher.suppressDuplicates: false
-            enricher.triggerSensors:
-              - $brooklyn:sensor("docker.port")
             enricher.targetSensor: $brooklyn:sensor("docker.bind.url")
             enricher.targetValue:
               $brooklyn:formatString:
                 - "tcp://%s:%d"
                 - $brooklyn:config("docker.bindaddress")
-                - $brooklyn:attributeWhenReady("docker.port")
+                - $brooklyn:config("docker.port")
 
       brooklyn.config:
         docker.cert.path:
