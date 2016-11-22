@@ -5,7 +5,7 @@ title: Troubleshooting
 
 ### General
 
-You can find below the most common issues (and their solutions) you may face when deploy entities provided by Clocker. For more general troubleshooting, please check out the [Brooklyn](https://brooklyn.apache.org/v/latest/ops/troubleshooting/index.html) or [AMP](http://docs.cloudsoft.io/operations/troubleshooting/) docs.
+You can find below the most common issues (and their solutions) you may face when deploy entities provided by Clocker. For more general troubleshooting, please check out the general [troubleshooting](https://brooklyn.apache.org/v/latest/ops/troubleshooting/index.html) or [AMP](http://docs.cloudsoft.io/operations/troubleshooting/) docs.
 
 #### Persisted State
 
