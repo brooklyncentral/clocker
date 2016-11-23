@@ -412,7 +412,7 @@ brooklyn.catalog:
           label: "Swarm Minimum RAM"
           description: |
             Minimum RAM for provisioning Swarm nodes
-          default: 8g
+          default: 8000
         - name: swarm.sharedsecuritygroup.create
           label: "Create Swarm SharedSecurityGroup"
           description: |
