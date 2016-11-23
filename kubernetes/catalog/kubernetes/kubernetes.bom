@@ -445,7 +445,7 @@ brooklyn.catalog:
           label: "Kubernetes Minimum RAM"
           description: |
             Minimum RAM for provisioning Kubernetes nodes
-          default: 8g
+          default: 8000
         - name: kubernetes.sharedsecuritygroup.create
           label: "Create Kubernetes SharedSecurityGroup"
           description: |
