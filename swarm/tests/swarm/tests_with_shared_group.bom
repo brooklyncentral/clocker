@@ -18,6 +18,8 @@ brooklyn.catalog:
           timeout.initialStartup: 1h
           timeout.runtimeAssertion: 1h
           swarm.sharedsecuritygroup.create: true
+          swarm.minRam: 2000
+          swarm.minCores: 1
 
         services:
           - type: docker-swarm-tests
