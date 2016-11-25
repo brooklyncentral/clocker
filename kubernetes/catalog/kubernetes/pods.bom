@@ -102,6 +102,14 @@ brooklyn.catalog:
               kubectl get pod --namespace=${NAMESPACE} -l app=${NAME} --output=jsonpath='{range .items[0]}{.status.phase}'
 
       brooklyn.enrichers:
+        - type: org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic$ComputeServiceIndicatorsFromChildrenAndMembers
+          brooklyn.config:
+            uniqueTag: pod-service-up-logic
+            enricher.service_state.children_and_members.quorum.up: "alwaysHealthy"
+            enricher.service_state.children_and_members.quorum.running: "alwaysHealthy"
+            enricher.aggregating.fromChildren: true
+            enricher.aggregating.fromMembers: false
+            enricher.suppressDuplicates: true
         - type: org.apache.brooklyn.enricher.stock.Transformer
           brooklyn.config:
             uniqueTag: kubernetes-pod-url-publisher
