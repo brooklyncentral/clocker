@@ -24,5 +24,7 @@ brooklyn.catalog:
           kubernetes.pod.cidr: 172.16.0.0/16
           kubernetes.apiserver.port: 8080
           kubernetes.sharedsecuritygroup.create: false
+          kubernetes.minRam: 2000
+          kubernetes.minCores: 1
         services:
           - type: kubernetes-cluster-tests
