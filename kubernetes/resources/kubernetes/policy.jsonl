@@ -1,10 +1,4 @@
-{"user":"admin"}
-{"user":"scheduler", "readonly": true, "resource": "pods"}
-{"user":"scheduler", "resource": "bindings"}
-{"user":"proxy", "resource": "services"}
-{"user":"proxy", "resource": "endpoints"}
-{"user":"kubelet",  "resource": "pods"}
-{"user":"kubelet",  "resource": "nodes"}
-{"user":"kubelet",  "readonly": true, "resource": "services"}
-{"user":"kubelet",  "readonly": true, "resource": "endpoints"}
-{"user":"kubelet", "resource": "events"}
+{"apiVersion": "abac.authorization.kubernetes.io/v1beta1", "kind": "Policy", "spec": {"user": "admin", "namespace": "*", "resource": "*", "apiGroup": "*"}}
+{"apiVersion": "abac.authorization.kubernetes.io/v1beta1", "kind": "Policy", "spec": {"user": "kubelet", "namespace": "*", "resource": "pods", "readonly": true}}
+{"apiVersion": "abac.authorization.kubernetes.io/v1beta1", "kind": "Policy", "spec": {"user": "kubelet", "namespace": "*", "resource": "events"}}
+{"apiVersion": "abac.authorization.kubernetes.io/v1beta1", "kind": "Policy", "spec": {"user": "*", "readonly": true, "nonResourcePath": "*"}}

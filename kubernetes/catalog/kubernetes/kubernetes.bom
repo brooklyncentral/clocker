@@ -876,7 +876,6 @@ brooklyn.catalog:
             --v=4 \
             --cluster-cidr=${FLANNEL_NETWORK} \
             --masquerade-all=true \
-            --master=${KUBERNETES_ENDPOINT} \
             --kubeconfig=/etc/kubernetes/kubeconfig \
           Restart=on-failure
           [Install]
@@ -952,7 +951,7 @@ brooklyn.catalog:
             --cadvisor-port=${CADVISOR_PORT} \
             --node-ip=${HOST_SUBNET_ADDRESS} \
             --hostname-override=${HOST_SUBNET_ADDRESS} \
-            --api-servers=${KUBERNETES_ENDPOINT} \
+            --require-kubeconfig \
             --kubeconfig=/etc/kubernetes/kubeconfig \
             --network-plugin-dir=/etc/cni/net.d \
             --network-plugin=cni \
