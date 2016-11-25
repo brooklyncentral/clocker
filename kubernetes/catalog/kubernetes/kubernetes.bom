@@ -577,31 +577,11 @@ brooklyn.catalog:
           KUBERNETES_TOKEN=$(sudo grep ${KUBERNETES_USER} /etc/kubernetes/known_tokens.csv | cut -d, -f1)
 
           echo "[CLOCKER] Setup the kubeconfig file"
-          sudo -E tee /etc/kubernetes/kubeconfig <<-EOF
-          current-context: default
-          apiVersion: v1
-          clusters:
-            - name: ${CLUSTER_NAME}
-              cluster:
-                api-version: v1
-                server: ${KUBERNETES_URL}
-                certificate-authority: /etc/kubernetes/certs/ca.pem
-          contexts:
-            - name: default
-              context:
-                cluster: ${CLUSTER_NAME}
-                namespace: default
-                user: ${KUBERNETES_USER}
-          users:
-            - name: ${KUBERNETES_USER}
-              user:
-                token: ${KUBERNETES_TOKEN}
-          current-context: default
-          EOF
           kubectl config set-cluster ${CLUSTER_NAME} --server=${KUBERNETES_URL} --certificate-authority=/etc/kubernetes/certs/ca.pem --embed-certs=true
           kubectl config set-credentials ${KUBERNETES_USER} --token=${KUBERNETES_TOKEN}
           kubectl config set-context default --cluster=${CLUSTER_NAME} --user=${KUBERNETES_USER}
           kubectl config use-context default
+          kubectl config view --flatten | sudo tee /etc/kubernetes/kubeconfig
 
         checkRunning.command: |
           which kubectl
