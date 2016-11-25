@@ -76,9 +76,6 @@ spec:
           - mountPath: "/etc/kubernetes/kubeconfig"
             name: kubeconfig
             readOnly: true
-          - mountPath: "/etc/kubernetes/certs"
-            name: certs
-            readOnly: true
         args:
           - --domain=${config['template.substitutions']['dns_service_domain']}.local.
           - --dns-port=10053
@@ -125,7 +122,4 @@ spec:
       - name: kubeconfig
         hostPath:
           path: "/etc/kubernetes/kubeconfig"
-      - name: certs
-        hostPath:
-          path: "/etc/kubernetes/certs"
     dnsPolicy: Default

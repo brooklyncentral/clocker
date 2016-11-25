@@ -36,9 +36,6 @@ spec:
           - mountPath: "/etc/kubernetes/kubeconfig"
             name: kubeconfig
             readOnly: true
-          - mountPath: "/etc/kubernetes/certs"
-            name: certs
-            readOnly: true
         env:
           - name: KUBECONFIG
             value: "/etc/kubernetes/kubeconfig"
@@ -52,9 +49,6 @@ spec:
         - name: kubeconfig
           hostPath:
             path: "/etc/kubernetes/kubeconfig"
-        - name: certs
-          hostPath:
-            path: "/etc/kubernetes/certs"
 ---
 kind: Service
 apiVersion: v1
