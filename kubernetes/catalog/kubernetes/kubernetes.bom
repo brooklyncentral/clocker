@@ -563,7 +563,6 @@ brooklyn.catalog:
           brooklyn.config:
             etcd.endpoints: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
             flannel.network: $brooklyn:entity("kubernetes-cluster").config("kubernetes.pod.cidr")
-            flannel.transport: "vxlan"
         - type: docker-engine-with-resilience
           id: docker-engine
           name: "docker-engine"
