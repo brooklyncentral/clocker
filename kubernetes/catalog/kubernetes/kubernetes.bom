@@ -184,7 +184,7 @@ brooklyn.catalog:
         - name: kubernetes.cluster.name
           label: "Kubernetes Cluster Name"
           type: string
-          default: "amp"
+          default: "clocker"
         - name: kubernetes.version
           label: "Kubernetes Version"
           type: string
@@ -254,6 +254,12 @@ brooklyn.catalog:
             propagating:
               - $brooklyn:sensor("kubernetes.url")
               - $brooklyn:sensor("kubernetes.endpoint")
+        - type: org.apache.brooklyn.enricher.stock.Propagator
+          brooklyn.config:
+            uniqueTag: kubeconfig-yaml-propagator
+            producer: $brooklyn:entity("kubernetes-master-cluster")
+            propagating:
+              - $brooklyn:sensor("kubernetes.kubeconfig.yaml")
 
       brooklyn.children:
         - type: haproxy-load-balancer
@@ -319,6 +325,20 @@ brooklyn.catalog:
                 producer: $brooklyn:entity("kubernetes-master-load-balancer")
                 propagating:
                   - $brooklyn:sensor("kubernetes.url")
+            - type: org.apache.brooklyn.enricher.stock.Aggregator
+              brooklyn.config:
+                uniqueTag: kubeconfig-yaml-aggregator
+                enricher.sourceSensor: $brooklyn:sensor("kubernetes.kubeconfig.yaml")
+                enricher.targetSensor: $brooklyn:sensor("kubernetes.kubeconfig.list")
+                enricher.aggregating.fromMembers: true
+            - type: org.apache.brooklyn.enricher.stock.Joiner
+              brooklyn.config:
+                uniqueTag: kubeconfig-yaml-joiner
+                enricher.sourceSensor: $brooklyn:sensor("kubernetes.kubeconfig.list")
+                enricher.targetSensor: $brooklyn:sensor("kubernetes.kubeconfig.yaml")
+                enricher.joiner.quote: false
+                enricher.joiner.minimum: 1
+                enricher.joiner.maximum: 1
           brooklyn.config:
             cluster.initial.size: $brooklyn:entity("kubernetes-cluster").config("kubernetes.master.size")
             dynamiccluster.quarantineFailedEntities:
@@ -630,6 +650,13 @@ brooklyn.catalog:
             command: |
               kubectl get node ${HOST_SUBNET_ADDRESS} -o jsonpath='{range @.status.conditions[*]}{@.type}={@.status}
               ' | grep True | cut -d= -f1
+        - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+          brooklyn.config:
+            name: kubernetes.kubeconfig.yaml
+            description: |
+              Returns contents of a kubeconfig YAML file
+            command: |
+              kubectl config view --output=yaml --flatten=true --minify=true
         - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
           brooklyn.config:
             name: kubectl
