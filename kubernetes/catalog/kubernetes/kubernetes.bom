@@ -240,6 +240,14 @@ brooklyn.catalog:
             Value is duration in milliseconds.
           type: long
           default: 900000
+        - name: kubernetes.pods.spec
+          label: Kubernetes Pods Spec
+          description: |
+            An EntitySpec for the set of Kubernetes Pods to create initially
+          type: org.apache.brooklyn.api.entity.EntitySpec
+          default:
+            $brooklyn:entitySpec:
+              type: kubernetes-default-pods
 
       brooklyn.enrichers:
         - type: org.apache.brooklyn.enricher.stock.Propagator
@@ -340,24 +348,14 @@ brooklyn.catalog:
                         sudo -E calicoctl pool add ${FLANNEL_NETWORK} --nat-outgoing
                       checkRunning.command: |
                         sudo -E calicoctl pool show --ipv4 | grep "${FLANNEL_NETWORK}"
-                  - type: empty-software-process
+                  - type: conditional-entity
                     id: kubernetes-pods
                     name: "kubernetes-pods"
                     brooklyn.config:
+                      conditional.entity.create: true
+                      conditional.entity.propagate: false
+                      conditional.entity.spec: $brooklyn:entity("kubernetes-cluster").config("kubernetes.pods.spec")
                       start.latch: $brooklyn:entity("kubernetes-pods").sibling("kube-apiserver").attributeWhenReady("service.isUp")
-                    brooklyn.children:
-                      - type: calico-policy-controller-pod
-                        id: calico-policy-controller
-                        name: "calico-policy-controller"
-                      - type: kube-dns-pod
-                        id: kube-dns
-                        name: "kube-dns"
-                      - type: kubernetes-dashboard-pod
-                        id: kubernetes-dashboard
-                        name: "kubernetes-dashboard"
-                      - type: prometheus-pod
-                        id: prometheus
-                        name: "prometheus"
             dynamiccluster.memberspec:
               $brooklyn:entitySpec:
                 type: kubernetes-master
