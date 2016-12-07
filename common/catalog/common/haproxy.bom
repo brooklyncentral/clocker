@@ -74,10 +74,16 @@ brooklyn.catalog:
             sudo cp haproxy /usr/bin
 
           customize.command: |
+            if [ "${HAPROXY_PROTOCOL}" == "http" ]; then
+              mode="http"
+            else
+              mode="tcp"
+            fi
             cat > haproxy.conf <<-EOF
             global
               daemon
-              maxconn 256
+              quiet
+              maxconn 1024
               pidfile ${PID_FILE}
             defaults
               option http-server-close
@@ -88,9 +94,7 @@ brooklyn.catalog:
               bind *:${HAPROXY_PORT} ${HAPROXY_BIND_OPTIONS}
               reqadd X-Forwarded-Proto:\ ${HAPROXY_PROTOCOL}
               default_backend servers
-              mode tcp
-              option tcplog
-              log 127.0.0.1 syslog
+              mode ${mode}
             EOF
             echo "backend servers" > servers.conf
 
