@@ -275,12 +275,12 @@ brooklyn.catalog:
               brooklyn.config:
                 uniqueTag: master-cluster-endpoint-publisher
                 enricher.triggerSensors:
-                  - $brooklyn:sensor("host.address")
+                  - $brooklyn:sensor("host.name")
                 enricher.targetSensor: $brooklyn:sensor("kubernetes.endpoint")
                 enricher.targetValue:
                   $brooklyn:formatString:
                     - "%s:%d"
-                    - $brooklyn:attributeWhenReady("host.address")
+                    - $brooklyn:attributeWhenReady("host.name")
                     - $brooklyn:config("haproxy.port")
             - type: org.apache.brooklyn.enricher.stock.Transformer
               brooklyn.config:
