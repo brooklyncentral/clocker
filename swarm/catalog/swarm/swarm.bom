@@ -3,7 +3,7 @@ brooklyn.catalog:
   publish:
     description: |
       Resources for working with Docker Swarm from Apache Brooklyn
-    license_code: APACHE-2.0
+    license_code: Apache-2.0
     overview: README.md
     qa: tests/swarm.tests.bom
 
