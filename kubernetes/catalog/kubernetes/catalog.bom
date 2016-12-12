@@ -1,5 +1,6 @@
 brooklyn.catalog:
   items:
+    - classpath://io.brooklyn.clocker.kubernetes:kubernetes/brooklyn-dns-etc-hosts-generator.bom
     - classpath://io.brooklyn.etcd.brooklyn-etcd:brooklyn-etcd/catalog.bom
     - classpath://io.brooklyn.clocker.common:docker/catalog.bom
     - classpath://io.brooklyn.clocker.common:common/haproxy.bom

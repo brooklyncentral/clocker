@@ -34,6 +34,25 @@
         <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
+                <artifactId>wagon-maven-plugin</artifactId>
+                <version>1.0</version>
+                <executions>
+                    <execution>
+                        <id>download-dns-bom</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>download-single</goal>
+                        </goals>
+                        <configuration>
+                            <url>https://raw.githubusercontent.com/brooklyncentral/brooklyn-dns/master/</url>
+                            <fromFile>brooklyn-dns-etc-hosts-generator.bom</fromFile>
+                            <toFile>${project.build.directory}/classes/kubernetes/brooklyn-dns-etc-hosts-generator.bom</toFile>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
                 <version>1.12</version>
                 <executions>
