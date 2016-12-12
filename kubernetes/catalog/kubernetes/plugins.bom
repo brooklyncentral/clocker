@@ -12,7 +12,7 @@ brooklyn.catalog:
     description: |
       The Flannel virtual network agent
     itemType: entity
-    iconUrl: https://www.tigera.io/wp-content/uploads/flannel-logo@2x.png
+    iconUrl: classpath://io.brooklyn.clocker.kubernetes:icons/flannel.png
     item:
       type: child-software-process
       name: "flannel-network-agent"
@@ -110,7 +110,7 @@ brooklyn.catalog:
           }
           EOF
           etcdctl --peers ${ETCD_ENDPOINTS} mk ${FLANNEL_ETCD_PREFIX}/config < flannel.json || etcdctl --peers ${ETCD_ENDPOINTS} get ${FLANNEL_ETCD_PREFIX}/config
-          
+
           sudo -E tee /etc/systemd/system/flannel.service <<-EOF
           [Unit]
           Description=Flannel Overlay Agent
@@ -161,7 +161,7 @@ brooklyn.catalog:
     description: |
       The Project Calico plugin for CNI
     itemType: entity
-    iconUrl: https://www.projectcalico.org/wp-content/uploads/2015/03/Project-Calico-logo-456x456-no-text.png
+    iconUrl: classpath://io.brooklyn.clocker.kubernetes:icons/calico.png
     item:
       type: child-software-process
       name: "calico-network-plugin"

@@ -40,7 +40,7 @@ brooklyn.catalog:
 
         Uses a CentOS 7.x Virtual Machine
       itemType: entity
-      iconUrl: https://raw.githubusercontent.com/docker-library/docs/c4df0024e2cad985326dc38f6b6ce39abeab59c5/centos/logo.png
+      iconUrl: classpath://io.brooklyn.clocker.common:icons/centos.png
       item:
         type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
         id: centos-software-process
