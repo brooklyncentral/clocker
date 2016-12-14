@@ -14,6 +14,10 @@
     <artifactId>clocker-kubernetes</artifactId>
     <packaging>jar</packaging>
 
+    <properties>
+        <brooklyn-dns.version>0.1.2</brooklyn-dns.version> <!-- BROOKLYN_DNS_VERSION -->
+    </properties>
+
     <build>
         <resources>
             <resource>
@@ -44,7 +48,7 @@
                             <goal>download-single</goal>
                         </goals>
                         <configuration>
-                            <url>https://raw.githubusercontent.com/brooklyncentral/brooklyn-dns/master/</url>
+                            <url>https://github.com/brooklyncentral/brooklyn-dns/releases/download/v${brooklyn-dns.version}</url>
                             <fromFile>brooklyn-dns-etc-hosts-generator.bom</fromFile>
                             <toFile>${project.build.directory}/classes/kubernetes/brooklyn-dns-etc-hosts-generator.bom</toFile>
                         </configuration>
