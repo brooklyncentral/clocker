@@ -21,6 +21,10 @@
                 <filtering>false</filtering>
             </resource>
             <resource>
+                <directory>resources</directory>
+                <filtering>false</filtering>
+            </resource>
+            <resource>
                 <directory>tests</directory>
                 <filtering>false</filtering>
                 <targetPath>tests</targetPath>

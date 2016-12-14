@@ -12,7 +12,7 @@ brooklyn.catalog:
       description: |
         Creates a cluster of Docker engines for use with Amazon ECS
       itemType: template
-      iconUrl: https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/AWS_Simple_Icons_Compute_ECS.svg/240px-AWS_Simple_Icons_Compute_ECS.svg.png
+      iconUrl: classpath://io.brooklyn.clocker.ecs:icons/ecs.png
       item:
         services:
           - type: ecs-cluster
@@ -22,7 +22,7 @@ brooklyn.catalog:
       description: |
         Creates a cluster of Docker engines for use with Amazon ECS
       itemType: entity
-      iconUrl: https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/AWS_Simple_Icons_Compute_ECS.svg/240px-AWS_Simple_Icons_Compute_ECS.svg.png
+      iconUrl: classpath://io.brooklyn.clocker.ecs:icons/ecs.png
       item:
         type: org.apache.brooklyn.entity.stock.BasicApplication
 
@@ -154,7 +154,7 @@ brooklyn.catalog:
       description: |
         A docker-engine customised with the ECS agent
       itemType: entity
-      iconUrl: https://raw.githubusercontent.com/docker-library/docs/c350af05d3fac7b5c3f6327ac82fe4d990d8729c/docker/logo.png
+      iconUrl: classpath://io.brooklyn.clocker.common:icons/docker.png
       item:
         type: docker-engine
 
@@ -194,84 +194,93 @@ brooklyn.catalog:
                   enabled: $brooklyn:config("docker.sharedsecuritygroup.create")
 
         brooklyn.children:
-          - type: child-software-process
+          - type: ecs-agent
             id: ecs-agent
             name: "ecs-agent"
 
-            brooklyn.parameters:
-              - name: ecs.agent.version
-                label: "ECS Agent Version"
-                type: string
-                default: "1.13.0"
-              - name: ecs.cluster.name
-                label: "ECS Cluster Name"
-                description: |
-                  The name of the ECS cluster
-                type: string
-                default: "clocker"
+    - id: ecs-agent
+      name: "ECS Agent"
+      description: |
+        The ECS agent Docker container
+      itemType: entity
+      iconUrl: classpath://io.brooklyn.clocker.ecs:icons/ecs.png
+      item:
+        type: child-software-process
 
+        brooklyn.parameters:
+          - name: ecs.agent.version
+            label: "ECS Agent Version"
+            type: string
+            default: "1.13.0"
+          - name: ecs.cluster.name
+            label: "ECS Cluster Name"
+            description: |
+              The name of the ECS cluster
+            type: string
+            default: "clocker"
+
+        brooklyn.config:
+          shell.env:
+            ECS_AGENT_VERSION: $brooklyn:config("ecs.agent.version")
+            ECS_CLUSTER_NAME: $brooklyn:config("ecs.cluster.name")
+
+          install.command: |
+            sudo yum install -y jq
+            sudo mkdir -p /var/log/ecs
+            sudo mkdir -p /var/lib/ecs/data
+            sudo sysctl -w net.ipv4.conf.all.route_localnet=1
+            sudo iptables -t nat -A PREROUTING \
+              -p tcp -d 169.254.170.2 --dport 80 \
+              -j DNAT --to-destination 127.0.0.1:51679
+            sudo iptables -t nat -A OUTPUT \
+              -d 169.254.170.2 -p tcp -m tcp \
+              --dport 80 -j REDIRECT --to-ports 51679
+
+          launch.command: |
+            docker run --name ecs-agent \
+              --detach=true \
+              --restart=on-failure:10 \
+              --volume=/var/run/docker.sock:/var/run/docker.sock \
+              --volume=/var/log/ecs/:/log \
+              --volume=/var/lib/ecs/data:/data \
+              --net=host \
+              --env=ECS_LOGFILE=/log/ecs-agent.log \
+              --env=ECS_LOGLEVEL=info \
+              --env=ECS_DATADIR=/data \
+              --env=ECS_CLUSTER=${ECS_CLUSTER_NAME} \
+              --env=ECS_ENABLE_TASK_IAM_ROLE=true \
+              --env=ECS_ENABLE_TASK_IAM_ROLE_NETWORK_HOST=true \
+              amazon/amazon-ecs-agent:v${ECS_AGENT_VERSION}
+
+          checkRunning.command: |
+            [[ $(docker inspect --format "{{ .State.Running }}" ecs-agent) == "true" ]]
+
+        brooklyn.initializers:
+          - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
             brooklyn.config:
-              shell.env:
-                ECS_AGENT_VERSION: $brooklyn:config("ecs.agent.version")
-                ECS_CLUSTER_NAME: $brooklyn:config("ecs.cluster.name")
-
-              install.command: |
-                sudo yum install -y jq
-                sudo mkdir -p /var/log/ecs
-                sudo mkdir -p /var/lib/ecs/data
-                sudo sysctl -w net.ipv4.conf.all.route_localnet=1
-                sudo iptables -t nat -A PREROUTING \
-                  -p tcp -d 169.254.170.2 --dport 80 \
-                  -j DNAT --to-destination 127.0.0.1:51679
-                sudo iptables -t nat -A OUTPUT \
-                  -d 169.254.170.2 -p tcp -m tcp \
-                  --dport 80 -j REDIRECT --to-ports 51679
-
-              launch.command: |
-                docker run --name ecs-agent \
-                  --detach=true \
-                  --restart=on-failure:10 \
-                  --volume=/var/run/docker.sock:/var/run/docker.sock \
-                  --volume=/var/log/ecs/:/log \
-                  --volume=/var/lib/ecs/data:/data \
-                  --net=host \
-                  --env=ECS_LOGFILE=/log/ecs-agent.log \
-                  --env=ECS_LOGLEVEL=info \
-                  --env=ECS_DATADIR=/data \
-                  --env=ECS_CLUSTER=${ECS_CLUSTER_NAME} \
-                  --env=ECS_ENABLE_TASK_IAM_ROLE=true \
-                  --env=ECS_ENABLE_TASK_IAM_ROLE_NETWORK_HOST=true \
-                  amazon/amazon-ecs-agent:v${ECS_AGENT_VERSION}
-
-              checkRunning.command: |
-                [[ $(docker inspect --format "{{ .State.Running }}" ecs-agent) == "true" ]]
-
-            brooklyn.initializers:
-              - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
-                brooklyn.config:
-                  name: ecs.agent.version
-                  description: |
-                    ECS installed version details
-                  targetType: string
-                  command: |
-                    curl http://localhost:51678/v1/metadata |
-                      jq '.Version'
-              - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
-                brooklyn.config:
-                  name: ecs.instance.arn
-                  description: |
-                    ECS instance ARN identifier
-                  targetType: string
-                  command: |
-                    curl http://localhost:51678/v1/metadata |
-                      jq '.ContainerInstanceArn'
-              - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
-                brooklyn.config:
-                  name: ecs.tasks.count
-                  description: |
-                    ECS task count for the instance
-                  targetType: integer
-                  command: |
-                    curl http://localhost:51678/v1/tasks |
-                      jq '.Tasks[] | .Arn' ~/tmp/ecs/tasks.json |
-                      wc -l
+              name: ecs.agent.version
+              description: |
+                ECS installed version details
+              targetType: string
+              command: |
+                curl http://localhost:51678/v1/metadata |
+                  jq '.Version'
+          - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+            brooklyn.config:
+              name: ecs.instance.arn
+              description: |
+                ECS instance ARN identifier
+              targetType: string
+              command: |
+                curl http://localhost:51678/v1/metadata |
+                  jq '.ContainerInstanceArn'
+          - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+            brooklyn.config:
+              name: ecs.tasks.count
+              description: |
+                ECS task count for the instance
+              targetType: integer
+              command: |
+                curl http://localhost:51678/v1/tasks |
+                  jq '.Tasks[] | .Arn' ~/tmp/ecs/tasks.json |
+                  wc -l
