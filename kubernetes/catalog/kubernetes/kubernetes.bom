@@ -25,6 +25,9 @@ brooklyn.catalog:
       Kubernetes cluster with a master node and worker nodes
     iconUrl: https://pbs.twimg.com/media/Bt_pEfqCAAAiVyz.png
     itemType: entity
+    version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+    publish:      
+      license_code: APACHE-2.0
     item:
       type: org.apache.brooklyn.entity.stock.BasicApplication
 
