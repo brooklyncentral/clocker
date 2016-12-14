@@ -27,7 +27,7 @@ brooklyn.catalog:
     iconUrl: https://raw.githubusercontent.com/docker-library/docs/471fa6e4cb58062ccbf91afc111980f9c7004981/swarm/logo.png
     version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
     publish:      
-      license_code: APACHE-2.0
+      license_code: Apache-2.0
     item:
       type: org.apache.brooklyn.entity.stock.BasicApplication
 
