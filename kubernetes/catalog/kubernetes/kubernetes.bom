@@ -508,6 +508,11 @@ brooklyn.catalog:
             sudo yum install -y net-tools traceroute telnet bash-completion
           fi
 
+          # Ensure firewalld is not running
+          sudo yum install -y iptables-services
+          sudo systemctl stop firewalld || true
+          sudo systemctl disable firewalld || true
+
         install.command: |
           sudo yum install -y wget
           wget ${KUBECTL_DOWNLOAD_URL}
