@@ -91,6 +91,9 @@ brooklyn.catalog:
           brooklyn.config:
             cluster.initial.size: $brooklyn:parent().config("etcd.initial.size")
             etcd.cluster.name: "clocker"
+            provisioning.properties:
+              osFamily: centos
+              osVersionRegex: 7
             etcd.node.spec:
               $brooklyn:entitySpec:
                 type: etcd-node
