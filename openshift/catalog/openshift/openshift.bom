@@ -2,188 +2,232 @@ brooklyn.catalog:
   version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
   publish:
     description: |
-      Resources for working with OpenShift Origin from Apache Brooklyn
+      Resources for working with OpenShift Origin using Ansible from Apache Brooklyn
     license_code: APACHE-2.0
 
   items:
-    - id: openshift-origin-cluster-template
+    - https://github.com/brooklyncentral/brooklyn-dns/releases/download/v0.1.2/brooklyn-dns-etc-hosts-generator.bom
+
+    - id: openshift-origin-ansible-template
       name: "OpenShift Origin Cluster"
       description: |
-        OpenShift Origin cluster with a single master node and worker nodes
+        OpenShift Origin cluster deployment using Ansible
       iconUrl: https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/OpenShift-LogoType.svg/225px-OpenShift-LogoType.svg.png
       itemType: template
       item:
         services:
-          - type: openshift-origin-cluster-application
-            id: openshift-origin-cluster-application
-            name: "openshift-origin-cluster-application"
+          - type: openshift-origin-ansible
+            id: openshift-origin-ansible
+            name: "openshift-origin-ansible"
 
-    - id: openshift-origin-cluster-application
+    - id: openshift-hosts-file-generator
+      name: "OpenShift Hosts File Generator"
+      description: |
+        OpenShift /etc/hosts file generator
+      itemType: entity
+      item:
+        type: brooklyn-dns-etc-hosts-generator
+        brooklyn.config:
+          brooklyn_dns.domain: "openshift.local"
+          brooklyn_dns.hosts.address.sensor: "host.address"
+          dynamicgroup.entityfilter:
+            $brooklyn:object:
+              type: com.google.common.base.Predicates
+              factoryMethod.name: "and"
+              factoryMethod.args:
+                - $brooklyn:object:
+                    type: org.apache.brooklyn.core.entity.EntityPredicates
+                    factoryMethod.name: "applicationIdEqualTo"
+                    factoryMethod.args:
+                      - $brooklyn:attributeWhenReady("application.id")
+                - $brooklyn:object:
+                    type: org.apache.brooklyn.core.entity.EntityPredicates
+                    factoryMethod.name: "displayNameSatisfies"
+                    factoryMethod.args:
+                      - $brooklyn:object:
+                          type: com.google.common.base.Predicates
+                          factoryMethod.name: "in"
+                          factoryMethod.args:
+                            - [ "openshift-master", "openshift-node", "etcd-node", "ansible-server" ]
+
+    - id: docker-engine-with-insecure-registry
+      name: "Docker Engine with insecure registry"
+      description: |
+        A docker-engine customised to allow access to non-TLS secured registry
+        for OpenShift use.
+      itemType: entity
+      iconUrl: https://raw.githubusercontent.com/docker-library/docs/c350af05d3fac7b5c3f6327ac82fe4d990d8729c/docker/logo.png
+      item:
+        type: docker-engine
+
+        brooklyn.config:
+          docker.additionaloptions: "--selinux-enabled --insecure-registry 172.30.0.0/16"
+
+    - id: openshift-origin-ansible
       name: "OpenShift Origin Cluster"
-      description: |
-        OpenShift Origin cluster with a single master node and worker nodes
-      iconUrl: https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/OpenShift-LogoType.svg/225px-OpenShift-LogoType.svg.png
       itemType: entity
+      version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+      publish:
+        license_code: Apache-2.0
       item:
-        type: kubernetes-cluster-application
+        type: org.apache.brooklyn.entity.stock.BasicApplication
 
         brooklyn.parameters:
-          # Duplicated parameters for UI visibility
-          - name: openshift.version
-            label: "OpenShift Version"
+          - name: openshift.master.size
+            label: "Master Cluster Size"
             description: |
-              The version of OpenShift Origin that will be deployed
-            type: string
-            default: "1.3.1"
-          - name: kubernetes.cluster.name
-            label: "Kubernetes Cluster Name"
-            type: string
-            default: "openshift"
-
-        brooklyn.config:
-          kubernetes.master.size: 1
-          etcd.initial.size: 1
-          kubernetes.pods.spec:
-            $brooklyn:entitySpec:
-              type: kubernetes-openshift-pods
-
-    - id: openshift-origin
-      name: "OpenShift Origin"
-      description: |
-        OpenShift Origin
-      itemType: entity
-      iconUrl: https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/OpenShift-LogoType.svg/225px-OpenShift-LogoType.svg.png
-      item:
-        type: empty-software-process
-
-        brooklyn.parameters:
-          - name: openshift.version
-            label: "OpenShift Version"
-            description: |
-              The version of OpenShift Origin that will be deployed
-            type: string
-            default: "1.3.1"
-          - name: openshift.master.port
-            label: "OpenShift Master Port"
-            description: |
-              The port number for OpenShift master to bind to
+              Size of the OpenShift master cluster when created initially
             type: integer
-            default: 8443
-          - name: openshift.master.protocol
-            label: "OpenShift Master Protocol"
+            default: 2
+          - name: openshift.initial.size
+            label: "Worker Cluster Size"
             description: |
-              The protocol for OpenShift master to use
-            type: string
-            default: "https"
+              Size of the OpenShift worker cluster when created initially
+            type: integer
+            default: 2
+          - name: etcd.initial.size
+            label: "Etcd Cluster Size"
+            type: integer
+            default: 3
 
         brooklyn.config:
-          kubernetes.pod.name: "openshift-origin"
-          kubernetes.pod.namespace: "openshift"
-          openshift.master.port:
-            $brooklyn:entity("kubernetes-master").config("kubernetes.apiserver.port")
-          openshift.master.protocol: "http"
+          provisioning.properties:
+            osFamily: centos
+            osVersionRegex: 7
+          start.timeout: 30m
 
         brooklyn.children:
-          - type: kubernetes-pod
-            id: openshift-service
-            name: "openshift-service"
-            description: |
-              OpenShift Origin service
+          - type: openshift-hosts-file-generator
+            id: brooklyn-dns-etc-hosts-generator
+            name: "brooklyn-dns-etc-hosts-generator"
+
+          # - type: ca-server
+          #   id: ca-server
+          #   name: "ca-server"
+          #   brooklyn.config:
+          #     common.name: "Kubernetes"
+
+          - type: openshift-origin-cluster
+            id: openshift-origin-cluster
+            name: "openshift-origin-cluster"
+
+          - type: ansible-server
+            id: ansible-server
+            name: "ansible-server"
 
             brooklyn.config:
-              kubernetes.pod.file: "classpath://io.brooklyn.clocker.kubernetes:openshift/openshift-service.yaml"
-
-              openshift.version: $brooklyn:parent().config("openshift.version")
-
-              checkRunning.command: |
-                kubectl get service --namespace=${NAMESPACE} -l app=${NAME} -o wide |
-                  grep "${NAME}"
-
-          - type: child-software-process
-            id: openshift-config
-            name: "openshift-config"
-            brooklyn.config:
-              start.latch: $brooklyn:sibling("openshift-service").attributeWhenReady("service.isUp")
-
-              shell.env:
-                OPENSHIFT_VERSION: $brooklyn:parent().config("openshift.version")
-                OPENSHIFT_CONFIG:
-                  $brooklyn:formatString:
-                    - "%s/config"
-                    - $brooklyn:attributeWhenReady("run.dir")
-                KUBERNETES_URL:
-                  $brooklyn:entity("kubernetes-master-load-balancer").attributeWhenReady("kubernetes.url")
-                OPENSHIFT_URL:
-                  $brooklyn:formatString:
-                    - "%s://localhost:%d"
-                    - $brooklyn:config("openshift.master.protocol")
-                    - $brooklyn:config("openshift.master.port")
-                OPENSHIFT_BIND_URL:
-                  $brooklyn:formatString:
-                    - "%s://0.0.0.0:%d"
-                    - $brooklyn:config("openshift.master.protocol")
-                    - $brooklyn:config("openshift.master.port")
-                OPENSHIFT_PUBLIC_URL:
-                  $brooklyn:formatString:
-                    - "%s://%s:%d"
-                    - $brooklyn:config("openshift.master.protocol")
-                    - $brooklyn:attributeWhenReady("host.address")
-                    - $brooklyn:sibling("openshift-service").attributeWhenReady("kubernetes.service.port")
-                ETCD_URLS: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
-                NAMESPACE: $brooklyn:config("kubernetes.pod.namespace")
-
-              customize.command: |
-                mkdir -p ${OPENSHIFT_CONFIG}
+              resources.preinstall.latch:
+                $brooklyn:sibling("openshift-origin-cluster").attributeWhenReady("service.isUp")
+              templates.preinstall:
+                "classpath://io.brooklyn.clocker.openshift:openshift/inventory": inventory
+              install.command: |
+                sudo yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+                sudo sed -i -e "s/^enabled=1/enabled=0/" /etc/yum.repos.d/epel.repo
+                sudo yum -y --enablerepo=epel install ansible pyOpenSSL
+                cd ~
+                git clone https://github.com/openshift/openshift-ansible
               launch.command: |
-                ETCD_URL=$(echo ${ETCD_URLS} | cut -d, -f1)
-                docker run --privileged \
-                  -e KUBECONFIG=/kubeconfig \
-                  -v /etc/kubernetes/kubeconfig:/kubeconfig \
-                  -v ${OPENSHIFT_CONFIG}:/config \
-                  openshift/origin:v${OPENSHIFT_VERSION} start master \
-                    --write-config=/config \
-                    --listen=${OPENSHIFT_BIND_URL} \
-                    --master=${KUBERNETES_URL} \
-                    --public-master=${OPENSHIFT_PUBLIC_URL} \
-                    --kubeconfig=/kubeconfig \
-                    --etcd=${ETCD_URL}
-                sudo -E chown -R ${USER} ${OPENSHIFT_CONFIG}
-                docker run --privileged \
-                  -e KUBECONFIG=/kubeconfig \
-                  -v /etc/kubernetes/kubeconfig:/kubeconfig \
-                  -v ${OPENSHIFT_CONFIG}:/config \
-                  openshift/origin:v${OPENSHIFT_VERSION} cli secrets \
-                    new openshift-config /config \
-                    -o json &> ${RUN_DIR}/secret.json
-                kubectl create -f ${RUN_DIR}/secret.json --namespace=${NAMESPACE}
+                cd ~/openshift-ansible
+                ansible-playbook playbooks/byo/config.yml --inventory ${INSTALL_DIR}/inventory
               checkRunning.command: |
-                kubectl get secret --namespace=${NAMESPACE} |
-                  grep "openshift-config"
+                which ansible-playbook
+              stop.command: |
+                cd ~/openshift-ansible
+                ansible-playbook playbooks/adhoc/uninstall.yml --inventory ${INSTALL_DIR}/inventory
 
-          - type: kubernetes-pod
-            id: openshift-controller
-            name: "openshift-controller"
-            description: |
-              OpenShift Origin controller
+            brooklyn.enrichers:
+              - type: org.apache.brooklyn.enricher.stock.Propagator
+                brooklyn.config:
+                  producer: $brooklyn:entity("openshift-masters")
+                  sensorMapping:
+                    $brooklyn:sensor("hosts.map"): $brooklyn:sensor("master.hosts.map")
+              - type: org.apache.brooklyn.enricher.stock.Propagator
+                brooklyn.config:
+                  producer: $brooklyn:entity("etcd-nodes")
+                  sensorMapping:
+                    $brooklyn:sensor("hosts.map"): $brooklyn:sensor("etcd.hosts.map")
+              - type: org.apache.brooklyn.enricher.stock.Propagator
+                brooklyn.config:
+                  producer: $brooklyn:entity("openshift-nodes")
+                  sensorMapping:
+                    $brooklyn:sensor("hosts.map"): $brooklyn:sensor("node.hosts.map")
 
-            brooklyn.config:
-              start.latch: $brooklyn:sibling("openshift-config").attributeWhenReady("service.isUp")
-
-              kubernetes.pod.file: "classpath://io.brooklyn.clocker.kubernetes:openshift/openshift-controller.yaml"
-
-              openshift.version: $brooklyn:parent().config("openshift.version")
-
-    - id: kubernetes-openshift-pods
-      name: "Kubernetes OpenShift Pods"
-      description: |
-        OpenShift Origin pod added to the default Kubernetes pods to launch at startup
+    - id: openshift-origin-ansible
+      name: "OpenShift Origin Cluster"
       itemType: entity
+      version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+      publish:
+        license_code: Apache-2.0
       item:
-        type: kubernetes-default-pods
-        id: kubernetes-openshift-pods
-        name: "kubernetes-openshift-pods"
+        type: org.apache.brooklyn.entity.stock.BasicApplication
+
+        brooklyn.parameters:
+          - name: openshift.master.size
+            label: "Master Cluster Size"
+            description: |
+              Size of the OpenShift master cluster when created initially
+            type: integer
+            default: 2
+          - name: openshift.initial.size
+            label: "Worker Cluster Size"
+            description: |
+              Size of the OpenShift worker cluster when created initially
+            type: integer
+            default: 2
+          - name: etcd.initial.size
+            label: "Etcd Cluster Size"
+            type: integer
+            default: 3
 
         brooklyn.children:
-          - type: openshift-origin
-            id: openshift-origin
-            name: "openshift-origin"
+          - type: cluster
+            id: openshift-masters
+            brooklyn.config:
+              cluster.initial.size: $brooklyn:parent().config("openshift.master.size")
+              memberSpec:
+                $brooklyn:entitySpec:
+                  type: docker-engine-with-insecure-registry
+                  id: openshift-master
+                  name: "openshift-master"
+            brooklyn.enrichers:
+              - type: org.apache.brooklyn.enricher.stock.MapAggregator
+                brooklyn.config:
+                  enricher.keySensor: $brooklyn:sensor("entity.id")
+                  enricher.valueSensor: $brooklyn:sensor("host.address")
+                  enricher.targetSensor: $brooklyn:sensor("host.map")
+                  enricher.aggregating.fromMembers: true
+                  enricher.aggregator.excludeBlank: true
+          - type: cluster
+            id: etcd-nodes
+            brooklyn.config:
+              cluster.initial.size: $brooklyn:parent().config("etcd.initial.size")
+              memberSpec:
+                $brooklyn:entitySpec:
+                  type: centos-server
+                  id: etcd-node
+                  name: "etcd-node"
+            brooklyn.enrichers:
+              - type: org.apache.brooklyn.enricher.stock.MapAggregator
+                brooklyn.config:
+                  enricher.keySensor: $brooklyn:sensor("entity.id")
+                  enricher.valueSensor: $brooklyn:sensor("host.address")
+                  enricher.targetSensor: $brooklyn:sensor("host.map")
+                  enricher.aggregating.fromMembers: true
+                  enricher.aggregator.excludeBlank: true
+          - type: cluster
+            id: openshift-nodes
+            brooklyn.config:
+              cluster.initial.size: $brooklyn:parent().config("openshift.initial.size")
+              memberSpec:
+                $brooklyn:entitySpec:
+                  type: docker-engine-with-insecure-registry
+                  id: openshift-node
+                  name: "openshift-node"
+            brooklyn.enrichers:
+              - type: org.apache.brooklyn.enricher.stock.MapAggregator
+                brooklyn.config:
+                  enricher.keySensor: $brooklyn:sensor("entity.id")
+                  enricher.valueSensor: $brooklyn:sensor("host.address")
+                  enricher.targetSensor: $brooklyn:sensor("host.map")
+                  enricher.aggregating.fromMembers: true
+                  enricher.aggregator.excludeBlank: true

@@ -6,14 +6,9 @@ description: |
   Deploys on CentOS 7 VMs in SoftLayer, on a single VLAN segment.
 
 location:
-  jclouds:softlayer:
-    region: ams01
+  jclouds:aws-ec2:
+    region: eu-west-1
     privateKeyFile: "~/.ssh/softlayer.pem"
-    customizers:
-      - $brooklyn:object:
-          type: org.apache.brooklyn.location.jclouds.softlayer.SoftLayerSameVlanLocationCustomizer
-          brooklyn.config:
-            softlayer.vlan.scopeUid: "openshift"
 
 services:
   - type: openshift-origin-cluster-application
