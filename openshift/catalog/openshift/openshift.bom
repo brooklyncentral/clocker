@@ -91,9 +91,6 @@ brooklyn.catalog:
             default: 3
 
         brooklyn.config:
-          provisioning.properties:
-            osFamily: centos
-            osVersionRegex: 7
           start.timeout: 30m
 
         brooklyn.children:
@@ -111,7 +108,7 @@ brooklyn.catalog:
             id: openshift-origin-cluster
             name: "openshift-origin-cluster"
 
-          - type: ansible-server
+          - type: centos7-software-process
             id: ansible-server
             name: "ansible-server"
 
@@ -205,7 +202,7 @@ brooklyn.catalog:
               cluster.initial.size: $brooklyn:parent().config("etcd.initial.size")
               memberSpec:
                 $brooklyn:entitySpec:
-                  type: centos-server
+                  type: centos7-software-process
                   id: etcd-node
                   name: "etcd-node"
             brooklyn.enrichers:
