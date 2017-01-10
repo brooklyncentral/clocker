@@ -38,13 +38,13 @@ openshift_clock_enabled=true
 
 # host group for masters
 [masters]
-[#list attribute['master.host.map']?keys as hostname]
+[#list attribute['master.hosts.map']?keys as hostname]
 ${hostname}.openshift.local
 [/#list]
 
 # host group for etcd
 [etcd]
-[#list attribute['etcd.host.map']?keys as hostname]
+[#list attribute['etcd.hosts.map']?keys as hostname]
 ${hostname}.openshift.local
 [/#list]
 
@@ -54,9 +54,9 @@ ${hostname}.openshift.local
 
 # host group for nodes, includes region info
 [nodes]
-[#list attribute['master.host.map']?keys as hostname]
+[#list attribute['master.hosts.map']?keys as hostname]
 ${hostname}.openshift.local openshift_node_labels="{'region': 'infra', 'zone': 'default'}"
 [/#list]
-[#list attribute['node.host.map']?keys as hostname]
+[#list attribute['node.hosts.map']?keys as hostname]
 ${hostname}.openshift.local openshift_node_labels="{'region': 'primary', 'zone': 'default'}"
 [/#list]

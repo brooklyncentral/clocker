@@ -133,6 +133,23 @@ brooklyn.catalog:
                 cd ~/openshift-ansible
                 ansible-playbook playbooks/adhoc/uninstall.yml --inventory ${INSTALL_DIR}/inventory
 
+            brooklyn.enrichers:
+              - type: org.apache.brooklyn.enricher.stock.Propagator
+                brooklyn.config:
+                  producer: $brooklyn:entity("openshift-masters")
+                  sensorMapping:
+                    $brooklyn:sensor("hosts.map"): $brooklyn:sensor("master.hosts.map")
+              - type: org.apache.brooklyn.enricher.stock.Propagator
+                brooklyn.config:
+                  producer: $brooklyn:entity("etcd-nodes")
+                  sensorMapping:
+                    $brooklyn:sensor("hosts.map"): $brooklyn:sensor("etcd.hosts.map")
+              - type: org.apache.brooklyn.enricher.stock.Propagator
+                brooklyn.config:
+                  producer: $brooklyn:entity("openshift-nodes")
+                  sensorMapping:
+                    $brooklyn:sensor("hosts.map"): $brooklyn:sensor("node.hosts.map")
+
     - id: openshift-origin-ansible
       name: "OpenShift Origin Cluster"
       itemType: entity
