@@ -151,14 +151,14 @@ brooklyn.catalog:
                   sensorMapping:
                     $brooklyn:sensor("hosts.map"): $brooklyn:sensor("node.hosts.map")
 
-    - id: openshift-origin-ansible
+    - id: openshift-origin-cluster
       name: "OpenShift Origin Cluster"
       itemType: entity
       version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
       publish:
         license_code: Apache-2.0
       item:
-        type: org.apache.brooklyn.entity.stock.BasicApplication
+        type: org.apache.brooklyn.entity.stock.BasicStartable
 
         brooklyn.parameters:
           - name: openshift.master.size
