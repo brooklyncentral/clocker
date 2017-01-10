@@ -3,24 +3,18 @@ name: "openshift"
 description: |
   Creates an OpenShift Origin cluster with redundant master servers.
 
-  Deploys on CentOS 7 VMs in SoftLayer, on a single VLAN segment.
-
 location:
   jclouds:aws-ec2:
     region: eu-west-1
-    privateKeyFile: "~/.ssh/softlayer.pem"
+    privateKeyFile: "~/.ssh/openshift.pem"
+    hardwareId: m4.xlarge
 
 services:
-  - type: openshift-origin-cluster-application
+  - type: openshift-origin-ansible-template
     id: openshift
     name: "openshift"
     brooklyn.config:
       start.timeout: 30m
-      kubernetes.sharedsecuritygroup.create: false
-      kubernetes.version: 1.4.5
-      openshift.version: 1.3.1
-      kubernetes.initial.size: 3
-      kubernetes.max.size: 6
-      kubernetes.pod.cidr: "10.120.0.0/16"
-      kubernetes.minRam: 7g
-      kubernetes.minCores: 2
+      openshift.master.size: 2
+      etcd.initial.size: 3
+      openshift.initial.size: 4
