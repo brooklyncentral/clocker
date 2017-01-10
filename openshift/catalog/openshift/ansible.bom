@@ -105,39 +105,17 @@ brooklyn.catalog:
           #   brooklyn.config:
           #     common.name: "Kubernetes"
 
-          - type: cluster
-            id: openshift-masters
-            brooklyn.config:
-              cluster.initial.size: $brooklyn:parent().config("openshift.master.size")
-              memberSpec:
-                $brooklyn:entitySpec:
-                  type: docker-engine-with-insecure-registry
-                  id: openshift-master
-                  name: "openshift-master"
-          - type: cluster
-            id: etcd-nodes
-            brooklyn.config:
-              cluster.initial.size: $brooklyn:parent().config("etcd.initial.size")
-              memberSpec:
-                $brooklyn:entitySpec:
-                  type: rhel-server
-                  id: etcd-node
-                  name: "etcd-node"
-          - type: cluster
-            id: openshift-nodes
-            brooklyn.config:
-              cluster.initial.size: $brooklyn:parent().config("openshift.initial.size")
-              memberSpec:
-                $brooklyn:entitySpec:
-                  type: docker-engine-with-insecure-registry
-                  id: openshift-node
-                  name: "openshift-node"
+          - type: openshift-origin-cluster
+            id: openshift-origin-cluster
+            name: "openshift-origin-cluster"
 
-          - type: ansible-openshift
+          - type: ansible-server
             id: ansible-server
             name: "ansible-server"
 
             brooklyn.config:
+              resources.preinstall.latch:
+                $brooklyn:sibling("openshift-origin-cluster").attributeWhenReady("service.isUp")
               templates.preinstall:
                 "classpath://io.brooklyn.clocker.openshift:openshift/inventory": inventory
               install.command: |
@@ -154,3 +132,83 @@ brooklyn.catalog:
               stop.command: |
                 cd ~/openshift-ansible
                 ansible-playbook playbooks/adhoc/uninstall.yml --inventory ${INSTALL_DIR}/inventory
+
+    - id: openshift-origin-ansible
+      name: "OpenShift Origin Cluster"
+      itemType: entity
+      version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+      publish:
+        license_code: Apache-2.0
+      item:
+        type: org.apache.brooklyn.entity.stock.BasicApplication
+
+        brooklyn.parameters:
+          - name: openshift.master.size
+            label: "Master Cluster Size"
+            description: |
+              Size of the OpenShift master cluster when created initially
+            type: integer
+            default: 2
+          - name: openshift.initial.size
+            label: "Worker Cluster Size"
+            description: |
+              Size of the OpenShift worker cluster when created initially
+            type: integer
+            default: 2
+          - name: etcd.initial.size
+            label: "Etcd Cluster Size"
+            type: integer
+            default: 3
+
+        brooklyn.children:
+          - type: cluster
+            id: openshift-masters
+            brooklyn.config:
+              cluster.initial.size: $brooklyn:parent().config("openshift.master.size")
+              memberSpec:
+                $brooklyn:entitySpec:
+                  type: docker-engine-with-insecure-registry
+                  id: openshift-master
+                  name: "openshift-master"
+            brooklyn.enrichers:
+              - type: org.apache.brooklyn.enricher.stock.MapAggregator
+                brooklyn.config:
+                  enricher.keySensor: $brooklyn:sensor("entity.id")
+                  enricher.valueSensor: $brooklyn:sensor("host.address")
+                  enricher.targetSensor: $brooklyn:sensor("host.map")
+                  enricher.aggregating.fromMembers: true
+                  enricher.aggregator.excludeBlank: true
+          - type: cluster
+            id: etcd-nodes
+            brooklyn.config:
+              cluster.initial.size: $brooklyn:parent().config("etcd.initial.size")
+              memberSpec:
+                $brooklyn:entitySpec:
+                  type: centos-server
+                  id: etcd-node
+                  name: "etcd-node"
+            brooklyn.enrichers:
+              - type: org.apache.brooklyn.enricher.stock.MapAggregator
+                brooklyn.config:
+                  enricher.keySensor: $brooklyn:sensor("entity.id")
+                  enricher.valueSensor: $brooklyn:sensor("host.address")
+                  enricher.targetSensor: $brooklyn:sensor("host.map")
+                  enricher.aggregating.fromMembers: true
+                  enricher.aggregator.excludeBlank: true
+          - type: cluster
+            id: openshift-nodes
+            brooklyn.config:
+              cluster.initial.size: $brooklyn:parent().config("openshift.initial.size")
+              memberSpec:
+                $brooklyn:entitySpec:
+                  type: docker-engine-with-insecure-registry
+                  id: openshift-node
+                  name: "openshift-node"
+            brooklyn.enrichers:
+              - type: org.apache.brooklyn.enricher.stock.MapAggregator
+                brooklyn.config:
+                  enricher.keySensor: $brooklyn:sensor("entity.id")
+                  enricher.valueSensor: $brooklyn:sensor("host.address")
+                  enricher.targetSensor: $brooklyn:sensor("host.map")
+                  enricher.aggregating.fromMembers: true
+                  enricher.aggregator.excludeBlank: true
