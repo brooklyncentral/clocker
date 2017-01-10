@@ -1,3 +1,4 @@
+[#ftl]
 # Create an OSEv3 group that contains the master, nodes, etcd, and lb groups.
 # The lb group lets Ansible configure HAProxy as the load balancing solution.
 # Comment lb out if your load balancer is pre-configured.
@@ -37,21 +38,25 @@ openshift_clock_enabled=true
 
 # host group for masters
 [masters]
-master1.openshift.local
-master2.openshift.local
-master3.openshift.local
+[#list attribute['master.host.map']?keys as hostname]
+${hostname}.openshift.local
+[/#list]
 
 # host group for etcd
 [etcd]
-etcd1.openshift.local
-etcd2.openshift.local
-etcd3.openshift.local
+[#list attribute['etcd.host.map']?keys as hostname]
+${hostname}.openshift.local
+[/#list]
 
 # Specify load balancer host
 #[lb]
-#lb.openshift.local
+#${attribute['lb.hostname']}.openshift.local
 
 # host group for nodes, includes region info
 [nodes]
-master.openshift.local openshift_node_labels="{'region': 'infra', 'zone': 'default'}"
-node.openshift.local openshift_node_labels="{'region': 'primary', 'zone': 'default'}"
+[#list attribute['master.host.map']?keys as hostname]
+${hostname}.openshift.local openshift_node_labels="{'region': 'infra', 'zone': 'default'}"
+[/#list]
+[#list attribute['node.host.map']?keys as hostname]
+${hostname}.openshift.local openshift_node_labels="{'region': 'primary', 'zone': 'default'}"
+[/#list]

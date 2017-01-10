@@ -128,3 +128,16 @@ brooklyn.catalog:
           - type: ansible-openshift
             id: ansible-server
             name: "ansible-server"
+
+            brooklyn.config:
+              templates.preinstall:
+                "classpath://io.brooklyn.clocker.openshift:openshift/inventory": inventory
+
+              launch.command: |
+                cd ~/openshift-ansible
+                ansible-playbook playbooks/byo/config.yml --inventory ~/hosts
+              checkRunning.command: |
+                which ansible-playbook
+              stop.command: |
+                cd ~/openshift-ansible
+                ansible-playbook playbooks/adhoc/uninstall.yml --inventory ~/hosts
