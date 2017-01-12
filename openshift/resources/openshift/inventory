@@ -1,17 +1,18 @@
 [#ftl]
 # Create an OSEv3 group that contains the master, nodes, etcd, and lb groups.
 # The lb group lets Ansible configure HAProxy as the load balancing solution.
-# Comment lb out if your load balancer is pre-configured.
 [OSEv3:children]
 masters
 nodes
 etcd
-#lb
+lb
 
+# TODO more here
+# TODO set tls keys et
 # Set variables common for all OSEv3 hosts
 [OSEv3:vars]
-ansible_ssh_user=root
-deployment_type=origin
+ansible_ssh_user=root # FIXME incorrect (as of now)
+deployment_type=origin # TODO parameterize
 
 # Uncomment the following to enable htpasswd authentication; defaults to
 # DenyAllPasswordIdentityProvider.
@@ -24,8 +25,8 @@ deployment_type=origin
 # or to one or all of the masters defined in the inventory if no load
 # balancer is present.
 openshift_master_cluster_method=native
-openshift_master_cluster_hostname=openshift-cluster.example.com
-openshift_master_cluster_public_hostname=openshift-cluster.example.com
+openshift_master_cluster_hostname=${attribute['lb.entity.id']}.${attribute['openshift.domain']}
+openshift_master_cluster_public_hostname=${attribute['lb.entity.id']}.${attribute['openshift.domain']}
 
 # apply updated node defaults
 openshift_node_kubelet_args={'pods-per-core': ['10'], 'max-pods': ['250'], 'image-gc-high-threshold': ['90'], 'image-gc-low-threshold': ['80']}
@@ -39,24 +40,27 @@ openshift_clock_enabled=true
 # host group for masters
 [masters]
 [#list attribute['master.hosts.map']?keys as hostname]
-${hostname}.openshift.local
+${hostname}.${config['openshift.domain']}
 [/#list]
 
 # host group for etcd
 [etcd]
 [#list attribute['etcd.hosts.map']?keys as hostname]
-${hostname}.openshift.local
+${hostname}.${config['openshift.domain']}
 [/#list]
 
 # Specify load balancer host
-#[lb]
-#${attribute['lb.hostname']}.openshift.local
+[lb]
+${attribute['lb.entity.id']}.${config['openshift.domain']}
 
 # host group for nodes, includes region info
 [nodes]
 [#list attribute['master.hosts.map']?keys as hostname]
-${hostname}.openshift.local openshift_node_labels="{'region': 'infra', 'zone': 'default'}"
+${hostname}.${config['openshift.domain']} openshift_node_labels="{'region': 'infra', 'zone': 'default'}"
+[/#list]
+[#list attribute['etcd.hosts.map']?keys as hostname]
+${hostname}.${config['openshift.domain']} openshift_node_labels="{'region': 'infra', 'zone': 'default'}"
 [/#list]
 [#list attribute['node.hosts.map']?keys as hostname]
-${hostname}.openshift.local openshift_node_labels="{'region': 'primary', 'zone': 'default'}"
+${hostname}.${config['openshift.domain']} openshift_node_labels="{'region': 'primary', 'zone': 'default'}"
 [/#list]

@@ -28,7 +28,6 @@ brooklyn.catalog:
       item:
         type: brooklyn-dns-etc-hosts-generator
         brooklyn.config:
-          brooklyn_dns.domain: "openshift.local"
           brooklyn_dns.hosts.address.sensor: "host.address"
           dynamicgroup.entityfilter:
             $brooklyn:object:
@@ -73,20 +72,28 @@ brooklyn.catalog:
         type: org.apache.brooklyn.entity.stock.BasicApplication
 
         brooklyn.parameters:
-          - name: openshift.master.size
+          - name: openshift.domain
+            label: "OpenShift Domain"
+            description: |
+              The OpenShift domain name suffix
+            type: string
+            default: "openshift.local"
+          - name: openshift.master.clusterSize
             label: "Master Cluster Size"
             description: |
               Size of the OpenShift master cluster when created initially
             type: integer
             default: 2
-          - name: openshift.initial.size
-            label: "Worker Cluster Size"
+          - name: openshift.node.clusterSize
+            label: "Node Cluster Size"
             description: |
-              Size of the OpenShift worker cluster when created initially
+              Size of the OpenShift node cluster when created initially
             type: integer
-            default: 2
-          - name: etcd.initial.size
+            default: 5
+          - name: openshift.etcd.clusterSize
             label: "Etcd Cluster Size"
+            description: |
+              Size of the OpenShift etcd cluster when created initially
             type: integer
             default: 3
 
@@ -97,12 +104,14 @@ brooklyn.catalog:
           - type: openshift-hosts-file-generator
             id: brooklyn-dns-etc-hosts-generator
             name: "brooklyn-dns-etc-hosts-generator"
+            brooklyn.config:
+              brooklyn_dns.domain: $brooklyn:config("openshift.domain")
 
           # - type: ca-server
           #   id: ca-server
           #   name: "ca-server"
           #   brooklyn.config:
-          #     common.name: "Kubernetes"
+          #     common.name: "OpenShift"
 
           - type: openshift-origin-cluster
             id: openshift-origin-cluster
@@ -137,19 +146,23 @@ brooklyn.catalog:
             brooklyn.enrichers:
               - type: org.apache.brooklyn.enricher.stock.Propagator
                 brooklyn.config:
-                  producer: $brooklyn:entity("openshift-masters")
+                  producer: $brooklyn:entity("openshift-master-machines")
                   sensorMapping:
                     $brooklyn:sensor("hosts.map"): $brooklyn:sensor("master.hosts.map")
               - type: org.apache.brooklyn.enricher.stock.Propagator
                 brooklyn.config:
-                  producer: $brooklyn:entity("etcd-nodes")
+                  producer: $brooklyn:entity("openshift-etcd-machines")
                   sensorMapping:
                     $brooklyn:sensor("hosts.map"): $brooklyn:sensor("etcd.hosts.map")
               - type: org.apache.brooklyn.enricher.stock.Propagator
                 brooklyn.config:
-                  producer: $brooklyn:entity("openshift-nodes")
+                  producer: $brooklyn:entity("openshift-node-machines")
                   sensorMapping:
                     $brooklyn:sensor("hosts.map"): $brooklyn:sensor("node.hosts.map")
+              - type: org.apache.brooklyn.enricher.stock.Propagator
+                brooklyn.config:
+                  producer: $brooklyn:entity("openshift-lb-machines")
+                  propagating: $brooklyn:sensor("lb.entity.id")
 
     - id: openshift-origin-cluster
       name: "OpenShift Origin Cluster"
@@ -161,72 +174,169 @@ brooklyn.catalog:
         type: org.apache.brooklyn.entity.stock.BasicStartable
 
         brooklyn.parameters:
-          - name: openshift.master.size
+          - name: openshift.master.clusterSize
             label: "Master Cluster Size"
             description: |
               Size of the OpenShift master cluster when created initially
             type: integer
             default: 2
-          - name: openshift.initial.size
-            label: "Worker Cluster Size"
+          - name: openshift.master.minCores
+            label: "Master Minimum CPU Cores"
             description: |
-              Size of the OpenShift worker cluster when created initially
+              Minimum CPU cores for provisioning OpenShift master machines
+            default: 8
+          - name: openshift.master.minRam
+            label: "Master Minimum RAM"
+            description: |
+              Minimum RAM for provisioning OpenShift master machines
+            default: 20000
+          - name: openshift.node.clusterSize
+            label: "Node Cluster Size"
+            description: |
+              Size of the OpenShift node cluster when created initially
             type: integer
-            default: 2
-          - name: etcd.initial.size
+            default: 5
+          - name: openshift.node.minCores
+            label: "Node Minimum CPU Cores"
+            description: |
+              Minimum CPU cores for provisioning OpenShift node machines
+            default: 16
+          - name: openshift.node.minRam
+            label: "Node Minimum RAM"
+            description: |
+              Minimum RAM for provisioning OpenShift node machines
+            default: 40000
+          - name: openshift.etcd.clusterSize
             label: "Etcd Cluster Size"
             type: integer
             default: 3
+          - name: openshift.etcd.minCores
+            label: "Etcd Minimum CPU Cores"
+            description: |
+              Minimum CPU cores for provisioning OpenShift etcd machines
+            default: 4
+          - name: openshift.etcd.minRam
+            label: "Etcd Minimum RAM"
+            description: |
+              Minimum RAM for provisioning OpenShift etcd machines
+            default: 8000
+          - name: openshift.lb.minCores
+            label: "Load Balancer Minimum CPU Cores"
+            description: |
+              Minimum CPU cores for provisioning OpenShift etcd machines
+            default: 4
+          - name: openshift.lb.minRam
+            label: "Load Balancer Minimum RAM"
+            description: |
+              Minimum RAM for provisioning OpenShift etcd machines
+            default: 8000
 
         brooklyn.children:
-          - type: cluster
-            id: openshift-masters
+          - type: openshift-machine-cluster
+            id: openshift-master-machines
+            name: "openshift-master-machines"
             brooklyn.config:
-              cluster.initial.size: $brooklyn:parent().config("openshift.master.size")
-              memberSpec:
-                $brooklyn:entitySpec:
-                  type: docker-engine-with-insecure-registry
-                  id: openshift-master
-                  name: "openshift-master"
-            brooklyn.enrichers:
-              - type: org.apache.brooklyn.enricher.stock.MapAggregator
-                brooklyn.config:
-                  enricher.keySensor: $brooklyn:sensor("entity.id")
-                  enricher.valueSensor: $brooklyn:sensor("host.address")
-                  enricher.targetSensor: $brooklyn:sensor("host.map")
-                  enricher.aggregating.fromMembers: true
-                  enricher.aggregator.excludeBlank: true
-          - type: cluster
-            id: etcd-nodes
+              openshift.machine.group: "master"
+              openshift.machine.clusterSize: $brooklyn:parent().config("openshift.master.clusterSize")
+              openshift.machine.minCores: $brooklyn:parent().config("openshift.master.minCores")
+              openshift.machine.minRam: $brooklyn:parent().config("openshift.master.minRam")
+          - type: openshift-machine-cluster
+            id: openshift-etcd-machines
+            name: "openshift-etcd-machines"
             brooklyn.config:
-              cluster.initial.size: $brooklyn:parent().config("etcd.initial.size")
-              memberSpec:
+              openshift.machine.group: "etcd"
+              openshift.machine.clusterSize: $brooklyn:parent().config("openshift.etcd.clusterSize")
+              openshift.machine.minCores: $brooklyn:parent().config("openshift.etcd.minCores")
+              openshift.machine.minRam: $brooklyn:parent().config("openshift.etcd.minRam")
+              openshift.machine.spec:
                 $brooklyn:entitySpec:
                   type: centos7-software-process
-                  id: etcd-node
-                  name: "etcd-node"
-            brooklyn.enrichers:
-              - type: org.apache.brooklyn.enricher.stock.MapAggregator
-                brooklyn.config:
-                  enricher.keySensor: $brooklyn:sensor("entity.id")
-                  enricher.valueSensor: $brooklyn:sensor("host.address")
-                  enricher.targetSensor: $brooklyn:sensor("host.map")
-                  enricher.aggregating.fromMembers: true
-                  enricher.aggregator.excludeBlank: true
-          - type: cluster
-            id: openshift-nodes
+                  id: openshift-etcd
+                  name: "openshift-etcd"
+          - type: openshift-machine-cluster
+            id: openshift-node-machines
+            name: "openshift-node-machines"
             brooklyn.config:
-              cluster.initial.size: $brooklyn:parent().config("openshift.initial.size")
-              memberSpec:
-                $brooklyn:entitySpec:
-                  type: docker-engine-with-insecure-registry
-                  id: openshift-node
-                  name: "openshift-node"
+              openshift.machine.group: "node"
+              openshift.machine.clusterSize: $brooklyn:parent().config("openshift.node.clusterSize")
+              openshift.machine.minCores: $brooklyn:parent().config("openshift.node.minCores")
+              openshift.machine.minRam: $brooklyn:parent().config("openshift.node.minRam")]
+          - type: openshift-machine-cluster
+            id: openshift-lb-machines
+            name: "openshift-lb-machines"
+            brooklyn.config:
+              openshift.machine.group: "lb"
+              openshift.machine.clusterSize: 1
+              openshift.machine.minCores: $brooklyn:parent().config("openshift.lb.minCores")
+              openshift.machine.minRam: $brooklyn:parent().config("openshift.lb.minRam")
             brooklyn.enrichers:
-              - type: org.apache.brooklyn.enricher.stock.MapAggregator
+              - type: org.apache.brooklyn.enricher.stock.Joiner
                 brooklyn.config:
-                  enricher.keySensor: $brooklyn:sensor("entity.id")
-                  enricher.valueSensor: $brooklyn:sensor("host.address")
-                  enricher.targetSensor: $brooklyn:sensor("host.map")
-                  enricher.aggregating.fromMembers: true
-                  enricher.aggregator.excludeBlank: true
+                  enricher.sourceSensor: $brooklyn:sensor("host.map")
+                  enricher.targetSensor: $brooklyn:sensor("lb.entity.id")
+                  enricher.joiner.quote: false
+                  enricher.joiner.joinMapEntries: false
+                  enricher.joiner.minimum: 1
+                  enricher.joiner.maximum: 1
+
+    - id: openshift-machine-cluster
+      name: "OpenShift Machine Cluster"
+      itemType: entity
+      version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+      publish:
+        license_code: Apache-2.0
+      item:
+        type: cluster
+
+        brooklyn.parameters:
+          - name: openshift.machine.group
+            label: "Cluster Group Name"
+            description: |
+              Name of the group of machines in the cluster
+            type: string
+            default: "machine"
+          - name: openshift.machine.clusterSize
+            label: "Machine Cluster Size"
+            description: |
+              Size of the machine cluster when created initially
+            type: integer
+            default: 3
+          - name: openshift.machine.minCores
+            label: "Minimum CPU Cores"
+            description: |
+              Minimum CPU cores for provisioning machines
+            default: 4
+          - name: openshift.machine.minRam
+            label: "Minimum RAM"
+            description: |
+              Minimum RAM for provisioning machines
+            default: 8000
+          - name: openshift.machine.spec
+            label: "Machine Spec"
+            description: |
+              Spec for the machines in the cluster
+            type: org.apache.brooklyn.api.entity.EntitySpec
+            default:
+              $brooklyn:entitySpec:
+                type: docker-engine-with-insecure-registry
+                id: openshift-machine
+                name: "openshift-machine"
+
+        brooklyn.config:
+          displayName:
+            $brooklyn:formatString:
+              - "openshift-%s-cluster"
+              - $brooklyn:config("openshift.machine.group")
+          cluster.initial.size: $brooklyn:config("openshift.machine.clusterSize")
+          memberSpec: $brooklyn:config("openshift.machine.spec")
+          provisioning.properties:
+            minRam: $brooklyn:config("openshift.machine.minRam")
+            minCores: $brooklyn:config("openshift.machine.minCores")
+        brooklyn.enrichers:
+          - type: org.apache.brooklyn.enricher.stock.MapAggregator
+            brooklyn.config:
+              enricher.keySensor: $brooklyn:sensor("entity.id")
+              enricher.valueSensor: $brooklyn:sensor("entity.id")
+              enricher.targetSensor: $brooklyn:sensor("host.map")
+              enricher.aggregating.fromMembers: true
+              enricher.aggregator.excludeBlank: true

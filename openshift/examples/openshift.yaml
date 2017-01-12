@@ -15,6 +15,6 @@ services:
     name: "openshift"
     brooklyn.config:
       start.timeout: 30m
-      openshift.master.size: 2
-      etcd.initial.size: 3
-      openshift.initial.size: 4
+      openshift.master.clusterSize: 2
+      openshift.etcd.clusterSize: 3
+      openshift.node.clusterSize: 5
