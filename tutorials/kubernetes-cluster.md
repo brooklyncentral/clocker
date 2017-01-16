@@ -28,11 +28,11 @@ This is used to provide TLS certificates for the Kubernetes cluster. This compon
 #### Setup a cloud location
 Firstly, we need to setup a location to deploy the Kubernetes cluster to. We recommend the following settings:
 
-- use the `installDevUrandom` config to prevent installation speed being slowed by lack of entropy. See [Entropy Troubleshooting](https://brooklyn.apache.org/documentation/increase-entropy.html)
 - use at least 2GB RAM
 - use a CentOS 7 based image
 
-Please note that we recommend the [official Centos 7 images](https://wiki.centos.org/Cloud/AWS). Images from other providers may be less functional or incompatible.
+Please note that we recommend the official Centos 7 images ([AWS](https://wiki.centos.org/Cloud/AWS), [OpenStack](http://cloud.centos.org/centos/7/images/)). Images from other providers may be less functional or incompatible.
+For Amazon make sure you've accepted the Marketplace Terms and Conditions for the image before using it.
 
 The following catalog items should enable you to quickly get started on some popular clouds. Download the .bom file of the relevant cloud, add your credentials, and then run:
 

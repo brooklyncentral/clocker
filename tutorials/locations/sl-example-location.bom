@@ -9,7 +9,6 @@ brooklyn.catalog:
       identity: <IDENTITY>
       credential: <CREDENTIAL>
 
-      installDevUrandom: true
       minRam: 2000
       imageId: CENTOS_7_64
 

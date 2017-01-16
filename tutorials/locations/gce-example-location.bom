@@ -7,7 +7,6 @@ brooklyn.catalog:
     brooklyn.config:
       imageNameRegex: centos-7.*
       region: europe-west1-b
-      installDevUrandom: true
       minRam: 2000
       identity: <IDENTITY>
 

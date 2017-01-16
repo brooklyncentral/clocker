@@ -19,7 +19,6 @@ brooklyn.catalog:
       regionId: North Europe
       hardwareId: BASIC_A2
       loginUser: user
-      installDevUrandom: true
       templateOptions:
         overrideAuthenticateSudo: true
 

@@ -15,6 +15,14 @@ To do this, delete the folder `~/.brooklyn/brooklyn-persisted-state/` and all of
 #### AWS VPC / Classic
   
 It's recommended that you use [VPC mode](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-vpc.html) to run Clocker within [AWS](http://aws.amazon.com/). This is because problems have been recorded with DNS and starting instances withn AWS Classic. For more information on doing this, see the [Brooklyn docs](http://brooklyn.apache.org/v/latest/ops/locations/index.html#ec2-classic-problems-with-vpc-only-hardware-instance-types).
+
+### AWS 401 errors
+
+If you are getting 401 response errors when trying to provision machines make sure that:
+  * The credentials you are using have the permission to create instances
+  * You have accepted the TOC for the image you are using in the location definition.
+    Go to https://aws.amazon.com/marketplace/pp/B00O7WM7QW and proceed to launch an instance with that image.
+    In the process you'll be asked to accept the TOC. You can abort the launch at this point.
   
 #### High CPU usage
 
