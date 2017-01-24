@@ -28,6 +28,7 @@ brooklyn.catalog:
     version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
     publish:      
       license_code: Apache-2.0
+      overview: README.md
     item:
       type: org.apache.brooklyn.entity.stock.BasicApplication
 
