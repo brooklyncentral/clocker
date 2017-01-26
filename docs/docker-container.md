@@ -1,13 +1,13 @@
 ---
 layout: base
-title: Docker Container Documentation
+title: Docker VM Container Documentation
 ---
 
 ### Overview
-Clocker provides a base Docker container entity that will deploy a Docker Engine and then start a selected Docker image automatically in it's Docker container. This entity can be deployed in any cloud / VM location.
+Clocker provides a base `docker-vm-container` entity that will deploy a Docker Engine and then start a selected Docker image automatically in it's Docker container. This entity can be deployed in any cloud / VM location.
 
 ### Configuration 
-The Docker container entity comes with built-in configuration that allows you to control how your Docker container will be deployed and managed.
+The Docker VM container entity comes with built-in configuration that allows you to control how your Docker container will be deployed and managed.
 
 | Config Name                 | Description                                                                                             |
 |-----------------------------|---------------------------------------------------------------------------------------------------------|
