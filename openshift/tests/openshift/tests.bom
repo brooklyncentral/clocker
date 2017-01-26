@@ -1,0 +1,20 @@
+brooklyn.catalog:
+  version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+  iconUrl: https://twitter.com/kubernetesio/profile_image?size=original
+  license_code: APACHE-2.0
+  dependsOn:
+    - tests/kubernetes/kubernetes.tests.bom
+    - tests/openshift/openshift.tests.bom
+  items:
+    - id: openshift-tests
+      name: "OpenShift Tests"
+      description: |
+        Tests on OpenShift
+      itemType: template
+      item:
+        brooklyn.config:
+          timeout: 1h
+          timeout.initialStartup: 1h
+          timeout.runtimeAssertion: 1h
+        services:
+          - type: openshift-cluster-tests

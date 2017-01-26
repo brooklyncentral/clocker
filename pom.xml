@@ -26,6 +26,7 @@
         <module>common</module>
         <module>swarm</module>
         <module>kubernetes</module>
+        <module>openshift</module>
     </modules>
 
     <scm>

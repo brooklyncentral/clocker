@@ -29,9 +29,9 @@ spec:
           image: calico/kube-policy-controller:v0.3.0
           env:
             - name: ETCD_ENDPOINTS
-              value: "${config['template.substitutions']['etcd_endpoints']}"
+              value: "${config['etcd.endpoints']}"
             - name: K8S_API
-              value: "${config['template.substitutions']['kubernetes_url']}"
+              value: "${config['kubernetes.url']}"
             - name: LEADER_ELECTION
               value: "true"
             - name: CONFIGURE_ETC_HOSTS
