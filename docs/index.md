@@ -4,6 +4,7 @@ title: Documentation
 children:
 - swarm-cluster.md
 - kubernetes-cluster.md
+- docker-container.md
 - troubleshooting.md
 ---
 

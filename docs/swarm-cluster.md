@@ -19,7 +19,7 @@ We interact directly with the swarm manager cluster's load balancer as if it wer
 The load-balancer will redirect traffic to a healthy manager when a manager fails.  The replacer policy will detect the failure and replace the failed manager.
 
 #### A cluster of swarm nodes
-These nodes are where docker containers are deployed to. The cluster has an AutoScalerPolicy and will scale up due to high CPU usage.
+These nodes are where [docker containers](docker-container.html) are deployed. The cluster has an AutoScalerPolicy and will scale up due to high CPU usage.
 
 #### etcd Cluster
 Used as a discovery backend for the swarm cluster.
