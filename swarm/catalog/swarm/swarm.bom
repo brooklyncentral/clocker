@@ -1,5 +1,5 @@
 brooklyn.catalog:
-  version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+  version: "2.1.0" # CLOCKER_VERSION
   publish:
     description: |
       Resources for working with Docker Swarm from Apache Brooklyn
@@ -25,7 +25,7 @@ brooklyn.catalog:
       Creates a Swarm of Docker engines, of configurable initial size, using an Etcd cluster for discovery.
     itemType: entity
     iconUrl: https://raw.githubusercontent.com/docker-library/docs/471fa6e4cb58062ccbf91afc111980f9c7004981/swarm/logo.png
-    version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+    version: "2.1.0" # CLOCKER_VERSION
     publish:      
       license_code: Apache-2.0
     item:

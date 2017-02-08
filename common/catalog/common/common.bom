@@ -1,5 +1,5 @@
 brooklyn.catalog:
-  version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+  version: "2.1.0" # CLOCKER_VERSION
   publish:
     description: |
       Resources for common Apache Brooklyn entities

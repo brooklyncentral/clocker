@@ -1,5 +1,5 @@
 brooklyn.catalog:
-  version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+  version: "2.1.0" # CLOCKER_VERSION
   publish:
     description: |
       Resources for working with Docker Engine from Apache Brooklyn
@@ -94,7 +94,7 @@ brooklyn.catalog:
           DOCKER_GPG_KEY_URL: $brooklyn:config("docker.gpgkey.url")
           ENTITY_ID: $brooklyn:attributeWhenReady("entity.id")
           APPLICATION_ID: $brooklyn:attributeWhenReady("application.id")
-          CLOCKER_VERSION: "2.1.0-SNAPSHOT"
+          CLOCKER_VERSION: "2.1.0"
 
         install.command: |
           set -e # need all commands to execute successfully
