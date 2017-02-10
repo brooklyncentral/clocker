@@ -145,3 +145,17 @@ brooklyn.catalog:
           brooklyn.config:
             effector: configureEndpoints
             sensor: $brooklyn:sensor("service.isUp")
+
+        brooklyn.enrichers:
+        # Publish host+port as main.uri
+        - type: org.apache.brooklyn.enricher.stock.Transformer
+          brooklyn.config:
+            uniqueTag: haproxy-endpoint-publisher
+            enricher.triggerSensors:
+              - $brooklyn:sensor("host.name")
+            enricher.targetSensor: $brooklyn:sensor("org.apache.brooklyn.core.entity.Attributes", "main.uri")
+            enricher.targetValue:
+              $brooklyn:formatString:
+                - "http://%s:%d"
+                - $brooklyn:attributeWhenReady("host.name")
+                - $brooklyn:config("haproxy.port")
