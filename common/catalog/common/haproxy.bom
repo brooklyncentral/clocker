@@ -109,6 +109,8 @@ brooklyn.catalog:
               HAPROXY_ENDPOINTS: $brooklyn:attributeWhenReady("haproxy.endpoints")
               ENTITY_ID: $brooklyn:attributeWhenReady("entity.id")
             command: |
+              set -x
+              command -v haproxy >/dev/null 2>&1 || { echo >&2 "HAProxy is not installed yet. Exiting quietly."; exit 0; }
               (
               flock 9
               cat > ${RUN_DIR}/servers.conf <<-EOF
@@ -131,9 +133,13 @@ brooklyn.catalog:
                 fi
               done
               old_pid=$(cat ${RUN_DIR}/pid.txt)
-              haproxy -D -f ${RUN_DIR}/haproxy.conf -f ${RUN_DIR}/servers.conf -st ${old_pid} 9>/dev/null
-              # wait for the old process to die before leaving the critical section
-              while test -d /proc/${old_pid} 2> /dev/null; do sleep 1; done
+              if [ ! -z $old_pid ]; then
+                haproxy -D -f ${RUN_DIR}/haproxy.conf -f ${RUN_DIR}/servers.conf -st ${old_pid} 9>/dev/null
+                # wait for the old process to die before leaving the critical section
+                while test -d /proc/${old_pid} 2> /dev/null; do echo >&2 "waiting for ${old_pid} to die" ; sleep 1; done
+              else
+                echo >&2 "no previous process to wait for"
+              fi
               ) 9>> /tmp/configure.${ENTITY_ID}.lock
 
         brooklyn.policies:
@@ -145,3 +151,18 @@ brooklyn.catalog:
           brooklyn.config:
             effector: configureEndpoints
             sensor: $brooklyn:sensor("service.isUp")
+
+        brooklyn.enrichers:
+        # Publish host+port as main.uri
+        - type: org.apache.brooklyn.enricher.stock.Transformer
+          brooklyn.config:
+            uniqueTag: haproxy-endpoint-publisher
+            enricher.triggerSensors:
+              - $brooklyn:sensor("host.name")
+            enricher.targetSensor: $brooklyn:sensor("org.apache.brooklyn.core.entity.Attributes", "main.uri")
+            enricher.targetValue:
+              $brooklyn:formatString:
+                - "%s://%s:%d"
+                - $brooklyn:config("haproxy.protocol")
+                - $brooklyn:attributeWhenReady("host.name")
+                - $brooklyn:config("haproxy.port")
