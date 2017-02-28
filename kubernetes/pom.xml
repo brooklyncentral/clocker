@@ -14,6 +14,10 @@
     <artifactId>clocker-kubernetes</artifactId>
     <packaging>jar</packaging>
 
+    <properties>
+        <brooklyn-dns.version>0.1.2</brooklyn-dns.version> <!-- BROOKLYN_DNS_VERSION -->
+    </properties>
+
     <build>
         <resources>
             <resource>
@@ -32,6 +36,25 @@
         </resources>
 
         <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>wagon-maven-plugin</artifactId>
+                <version>1.0</version>
+                <executions>
+                    <execution>
+                        <id>download-dns-bom</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>download-single</goal>
+                        </goals>
+                        <configuration>
+                            <url>https://github.com/brooklyncentral/brooklyn-dns/releases/download/v${brooklyn-dns.version}</url>
+                            <fromFile>brooklyn-dns-etc-hosts-generator.bom</fromFile>
+                            <toFile>${project.build.directory}/classes/kubernetes/brooklyn-dns-etc-hosts-generator.bom</toFile>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>

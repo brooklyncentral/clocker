@@ -12,7 +12,7 @@ brooklyn.catalog:
     description: |
       An X.509 Certificate Authority tool using OpenSSL
     itemType: template
-    iconUrl: https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/OpenSSL_logo.png/320px-OpenSSL_logo.png
+    iconUrl: classpath://io.brooklyn.clocker.common:icons/openssl.png
     item:
       services:
         - type: ca-server
@@ -28,7 +28,7 @@ brooklyn.catalog:
       requests to '/cert/{nodeName}/ca.pem' '/cert/{nodeName}/cert.pem' and
       '/cert/{nodeName}/key.pem'
     itemType: entity
-    iconUrl: https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/OpenSSL_logo.png/320px-OpenSSL_logo.png
+    iconUrl: classpath://io.brooklyn.clocker.common:icons/openssl.png
     item:
       type: centos-software-process
       name: "authority"

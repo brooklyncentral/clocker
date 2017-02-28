@@ -14,7 +14,7 @@ brooklyn.catalog:
     description: |
       Creates a single docker engine.
     itemType: template
-    iconUrl: https://raw.githubusercontent.com/docker-library/docs/c350af05d3fac7b5c3f6327ac82fe4d990d8729c/docker/logo.png
+    iconUrl: classpath://io.brooklyn.clocker.common:icons/docker.png
     item:
       services:
         - type: docker-engine
@@ -24,7 +24,7 @@ brooklyn.catalog:
     description: |
       The engine for running Docker containers
     itemType: entity
-    iconUrl: https://raw.githubusercontent.com/docker-library/docs/c350af05d3fac7b5c3f6327ac82fe4d990d8729c/docker/logo.png
+    iconUrl: classpath://io.brooklyn.clocker.common:icons/docker.png
     item:
       type: centos-software-process
       id: docker-engine
@@ -183,7 +183,7 @@ brooklyn.catalog:
     description: |
       A docker-engine customised with TLS
     itemType: entity
-    iconUrl: https://raw.githubusercontent.com/docker-library/docs/c350af05d3fac7b5c3f6327ac82fe4d990d8729c/docker/logo.png
+    iconUrl: classpath://io.brooklyn.clocker.common:icons/docker.png
     item:
       type: docker-engine
 
@@ -363,7 +363,7 @@ brooklyn.catalog:
     description: |
       A docker-engine configured with resilience policies
     itemType: entity
-    iconUrl: https://raw.githubusercontent.com/docker-library/docs/c350af05d3fac7b5c3f6327ac82fe4d990d8729c/docker/logo.png
+    iconUrl: classpath://io.brooklyn.clocker.common:icons/docker.png
     item:
       type: docker-engine-tls
 
@@ -403,7 +403,7 @@ brooklyn.catalog:
     description: |
       An easy way to launch a Docker container, as a child of a Docker Engine.
     itemType: entity
-    iconUrl: https://raw.githubusercontent.com/docker-library/docs/c350af05d3fac7b5c3f6327ac82fe4d990d8729c/docker/logo.png
+    iconUrl: classpath://io.brooklyn.clocker.common:icons/docker.png
     item:
       type: centos-software-process
 

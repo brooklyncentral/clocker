@@ -14,7 +14,7 @@ brooklyn.catalog:
     description: |
       Creates a Swarm of Docker engines, of configurable initial size, using an Etcd cluster for discovery.
     itemType: template
-    iconUrl: https://raw.githubusercontent.com/docker-library/docs/471fa6e4cb58062ccbf91afc111980f9c7004981/swarm/logo.png
+    iconUrl: classpath://io.brooklyn.clocker.swarm:icons/swarm.png
     item:
       services:
         - type: docker-swarm
@@ -24,7 +24,7 @@ brooklyn.catalog:
     description: |
       Creates a Swarm of Docker engines, of configurable initial size, using an Etcd cluster for discovery.
     itemType: entity
-    iconUrl: https://raw.githubusercontent.com/docker-library/docs/471fa6e4cb58062ccbf91afc111980f9c7004981/swarm/logo.png
+    iconUrl: classpath://io.brooklyn.clocker.swarm:icons/swarm.png
     version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
     publish:      
       license_code: Apache-2.0
@@ -360,7 +360,7 @@ brooklyn.catalog:
     description: |
       A docker-engine customised with TLS and Discovery endpoint
     itemType: entity
-    iconUrl: https://raw.githubusercontent.com/docker-library/docs/c350af05d3fac7b5c3f6327ac82fe4d990d8729c/docker/logo.png
+    iconUrl: classpath://io.brooklyn.clocker.common:icons/docker.png
     item:
       type: docker-engine-with-resilience
 
@@ -399,7 +399,7 @@ brooklyn.catalog:
     description:  |
       A Docker Swarm member node
     itemType: entity
-    iconUrl: https://raw.githubusercontent.com/docker-library/docs/471fa6e4cb58062ccbf91afc111980f9c7004981/swarm/logo.png
+    iconUrl: classpath://io.brooklyn.clocker.swarm:icons/swarm.png
     item:
       type: docker-engine-with-discovery
 
@@ -479,7 +479,7 @@ brooklyn.catalog:
     name: "Docker Swarm Manager"
     description:  The Swarm manager engine for running Docker containers
     itemType: entity
-    iconUrl: https://raw.githubusercontent.com/docker-library/docs/471fa6e4cb58062ccbf91afc111980f9c7004981/swarm/logo.png
+    iconUrl: classpath://io.brooklyn.clocker.swarm:icons/swarm.png
     item:
       type: docker-engine-with-resilience
 

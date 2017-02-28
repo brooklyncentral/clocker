@@ -11,7 +11,7 @@ brooklyn.catalog:
       description: |
         HAProxy load balancer entity
       itemType: template
-      iconUrl: https://media.licdn.com/mpr/mpr/shrink_200_200/AAEAAQAAAAAAAAhhAAAAJGMyYWJjZWExLTljZGMtNDA3ZS05YjU3LTU2ODdmZTk2YTlmNg.png
+      iconUrl: classpath://io.brooklyn.clocker.common:icons/haproxy.png
       item:
         services:
           - type: haproxy-load-balancer
@@ -21,7 +21,7 @@ brooklyn.catalog:
       description: |
         HAProxy load balancer entity
       itemType: entity
-      iconUrl: https://media.licdn.com/mpr/mpr/shrink_200_200/AAEAAQAAAAAAAAhhAAAAJGMyYWJjZWExLTljZGMtNDA3ZS05YjU3LTU2ODdmZTk2YTlmNg.png
+      iconUrl: classpath://io.brooklyn.clocker.common:icons/haproxy.png
       item:
         type: centos-software-process
         name: "haproxy-load-balancer"
