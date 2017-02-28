@@ -58,3 +58,19 @@ brooklyn.catalog:
     - classpath://swarm/catalog.bom
     - classpath://kubernetes/catalog.bom
 ```
+
+## Cpoyright
+
+The following icon images have been used, and their use here is believed to be
+acceptable under their licensing terms or fair use doctrine. The source URLs
+and other links given contain more details:
+
+- [`common/resources/icons/centos.png`](https://commons.wikimedia.org/wiki/File:Centos-logo-light.svg) Remixed version of freely available logo
+- [`common/resources/icons/docker.png`](https://www.docker.com/brand-guidelines) Icon taken from media kit
+- [`common/resources/icons/haproxy.png`](https://pbs.twimg.com/profile_images/737664607301566464/pmfqGAYU.jpg) Fair use of logo from Twitter account for open source project
+- [`common/resources/icons/openssl.png`](https://commons.wikimedia.org/wiki/File:OpenSSL_logo.png) Public domain image
+- [`swarm/resources/icons/swarm.png`](https://www.docker.com/sites/default/files/docker-swarm-hero2.png) Fair use of image from <https://www.docker.com/products/docker-swarm> and also found in Docker media kit
+- [`kubernetes/resources/icons/calico.png`](https://github.com/projectcalico/calico/blob/master/images/favicon.png) APACHE 2.0 <https://github.com/projectcalico/calico/blob/master/LICENSE> image
+- [`kubernetes/resources/icons/flannel.png`](https://github.com/coreos/flannel/blob/master/logos/flannel-horizontal-color.png) APACHE 2.0 <https://github.com/coreos/flannel/blob/master/LICENSE> image
+- [`kubernetes/resources/icons/kubernetes.png`](https://raw.githubusercontent.com/kubernetes/kubernetes/master/logo/logo.png) APACHE 2.0 <https://github.com/kubernetes/kubernetes/blob/master/LICENSE> image
+- [`kubernetes/resources/icons/prometheus.png`](https://github.com/prometheus/docs/blob/master/static/prometheus_logo.png) APACHE 2.0 <https://github.com/prometheus/docs/blob/master/LICENSE> image
