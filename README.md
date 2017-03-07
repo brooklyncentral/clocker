@@ -59,7 +59,7 @@ brooklyn.catalog:
     - classpath://kubernetes/catalog.bom
 ```
 
-## Cpoyright
+## Copyright
 
 The following icon images have been used, and their use here is believed to be
 acceptable under their licensing terms or fair use doctrine. The source URLs
