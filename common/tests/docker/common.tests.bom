@@ -398,6 +398,7 @@ brooklyn.catalog:
             - type: ssh-test
               name: "TEST-3-1 docker run MongoDB"
               command: |
+                docker pull mongo:latest
                 docker run -d --name "test-MongoDB" mongo
             - type: ssh-test
               name: "TEST-3-2 docker ps MongoDB is up"
