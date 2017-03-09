@@ -104,7 +104,7 @@ brooklyn.catalog:
             assertErr:
               contains:
                 $brooklyn:formatString:
-                  - "ping: unknown host workload_D.%s"
+                  - "ping: workload_D.%s: Name or service not known"                
                   - $brooklyn:config("network.name")
             assertOut:
               contains: "ping statistics ---\n4 packets transmitted, 0 received"
