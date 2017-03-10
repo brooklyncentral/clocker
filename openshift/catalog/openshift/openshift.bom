@@ -96,6 +96,11 @@ brooklyn.catalog:
               Size of the OpenShift etcd cluster when created initially
             type: integer
             default: 3
+          - name: openshift.ssh.privateKeyFile
+            label: "SSH private Key"
+            description: |
+              SSH private key file URL for connections within the OpenShift cluster
+            type: string
 
         brooklyn.config:
           start.timeout: 30m
@@ -122,18 +127,30 @@ brooklyn.catalog:
             name: "ansible-server"
 
             brooklyn.config:
+              shell.env:
+                INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
+                RUN_DIR: $brooklyn:attributeWhenReady("run.dir")
               resources.preinstall.latch:
                 $brooklyn:sibling("openshift-origin-cluster").attributeWhenReady("service.isUp")
+              files.preinstall:
+                $brooklyn:config("openshift.ssh.privateKeyFile"): openshift.pem
               templates.preinstall:
                 "classpath://io.brooklyn.clocker.openshift:openshift/inventory": inventory
               install.command: |
-                sudo yum -y install wget git net-tools bind-utils iptables-services bridge-utils bash-completion
+                sudo yum -y install wget git net-tools bind-utils iptables-services bridge-utils bash-completion openssl
                 sudo yum -y update
                 sudo yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
                 sudo sed -i -e "s/^enabled=1/enabled=0/" /etc/yum.repos.d/epel.repo
                 sudo yum -y --enablerepo=epel install ansible pyOpenSSL
                 cd ~
                 git clone https://github.com/openshift/openshift-ansible
+              customize.command: |
+                mv ${INSTALL_DIR}/openshift.pem ~/.ssh/
+                tee ~/.ssh/config <<-EOF
+                IdentityFile=~/.ssh/openshift.pem
+                EOF
+                chmod 600 ~/.ssh/openshift.pem ~/.ssh/config
+                openssl rsa -in ~/.ssh/openshift.pem -pubout >> ~/.ssh/authorized_keys
               launch.command: |
                 cd ~/openshift-ansible
                 ansible-playbook playbooks/byo/config.yml --inventory ${INSTALL_DIR}/inventory
@@ -161,8 +178,9 @@ brooklyn.catalog:
                     $brooklyn:sensor("hosts.map"): $brooklyn:sensor("node.hosts.map")
               - type: org.apache.brooklyn.enricher.stock.Propagator
                 brooklyn.config:
-                  producer: $brooklyn:entity("openshift-lb-machines")
-                  propagating: $brooklyn:sensor("lb.entity.id")
+                  producer: $brooklyn:entity("openshift-lb")
+                  propagating:
+                    - $brooklyn:sensor("lb.entity.id")
 
     - id: openshift-origin-cluster
       name: "OpenShift Origin Cluster"
@@ -248,11 +266,6 @@ brooklyn.catalog:
               openshift.machine.clusterSize: $brooklyn:parent().config("openshift.etcd.clusterSize")
               openshift.machine.minCores: $brooklyn:parent().config("openshift.etcd.minCores")
               openshift.machine.minRam: $brooklyn:parent().config("openshift.etcd.minRam")
-              openshift.machine.spec:
-                $brooklyn:entitySpec:
-                  type: centos7-software-process
-                  id: openshift-etcd
-                  name: "openshift-etcd"
           - type: openshift-machine-cluster
             id: openshift-node-machines
             name: "openshift-node-machines"
@@ -260,24 +273,18 @@ brooklyn.catalog:
               openshift.machine.group: "node"
               openshift.machine.clusterSize: $brooklyn:parent().config("openshift.node.clusterSize")
               openshift.machine.minCores: $brooklyn:parent().config("openshift.node.minCores")
-              openshift.machine.minRam: $brooklyn:parent().config("openshift.node.minRam")]
-          - type: openshift-machine-cluster
-            id: openshift-lb-machines
-            name: "openshift-lb-machines"
+              openshift.machine.minRam: $brooklyn:parent().config("openshift.node.minRam")
+          - type: openshift-machine
+            id: openshift-lb
+            name: "openshift-lb"
             brooklyn.config:
-              openshift.machine.group: "lb"
-              openshift.machine.clusterSize: 1
               openshift.machine.minCores: $brooklyn:parent().config("openshift.lb.minCores")
               openshift.machine.minRam: $brooklyn:parent().config("openshift.lb.minRam")
             brooklyn.enrichers:
-              - type: org.apache.brooklyn.enricher.stock.Joiner
+              - type: org.apache.brooklyn.enricher.stock.Propagator
                 brooklyn.config:
-                  enricher.sourceSensor: $brooklyn:sensor("host.map")
-                  enricher.targetSensor: $brooklyn:sensor("lb.entity.id")
-                  enricher.joiner.quote: false
-                  enricher.joiner.joinMapEntries: false
-                  enricher.joiner.minimum: 1
-                  enricher.joiner.maximum: 1
+                  sensorMapping:
+                    $brooklyn:sensor("entity.id"): $brooklyn:sensor("lb.entity.id")
 
     - id: openshift-machine-cluster
       name: "OpenShift Machine Cluster"
@@ -318,7 +325,7 @@ brooklyn.catalog:
             type: org.apache.brooklyn.api.entity.EntitySpec
             default:
               $brooklyn:entitySpec:
-                type: docker-engine-with-insecure-registry
+                type: openshift-machine
                 id: openshift-machine
                 name: "openshift-machine"
 
@@ -329,9 +336,6 @@ brooklyn.catalog:
               - $brooklyn:config("openshift.machine.group")
           cluster.initial.size: $brooklyn:config("openshift.machine.clusterSize")
           memberSpec: $brooklyn:config("openshift.machine.spec")
-          provisioning.properties:
-            minRam: $brooklyn:config("openshift.machine.minRam")
-            minCores: $brooklyn:config("openshift.machine.minCores")
         brooklyn.enrichers:
           - type: org.apache.brooklyn.enricher.stock.MapAggregator
             brooklyn.config:
@@ -340,3 +344,42 @@ brooklyn.catalog:
               enricher.targetSensor: $brooklyn:sensor("host.map")
               enricher.aggregating.fromMembers: true
               enricher.aggregator.excludeBlank: true
+
+    - id: openshift-machine
+      name: "OpenShift Machine"
+      itemType: entity
+      version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+      publish:
+        license_code: Apache-2.0
+      item:
+        type: docker-engine-with-insecure-registry
+
+        brooklyn.parameters:
+          - name: openshift.machine.minCores
+            label: "Minimum CPU Cores"
+            description: |
+              Minimum CPU cores for provisioning machines
+            default: 4
+          - name: openshift.machine.minRam
+            label: "Minimum RAM"
+            description: |
+              Minimum RAM for provisioning machines
+            default: 8000
+
+        brooklyn.config:
+          provisioning.properties:
+            minRam: $brooklyn:config("openshift.machine.minRam")
+            minCores: $brooklyn:config("openshift.machine.minCores")
+          files.preinstall:
+            $brooklyn:config("openshift.ssh.privateKeyFile"): openshift.pem
+          shell.env:
+            INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
+            RUN_DIR: $brooklyn:attributeWhenReady("run.dir")
+          post.customize.command: |
+            sudo yum -y install openssl
+            mv ${INSTALL_DIR}/openshift.pem ~/.ssh/
+            tee ~/.ssh/config <<-EOF
+            IdentityFile=~/.ssh/openshift.pem
+            EOF
+            chmod 600 ~/.ssh/openshift.pem ~/.ssh/config
+            openssl rsa -in ~/.ssh/openshift.pem -pubout >> ~/.ssh/authorized_keys

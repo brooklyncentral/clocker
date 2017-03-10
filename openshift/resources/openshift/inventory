@@ -11,7 +11,7 @@ lb
 # TODO set tls keys et
 # Set variables common for all OSEv3 hosts
 [OSEv3:vars]
-ansible_ssh_user=root # FIXME incorrect (as of now)
+ansible_ssh_user=centos
 deployment_type=origin # TODO parameterize
 
 # Uncomment the following to enable htpasswd authentication; defaults to
