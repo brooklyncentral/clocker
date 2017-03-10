@@ -168,17 +168,17 @@ brooklyn.catalog:
                 brooklyn.config:
                   producer: $brooklyn:entity("openshift-master-machines")
                   sensorMapping:
-                    $brooklyn:sensor("hosts.map"): $brooklyn:sensor("master.hosts.map")
+                    $brooklyn:sensor("hosts.list"): $brooklyn:sensor("master.hosts.list")
               - type: org.apache.brooklyn.enricher.stock.Propagator
                 brooklyn.config:
                   producer: $brooklyn:entity("openshift-etcd-machines")
                   sensorMapping:
-                    $brooklyn:sensor("hosts.map"): $brooklyn:sensor("etcd.hosts.map")
+                    $brooklyn:sensor("hosts.list"): $brooklyn:sensor("etcd.hosts.list")
               - type: org.apache.brooklyn.enricher.stock.Propagator
                 brooklyn.config:
                   producer: $brooklyn:entity("openshift-node-machines")
                   sensorMapping:
-                    $brooklyn:sensor("hosts.map"): $brooklyn:sensor("node.hosts.map")
+                    $brooklyn:sensor("hosts.list"): $brooklyn:sensor("node.hosts.list")
               - type: org.apache.brooklyn.enricher.stock.Propagator
                 brooklyn.config:
                   producer: $brooklyn:entity("openshift-lb")
@@ -351,13 +351,12 @@ brooklyn.catalog:
           cluster.initial.size: $brooklyn:config("openshift.machine.clusterSize")
           memberSpec: $brooklyn:config("openshift.machine.spec")
         brooklyn.enrichers:
-          - type: org.apache.brooklyn.enricher.stock.MapAggregator
+          - type: org.apache.brooklyn.enricher.stock.Aggregator
             brooklyn.config:
-              enricher.keySensor: $brooklyn:sensor("entity.id")
-              enricher.valueSensor: $brooklyn:sensor("entity.id")
-              enricher.targetSensor: $brooklyn:sensor("hosts.map")
+              uniqueTag: kubernetes-endpoint-aggregator
+              enricher.sourceSensor: $brooklyn:sensor("entity.id")
+              enricher.targetSensor: $brooklyn:sensor("hosts.list")
               enricher.aggregating.fromMembers: true
-              enricher.aggregator.excludeBlank: true
           - type: org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic$ComputeServiceIndicatorsFromChildrenAndMembers
             brooklyn.config:
               uniqueTag: service-lifecycle-indicators-from-members

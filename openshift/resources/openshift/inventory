@@ -39,13 +39,13 @@ openshift_clock_enabled=true
 
 # host group for masters
 [masters]
-[#list attribute['master.hosts.map']?keys as hostname]
+[#list attribute['master.hosts.list'] as hostname]
 ${hostname}.${config['openshift.domain']}
 [/#list]
 
 # host group for etcd
 [etcd]
-[#list attribute['etcd.hosts.map']?keys as hostname]
+[#list attribute['etcd.hosts.list'] as hostname]
 ${hostname}.${config['openshift.domain']}
 [/#list]
 
@@ -55,12 +55,12 @@ ${attribute['lb.entity.id']}.${config['openshift.domain']}
 
 # host group for nodes, includes region info
 [nodes]
-[#list attribute['master.hosts.map']?keys as hostname]
+[#list attribute['master.hosts.list'] as hostname]
 ${hostname}.${config['openshift.domain']} openshift_node_labels="{'region': 'infra', 'zone': 'default'}"
 [/#list]
-[#list attribute['etcd.hosts.map']?keys as hostname]
+[#list attribute['etcd.hosts.list'] as hostname]
 ${hostname}.${config['openshift.domain']} openshift_node_labels="{'region': 'infra', 'zone': 'default'}"
 [/#list]
-[#list attribute['node.hosts.map']?keys as hostname]
+[#list attribute['node.hosts.list'] as hostname]
 ${hostname}.${config['openshift.domain']} openshift_node_labels="{'region': 'primary', 'zone': 'default'}"
 [/#list]
