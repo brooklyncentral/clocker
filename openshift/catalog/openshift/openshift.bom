@@ -206,12 +206,12 @@ brooklyn.catalog:
             label: "Master Minimum CPU Cores"
             description: |
               Minimum CPU cores for provisioning OpenShift master machines
-            default: 8
+            default: 2
           - name: openshift.master.minRam
             label: "Master Minimum RAM"
             description: |
               Minimum RAM for provisioning OpenShift master machines
-            default: 20000
+            default: 4g
           - name: openshift.node.clusterSize
             label: "Node Cluster Size"
             description: |
@@ -222,12 +222,12 @@ brooklyn.catalog:
             label: "Node Minimum CPU Cores"
             description: |
               Minimum CPU cores for provisioning OpenShift node machines
-            default: 16
+            default: 4
           - name: openshift.node.minRam
             label: "Node Minimum RAM"
             description: |
               Minimum RAM for provisioning OpenShift node machines
-            default: 40000
+            default: 8g
           - name: openshift.etcd.clusterSize
             label: "Etcd Cluster Size"
             type: integer
@@ -236,22 +236,22 @@ brooklyn.catalog:
             label: "Etcd Minimum CPU Cores"
             description: |
               Minimum CPU cores for provisioning OpenShift etcd machines
-            default: 4
+            default: 2
           - name: openshift.etcd.minRam
             label: "Etcd Minimum RAM"
             description: |
               Minimum RAM for provisioning OpenShift etcd machines
-            default: 8000
+            default: 4g
           - name: openshift.lb.minCores
             label: "Load Balancer Minimum CPU Cores"
             description: |
               Minimum CPU cores for provisioning OpenShift etcd machines
-            default: 4
+            default: 2
           - name: openshift.lb.minRam
             label: "Load Balancer Minimum RAM"
             description: |
               Minimum RAM for provisioning OpenShift etcd machines
-            default: 8000
+            default: 4g
 
         brooklyn.children:
           - type: openshift-machine-cluster
