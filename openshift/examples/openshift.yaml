@@ -3,11 +3,7 @@ name: "openshift"
 description: |
   Creates an OpenShift Origin cluster with redundant master servers.
 
-location:
-  jclouds:aws-ec2:
-    region: eu-west-1
-    privateKeyFile: "~/.ssh/openshift.pem"
-    hardwareId: m4.xlarge
+location: aws-eu-central-1
 
 services:
   - type: openshift-origin-ansible-template
@@ -15,6 +11,9 @@ services:
     name: "openshift"
     brooklyn.config:
       start.timeout: 30m
+      openshift.domain: "openshift.local"
       openshift.master.clusterSize: 2
       openshift.etcd.clusterSize: 3
       openshift.node.clusterSize: 5
+      openshift.ssh.loginUser: "amp"
+      openshift.ssh.privateKeyFile: "~/.ssh/openshift.pem"

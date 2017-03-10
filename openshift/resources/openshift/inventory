@@ -11,7 +11,7 @@ lb
 # TODO set tls keys et
 # Set variables common for all OSEv3 hosts
 [OSEv3:vars]
-ansible_ssh_user=centos
+ansible_ssh_user=${config['openshift.ssh.loginUser']}
 deployment_type=origin # TODO parameterize
 
 # Uncomment the following to enable htpasswd authentication; defaults to
@@ -25,8 +25,8 @@ deployment_type=origin # TODO parameterize
 # or to one or all of the masters defined in the inventory if no load
 # balancer is present.
 openshift_master_cluster_method=native
-openshift_master_cluster_hostname=${attribute['lb.entity.id']}.${attribute['openshift.domain']}
-openshift_master_cluster_public_hostname=${attribute['lb.entity.id']}.${attribute['openshift.domain']}
+openshift_master_cluster_hostname=${attribute['lb.entity.id']}.${config['openshift.domain']}
+openshift_master_cluster_public_hostname=${attribute['lb.entity.id']}.${config['openshift.domain']}
 
 # apply updated node defaults
 openshift_node_kubelet_args={'pods-per-core': ['10'], 'max-pods': ['250'], 'image-gc-high-threshold': ['90'], 'image-gc-low-threshold': ['80']}

@@ -6,7 +6,7 @@ brooklyn.catalog:
     license_code: APACHE-2.0
 
   items:
-    - https://github.com/brooklyncentral/brooklyn-dns/releases/download/v0.1.2/brooklyn-dns-etc-hosts-generator.bom
+    - classpath://io.brooklyn.clocker.kubernetes:kubernetes/brooklyn-dns-etc-hosts-generator.bom
 
     - id: openshift-origin-ansible-template
       name: "OpenShift Origin Cluster"
@@ -41,13 +41,9 @@ brooklyn.catalog:
                       - $brooklyn:attributeWhenReady("application.id")
                 - $brooklyn:object:
                     type: org.apache.brooklyn.core.entity.EntityPredicates
-                    factoryMethod.name: "displayNameSatisfies"
+                    factoryMethod.name: "configNotNull"
                     factoryMethod.args:
-                      - $brooklyn:object:
-                          type: com.google.common.base.Predicates
-                          factoryMethod.name: "in"
-                          factoryMethod.args:
-                            - [ "openshift-master", "openshift-node", "etcd-node", "ansible-server" ]
+                      - "openshift.configureHostsFile"
 
     - id: docker-engine-with-insecure-registry
       name: "Docker Engine with insecure registry"
@@ -97,8 +93,13 @@ brooklyn.catalog:
               Size of the OpenShift etcd cluster when created initially
             type: integer
             default: 3
+          - name: openshift.ssh.loginUser
+            label: "SSH Login User"
+            description: |
+              SSH user for connections within the OpenShift cluster
+            type: string
           - name: openshift.ssh.privateKeyFile
-            label: "SSH private Key"
+            label: "SSH Private Key"
             description: |
               SSH private key file URL for connections within the OpenShift cluster
             type: string
@@ -128,11 +129,12 @@ brooklyn.catalog:
             name: "ansible-server"
 
             brooklyn.config:
+              openshift.configureHostsFile: true
               shell.env:
                 INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
                 RUN_DIR: $brooklyn:attributeWhenReady("run.dir")
-              resources.preinstall.latch:
-                $brooklyn:sibling("openshift-origin-cluster").attributeWhenReady("service.isUp")
+              resources.preInstall.latch:
+                $brooklyn:component("openshift-node-machines").attributeWhenReady("service.isUp")
               files.preinstall:
                 $brooklyn:config("openshift.ssh.privateKeyFile"): openshift.pem
               templates.preinstall:
@@ -151,7 +153,7 @@ brooklyn.catalog:
                 IdentityFile=~/.ssh/openshift.pem
                 EOF
                 chmod 600 ~/.ssh/openshift.pem ~/.ssh/config
-                openssl rsa -in ~/.ssh/openshift.pem -pubout >> ~/.ssh/authorized_keys
+                ssh-keygen -y -f ~/.ssh/openshift.pem >> ~/.ssh/authorized_keys
               launch.command: |
                 cd ~/openshift-ansible
                 ansible-playbook playbooks/byo/config.yml --inventory ${INSTALL_DIR}/inventory
@@ -343,7 +345,7 @@ brooklyn.catalog:
             brooklyn.config:
               enricher.keySensor: $brooklyn:sensor("entity.id")
               enricher.valueSensor: $brooklyn:sensor("entity.id")
-              enricher.targetSensor: $brooklyn:sensor("host.map")
+              enricher.targetSensor: $brooklyn:sensor("hosts.map")
               enricher.aggregating.fromMembers: true
               enricher.aggregator.excludeBlank: true
 
@@ -369,6 +371,7 @@ brooklyn.catalog:
             default: 8000
 
         brooklyn.config:
+          openshift.configureHostsFile: true
           provisioning.properties:
             minRam: $brooklyn:config("openshift.machine.minRam")
             minCores: $brooklyn:config("openshift.machine.minCores")
@@ -384,4 +387,4 @@ brooklyn.catalog:
             IdentityFile=~/.ssh/openshift.pem
             EOF
             chmod 600 ~/.ssh/openshift.pem ~/.ssh/config
-            openssl rsa -in ~/.ssh/openshift.pem -pubout >> ~/.ssh/authorized_keys
+            ssh-keygen -y -f ~/.ssh/openshift.pem >> ~/.ssh/authorized_keys
