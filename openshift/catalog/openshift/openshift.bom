@@ -144,8 +144,10 @@ brooklyn.catalog:
                 sudo yum -y update
                 sudo yum -y install epel-release
                 sudo sed -i -e "s/^enabled=1/enabled=0/" /etc/yum.repos.d/epel.repo
-                sudo yum -y --enablerepo=epel install ansible pyOpenSSL
+                sudo yum -y --enablerepo=epel install pyOpenSSL python-passlib python-keyczar sshpass python-httplib2
                 cd ~
+                wget http://mirror.centos.org/centos/7/paas/x86_64/openshift-origin/common/ansible-2.2.0.0-1.el7.noarch.rpm
+                sudo yum install -y ./ansible-2.2.0.0-1.el7.noarch.rpm
                 git clone https://github.com/openshift/openshift-ansible
               customize.command: |
                 mv ${INSTALL_DIR}/openshift.pem ~/.ssh/
