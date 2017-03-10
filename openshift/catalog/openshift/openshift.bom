@@ -134,7 +134,7 @@ brooklyn.catalog:
                 INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
                 RUN_DIR: $brooklyn:attributeWhenReady("run.dir")
               resources.preInstall.latch:
-                $brooklyn:component("openshift-node-machines").attributeWhenReady("service.isUp")
+                $brooklyn:sibling("openshift-origin-cluster").attributeWhenReady("service.isUp")
               files.preinstall:
                 $brooklyn:config("openshift.ssh.privateKeyFile"): openshift.pem
               templates.preinstall:
@@ -290,6 +290,16 @@ brooklyn.catalog:
                   sensorMapping:
                     $brooklyn:sensor("entity.id"): $brooklyn:sensor("lb.entity.id")
 
+        brooklyn.enrichers:
+          - type: org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic$ComputeServiceIndicatorsFromChildrenAndMembers
+            brooklyn.config:
+              uniqueTag: service-lifecycle-indicators-from-children
+              enricher.aggregating.fromChildren: true
+              enricher.aggregating.fromMembers: false
+              enricher.suppressDuplicates: true
+              enricher.service_state.children_and_members.quorum.up: all
+              enricher.service_state.children_and_members.ignore_entities.service_state_values: [ "STOPPING", "STOPPED", "DESTROYED" ]
+
     - id: openshift-machine-cluster
       name: "OpenShift Machine Cluster"
       itemType: entity
@@ -348,6 +358,15 @@ brooklyn.catalog:
               enricher.targetSensor: $brooklyn:sensor("hosts.map")
               enricher.aggregating.fromMembers: true
               enricher.aggregator.excludeBlank: true
+          - type: org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic$ComputeServiceIndicatorsFromChildrenAndMembers
+            brooklyn.config:
+              uniqueTag: service-lifecycle-indicators-from-members
+              enricher.aggregating.fromChildren: false
+              enricher.aggregating.fromMembers: true
+              enricher.suppressDuplicates: true
+              enricher.service_state.children_and_members.quorum.up: all
+              enricher.service_state.children_and_members.ignore_entities.service_state_values: [ "STOPPING", "STOPPED", "DESTROYED" ]
+
 
     - id: openshift-machine
       name: "OpenShift Machine"
