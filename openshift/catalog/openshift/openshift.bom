@@ -12,7 +12,7 @@ brooklyn.catalog:
       name: "OpenShift Origin Cluster"
       description: |
         OpenShift Origin cluster deployment using Ansible
-      iconUrl: https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/OpenShift-LogoType.svg/225px-OpenShift-LogoType.svg.png
+      iconUrl: classpath://io.brooklyn.clocker.openshift:icons/openshift.png
       itemType: template
       item:
         services:
@@ -55,7 +55,7 @@ brooklyn.catalog:
         A docker-engine customised to allow access to non-TLS secured registry
         for OpenShift use.
       itemType: entity
-      iconUrl: https://raw.githubusercontent.com/docker-library/docs/c350af05d3fac7b5c3f6327ac82fe4d990d8729c/docker/logo.png
+      iconUrl: classpath://io.brooklyn.clocker.common:icons/docker.png
       item:
         type: docker-engine
 
@@ -65,6 +65,7 @@ brooklyn.catalog:
     - id: openshift-origin-ansible
       name: "OpenShift Origin Cluster"
       itemType: entity
+      iconUrl: classpath://io.brooklyn.clocker.openshift:icons/openshift.png
       version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
       publish:
         license_code: Apache-2.0
@@ -185,6 +186,7 @@ brooklyn.catalog:
     - id: openshift-origin-cluster
       name: "OpenShift Origin Cluster"
       itemType: entity
+      iconUrl: classpath://io.brooklyn.clocker.openshift:icons/openshift.png
       version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
       publish:
         license_code: Apache-2.0
