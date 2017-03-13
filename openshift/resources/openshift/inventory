@@ -7,15 +7,15 @@ nodes
 etcd
 lb
 
-# TODO more here
-# TODO set tls keys et
 # Set variables common for all OSEv3 hosts
 [OSEv3:vars]
-ansible_ssh_user=${config['openshift.ssh.loginUser']}
-deployment_type=origin # TODO parameterize
+ansible_user=${config['openshift.ssh.loginUser']}
+ansible_become=true
+ansible_ssh_private_key_file=/home/users/${config['openshift.ssh.loginUser']}/.ssh/openshift.pem
+product_type=openshift
+deployment_type=origin
 
-# Uncomment the following to enable htpasswd authentication; defaults to
-# DenyAllPasswordIdentityProvider.
+# Uncomment the following to enable htpasswd authentication; defaults to DenyAllPasswordIdentityProvider.
 #openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider', 'filename': '/etc/origin/master/htpasswd'}]
 
 # Native high availbility cluster method with optional load balancer.
