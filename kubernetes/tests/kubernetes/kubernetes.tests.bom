@@ -116,17 +116,7 @@ brooklyn.catalog:
           command: |
             kubectl get deployments | grep workload- | wc -l
           assertOut:
-            contains: '0'
-        - type: org.apache.brooklyn.test.framework.TestHttpCall
-          name: "14. Check Prometheus UI is Reachable"
-          url:
-            $brooklyn:formatString:
-              - "http://%s:%s"
-              - $brooklyn:entity("prometheus").attributeWhenReady("host.address")
-              - $brooklyn:entity("prometheus").attributeWhenReady("kubernetes.service.port")
-          applyAssertionTo: status
-          assert:
-          - equals: 200
+            contains: '0'        
         - type: org.apache.brooklyn.test.framework.TestSensor
           name: "15. Size of kubernetes master cluster is 3"
           targetId: kubernetes-master-cluster
