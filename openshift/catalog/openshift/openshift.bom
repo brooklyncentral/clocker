@@ -376,7 +376,7 @@ brooklyn.catalog:
       publish:
         license_code: Apache-2.0
       item:
-        type: docker-engine-with-insecure-registry
+        type: empty-software-process
 
         brooklyn.parameters:
           - name: openshift.machine.minCores
@@ -401,7 +401,9 @@ brooklyn.catalog:
             INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
             RUN_DIR: $brooklyn:attributeWhenReady("run.dir")
           post.customize.command: |
-            sudo yum -y install openssl
+            sudo yum install -y NetworkManager
+            sudo systemctl start NetworkManager
+            sudo yum install -y openssl
             mv ${INSTALL_DIR}/openshift.pem ~/.ssh/
             tee ~/.ssh/config <<-EOF
             IdentityFile=~/.ssh/openshift.pem
