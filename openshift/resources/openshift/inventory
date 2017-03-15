@@ -1,60 +1,62 @@
 [#ftl]
-# Create an OSEv3 group that contains the master, nodes, etcd, and lb groups.
-# The lb group lets Ansible configure HAProxy as the load balancing solution.
+# Create an OSEv3 group that contains the master, nodes, etcd, and lb groups
 [OSEv3:children]
 masters
 nodes
 etcd
 lb
 
-# Set variables common for all OSEv3 hosts
+# Set OSEv3 configuration common to all hosts
 [OSEv3:vars]
 ansible_user=${config['openshift.ssh.loginUser']}
 ansible_become=true
 ansible_ssh_private_key_file=/home/users/${config['openshift.ssh.loginUser']}/.ssh/openshift.pem
-product_type=openshift
+
+# Level 2 is default
+debug_level=3
+
+# Deployment can be origin, online, atomic-enterprise, and openshift-enterprise
 deployment_type=origin
+product_type=openshift
+
+#docker_version="1.12.x"
+docker_upgrade=False
+#etcd_version="3.1.0"
+#openshift_release=v3.4
+openshift_install_examples=true
 
 # TODO add configurable htpasswd authentication
-# openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider', 'filename': '/etc/origin/master/htpasswd'}]
+#openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider', 'filename': '/etc/origin/master/htpasswd'}]
 openshift_master_identity_providers=[{'name': 'allow_all', 'login': 'true', 'challenge': 'true', 'kind': 'AllowAllPasswordIdentityProvider'}]
 
-# Native high availbility cluster method with optional load balancer.
-# If no lb group is defined installer assumes that a load balancer has
-# been preconfigured. For installation the value of
-# openshift_master_cluster_hostname must resolve to the load balancer
-# or to one or all of the masters defined in the inventory if no load
-# balancer is present.
+# HAProxy load balancer for master cluster
 openshift_master_cluster_method=native
 openshift_master_cluster_hostname=${attribute['lb.entity.id']}.${config['openshift.domain']}
 openshift_master_cluster_public_hostname=${attribute['lb.entity.id']}.${config['openshift.domain']}
 
-# apply updated node defaults
+# Set underlying Kubernetes defaults for nodes
 openshift_node_kubelet_args={'pods-per-core': ['10'], 'max-pods': ['250'], 'image-gc-high-threshold': ['90'], 'image-gc-low-threshold': ['80']}
 
-# override the default controller lease ttl
-#osm_controller_lease_ttl=30
-
-# enable ntp on masters to ensure proper failover
+# Enable NTP on masters to ensure proper failover
 openshift_clock_enabled=true
 
-# host group for masters
+# Host group for masters
 [masters]
 [#list attribute['master.hosts.list'] as hostname]
 ${hostname}.${config['openshift.domain']}
 [/#list]
 
-# host group for etcd
+# Host group for etcd
 [etcd]
 [#list attribute['etcd.hosts.list'] as hostname]
 ${hostname}.${config['openshift.domain']}
 [/#list]
 
-# Specify load balancer host
+# Load balancer host
 [lb]
 ${attribute['lb.entity.id']}.${config['openshift.domain']}
 
-# host group for nodes, includes region info
+# Host group for nodes, includes region info
 [nodes]
 [#list attribute['master.hosts.list'] as hostname]
 ${hostname}.${config['openshift.domain']} openshift_node_labels="{'region': 'infra', 'zone': 'default'}"
