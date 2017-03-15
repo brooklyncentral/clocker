@@ -15,8 +15,9 @@ ansible_ssh_private_key_file=/home/users/${config['openshift.ssh.loginUser']}/.s
 product_type=openshift
 deployment_type=origin
 
-# Uncomment the following to enable htpasswd authentication; defaults to DenyAllPasswordIdentityProvider.
-#openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider', 'filename': '/etc/origin/master/htpasswd'}]
+# TODO add configurable htpasswd authentication
+# openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider', 'filename': '/etc/origin/master/htpasswd'}]
+openshift_master_identity_providers=[{'name': 'allow_all', 'login': 'true', 'challenge': 'true', 'kind': 'AllowAllPasswordIdentityProvider'}]
 
 # Native high availbility cluster method with optional load balancer.
 # If no lb group is defined installer assumes that a load balancer has
