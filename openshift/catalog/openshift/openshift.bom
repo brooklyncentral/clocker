@@ -264,6 +264,42 @@ brooklyn.catalog:
               openshift.machine.clusterSize: $brooklyn:parent().config("openshift.master.clusterSize")
               openshift.machine.minCores: $brooklyn:parent().config("openshift.master.minCores")
               openshift.machine.minRam: $brooklyn:parent().config("openshift.master.minRam")
+              openshift.machine.spec:
+                $brooklyn:entitySpec:
+                  type: openshift-machine
+                  id: openshift-machine
+                  name: "openshift-machine"
+                  brooklyn.initializers:
+                    - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+                      brooklyn.config:
+                        name: disableScheduling
+                        description: Disable Scheduling on a Node
+                        command: |
+                          oc adm manage-node $ip --schedulable=false
+                        parameters:
+                          ip:
+                            description: The IP address of the node
+                            defaultValue: 127.0.0.1
+                    - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+                      brooklyn.config:
+                        name: evacuateNode
+                        description: Evacuate a Node
+                        command: |
+                          oc adm manage-node $ip --evacuate --force
+                        parameters:
+                          ip:
+                            description: The IP address of the node
+                            defaultValue: 127.0.0.1
+                    - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+                      brooklyn.config:
+                        name: removeNode
+                        description: Remove a Node
+                        command: |
+                          oc delete node $ip
+                        parameters:
+                          ip:
+                            description: The IP address of the node
+                            defaultValue: 127.0.0.1
           - type: openshift-machine-cluster
             id: openshift-etcd-machines
             name: "openshift-etcd-machines"
