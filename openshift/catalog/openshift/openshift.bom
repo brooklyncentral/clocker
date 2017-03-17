@@ -187,6 +187,48 @@ brooklyn.catalog:
                   propagating:
                     - $brooklyn:sensor("lb.entity.id")
 
+            brooklyn.initializers:
+              - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+                brooklyn.config:
+                  name: scaleOut
+                  description: |
+                    Scale out the cluster with K extra nodes
+                  parameters:
+                    k:
+                      description: |
+                        Number of new nodes that are being added
+                  env:
+                    OPENSHIFT_DOMAIN: $brooklyn:config("openshift.domain")
+                    INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
+                    RUN_DIR: $brooklyn:attributeWhenReady("run.dir")
+                  command: |
+                    # how many current nodes in cluster?
+                    # check oc adm get nodes list
+                    NODES=$(sudo oc --config=/etc/origin/master/admin.kubeconfig get nodes | grep "Ready" | wc -l)
+                    # or look in inventory file
+                    # wait for k more
+                    HOSTS=${NODES}
+                    # count difference
+                    while [ $((HOSTS - NODES)) -ne $((k + 2))} ] # load balancer and ansible server
+                    do
+                      # check hosts file
+                      HOSTS=$(grep ${OPENSHIFT_DOMAIN} /etc/hosts | wc -l)
+                      sleep 60
+                    done
+                    # wait for service up on new nodes
+                    # set up inventory files
+                    cp ${INSTALL_DIR}/inventory ${RUN_DIR}/inventory
+                    ( echo ; echo "[new_nodes]" ) >> ${RUN_DIR}/inventory
+                    # determine their names
+                    # loop through
+                    for node in $(grep ${OPENSHIFT_DOMAIN} /etc/hosts | cut -d\  -f2)
+                    do
+                      # add to inventory files
+                      echo "${node}.${OPENSHIFT_DOMAIN} openshift_node_labels=\"{'region': 'primary', 'zone': 'default'}\"" >> ${INSTALL_DIR}/inventory
+                      echo "${node}.${OPENSHIFT_DOMAIN} openshift_node_labels=\"{'region': 'primary', 'zone': 'default'}\"" >> ${RUN_DIR}/inventory
+                    # call scale out playbook
+                    ansible-playbook playbooks/byo/scaleOut.yml --inventory ${RUN_DIR}/inventory
+
     - id: openshift-origin-cluster
       name: "OpenShift Origin Cluster"
       itemType: entity
