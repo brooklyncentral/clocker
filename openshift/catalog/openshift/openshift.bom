@@ -192,42 +192,33 @@ brooklyn.catalog:
                 brooklyn.config:
                   name: scaleOut
                   description: |
-                    Scale out the cluster with K extra nodes
+                    Scale out the cluster onto the specified entities
                   parameters:
-                    k:
+                    entities:
                       description: |
-                        Number of new nodes that are being added
+                        List of entity ids to scale out onto
                   env:
                     OPENSHIFT_DOMAIN: $brooklyn:config("openshift.domain")
                     INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
                     RUN_DIR: $brooklyn:attributeWhenReady("run.dir")
+                    ENTITY_ID: $brooklyn:attributeWhenReady("entity.id")
                   command: |
-                    # how many current nodes in cluster?
-                    # check oc adm get nodes list
-                    NODES=$(sudo oc --config=/etc/origin/master/admin.kubeconfig get nodes | grep "Ready" | wc -l)
-                    # or look in inventory file
-                    # wait for k more
-                    HOSTS=${NODES}
-                    # count difference
-                    while [ $((HOSTS - NODES)) -ne $((k + 2))} ] # load balancer and ansible server
-                    do
-                      # check hosts file
-                      HOSTS=$(grep ${OPENSHIFT_DOMAIN} /etc/hosts | wc -l)
-                      sleep 60
-                    done
-                    # wait for service up on new nodes
-                    # set up inventory files
+                    (
+                    flock 9
                     cp ${INSTALL_DIR}/inventory ${RUN_DIR}/inventory
                     ( echo ; echo "[new_nodes]" ) >> ${RUN_DIR}/inventory
-                    # determine their names
-                    # loop through
-                    for node in $(grep ${OPENSHIFT_DOMAIN} /etc/hosts | cut -d\  -f2)
+                    sed -i -e "s/^# new_nodes$/new_nodes/" ${RUN_DIR}/inventory
+                    for node in $(grep ${OPENSHIFT_DOMAIN} /etc/hosts | grep -v ${ENTITY_ID} | cut -d\  -f2)
                     do
-                      # add to inventory files
-                      echo "${node}.${OPENSHIFT_DOMAIN} openshift_node_labels=\"{'region': 'primary', 'zone': 'default'}\"" >> ${INSTALL_DIR}/inventory
-                      echo "${node}.${OPENSHIFT_DOMAIN} openshift_node_labels=\"{'region': 'primary', 'zone': 'default'}\"" >> ${RUN_DIR}/inventory
-                    # call scale out playbook
-                    ansible-playbook playbooks/byo/scaleOut.yml --inventory ${RUN_DIR}/inventory
+                      if ! grep "${node}.${OPENSHIFT_DOMAIN}" ${INSTALL_DIR}/inventory
+                      then
+                        echo "${node}.${OPENSHIFT_DOMAIN} openshift_node_labels=\"{'region': 'primary', 'zone': 'default'}\"" >> ${INSTALL_DIR}/inventory
+                        echo "${node}.${OPENSHIFT_DOMAIN} openshift_node_labels=\"{'region': 'primary', 'zone': 'default'}\"" >> ${RUN_DIR}/inventory
+                      fi
+                    done
+                    cd ${RUN_DIR}/openshift-ansible
+                    ansible-playbook ./playbooks/byo/openshift-node/scaleup.yml --inventory ${RUN_DIR}/inventory
+                    ) 9>> /tmp/scaleOut.${ENTITY_ID}.lock
 
     - id: openshift-origin-cluster
       name: "OpenShift Origin Cluster"
