@@ -145,10 +145,12 @@ brooklyn.catalog:
                 sudo yum -y install epel-release
                 sudo sed -i -e "s/^enabled=1/enabled=0/" /etc/yum.repos.d/epel.repo
                 sudo yum -y --enablerepo=epel install pyOpenSSL python-passlib python-keyczar sshpass python-httplib2
-                cd ~
+                cd ${RUN_DIR}
                 wget http://mirror.centos.org/centos/7/paas/x86_64/openshift-origin/common/ansible-2.2.0.0-1.el7.noarch.rpm
                 sudo yum install -y ./ansible-2.2.0.0-1.el7.noarch.rpm
                 git clone https://github.com/openshift/openshift-ansible
+                cd openshift-ansible
+                git checkout tags/openshift-ansible-3.5.28-1
               customize.command: |
                 mv ${INSTALL_DIR}/openshift.pem ~/.ssh/
                 tee ~/.ssh/config <<-EOF
@@ -157,12 +159,12 @@ brooklyn.catalog:
                 chmod 600 ~/.ssh/openshift.pem ~/.ssh/config
                 ssh-keygen -y -f ~/.ssh/openshift.pem >> ~/.ssh/authorized_keys
               launch.command: |
-                cd ~/openshift-ansible
+                cd ${RUN_DIR}/openshift-ansible
                 ansible-playbook playbooks/byo/config.yml --inventory ${INSTALL_DIR}/inventory
               checkRunning.command: |
                 which ansible-playbook
               stop.command: |
-                cd ~/openshift-ansible
+                cd ${RUN_DIR}/openshift-ansible
                 ansible-playbook playbooks/adhoc/uninstall.yml --inventory ${INSTALL_DIR}/inventory
 
             brooklyn.enrichers:
@@ -429,15 +431,19 @@ brooklyn.catalog:
                     - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
                       brooklyn.config:
                         name: selectOldestNodes
-                        description: Get the K oldest nodes
-                        command: |
-                          oc get nodes ${nodes} --sort-by=.metadata.creationTimestamp | awk '{if (NR!=1 && $2=="Ready") {print $1}}' | head -${number}
+                        description: |
+                          Get the K oldest nodes
                         parameters:
-                          nodes:
-                            description: A space spearated list of nodes from which to choose
-                          number:
-                            description: The number of nodes to get
-                            defaultValue: 1
+                          k:
+                            description: |
+                              The number of nodes to get
+                        env:
+                          NODES: $brooklyn:entity("openshift-node-machines").attributeWhenReady("addresses")
+                        command: |
+                          oc get nodes ${NODES} --sort-by=.metadata.creationTimestamp |
+                            awk '{if (NR!=1 && $2=="Ready") {print $1}}' |
+                            head -${k}
+
           - type: openshift-machine-cluster
             id: openshift-etcd-machines
             name: "openshift-etcd-machines"
@@ -536,13 +542,27 @@ brooklyn.catalog:
               - $brooklyn:config("openshift.machine.group")
           cluster.initial.size: $brooklyn:config("openshift.machine.clusterSize")
           memberSpec: $brooklyn:config("openshift.machine.spec")
+
         brooklyn.enrichers:
           - type: org.apache.brooklyn.enricher.stock.Aggregator
             brooklyn.config:
-              uniqueTag: kubernetes-endpoint-aggregator
+              uniqueTag: openshift-host-aggregator
               enricher.sourceSensor: $brooklyn:sensor("entity.id")
               enricher.targetSensor: $brooklyn:sensor("hosts.list")
               enricher.aggregating.fromMembers: true
+          - type: org.apache.brooklyn.enricher.stock.Aggregator
+            brooklyn.config:
+              uniqueTag: openshift-address-aggregator
+              enricher.sourceSensor: $brooklyn:sensor("host.address")
+              enricher.targetSensor: $brooklyn:sensor("addresses.list")
+              enricher.aggregating.fromMembers: true
+          - type: org.apache.brooklyn.enricher.stock.Joiner
+            brooklyn.config:
+              uniqueTag: openshift-address-joiner
+              enricher.sourceSensor: $brooklyn:sensor("addresses.list")
+              enricher.targetSensor: $brooklyn:sensor("addresses")
+              enricher.joiner.quote: false
+              enricher.joiner.separator: " "
           - type: org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic$ComputeServiceIndicatorsFromChildrenAndMembers
             brooklyn.config:
               uniqueTag: service-lifecycle-indicators-from-members
