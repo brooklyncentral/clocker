@@ -188,33 +188,123 @@ brooklyn.catalog:
                     - $brooklyn:sensor("lb.entity.id")
 
             brooklyn.initializers:
-              - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+              - type: org.apache.brooklyn.core.effector.composite.SequenceEffector
                 brooklyn.config:
-                  name: scaleOut
+                  name: repaveCluster
                   description: |
-                    Scale out the cluster onto the specified entities
+                    Repave K nodes of the cluster
+                  parameters:
+                    k:
+                      description: |
+                        The number of nodes to repave
+                  sequence:
+                    - resizeNodes
+                    - updateNodes
+
+              - type: org.apache.brooklyn.core.effector.composite.ComposeEffector
+                brooklyn.config:
+                  name: resizeNodes
+                  description: |
+                    Resize the cluster by adding an additional K nodes
+                  parameters:
+                    k:
+                      description: |
+                        The number of nodes to add
+                  compose:
+                    - resizeByDelta:
+                        target: $brooklyn:entity("openshift-node-machines")
+                        input:
+                          delta: k
+                    - getEntityIds:
+                        input: entities
+                    - scaleOutNodes:
+                        input: entities
+
+              - type: org.apache.brooklyn.core.effector.composite.TransformEffector
+                brooklyn.config:
+                  name: getEntityIds
+                  description: |
+                    Transform a list of entities into a list of their IDs
                   parameters:
                     entities:
                       description: |
-                        List of entity ids to scale out onto
+                        The list of entities
+                  input: entities
+                  function:
+                    $brooklyn:object:
+                      type: org.apache.brooklyn.core.entity.EntityFunctions
+                      factoryMethod.name: "id"
+
+              - type: org.apache.brooklyn.core.effector.composite.ComposeEffector
+                brooklyn.config:
+                  name: updateNodes
+                  description: |
+                    Update the cluster by stopping and draining the oldest
+                    K nodes, and then removing them
+                  parameters:
+                    k:
+                      description: |
+                        The number of nodes to select
+                  compose:
+                    - selectOldestNodes:
+                        target: $brooklyn:entity("openshift-master")
+                    - stopNodes:
+                        input: nodes
+
+              - type: org.apache.brooklyn.core.effector.composite.LoopEffector
+                brooklyn.config:
+                  name: stopNodes
+                  description: |
+                    Stop, drain and remove the list of nodes
+                  parameters:
+                    nodes:
+                      description: |
+                        List of IP addresses of nodes
+                  input: nodes
+                  loop:
+                    stopNode:
+                      input: ip
+
+              - type: org.apache.brooklyn.core.effector.composite.SequenceEffector
+                brooklyn.config:
+                  name: stopNode
+                  description: |
+                    Stop, drain and remove the selected node
+                  parameters:
+                    ip:
+                      description: |
+                        The IP address of the node
+                  compose:
+                    - disableScheduling:
+                        target: $brooklyn:entity("openshift-master")
+                    - evacuateNode:
+                        target: $brooklyn:entity("openshift-master")
+                    - removeNode:
+                        target: $brooklyn:entity("openshift-master")
+
+              - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+                brooklyn.config:
+                  name: scaleOutNodes
+                  description: |
+                    Scale out the cluster onto the specified node entity IDs
+                  parameters:
+                    entities:
+                      description: |
+                        List of entity IDs to scale out onto
                   env:
                     OPENSHIFT_DOMAIN: $brooklyn:config("openshift.domain")
                     INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
                     RUN_DIR: $brooklyn:attributeWhenReady("run.dir")
-                    ENTITY_ID: $brooklyn:attributeWhenReady("entity.id")
                   command: |
                     (
                     flock 9
                     cp ${INSTALL_DIR}/inventory ${RUN_DIR}/inventory
                     ( echo ; echo "[new_nodes]" ) >> ${RUN_DIR}/inventory
                     sed -i -e "s/^# new_nodes$/new_nodes/" ${RUN_DIR}/inventory
-                    for node in $(grep ${OPENSHIFT_DOMAIN} /etc/hosts | grep -v ${ENTITY_ID} | cut -d\  -f2)
+                    for node in ${entities}
                     do
-                      if ! grep "${node}.${OPENSHIFT_DOMAIN}" ${INSTALL_DIR}/inventory
-                      then
-                        echo "${node}.${OPENSHIFT_DOMAIN} openshift_node_labels=\"{'region': 'primary', 'zone': 'default'}\"" >> ${INSTALL_DIR}/inventory
-                        echo "${node}.${OPENSHIFT_DOMAIN} openshift_node_labels=\"{'region': 'primary', 'zone': 'default'}\"" >> ${RUN_DIR}/inventory
-                      fi
+                      echo "${node}.${OPENSHIFT_DOMAIN} openshift_node_labels=\"{'region': 'primary', 'zone': 'default'}\"" >> ${INSTALL_DIR}/inventory
+                      echo "${node}.${OPENSHIFT_DOMAIN} openshift_node_labels=\"{'region': 'primary', 'zone': 'default'}\"" >> ${RUN_DIR}/inventory
                     done
                     cd ${RUN_DIR}/openshift-ansible
                     ansible-playbook ./playbooks/byo/openshift-node/scaleup.yml --inventory ${RUN_DIR}/inventory
@@ -300,39 +390,42 @@ brooklyn.catalog:
               openshift.machine.spec:
                 $brooklyn:entitySpec:
                   type: openshift-machine
-                  id: openshift-machine
-                  name: "openshift-machine"
+                  id: openshift-master
+                  name: "openshift-master"
                   brooklyn.initializers:
                     - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
                       brooklyn.config:
                         name: disableScheduling
-                        description: Disable Scheduling on a Node
-                        command: |
-                          oc adm manage-node $ip --schedulable=false
+                        description: |
+                          Disable Scheduling on a Node
                         parameters:
                           ip:
-                            description: The IP address of the node
-                            defaultValue: 127.0.0.1
+                            description: |
+                              The IP address of the node
+                        command: |
+                          oc adm manage-node $ip --schedulable=false
                     - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
                       brooklyn.config:
                         name: evacuateNode
-                        description: Evacuate a Node
-                        command: |
-                          oc adm manage-node $ip --evacuate --force
+                        description: |
+                          Evacuate a Node
                         parameters:
                           ip:
-                            description: The IP address of the node
-                            defaultValue: 127.0.0.1
+                            description: |
+                              The IP address of the node
+                        command: |
+                          oc adm manage-node $ip --evacuate --force
                     - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
                       brooklyn.config:
                         name: removeNode
-                        description: Remove a Node
-                        command: |
-                          oc delete node $ip
+                        description: |
+                          Remove a Node
                         parameters:
                           ip:
-                            description: The IP address of the node
-                            defaultValue: 127.0.0.1
+                            description: |
+                              The IP address of the node
+                        command: |
+                          oc delete node $ip
           - type: openshift-machine-cluster
             id: openshift-etcd-machines
             name: "openshift-etcd-machines"
@@ -341,6 +434,11 @@ brooklyn.catalog:
               openshift.machine.clusterSize: $brooklyn:parent().config("openshift.etcd.clusterSize")
               openshift.machine.minCores: $brooklyn:parent().config("openshift.etcd.minCores")
               openshift.machine.minRam: $brooklyn:parent().config("openshift.etcd.minRam")
+              openshift.machine.spec:
+                $brooklyn:entitySpec:
+                  type: openshift-machine
+                  id: openshift-etcd
+                  name: "openshift-etcd"
           - type: openshift-machine-cluster
             id: openshift-node-machines
             name: "openshift-node-machines"
@@ -349,6 +447,11 @@ brooklyn.catalog:
               openshift.machine.clusterSize: $brooklyn:parent().config("openshift.node.clusterSize")
               openshift.machine.minCores: $brooklyn:parent().config("openshift.node.minCores")
               openshift.machine.minRam: $brooklyn:parent().config("openshift.node.minRam")
+              openshift.machine.spec:
+                $brooklyn:entitySpec:
+                  type: openshift-machine
+                  id: openshift-node
+                  name: "openshift-node"
           - type: openshift-machine
             id: openshift-lb
             name: "openshift-lb"
