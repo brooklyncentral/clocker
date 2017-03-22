@@ -198,9 +198,10 @@ brooklyn.catalog:
                       description: |
                         The number of nodes to repave
                   sequence:
-                    - resizeNodes
-                    - updateNodes
-
+                    - resizeNodes:
+                        input: k
+                    - updateNodes:
+                        input: k
               - type: org.apache.brooklyn.core.effector.composite.ComposeEffector
                 brooklyn.config:
                   name: resizeNodes
@@ -219,7 +220,6 @@ brooklyn.catalog:
                         input: entities
                     - scaleOutNodes:
                         input: entities
-
               - type: org.apache.brooklyn.core.effector.composite.TransformEffector
                 brooklyn.config:
                   name: getEntityIds
@@ -234,7 +234,6 @@ brooklyn.catalog:
                     $brooklyn:object:
                       type: org.apache.brooklyn.core.entity.EntityFunctions
                       factoryMethod.name: "id"
-
               - type: org.apache.brooklyn.core.effector.composite.ComposeEffector
                 brooklyn.config:
                   name: updateNodes
@@ -248,9 +247,9 @@ brooklyn.catalog:
                   compose:
                     - selectOldestNodes:
                         target: $brooklyn:entity("openshift-master")
+                        input: k
                     - stopNodes:
                         input: nodes
-
               - type: org.apache.brooklyn.core.effector.composite.LoopEffector
                 brooklyn.config:
                   name: stopNodes
@@ -264,7 +263,6 @@ brooklyn.catalog:
                   loop:
                     stopNode:
                       input: ip
-
               - type: org.apache.brooklyn.core.effector.composite.SequenceEffector
                 brooklyn.config:
                   name: stopNode
@@ -277,11 +275,13 @@ brooklyn.catalog:
                   compose:
                     - disableScheduling:
                         target: $brooklyn:entity("openshift-master")
+                        input: ip
                     - evacuateNode:
                         target: $brooklyn:entity("openshift-master")
+                        input: ip
                     - removeNode:
                         target: $brooklyn:entity("openshift-master")
-
+                        input: ip
               - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
                 brooklyn.config:
                   name: scaleOutNodes
