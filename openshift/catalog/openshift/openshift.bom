@@ -426,6 +426,18 @@ brooklyn.catalog:
                               The IP address of the node
                         command: |
                           oc delete node $ip
+                    - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+                      brooklyn.config:
+                        name: selectOldestNodes
+                        description: Get the K oldest nodes
+                        command: |
+                          oc get nodes ${nodes} --sort-by=.metadata.creationTimestamp | awk '{if (NR!=1 && $2=="Ready") {print $1}}' | head -${number}
+                        parameters:
+                          nodes:
+                            description: A space spearated list of nodes from which to choose
+                          number:
+                            description: The number of nodes to get
+                            defaultValue: 1
           - type: openshift-machine-cluster
             id: openshift-etcd-machines
             name: "openshift-etcd-machines"
