@@ -232,6 +232,17 @@ brooklyn.catalog:
                           delta: k
                     - getEntityIds:
                         input: entities
+                    - scaleOut:
+                        input: entities
+              - type: org.apache.brooklyn.core.effector.composite.SequenceEffector
+                brooklyn.config:
+                  name: scaleOut
+                  description: |
+                    Update /etc/hosts and then call the scaleOutNodes effector
+                  sequence:
+                    - updateEtcHostsOnMembers:
+                        target: $brooklyn:entity("brooklyn-dns-etc-hosts-generator")
+                        input: entities
                     - scaleOutNodes:
                         input: entities
               - type: org.apache.brooklyn.core.effector.composite.TransformEffector
@@ -309,8 +320,8 @@ brooklyn.catalog:
                     entities:
                       description: |
                         List of entity IDs to scale out onto
-                  env:
-                    OPENSHIFT_DOMAIN: $brooklyn:entity("openshift-origin-ansible").config("openshift.domain")
+                  shell.env:
+                    OPENSHIFT_DOMAIN: $brooklyn:entity("openshift-origin-cluster").config("openshift.domain")
                     INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
                     RUN_DIR: $brooklyn:attributeWhenReady("run.dir")
                   command: |
