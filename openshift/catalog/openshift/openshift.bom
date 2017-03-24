@@ -44,6 +44,17 @@ brooklyn.catalog:
                     factoryMethod.name: "configNotNull"
                     factoryMethod.args:
                       - "openshift.configureHostsFile"
+        brooklyn.enrichers:
+          - type: org.apache.brooklyn.enricher.stock.Propagator
+            brooklyn.config:
+              producer: $brooklyn:entity("openshift-origin-cluster")
+              sensorMapping:
+                $brooklyn:sensor("service.isUp"): $brooklyn:sensor("openshift.isUp")
+        brooklyn.policies:
+          - type: org.apache.brooklyn.policy.InvokeEffectorOnSensorChange
+            brooklyn.config:
+              sensor: openshift.isUp
+              effector: updateEtcHostsOnMembers
 
     - id: docker-engine-with-insecure-registry
       name: "Docker Engine with insecure registry"
@@ -145,6 +156,7 @@ brooklyn.catalog:
                 sudo yum -y install epel-release
                 sudo sed -i -e "s/^enabled=1/enabled=0/" /etc/yum.repos.d/epel.repo
                 sudo yum -y --enablerepo=epel install pyOpenSSL python-passlib python-keyczar sshpass python-httplib2
+                mkdir -p ${RUN_DIR}
                 cd ${RUN_DIR}
                 wget http://mirror.centos.org/centos/7/paas/x86_64/openshift-origin/common/ansible-2.2.0.0-1.el7.noarch.rpm
                 sudo yum install -y ./ansible-2.2.0.0-1.el7.noarch.rpm
@@ -274,7 +286,7 @@ brooklyn.catalog:
                     ip:
                       description: |
                         The IP address of the node
-                  compose:
+                  sequence:
                     - disableScheduling:
                         target: $brooklyn:entity("openshift-master")
                         input: ip
@@ -299,7 +311,7 @@ brooklyn.catalog:
                     RUN_DIR: $brooklyn:attributeWhenReady("run.dir")
                   command: |
                     (
-                    flock 9
+                    flock 10
                     cp ${INSTALL_DIR}/inventory ${RUN_DIR}/inventory
                     ( echo ; echo "[new_nodes]" ) >> ${RUN_DIR}/inventory
                     sed -i -e "s/^# new_nodes$/new_nodes/" ${RUN_DIR}/inventory
@@ -310,7 +322,7 @@ brooklyn.catalog:
                     done
                     cd ${RUN_DIR}/openshift-ansible
                     ansible-playbook ./playbooks/byo/openshift-node/scaleup.yml --inventory ${RUN_DIR}/inventory
-                    ) 9>> /tmp/scaleOut.${ENTITY_ID}.lock
+                    ) 10>> /tmp/scaleOutNodes.${ENTITY_ID}.lock
 
     - id: openshift-origin-cluster
       name: "OpenShift Origin Cluster"
