@@ -246,8 +246,12 @@ brooklyn.catalog:
                   input: entities
                   function:
                     $brooklyn:object:
-                      type: org.apache.brooklyn.core.entity.EntityFunctions
-                      factoryMethod.name: "id"
+                      type: org.apache.brooklyn.util.collections.CollectionFunctionals
+                      factoryMethod.name: "iterableTransformer"
+                      factoryMethod.args:
+                        - $brooklyn:object:
+                            type: org.apache.brooklyn.core.entity.EntityFunctions
+                            factoryMethod.name: "id"
               - type: org.apache.brooklyn.core.effector.composite.ComposeEffector
                 brooklyn.config:
                   name: updateNodes
