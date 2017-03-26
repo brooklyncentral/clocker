@@ -114,6 +114,20 @@ brooklyn.catalog:
             description: |
               SSH private key file URL for connections within the OpenShift cluster
             type: string
+          - name: openshift.repave.size
+            label: "Cluster Repave Size"
+            description: |
+              Number of nodes to be repaved each time the policy executes
+            type: integer
+            default: 2
+          - name: openshift.repave.period
+            label: "Cluster Repave Period"
+            description: |
+              Period between cluster repave executions. The policy will wait for
+              this time period before executing the first repave, and then every
+              time period (after the repave has finished) therafter.
+            type: org.apache.brooklyn.util.time.Duration
+            default: 1 day
 
         brooklyn.config:
           start.timeout: 30m
@@ -200,6 +214,39 @@ brooklyn.catalog:
                   producer: $brooklyn:entity("openshift-lb")
                   propagating:
                     - $brooklyn:sensor("lb.entity.id")
+              - type: org.apache.brooklyn.enricher.stock.Propagator
+                brooklyn.config:
+                  producer: $brooklyn:root()
+                  sensorMapping:
+                    $brooklyn:sensor("service.isUp"): $brooklyn:sensor("scheduler.start")
+              - type: org.apache.brooklyn.enricher.stock.Propagator
+                brooklyn.config:
+                  producer: $brooklyn:entity("openshift-lb")
+                  propagating:
+                    - $brooklyn:sensor("host.address")
+              - type: org.apache.brooklyn.enricher.stock.Transformer
+                brooklyn.config:
+                  enricher.triggerSensors:
+                    - host.address
+                  enricher.targetSensor: $brooklyn:sensor("main.uri")
+                  enricher.targetValue:
+                    $brooklyn:formatString:
+                      - "https://%s:8443/"
+                      - $brooklyn:attributeWhenReady("host.address")
+              - type: io.cloudsoft.amp.ui.common.enricher.AmpExternalUiModuleEnricher
+                brooklyn.config:
+                  external.ui.module.icon: fa-cog
+                  external.ui.module.name: "OpenShift Console"
+                  external.ui.module.slug: openshift-console-url
+                  external.ui.module.url.sensor: $brooklyn.sensor("main.uri")
+
+            brooklyn.policies:
+              - type: org.apache.brooklyn.policy.action.PeriodicEffectorPolicy
+                brooklyn.config:
+                  effector: repaveCluster
+                  args:
+                    k: $brooklyn:entity("openshift-origin-cluster").config("openshift.repave.size")
+                  period: $brooklyn:entity("openshift-origin-cluster").config("openshift.repave.period")
 
             brooklyn.initializers:
               - type: org.apache.brooklyn.core.effector.composite.SequenceEffector
