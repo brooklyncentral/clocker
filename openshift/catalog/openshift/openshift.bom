@@ -310,6 +310,22 @@ brooklyn.catalog:
                         - $brooklyn:object:
                             type: org.apache.brooklyn.core.entity.EntityFunctions
                             factoryMethod.name: "id"
+              - type: org.apache.brooklyn.core.effector.composite.TransformEffector
+                brooklyn.config:
+                  name: convertStringToList
+                  description: |
+                    Transform a string of IP addresses into a list
+                  parameters:
+                    entities:
+                      description: |
+                        The list of entities
+                  input: nodes
+                  function:
+                    $brooklyn:object:
+                      type: org.apache.brooklyn.util.text.StringFunctions
+                      factoryMethod.name: "splitter"
+                      factoryMethod.args:
+                        - " "
               - type: org.apache.brooklyn.core.effector.composite.ComposeEffector
                 brooklyn.config:
                   name: updateNodes
@@ -324,6 +340,8 @@ brooklyn.catalog:
                     - selectOldestNodes:
                         target: $brooklyn:entity("openshift-master")
                         input: k
+                    - convertStringToList:
+                        input: nodes
                     - stopNodes:
                         input: nodes
               - type: org.apache.brooklyn.core.effector.composite.LoopEffector
@@ -518,7 +536,8 @@ brooklyn.catalog:
                         command: |
                           oc get nodes ${NODES} --sort-by=.metadata.creationTimestamp |
                             awk '{if (NR!=1 && $2=="Ready") {print $1}}' |
-                            head -${k}
+                            head -${k} |
+                            paste -s -d\  -
 
           - type: openshift-machine-cluster
             id: openshift-etcd-machines
