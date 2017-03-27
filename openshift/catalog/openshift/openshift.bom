@@ -371,6 +371,7 @@ brooklyn.catalog:
                     OPENSHIFT_DOMAIN: $brooklyn:entity("openshift-origin-cluster").config("openshift.domain")
                     INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
                     RUN_DIR: $brooklyn:attributeWhenReady("run.dir")
+                    ENTITY_ID: $brooklyn:attributeWhenReady("entity.id")
                   command: |
                     (
                     flock 10
