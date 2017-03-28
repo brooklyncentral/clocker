@@ -269,6 +269,8 @@ brooklyn.catalog:
                         input: k
                     - updateNodes:
                         input: k
+                    - stopMachines:
+                        input: k
               - type: org.apache.brooklyn.core.effector.composite.ComposeEffector
                 brooklyn.config:
                   name: resizeNodes
@@ -303,10 +305,6 @@ brooklyn.catalog:
                   name: getEntityIds
                   description: |
                     Transform a list of entities into a list of their IDs
-                  parameters:
-                    entities:
-                      description: |
-                        The list of entities
                   input: entities
                   function:
                     $brooklyn:object:
@@ -321,10 +319,6 @@ brooklyn.catalog:
                   name: convertStringToList
                   description: |
                     Transform a string of IP addresses into a list
-                  parameters:
-                    entities:
-                      description: |
-                        The list of entities
                   input: nodes
                   function:
                     $brooklyn:object:
@@ -382,6 +376,34 @@ brooklyn.catalog:
                     - removeNode:
                         target: $brooklyn:entity("openshift-master")
                         input: ip
+              - type: org.apache.brooklyn.core.effector.composite.TransformEffector
+                brooklyn.config:
+                  name: negate
+                  description: |
+                    Negate the input number
+                  input: k
+                  function:
+                    $brooklyn:object:
+                      type: org.apache.brooklyn.util.math.MathFunctions
+                      factoryMethod.name: "times"
+                      factoryMethod.args:
+                        - -1
+              - type: org.apache.brooklyn.core.effector.composite.ComposeEffector
+                brooklyn.config:
+                  name: stopMachines
+                  description: |
+                    Stops the machines that were running the drained OpenShift
+                    nodes
+                  parameters:
+                    k:
+                      description: |
+                        The number of machines to stop
+                  compose:
+                    - negate:
+                        input: k
+                    - resizeByDelta:
+                        target: $brooklyn:entity("openshift-node-machines")
+                        input: delta
               - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
                 brooklyn.config:
                   name: scaleOutNodes
@@ -438,7 +460,7 @@ brooklyn.catalog:
             label: "Master Minimum RAM"
             description: |
               Minimum RAM for provisioning OpenShift master machines
-            default: 4g
+            default: 4000
           - name: openshift.node.clusterSize
             label: "Node Cluster Size"
             description: |
@@ -454,7 +476,7 @@ brooklyn.catalog:
             label: "Node Minimum RAM"
             description: |
               Minimum RAM for provisioning OpenShift node machines
-            default: 8g
+            default: 8000
           - name: openshift.etcd.clusterSize
             label: "Etcd Cluster Size"
             type: integer
@@ -468,7 +490,7 @@ brooklyn.catalog:
             label: "Etcd Minimum RAM"
             description: |
               Minimum RAM for provisioning OpenShift etcd machines
-            default: 4g
+            default: 4000
           - name: openshift.lb.minCores
             label: "Load Balancer Minimum CPU Cores"
             description: |
@@ -478,7 +500,7 @@ brooklyn.catalog:
             label: "Load Balancer Minimum RAM"
             description: |
               Minimum RAM for provisioning OpenShift etcd machines
-            default: 4g
+            default: 4000
 
         brooklyn.children:
           - type: openshift-machine-cluster
@@ -505,7 +527,7 @@ brooklyn.catalog:
                             description: |
                               The IP address of the node
                         command: |
-                          oc adm manage-node $ip --schedulable=false
+                          oc adm manage-node ${ip} --schedulable=false
                     - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
                       brooklyn.config:
                         name: evacuateNode
@@ -516,7 +538,7 @@ brooklyn.catalog:
                             description: |
                               The IP address of the node
                         command: |
-                          oc adm manage-node $ip --evacuate --force
+                          oc adm manage-node ${ip} --evacuate --force
                     - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
                       brooklyn.config:
                         name: removeNode
@@ -527,7 +549,8 @@ brooklyn.catalog:
                             description: |
                               The IP address of the node
                         command: |
-                          oc delete node $ip
+                          oc delete node ${ip}
+                          ssh ${ip} sudo systemctl stop origin-node
                     - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
                       brooklyn.config:
                         name: selectOldestNodes
@@ -539,11 +562,27 @@ brooklyn.catalog:
                               The number of nodes to get
                         env:
                           NODES: $brooklyn:entity("openshift-node-machines").attributeWhenReady("addresses")
+                          ENTITY_IDS: $brooklyn:entity("openshift-node-machines").attributeWhenReady("hosts.list")
                         command: |
                           oc get nodes ${NODES} --sort-by=.metadata.creationTimestamp |
                             awk '{if (NR!=1 && $2=="Ready") {print $1}}' |
                             head -${k} |
                             paste -s -d\  -
+                    - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+                      brooklyn.config:
+                        name: getHostname
+                        description: |
+                          Determine the hostname for a node based on its IP
+                          address, which may not be the one in the /etc/hosts
+                          file in environments using NAT. This should be the
+                          entity ID for the machine
+                        parameters:
+                          ip:
+                            description: |
+                              The IP address of the node
+                        command: |
+                          ssh ${ip} hostname |
+                            cut -d. -f1
 
           - type: openshift-machine-cluster
             id: openshift-etcd-machines
@@ -571,6 +610,21 @@ brooklyn.catalog:
                   type: openshift-machine
                   id: openshift-node
                   name: "openshift-node"
+                  brooklyn.initializers:
+                    - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+                      brooklyn.config:
+                        name: openshift.status
+                        period: 30s
+                        command: |
+                          systemctl show origin-node |
+                            grep SubState |
+                            cut -d= -f2
+              dynamiccluster.removalstrategy:
+                $brooklyn:object:
+                  type: org.apache.brooklyn.entity.group.SensorMatchingRemovalStrategy
+                  brooklyn.config:
+                    sensor.matching.sensor: $brooklyn:sensor("openshift.status")
+                    sensor.matching.value: "dead"
           - type: openshift-machine
             id: openshift-lb
             name: "openshift-lb"
@@ -607,7 +661,7 @@ brooklyn.catalog:
       publish:
         license_code: Apache-2.0
       item:
-        type: cluster
+        type: org.apache.brooklyn.entity.group.DynamicCluster
 
         brooklyn.parameters:
           - name: openshift.machine.group
@@ -626,12 +680,12 @@ brooklyn.catalog:
             label: "Minimum CPU Cores"
             description: |
               Minimum CPU cores for provisioning machines
-            default: 4
+            default: 2
           - name: openshift.machine.minRam
             label: "Minimum RAM"
             description: |
               Minimum RAM for provisioning machines
-            default: 8000
+            default: 4000
           - name: openshift.machine.spec
             label: "Machine Spec"
             description: |
@@ -712,6 +766,8 @@ brooklyn.catalog:
           shell.env:
             INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
             RUN_DIR: $brooklyn:attributeWhenReady("run.dir")
+            ENTITY_ID: $brooklyn:attributeWhenReady("entity.id")
+            OPENSHIFT_DOMAIN: $brooklyn:entity("openshift-origin-cluster").config("openshift.domain")
           post.customize.command: |
             sudo yum install -y NetworkManager
             sudo systemctl start NetworkManager
@@ -722,6 +778,8 @@ brooklyn.catalog:
             EOF
             chmod 600 ~/.ssh/openshift.pem ~/.ssh/config
             ssh-keygen -y -f ~/.ssh/openshift.pem >> ~/.ssh/authorized_keys
+            sudo hostname ${ENTITY_ID}.${OPENSHIFT_DOMAIN}
+            echo ${ENTITY_ID}.${OPENSHIFT_DOMAIN} | sudo tee /etc/hostname
 
         brooklyn.initializers:
           - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
