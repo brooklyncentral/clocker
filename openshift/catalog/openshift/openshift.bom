@@ -114,6 +114,12 @@ brooklyn.catalog:
             description: |
               SSH private key file URL for connections within the OpenShift cluster
             type: string
+          - name: openshift.console.port
+            label: "OpenShift Console Port"
+            description: |
+              The external port the OpenShift console UI listens on
+            type: port
+            default: 8443
           - name: openshift.repave.size
             label: "Cluster Repave Size"
             description: |
@@ -568,6 +574,13 @@ brooklyn.catalog:
           - type: openshift-machine
             id: openshift-lb
             name: "openshift-lb"
+            brooklyn.parameters:
+              - name: openshift.console.port
+                label: "OpenShift Console Port"
+                description: |
+                  The external port the OpenShift console UI listens on
+                type: port
+                default: 8443
             brooklyn.config:
               openshift.machine.minCores: $brooklyn:parent().config("openshift.lb.minCores")
               openshift.machine.minRam: $brooklyn:parent().config("openshift.lb.minRam")
