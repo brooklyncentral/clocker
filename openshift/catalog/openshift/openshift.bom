@@ -384,10 +384,10 @@ brooklyn.catalog:
                   input: k
                   function:
                     $brooklyn:object:
-                      type: org.apache.brooklyn.util.math.MathFunctions
-                      factoryMethod.name: "times"
+                      type: org.apache.brooklyn.util.text.StringFunctions
+                      factoryMethod.name: "prepend"
                       factoryMethod.args:
-                        - -1
+                        - "-"
               - type: org.apache.brooklyn.core.effector.composite.ComposeEffector
                 brooklyn.config:
                   name: stopMachines
@@ -642,6 +642,7 @@ brooklyn.catalog:
                   command: |
                     if systemctl status origin-node ; then
                       sudo systemctl stop origin-node
+                      sleep 15
                     fi
 
           - type: openshift-machine
