@@ -85,7 +85,7 @@ brooklyn.catalog:
             description: |
               The OpenShift version to install
             type: string
-            default: "1.5"
+            default: "1.4.1"
           - name: openshift.domain
             label: "OpenShift Domain"
             description: |
