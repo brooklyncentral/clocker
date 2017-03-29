@@ -141,6 +141,13 @@ brooklyn.catalog:
             type: org.apache.brooklyn.util.time.Duration
             default: 1 day
 
+        brooklyn.enrichers:
+          - type: org.apache.brooklyn.enricher.stock.Propagator
+            brooklyn.config:
+              producer: $brooklyn:entity("ansible-server")
+              propagating:
+                - $brooklyn:sensor("main.uri")
+
         brooklyn.config:
           start.timeout: 30m
 
@@ -224,30 +231,33 @@ brooklyn.catalog:
               - type: org.apache.brooklyn.enricher.stock.Propagator
                 brooklyn.config:
                   producer: $brooklyn:entity("openshift-lb")
+                  sensorMapping:
+                    $brooklyn:sensor("entity.id"): $brooklyn:sensor("lb.entity.id")
+              - type: org.apache.brooklyn.enricher.stock.Propagator
+                brooklyn.config:
+                  producer: $brooklyn:entity("openshift-lb")
                   propagating:
-                    - $brooklyn:sensor("lb.entity.id")
+                    - $brooklyn:sensor("openshift.console.port")
               - type: org.apache.brooklyn.enricher.stock.Propagator
                 brooklyn.config:
                   producer: $brooklyn:root()
                   sensorMapping:
                     $brooklyn:sensor("service.isUp"): $brooklyn:sensor("scheduler.start")
-              - type: org.apache.brooklyn.enricher.stock.Propagator
-                brooklyn.config:
-                  producer: $brooklyn:entity("openshift-lb")
-                  propagating:
-                    - $brooklyn:sensor("host.address")
               - type: org.apache.brooklyn.enricher.stock.Transformer
                 brooklyn.config:
                   enricher.triggerSensors:
-                    - host.address
+                    - lb.entity.id
+                    - openshift.console.port
                   enricher.targetSensor: $brooklyn:sensor("main.uri")
                   enricher.targetValue:
                     $brooklyn:formatString:
-                      - "https://%s:8443/"
-                      - $brooklyn:attributeWhenReady("host.address")
+                      - "https://%s.%s:%d/"
+                      - $brooklyn:attributeWhenReady("lb.entity.id")
+                      - $brooklyn:config("openshift.domain")
+                      - $brooklyn:attributeWhenReady("openshift.console.port")
               - type: io.cloudsoft.amp.ui.common.enricher.AmpExternalUiModuleEnricher
                 brooklyn.config:
-                  external.ui.module.icon: fa-cog
+                  external.ui.module.icon: fa-dashboard
                   external.ui.module.name: "OpenShift Console"
                   external.ui.module.slug: openshift-console-url
                   external.ui.module.url.sensor: $brooklyn.sensor("main.uri")
@@ -664,11 +674,6 @@ brooklyn.catalog:
             brooklyn.config:
               openshift.machine.minCores: $brooklyn:parent().config("openshift.lb.minCores")
               openshift.machine.minRam: $brooklyn:parent().config("openshift.lb.minRam")
-            brooklyn.enrichers:
-              - type: org.apache.brooklyn.enricher.stock.Propagator
-                brooklyn.config:
-                  sensorMapping:
-                    $brooklyn:sensor("entity.id"): $brooklyn:sensor("lb.entity.id")
 
         brooklyn.enrichers:
           - type: org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic$ComputeServiceIndicatorsFromChildrenAndMembers

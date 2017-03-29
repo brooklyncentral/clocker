@@ -20,16 +20,16 @@ debug_level=3
 # Deployment can be origin, online, atomic-enterprise, and openshift-enterprise
 deployment_type=origin
 product_type=openshift
-#openshift_release=v${config['openshift.version']}
-#openshift_image_tag=v${config['openshift.version']}.0
-#openshift_pkg_version=-${config['openshift.version']}.0
+openshift_release=v${config['openshift.version']}
+openshift_image_tag=v${config['openshift.version']}.0
+openshift_pkg_version=-${config['openshift.version']}.0
 #docker_version="1.12.x"
 docker_upgrade=False
 #etcd_version="3.1.0"
 openshift_install_examples=true
 #openshift_hosted_registry_selector='region=infra'
-#openshift_master_api_port=${attribute['openshift.console.port']?c}
-#openshift_master_console_port=${attribute['openshift.console.port']?c}
+openshift_master_api_port=${attribute['openshift.console.port']?c}
+openshift_master_console_port=${attribute['openshift.console.port']?c}
 
 # TODO add configurable htpasswd authentication
 #openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider', 'filename': '/etc/origin/master/htpasswd'}]
