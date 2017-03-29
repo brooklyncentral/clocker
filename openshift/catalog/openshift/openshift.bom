@@ -640,7 +640,9 @@ brooklyn.catalog:
                     Stop the OpenShift process on all member nodes
                   executionTarget: MEMBERS
                   command: |
-                    sudo systemctl stop origin-node
+                    if systemctl status origin-node ; then
+                      sudo systemctl stop origin-node
+                    fi
 
           - type: openshift-machine
             id: openshift-lb
