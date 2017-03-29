@@ -199,11 +199,11 @@ brooklyn.catalog:
               launch.command: |
                 cd ${RUN_DIR}/openshift-ansible
                 ansible-playbook playbooks/byo/config.yml --inventory ${INSTALL_DIR}/inventory
+                touch ${RUN_DIR}/INSTALLED
               checkRunning.command: |
-                which ansible-playbook
+                test -f ${RUN_DIR}/INSTALLED
               stop.command: |
-                cd ${RUN_DIR}/openshift-ansible
-                ansible-playbook playbooks/adhoc/uninstall.yml --inventory ${INSTALL_DIR}/inventory
+                true
 
             brooklyn.enrichers:
               - type: org.apache.brooklyn.enricher.stock.Propagator
