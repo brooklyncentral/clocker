@@ -80,6 +80,12 @@ brooklyn.catalog:
         type: org.apache.brooklyn.entity.stock.BasicApplication
 
         brooklyn.parameters:
+          - name: openshift.version
+            label: "OpenShift Version"
+            description: |
+              The OpenShift version to install
+            type: string
+            default: "1.5"
           - name: openshift.domain
             label: "OpenShift Domain"
             description: |
