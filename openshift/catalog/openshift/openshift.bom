@@ -581,7 +581,7 @@ brooklyn.catalog:
                             description: |
                               The IP address of the node
                         command: |
-                          ssh ${ip} hostname |
+                          ssh -o StrictHostKeyChecking=no ${ip} hostname |
                             cut -d. -f1
 
           - type: openshift-machine-cluster
