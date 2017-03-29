@@ -614,7 +614,7 @@ brooklyn.catalog:
                     - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
                       brooklyn.config:
                         name: openshift.status
-                        period: 30s
+                        period: 10s
                         command: |
                           systemctl show origin-node |
                             grep SubState |
@@ -625,6 +625,23 @@ brooklyn.catalog:
                   brooklyn.config:
                     sensor.matching.sensor: $brooklyn:sensor("openshift.status")
                     sensor.matching.value: "dead"
+            brooklyn.initializers:
+              - type: org.apache.brooklyn.core.effector.composite.ReplaceEffector
+                brooklyn.config:
+                  name: stop
+                  description: |
+                    Stops the OpenShift node processes before stopping the cluster
+                  action: PRE
+                  replace: stopMemberNodes
+              - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+                brooklyn.config:
+                  name: stopMemberNodes
+                  description: |
+                    Stop the OpenShift process on all member nodes
+                  executionTarget: MEMBERS
+                  command: |
+                    sudo systemctl stop origin-node
+
           - type: openshift-machine
             id: openshift-lb
             name: "openshift-lb"
