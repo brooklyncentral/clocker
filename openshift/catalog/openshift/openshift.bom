@@ -354,7 +354,7 @@ brooklyn.catalog:
                 brooklyn.config:
                   name: stopNodes
                   description: |
-                    Stop, drain and remove the list of nodes
+                    Stop, drain and delete the list of nodes
                   parameters:
                     nodes:
                       description: |
@@ -367,7 +367,7 @@ brooklyn.catalog:
                 brooklyn.config:
                   name: stopNode
                   description: |
-                    Stop, drain and remove the selected node
+                    Stop, drain and delete the selected node
                   parameters:
                     ip:
                       description: |
@@ -379,7 +379,7 @@ brooklyn.catalog:
                     - evacuateNode:
                         target: $brooklyn:entity("openshift-master")
                         input: ip
-                    - removeNode:
+                    - deleteNode:
                         target: $brooklyn:entity("openshift-master")
                         input: ip
               - type: org.apache.brooklyn.core.effector.composite.TransformEffector
@@ -527,7 +527,7 @@ brooklyn.catalog:
                       brooklyn.config:
                         name: disableScheduling
                         description: |
-                          Disable Scheduling on a Node
+                          Disable scheduling on a node
                         parameters:
                           ip:
                             description: |
@@ -538,7 +538,7 @@ brooklyn.catalog:
                       brooklyn.config:
                         name: evacuateNode
                         description: |
-                          Evacuate a Node
+                          Evacuate a node
                         parameters:
                           ip:
                             description: |
@@ -547,9 +547,9 @@ brooklyn.catalog:
                           oc adm manage-node ${ip} --evacuate --force
                     - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
                       brooklyn.config:
-                        name: removeNode
+                        name: deleteNode
                         description: |
-                          Remove a Node
+                          Delete a node
                         parameters:
                           ip:
                             description: |
@@ -557,6 +557,7 @@ brooklyn.catalog:
                         command: |
                           oc delete node ${ip}
                           ssh -o StrictHostKeyChecking=no ${ip} sudo systemctl stop origin-node
+                          sleep 15
                     - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
                       brooklyn.config:
                         name: selectOldestNodes
@@ -566,12 +567,12 @@ brooklyn.catalog:
                           k:
                             description: |
                               The number of nodes to get
-                        env:
-                          NODES: $brooklyn:entity("openshift-node-machines").attributeWhenReady("addresses")
-                          ENTITY_IDS: $brooklyn:entity("openshift-node-machines").attributeWhenReady("hosts.list")
                         command: |
-                          oc get nodes ${NODES} --sort-by=.metadata.creationTimestamp |
-                            awk '{if (NR!=1 && $2=="Ready") {print $1}}' |
+                          oc get nodes \
+                              --sort-by='.metadata.creationTimestamp' \
+                              --selector='region != infra' \
+                              --output='name' |
+                            cut -d/ -f2 |
                             head -${k} |
                             paste -s -d\  -
                     - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
@@ -587,8 +588,7 @@ brooklyn.catalog:
                             description: |
                               The IP address of the node
                         command: |
-                          ssh -o StrictHostKeyChecking=no ${ip} hostname |
-                            cut -d. -f1
+                          ssh -o StrictHostKeyChecking=no ${ip} hostname --short
 
           - type: openshift-machine-cluster
             id: openshift-etcd-machines
@@ -738,19 +738,6 @@ brooklyn.catalog:
               enricher.sourceSensor: $brooklyn:sensor("entity.id")
               enricher.targetSensor: $brooklyn:sensor("hosts.list")
               enricher.aggregating.fromMembers: true
-          - type: org.apache.brooklyn.enricher.stock.Aggregator
-            brooklyn.config:
-              uniqueTag: openshift-address-aggregator
-              enricher.sourceSensor: $brooklyn:sensor("host.address")
-              enricher.targetSensor: $brooklyn:sensor("addresses.list")
-              enricher.aggregating.fromMembers: true
-          - type: org.apache.brooklyn.enricher.stock.Joiner
-            brooklyn.config:
-              uniqueTag: openshift-address-joiner
-              enricher.sourceSensor: $brooklyn:sensor("addresses.list")
-              enricher.targetSensor: $brooklyn:sensor("addresses")
-              enricher.joiner.quote: false
-              enricher.joiner.separator: " "
           - type: org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic$ComputeServiceIndicatorsFromChildrenAndMembers
             brooklyn.config:
               uniqueTag: service-lifecycle-indicators-from-members
