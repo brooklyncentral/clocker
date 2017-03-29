@@ -550,7 +550,7 @@ brooklyn.catalog:
                               The IP address of the node
                         command: |
                           oc delete node ${ip}
-                          ssh ${ip} sudo systemctl stop origin-node
+                          ssh -o StrictHostKeyChecking=no ${ip} sudo systemctl stop origin-node
                     - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
                       brooklyn.config:
                         name: selectOldestNodes
