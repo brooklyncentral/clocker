@@ -12,11 +12,7 @@
 
     <name>Clocker :: Kubernetes</name>
     <artifactId>clocker-kubernetes</artifactId>
-    <packaging>jar</packaging>
-
-    <properties>
-        <brooklyn-dns.version>0.1.2</brooklyn-dns.version> <!-- BROOKLYN_DNS_VERSION -->
-    </properties>
+    <packaging>bundle</packaging>
 
     <build>
         <resources>
@@ -39,7 +35,6 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>wagon-maven-plugin</artifactId>
-                <version>1.0</version>
                 <executions>
                     <execution>
                         <id>download-dns-bom</id>
@@ -58,7 +53,6 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>1.12</version>
                 <executions>
                     <execution>
                         <id>attach-artifact</id>

@@ -12,7 +12,7 @@
 
     <name>Clocker :: Swarm</name>
     <artifactId>clocker-swarm</artifactId>
-    <packaging>jar</packaging>
+    <packaging>bundle</packaging>
 
     <build>
         <resources>
@@ -35,7 +35,6 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>1.12</version>
                 <executions>
                     <execution>
                         <id>attach-artifact</id>

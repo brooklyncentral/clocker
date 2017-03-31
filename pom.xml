@@ -12,20 +12,26 @@
     <name>Clocker</name>
     <description>Apache Brooklyn blueprints to deploy and manage Docker environments</description>
     <url>https://github.com/brooklyncentral/clocker</url>
-    
+
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven-jar-plugin.version>3.0.2</maven-jar-plugin.version>
-        <maven-bundle-plugin.version>3.2.0</maven-bundle-plugin.version>
+        <brooklyn-dns.version>0.1.2</brooklyn-dns.version> <!-- BROOKLYN_DNS_VERSION -->
         <buildnumber-maven-plugin.version>1.4</buildnumber-maven-plugin.version>
         <gpg.passphrase/>
+        <karaf-maven-plugin.version>4.0.8</karaf-maven-plugin.version>
+        <maven-bundle-plugin.version>3.2.0</maven-bundle-plugin.version>
+        <maven-compiler-plugin.version>3.6.1</maven-compiler-plugin.version>
+        <maven-jar-plugin.version>3.0.2</maven-jar-plugin.version>
+        <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <wagon-maven-plugin.version>1.0</wagon-maven-plugin.version>
     </properties>
 
     <modules>
         <module>common</module>
         <module>swarm</module>
         <module>kubernetes</module>
+        <module>feature</module>
     </modules>
 
     <scm>
@@ -138,6 +144,11 @@
         <pluginManagement>
             <plugins>
                 <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${maven-compiler-plugin.version}</version>
+                </plugin>
+                <plugin>
                     <groupId>org.apache.felix</groupId>
                     <artifactId>maven-bundle-plugin</artifactId>
                     <version>${maven-bundle-plugin.version}</version>
@@ -153,13 +164,33 @@
                     <version>${maven-jar-plugin.version}</version>
                 </plugin>
                 <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-gpg-plugin</artifactId>
-                    <version>1.6</version>
+                    <version>${maven-gpg-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.karaf.tooling</groupId>
+                    <artifactId>karaf-maven-plugin</artifactId>
+                    <version>${karaf-maven-plugin.version}</version>
+                    <extensions>true</extensions>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>wagon-maven-plugin</artifactId>
+                    <version>${wagon-maven-plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
 
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>buildnumber-maven-plugin</artifactId>
@@ -189,22 +220,10 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <supportedProjectTypes>
-                        <supportedProjectType>jar</supportedProjectType>
-                    </supportedProjectTypes>
                     <instructions>
                         <Implementation-SHA-1>${buildNumber}</Implementation-SHA-1>
                         <Implementation-Branch>${scmBranch}</Implementation-Branch>
                     </instructions>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <configuration>
-                    <archive>
-                        <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-                    </archive>
                 </configuration>
             </plugin>
         </plugins>
@@ -232,9 +251,11 @@
                 </snapshotRepository>
             </distributionManagement>
             <build>
-               <plugins>
+                <plugins>
                     <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${maven-gpg-plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -245,7 +266,7 @@
                             </execution>
                         </executions>
                     </plugin>
-               </plugins>
+                </plugins>
             </build>
 
         </profile>
