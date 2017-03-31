@@ -310,6 +310,10 @@ brooklyn.catalog:
                   name: scaleOut
                   description: |
                     Update /etc/hosts and then call the scaleOutNodes effector
+                  parameters:
+                    k:
+                      description: |
+                        The number of nodes
                   sequence:
                     - updateEtcHostsOnMembers:
                         target: $brooklyn:entity("brooklyn-dns-etc-hosts-generator")
@@ -321,6 +325,10 @@ brooklyn.catalog:
                   name: getEntityIds
                   description: |
                     Transform a list of entities into a list of their IDs
+                  parameters:
+                    entities:
+                      description: |
+                        The entity list to retrieve IDs from
                   input: entities
                   function:
                     $brooklyn:object:
@@ -335,6 +343,10 @@ brooklyn.catalog:
                   name: convertStringToList
                   description: |
                     Transform a string of IP addresses into a list
+                  parameters:
+                    nodes:
+                      description: |
+                        A space separated set of node IP addresses
                   input: nodes
                   function:
                     $brooklyn:object:
@@ -397,6 +409,10 @@ brooklyn.catalog:
                   name: negate
                   description: |
                     Negate the input number
+                  parameters:
+                    k:
+                      description: |
+                        The number to negate
                   input: k
                   function:
                     $brooklyn:object:
