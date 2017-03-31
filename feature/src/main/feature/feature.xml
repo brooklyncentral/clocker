@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<features xmlns="http://karaf.apache.org/xmlns/features/v1.3.0" name="brooklyn-elk-${project.version}">
+
+    <feature name="clocker" version="${project.version}">
+        <feature>clocker-common</feature>
+        <feature>clocker-kubernetes</feature>
+        <feature>clocker-swarm</feature>
+    </feature>
+
+    <feature name="clocker-common" version="${project.version}">
+        <bundle>mvn:${project.groupId}/clocker-common/${project.version}</bundle>
+    </feature>
+
+    <feature name="clocker-kubernetes" version="${project.version}">
+        <bundle>mvn:${project.groupId}/clocker-kubernetes/${project.version}</bundle>
+    </feature>
+
+    <feature name="clocker-swarm" version="${project.version}">
+        <bundle>mvn:${project.groupId}/clocker-swarm/${project.version}</bundle>
+    </feature>
+    
+</features>
