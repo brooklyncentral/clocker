@@ -14,7 +14,7 @@
     <url>https://github.com/brooklyncentral/clocker</url>
 
     <properties>
-        <brooklyn-dns.version>0.1.2</brooklyn-dns.version> <!-- BROOKLYN_DNS_VERSION -->
+        <brooklyn-dns.version>0.1.3</brooklyn-dns.version> <!-- BROOKLYN_DNS_VERSION -->
         <brooklyn-etcd.version>2.4.0-SNAPSHOT</brooklyn-etcd.version> <!-- BROOKLYN_ETCD_VERSION -->
         <buildnumber-maven-plugin.version>1.4</buildnumber-maven-plugin.version>
         <gpg.passphrase/>

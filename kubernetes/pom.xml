@@ -14,10 +14,6 @@
     <artifactId>clocker-kubernetes</artifactId>
     <packaging>bundle</packaging>
 
-    <properties>
-        <brooklyn-dns.version>0.1.3</brooklyn-dns.version> <!-- BROOKLYN_DNS_VERSION -->
-    </properties>
-
     <build>
         <resources>
             <resource>
@@ -29,13 +25,13 @@
                 <filtering>false</filtering>
             </resource>
             <resource>
-                <directory>external-resources</directory>
-                <filtering>false</filtering>
-            </resource>
-            <resource>
                 <directory>tests</directory>
                 <filtering>false</filtering>
                 <targetPath>tests</targetPath>
+            </resource>
+            <resource>
+                <directory>${project.build.directory}/download</directory>
+                <filtering>false</filtering>
             </resource>
         </resources>
 
@@ -53,7 +49,7 @@
                         <configuration>
                             <url>https://github.com/brooklyncentral/brooklyn-dns/releases/download/v${brooklyn-dns.version}</url>
                             <fromFile>brooklyn-dns-etc-hosts-generator.bom</fromFile>
-                            <toFile>${project.basedir}/external-resources/kubernetes/brooklyn-dns-etc-hosts-generator.bom</toFile>
+                            <toFile>${project.build.directory}/download/kubernetes/brooklyn-dns-etc-hosts-generator.bom</toFile>
                         </configuration>
                     </execution>
                 </executions>

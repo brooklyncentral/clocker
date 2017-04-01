@@ -7,6 +7,7 @@
         <feature>clocker-dependencies</feature>
         <feature>clocker-common</feature>
         <feature>clocker-kubernetes</feature>
+        <feature>clocker-openshift</feature>
         <feature>clocker-swarm</feature>
     </feature>
 
@@ -16,6 +17,10 @@
 
     <feature name="clocker-kubernetes" version="${project.version}">
         <bundle>mvn:${project.groupId}/clocker-kubernetes/${project.version}</bundle>
+    </feature>
+
+    <feature name="clocker-openshift" version="${project.version}">
+        <bundle>mvn:${project.groupId}/clocker-openshift/${project.version}</bundle>
     </feature>
 
     <feature name="clocker-swarm" version="${project.version}">
