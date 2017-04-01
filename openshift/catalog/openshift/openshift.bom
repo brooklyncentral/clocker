@@ -699,7 +699,6 @@ brooklyn.catalog:
               enricher.aggregating.fromMembers: false
               enricher.suppressDuplicates: true
               enricher.service_state.children_and_members.quorum.up: all
-              enricher.service_state.children_and_members.ignore_entities.service_state_values: [ "STOPPING", "STOPPED", "DESTROYED" ]
 
     - id: openshift-machine-cluster
       name: "OpenShift Machine Cluster"
@@ -766,8 +765,6 @@ brooklyn.catalog:
               enricher.aggregating.fromMembers: true
               enricher.suppressDuplicates: true
               enricher.service_state.children_and_members.quorum.up: all
-              enricher.service_state.children_and_members.ignore_entities.service_state_values: [ "STOPPING", "STOPPED", "DESTROYED" ]
-
 
     - id: openshift-machine
       name: "OpenShift Machine"
