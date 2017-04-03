@@ -8,6 +8,9 @@ brooklyn.catalog:
     qa: swarm/tests/swarm/swarm.tests.bom
 
   items:
+  - classpath://io.brooklyn.etcd.brooklyn-etcd:brooklyn-etcd/catalog.bom
+  - classpath://io.brooklyn.clocker.common:docker/docker.bom
+  - classpath://io.brooklyn.clocker.common:common/haproxy.bom
 
   - id: docker-swarm-template
     name: "Docker Swarm with Discovery and CA"

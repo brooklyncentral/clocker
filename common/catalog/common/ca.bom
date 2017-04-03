@@ -7,16 +7,6 @@ brooklyn.catalog:
 
   items:
 
-  - id: ca-server-template
-    name: "Certificate Authority Server"
-    description: |
-      An X.509 Certificate Authority tool using OpenSSL
-    itemType: template
-    iconUrl: classpath://io.brooklyn.clocker.common:icons/openssl.png
-    item:
-      services:
-        - type: ca-server
-
   - id: ca-server
     name: "Certificate Authority Server"
     description:  |

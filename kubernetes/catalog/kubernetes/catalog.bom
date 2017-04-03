@@ -1,9 +1,17 @@
 brooklyn.catalog:
   items:
-    - classpath://io.brooklyn.clocker.kubernetes:kubernetes/brooklyn-dns-etc-hosts-generator.bom
-    - classpath://io.brooklyn.etcd.brooklyn-etcd:brooklyn-etcd/catalog.bom
-    - classpath://io.brooklyn.clocker.common:docker/catalog.bom
-    - classpath://io.brooklyn.clocker.common:common/haproxy.bom
     - classpath://io.brooklyn.clocker.kubernetes:kubernetes/plugins.bom
     - classpath://io.brooklyn.clocker.kubernetes:kubernetes/pods.bom
     - classpath://io.brooklyn.clocker.kubernetes:kubernetes/kubernetes.bom
+
+    - id: kubernetes-cluster-template
+      name: "Kubernetes Cluster"
+      description: |
+        Kubernetes cluster with a master node and worker nodes
+      iconUrl: classpath://io.brooklyn.clocker.kubernetes:icons/kubernetes.png
+      itemType: template
+      item:
+        services:
+          - type: kubernetes-cluster-application
+            id: kubernetes-cluster-application
+            name: "kubernetes-cluster-application"
