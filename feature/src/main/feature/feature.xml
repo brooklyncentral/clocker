@@ -2,6 +2,7 @@
 <features xmlns="http://karaf.apache.org/xmlns/features/v1.3.0" name="brooklyn-elk-${project.version}">
 
     <feature name="clocker" version="${project.version}">
+        <feature>clocker-dependencies</feature>
         <feature>clocker-common</feature>
         <feature>clocker-kubernetes</feature>
         <feature>clocker-swarm</feature>
@@ -17,6 +18,9 @@
 
     <feature name="clocker-swarm" version="${project.version}">
         <bundle>mvn:${project.groupId}/clocker-swarm/${project.version}</bundle>
+    </feature>
+    <feature name="clocker-dependencies" version="${project.version}">
+        <bundle>mvn:io.brooklyn.etcd/brooklyn-etcd/${brooklyn-etcd.version}</bundle>
     </feature>
     
 </features>

@@ -1,0 +1,25 @@
+brooklyn.catalog:
+  items:
+    - classpath://io.brooklyn.clocker.common:common/common.bom
+    - classpath://io.brooklyn.clocker.common:common/ca.bom
+    - classpath://io.brooklyn.clocker.common:common/haproxy.bom
+
+    - id: ca-server-template
+      name: "Certificate Authority Server"
+      description: |
+        An X.509 Certificate Authority tool using OpenSSL
+      itemType: template
+      iconUrl: classpath://io.brooklyn.clocker.common:icons/openssl.png
+      item:
+        services:
+          - type: ca-server
+
+    - id: haproxy-load-balancer-template
+      name: "HAProxy Load Balancer"
+      description: |
+        HAProxy load balancer entity
+      itemType: template
+      iconUrl: classpath://io.brooklyn.clocker.common:icons/haproxy.png
+      item:
+        services:
+          - type: haproxy-load-balancer

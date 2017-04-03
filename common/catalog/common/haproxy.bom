@@ -6,15 +6,6 @@ brooklyn.catalog:
     license_code: APACHE-2.0
 
   items:
-    - id: haproxy-load-balancer-template
-      name: "HAProxy Load Balancer"
-      description: |
-        HAProxy load balancer entity
-      itemType: template
-      iconUrl: classpath://io.brooklyn.clocker.common:icons/haproxy.png
-      item:
-        services:
-          - type: haproxy-load-balancer
 
     - id: haproxy-load-balancer
       name: "HAProxy Load Balancer"
