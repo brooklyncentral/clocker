@@ -137,9 +137,16 @@ brooklyn.catalog:
             description: |
               Period between cluster repave executions. The policy will wait for
               this time period before executing the first repave, and then every
-              time period (after the repave has finished) therafter.
+              time period (after the repave has finished) thereafter.
             type: org.apache.brooklyn.util.time.Duration
             default: 1 day
+          - name: openshift.repave.wait
+            label: "Cluster Repave wait"
+            description: |
+              Time to wait after cluster is ready and the first repave execution.
+              The policy will execute periodically from then onwards.
+            type: org.apache.brooklyn.util.time.Duration
+            default: 5 minutes
 
         brooklyn.enrichers:
           - type: org.apache.brooklyn.enricher.stock.Propagator
@@ -147,6 +154,11 @@ brooklyn.catalog:
               producer: $brooklyn:entity("ansible-server")
               propagating:
                 - $brooklyn:sensor("main.uri")
+          - type: io.cloudsoft.amp.ui.common.enricher.AmpExternalUiModuleEnricher
+            brooklyn.config:
+              external.ui.module.icon: fa-dashboard
+              external.ui.module.name: "OpenShift Console"
+              external.ui.module.url.sensor: $brooklyn.sensor("main.uri")
 
         brooklyn.config:
           start.timeout: 30m
@@ -157,12 +169,6 @@ brooklyn.catalog:
             name: "brooklyn-dns-etc-hosts-generator"
             brooklyn.config:
               brooklyn_dns.domain: $brooklyn:config("openshift.domain")
-
-          # - type: ca-server
-          #   id: ca-server
-          #   name: "ca-server"
-          #   brooklyn.config:
-          #     common.name: "OpenShift"
 
           - type: openshift-origin-cluster
             id: openshift-origin-cluster
@@ -205,7 +211,13 @@ brooklyn.catalog:
                 ssh-keygen -y -f ~/.ssh/openshift.pem >> ~/.ssh/authorized_keys
               launch.command: |
                 cd ${RUN_DIR}/openshift-ansible
-                ansible-playbook playbooks/byo/config.yml --inventory ${INSTALL_DIR}/inventory
+                ansible-playbook playbooks/byo/config.yml --inventory ${INSTALL_DIR}/inventory || (
+                  echo "[CLOCKER] Error running ansible-playbook: $?"
+                  if [ -f playbook.retry ] ; then
+                    ansible-playbook playbooks/byo/config.yml --inventory ${INSTALL_DIR}/inventory \
+                      --limit playbook.retry
+                  fi
+                )
                 touch ${RUN_DIR}/INSTALLED
               checkRunning.command: |
                 test -f ${RUN_DIR}/INSTALLED
@@ -255,12 +267,6 @@ brooklyn.catalog:
                       - $brooklyn:attributeWhenReady("lb.entity.id")
                       - $brooklyn:config("openshift.domain")
                       - $brooklyn:attributeWhenReady("openshift.console.port")
-              - type: io.cloudsoft.amp.ui.common.enricher.AmpExternalUiModuleEnricher
-                brooklyn.config:
-                  external.ui.module.icon: fa-dashboard
-                  external.ui.module.name: "OpenShift Console"
-                  external.ui.module.slug: openshift-console-url
-                  external.ui.module.url.sensor: $brooklyn.sensor("main.uri")
 
             brooklyn.policies:
               - type: org.apache.brooklyn.policy.action.PeriodicEffectorPolicy
@@ -269,6 +275,7 @@ brooklyn.catalog:
                   args:
                     k: $brooklyn:entity("openshift-origin-cluster").config("openshift.repave.size")
                   period: $brooklyn:entity("openshift-origin-cluster").config("openshift.repave.period")
+                  wait: $brooklyn:entity("openshift-origin-cluster").config("openshift.repave.wait")
 
             brooklyn.initializers:
               - type: org.apache.brooklyn.core.effector.composite.SequenceEffector
