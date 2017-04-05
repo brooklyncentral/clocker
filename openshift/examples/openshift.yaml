@@ -1,7 +1,8 @@
 id: openshift
 name: "openshift"
 description: |
-  Creates an OpenShift Origin cluster with redundant master servers.
+  Creates an OpenShift Origin cluster with load balanced master servers
+  on CentOS 7 virtual machines
 
 location: aws-eu-central-1
 
@@ -10,10 +11,26 @@ services:
     id: openshift
     name: "openshift"
     brooklyn.config:
-      start.timeout: 30m
-      openshift.domain: "openshift.local"
+      # configure opesnhift
+      openshift.version: 1.4.1
+      # configure repave policy
+      openshift.repave.size: 2
+      openshift.repave.period: 1d
+      openshift.repave.start: 02:30:00
+      # set cluster size
       openshift.master.clusterSize: 2
       openshift.etcd.clusterSize: 3
       openshift.node.clusterSize: 5
+      # set machine config
+      openshift.master.minCores: 2
+      openshift.master.minRam: 4000
+      openshift.node.minCores: 4
+      openshift.node.minRam: 8000
+      openshift.etcd.minCores: 1
+      openshift.etcd.minRam: 2000
+      openshift.lb.minCores: 1
+      openshift.lb.minRam: 2000
+      # set shared machine details
+      openshift.domain: "openshift.local"
       openshift.ssh.loginUser: "amp"
       openshift.ssh.privateKeyFile: "~/.ssh/openshift.pem"
