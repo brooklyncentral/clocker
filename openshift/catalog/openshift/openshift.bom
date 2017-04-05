@@ -413,9 +413,9 @@ brooklyn.catalog:
                   function:
                     $brooklyn:object:
                       type: org.apache.brooklyn.util.text.StringFunctions
-                      factoryMethod.name: "prepend"
+                      factoryMethod.name: "formatter"
                       factoryMethod.args:
-                        - "-"
+                        - "-%s"
               - type: org.apache.brooklyn.core.effector.composite.ComposeEffector
                 brooklyn.config:
                   name: stopMachines
