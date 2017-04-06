@@ -135,7 +135,12 @@ brooklyn.catalog:
               Time to start the first repave execution. The policy will execute
               periodically from then onwards.
             type: string
-            default: 23:00:00
+          - name: openshift.repave.wait
+            label: "Cluster Repave Wait"
+            description: |
+              Duration to wait until the first repave execution. The policy will
+              execute periodically from then onwards.
+            type: org.apache.brooklyn.util.time.Duration
 
         brooklyn.enrichers:
           - type: org.apache.brooklyn.enricher.stock.Propagator
@@ -265,6 +270,7 @@ brooklyn.catalog:
                     k: $brooklyn:entity("openshift-origin-cluster").config("openshift.repave.size")
                   period: $brooklyn:entity("openshift-origin-cluster").config("openshift.repave.period")
                   time: $brooklyn:entity("openshift-origin-cluster").config("openshift.repave.start")
+                  wait: $brooklyn:entity("openshift-origin-cluster").config("openshift.repave.wait")
 
             brooklyn.initializers:
               - type: org.apache.brooklyn.core.effector.composite.SequenceEffector
