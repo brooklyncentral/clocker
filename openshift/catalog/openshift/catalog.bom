@@ -2,7 +2,7 @@ brooklyn.catalog:
   items:
     - classpath://io.brooklyn.clocker.openshift:openshift/openshift.bom
 
-    - id: openshift-origin-ansible-template
+    - id: openshift-origin-template
       name: "OpenShift Origin Cluster"
       description: |
         OpenShift Origin cluster deployment using Ansible
@@ -10,6 +10,11 @@ brooklyn.catalog:
       itemType: template
       item:
         services:
-          - type: openshift-origin-ansible
-            id: openshift-origin-ansible
-            name: "openshift-origin-ansible"
+          - type: openshift-origin
+            id: openshift-origin
+            name: "openshift-origin"
+            brooklyn.enrichers:
+              - type: io.cloudsoft.amp.ui.common.enricher.AmpExternalUiModuleEnricher
+                brooklyn.config:
+                  external.ui.module.icon: fa-dashboard
+                  external.ui.module.name: "OpenShift Console"

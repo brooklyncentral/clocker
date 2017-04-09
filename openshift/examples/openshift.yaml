@@ -1,13 +1,17 @@
 id: openshift
 name: "openshift"
 description: |
-  Creates an OpenShift Origin cluster with load balanced master servers
-  on CentOS 7 virtual machines
+  Creates an OpenShift Origin 1.4.1 cluster with load balanced master servers
+  on CentOS 7 virtual machines.
+
+  Scheduled repave of 2 machines is run daily at 02h30.
+
+  Host file for openshift.local access is copied to localhost.
 
 location: aws-eu-central-1
 
 services:
-  - type: openshift-origin-ansible-template
+  - type: openshift-origin-template
     id: openshift
     name: "openshift"
     brooklyn.config:
@@ -15,7 +19,7 @@ services:
       openshift.version: 1.4.1
       # configure repave policy
       openshift.repave.size: 2
-      openshift.repave.period: 1d
+      openshift.repave.period: 1 day
       openshift.repave.start: 02:30:00
       # set cluster size
       openshift.master.clusterSize: 2
@@ -34,3 +38,11 @@ services:
       openshift.domain: "openshift.local"
       openshift.ssh.loginUser: "amp"
       openshift.ssh.privateKeyFile: "~/.ssh/openshift.pem"
+
+  # local access to openshift.local hosts
+  - type: empty-software-process
+    id: localhost
+    name: "localhost"
+    location: localhost
+    brooklyn.config:
+      openshift.configureHostsFile: true

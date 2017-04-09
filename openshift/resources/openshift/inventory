@@ -5,7 +5,7 @@ masters
 nodes
 etcd
 lb
-# new_nodes
+### new_nodes ###
 
 # Set OSEv3 configuration common to all hosts
 [OSEv3:vars]
