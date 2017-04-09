@@ -811,8 +811,10 @@ brooklyn.catalog:
             EOF
             chmod 600 ~/.ssh/openshift.pem ~/.ssh/config
             ssh-keygen -y -f ~/.ssh/openshift.pem >> ~/.ssh/authorized_keys
-            sudo hostname ${ENTITY_ID}.${OPENSHIFT_DOMAIN}
-            echo ${ENTITY_ID}.${OPENSHIFT_DOMAIN} | sudo tee /etc/hostname
+            sudo hostname "${ENTITY_ID}.${OPENSHIFT_DOMAIN}"
+            echo "${ENTITY_ID}.${OPENSHIFT_DOMAIN}" | sudo tee /etc/hostname
+          checkRunning.command: |
+            hostname | grep "${ENTITY_ID}"
 
         brooklyn.initializers:
           - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
