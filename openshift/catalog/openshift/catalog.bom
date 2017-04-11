@@ -1,0 +1,15 @@
+brooklyn.catalog:
+  items:
+    - classpath://io.brooklyn.clocker.openshift:openshift/openshift.bom
+
+    - id: openshift-origin-ansible-template
+      name: "OpenShift Origin Cluster"
+      description: |
+        OpenShift Origin cluster deployment using Ansible
+      iconUrl: classpath://io.brooklyn.clocker.openshift:icons/openshift.png
+      itemType: template
+      item:
+        services:
+          - type: openshift-origin-ansible
+            id: openshift-origin-ansible
+            name: "openshift-origin-ansible"

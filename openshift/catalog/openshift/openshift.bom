@@ -1,0 +1,826 @@
+brooklyn.catalog:
+  version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+  publish:
+    description: |
+      Resources for working with OpenShift Origin using Ansible from Apache Brooklyn
+    license_code: APACHE-2.0
+
+  items:
+    - classpath://io.brooklyn.clocker.common:docker/docker.bom
+    - classpath://io.brooklyn.clocker.kubernetes:kubernetes/brooklyn-dns-etc-hosts-generator.bom
+
+    - id: openshift-hosts-file-generator
+      name: "OpenShift Hosts File Generator"
+      description: |
+        OpenShift /etc/hosts file generator
+      itemType: entity
+      item:
+        type: brooklyn-dns-etc-hosts-generator
+        brooklyn.config:
+          brooklyn_dns.hosts.address.sensor: "host.address"
+          dynamicgroup.entityfilter:
+            $brooklyn:object:
+              type: com.google.common.base.Predicates
+              factoryMethod.name: "and"
+              factoryMethod.args:
+                - $brooklyn:object:
+                    type: org.apache.brooklyn.core.entity.EntityPredicates
+                    factoryMethod.name: "applicationIdEqualTo"
+                    factoryMethod.args:
+                      - $brooklyn:attributeWhenReady("application.id")
+                - $brooklyn:object:
+                    type: org.apache.brooklyn.core.entity.EntityPredicates
+                    factoryMethod.name: "configNotNull"
+                    factoryMethod.args:
+                      - "openshift.configureHostsFile"
+        brooklyn.enrichers:
+          - type: org.apache.brooklyn.enricher.stock.Propagator
+            brooklyn.config:
+              producer: $brooklyn:entity("openshift-origin-cluster")
+              sensorMapping:
+                $brooklyn:sensor("service.isUp"): $brooklyn:sensor("openshift.isUp")
+        brooklyn.policies:
+          - type: org.apache.brooklyn.policy.InvokeEffectorOnSensorChange
+            brooklyn.config:
+              sensor: openshift.isUp
+              effector: updateEtcHostsOnMembers
+
+    - id: docker-engine-with-insecure-registry
+      name: "Docker Engine with insecure registry"
+      description: |
+        A docker-engine customised to allow access to non-TLS secured registry
+        for OpenShift use.
+      itemType: entity
+      iconUrl: classpath://io.brooklyn.clocker.common:icons/docker.png
+      item:
+        type: docker-engine
+
+        brooklyn.config:
+          docker.additionaloptions: "--selinux-enabled --insecure-registry 172.30.0.0/16"
+
+    - id: openshift-origin-ansible
+      name: "OpenShift Origin Cluster"
+      itemType: entity
+      iconUrl: classpath://io.brooklyn.clocker.openshift:icons/openshift.png
+      version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+      publish:
+        license_code: Apache-2.0
+      item:
+        type: org.apache.brooklyn.entity.stock.BasicApplication
+
+        brooklyn.parameters:
+          - name: openshift.version
+            label: "OpenShift Version"
+            description: |
+              The OpenShift version to install
+            type: string
+            default: "1.4.1"
+          - name: openshift.domain
+            label: "OpenShift Domain"
+            description: |
+              The OpenShift domain name suffix
+            type: string
+            default: "openshift.local"
+          - name: openshift.master.clusterSize
+            label: "Master Cluster Size"
+            description: |
+              Size of the OpenShift master cluster when created initially
+            type: integer
+            default: 2
+          - name: openshift.node.clusterSize
+            label: "Node Cluster Size"
+            description: |
+              Size of the OpenShift node cluster when created initially
+            type: integer
+            default: 5
+          - name: openshift.etcd.clusterSize
+            label: "Etcd Cluster Size"
+            description: |
+              Size of the OpenShift etcd cluster when created initially
+            type: integer
+            default: 3
+          - name: openshift.ssh.loginUser
+            label: "SSH Login User"
+            description: |
+              SSH user for connections within the OpenShift cluster
+            type: string
+          - name: openshift.ssh.privateKeyFile
+            label: "SSH Private Key"
+            description: |
+              SSH private key file URL for connections within the OpenShift cluster
+            type: string
+          - name: openshift.console.port
+            label: "OpenShift Console Port"
+            description: |
+              The external port the OpenShift console UI listens on
+            type: port
+            default: 8443
+          - name: openshift.repave.size
+            label: "Cluster Repave Size"
+            description: |
+              Number of nodes to be repaved each time the policy executes
+            type: integer
+            default: 2
+          - name: openshift.repave.period
+            label: "Cluster Repave Period"
+            description: |
+              Period between cluster repave executions. The policy will wait for
+              this time period before executing the first repave, and then every
+              time period (after the repave has finished) thereafter.
+            type: org.apache.brooklyn.util.time.Duration
+            default: 1 day
+          - name: openshift.repave.start
+            label: "Cluster Repave Start"
+            description: |
+              Time to start the first repave execution. The policy will execute
+              periodically from then onwards.
+            type: string
+          - name: openshift.repave.wait
+            label: "Cluster Repave Wait"
+            description: |
+              Duration to wait until the first repave execution. The policy will
+              execute periodically from then onwards.
+            type: org.apache.brooklyn.util.time.Duration
+
+        brooklyn.enrichers:
+          - type: org.apache.brooklyn.enricher.stock.Propagator
+            brooklyn.config:
+              producer: $brooklyn:entity("ansible-server")
+              propagating:
+                - $brooklyn:sensor("main.uri")
+          - type: io.cloudsoft.amp.ui.common.enricher.AmpExternalUiModuleEnricher
+            brooklyn.config:
+              external.ui.module.icon: fa-dashboard
+              external.ui.module.name: "OpenShift Console"
+              external.ui.module.url.sensor: $brooklyn.sensor("main.uri")
+
+        brooklyn.config:
+          start.timeout: 30m
+
+        brooklyn.children:
+          - type: openshift-hosts-file-generator
+            id: brooklyn-dns-etc-hosts-generator
+            name: "brooklyn-dns-etc-hosts-generator"
+            brooklyn.config:
+              brooklyn_dns.domain: $brooklyn:config("openshift.domain")
+
+          - type: openshift-origin-cluster
+            id: openshift-origin-cluster
+            name: "openshift-origin-cluster"
+
+          - type: centos7-software-process
+            id: ansible-server
+            name: "ansible-server"
+
+            brooklyn.config:
+              openshift.configureHostsFile: true
+              shell.env:
+                INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
+                RUN_DIR: $brooklyn:attributeWhenReady("run.dir")
+              resources.preInstall.latch:
+                $brooklyn:sibling("openshift-origin-cluster").attributeWhenReady("service.isUp")
+              files.preinstall:
+                $brooklyn:config("openshift.ssh.privateKeyFile"): openshift.pem
+              templates.preinstall:
+                "classpath://io.brooklyn.clocker.openshift:openshift/inventory": inventory
+              install.command: |
+                sudo yum -y install epel-release
+                sudo yum -y update
+                sudo yum -y install wget git net-tools bind-utils iptables-services bridge-utils bash-completion openssl jq
+                sudo sed -i -e "s/^enabled=1/enabled=0/" /etc/yum.repos.d/epel.repo
+                sudo yum -y --enablerepo=epel install pyOpenSSL python-passlib python-keyczar sshpass python-httplib2
+                mkdir -p ${RUN_DIR}
+                cd ${RUN_DIR}
+                wget http://mirror.centos.org/centos/7/paas/x86_64/openshift-origin/common/ansible-2.2.0.0-1.el7.noarch.rpm
+                sudo yum install -y ./ansible-2.2.0.0-1.el7.noarch.rpm
+                git clone https://github.com/openshift/openshift-ansible
+                cd openshift-ansible
+                git checkout tags/openshift-ansible-3.5.28-1
+              customize.command: |
+                mv ${INSTALL_DIR}/openshift.pem ~/.ssh/
+                tee ~/.ssh/config <<-EOF
+                IdentityFile=~/.ssh/openshift.pem
+                EOF
+                chmod 600 ~/.ssh/openshift.pem ~/.ssh/config
+                ssh-keygen -y -f ~/.ssh/openshift.pem >> ~/.ssh/authorized_keys
+              launch.command: |
+                cd ${RUN_DIR}/openshift-ansible
+                ansible-playbook playbooks/byo/config.yml --inventory ${INSTALL_DIR}/inventory || (
+                  echo "[CLOCKER] Error running ansible-playbook: $?"
+                  if [ -f playbook.retry ] ; then
+                    ansible-playbook playbooks/byo/config.yml --inventory ${INSTALL_DIR}/inventory \
+                      --limit playbook.retry
+                  fi
+                )
+                touch ${RUN_DIR}/INSTALLED
+              checkRunning.command: |
+                test -f ${RUN_DIR}/INSTALLED
+              stop.command: |
+                true
+
+            brooklyn.enrichers:
+              - type: org.apache.brooklyn.enricher.stock.Propagator
+                brooklyn.config:
+                  producer: $brooklyn:entity("openshift-master-machines")
+                  sensorMapping:
+                    $brooklyn:sensor("hosts.list"): $brooklyn:sensor("master.hosts.list")
+              - type: org.apache.brooklyn.enricher.stock.Propagator
+                brooklyn.config:
+                  producer: $brooklyn:entity("openshift-etcd-machines")
+                  sensorMapping:
+                    $brooklyn:sensor("hosts.list"): $brooklyn:sensor("etcd.hosts.list")
+              - type: org.apache.brooklyn.enricher.stock.Propagator
+                brooklyn.config:
+                  producer: $brooklyn:entity("openshift-node-machines")
+                  sensorMapping:
+                    $brooklyn:sensor("hosts.list"): $brooklyn:sensor("node.hosts.list")
+              - type: org.apache.brooklyn.enricher.stock.Propagator
+                brooklyn.config:
+                  producer: $brooklyn:entity("openshift-lb")
+                  sensorMapping:
+                    $brooklyn:sensor("entity.id"): $brooklyn:sensor("lb.entity.id")
+              - type: org.apache.brooklyn.enricher.stock.Propagator
+                brooklyn.config:
+                  producer: $brooklyn:entity("openshift-lb")
+                  propagating:
+                    - $brooklyn:sensor("openshift.console.port")
+              - type: org.apache.brooklyn.enricher.stock.Propagator
+                brooklyn.config:
+                  producer: $brooklyn:root()
+                  sensorMapping:
+                    $brooklyn:sensor("service.isUp"): $brooklyn:sensor("scheduler.start")
+              - type: org.apache.brooklyn.enricher.stock.Transformer
+                brooklyn.config:
+                  enricher.triggerSensors:
+                    - lb.entity.id
+                    - openshift.console.port
+                  enricher.targetSensor: $brooklyn:sensor("main.uri")
+                  enricher.targetValue:
+                    $brooklyn:formatString:
+                      - "https://%s.%s:%d/"
+                      - $brooklyn:attributeWhenReady("lb.entity.id")
+                      - $brooklyn:config("openshift.domain")
+                      - $brooklyn:attributeWhenReady("openshift.console.port")
+
+            brooklyn.policies:
+              - type: org.apache.brooklyn.policy.action.PeriodicEffectorPolicy
+                brooklyn.config:
+                  effector: repaveCluster
+                  args:
+                    k: $brooklyn:entity("openshift-origin-cluster").config("openshift.repave.size")
+                  period: $brooklyn:entity("openshift-origin-cluster").config("openshift.repave.period")
+                  time: $brooklyn:entity("openshift-origin-cluster").config("openshift.repave.start")
+                  wait: $brooklyn:entity("openshift-origin-cluster").config("openshift.repave.wait")
+
+            brooklyn.initializers:
+              - type: org.apache.brooklyn.core.effector.composite.SequenceEffector
+                brooklyn.config:
+                  name: repaveCluster
+                  description: |
+                    Repave K nodes of the cluster
+                  parameters:
+                    k:
+                      description: |
+                        The number of nodes to repave
+                  sequence:
+                    - resizeNodes:
+                        input: k
+                    - updateNodes:
+                        input: k
+                    - stopMachines:
+                        input: k
+              - type: org.apache.brooklyn.core.effector.composite.ComposeEffector
+                brooklyn.config:
+                  name: resizeNodes
+                  description: |
+                    Resize the cluster by adding an additional K nodes
+                  parameters:
+                    k:
+                      description: |
+                        The number of nodes to add
+                  compose:
+                    - resizeByDelta:
+                        target: $brooklyn:entity("openshift-node-machines")
+                        input:
+                          delta: k
+                    - getEntityIds:
+                        input: entities
+                    - scaleOut:
+                        input: entities
+              - type: org.apache.brooklyn.core.effector.composite.SequenceEffector
+                brooklyn.config:
+                  name: scaleOut
+                  description: |
+                    Update /etc/hosts and then call the scaleOutNodes effector
+                  parameters:
+                    k:
+                      description: |
+                        The number of nodes
+                  sequence:
+                    - updateEtcHostsOnMembers:
+                        target: $brooklyn:entity("brooklyn-dns-etc-hosts-generator")
+                        input: entities
+                    - scaleOutNodes:
+                        input: entities
+              - type: org.apache.brooklyn.core.effector.composite.TransformEffector
+                brooklyn.config:
+                  name: getEntityIds
+                  description: |
+                    Transform a list of entities into a list of their IDs
+                  parameters:
+                    entities:
+                      description: |
+                        The entity list to retrieve IDs from
+                  input: entities
+                  function:
+                    $brooklyn:object:
+                      type: org.apache.brooklyn.util.collections.CollectionFunctionals
+                      factoryMethod.name: "iterableTransformer"
+                      factoryMethod.args:
+                        - $brooklyn:object:
+                            type: org.apache.brooklyn.core.entity.EntityFunctions
+                            factoryMethod.name: "id"
+              - type: org.apache.brooklyn.core.effector.composite.TransformEffector
+                brooklyn.config:
+                  name: convertStringToList
+                  description: |
+                    Transform a string of IP addresses into a list
+                  parameters:
+                    nodes:
+                      description: |
+                        A space separated set of node IP addresses
+                  input: nodes
+                  function:
+                    $brooklyn:object:
+                      type: org.apache.brooklyn.util.text.StringFunctions
+                      factoryMethod.name: "splitter"
+                      factoryMethod.args:
+                        - " "
+              - type: org.apache.brooklyn.core.effector.composite.ComposeEffector
+                brooklyn.config:
+                  name: updateNodes
+                  description: |
+                    Update the cluster by stopping and draining the oldest
+                    K nodes, and then removing them
+                  parameters:
+                    k:
+                      description: |
+                        The number of nodes to select
+                  compose:
+                    - selectOldestNodes:
+                        target: $brooklyn:entity("openshift-master")
+                        input: k
+                    - convertStringToList:
+                        input: nodes
+                    - stopNodes:
+                        input: nodes
+              - type: org.apache.brooklyn.core.effector.composite.LoopEffector
+                brooklyn.config:
+                  name: stopNodes
+                  description: |
+                    Stop, drain and delete the list of nodes
+                  parameters:
+                    nodes:
+                      description: |
+                        List of IP addresses of nodes
+                  input: nodes
+                  loop:
+                    stopNode:
+                      input: ip
+              - type: org.apache.brooklyn.core.effector.composite.SequenceEffector
+                brooklyn.config:
+                  name: stopNode
+                  description: |
+                    Stop, drain and delete the selected node
+                  parameters:
+                    ip:
+                      description: |
+                        The IP address of the node
+                  sequence:
+                    - disableScheduling:
+                        target: $brooklyn:entity("openshift-master")
+                        input: ip
+                    - evacuateNode:
+                        target: $brooklyn:entity("openshift-master")
+                        input: ip
+                    - deleteNode:
+                        target: $brooklyn:entity("openshift-master")
+                        input: ip
+              - type: org.apache.brooklyn.core.effector.composite.TransformEffector
+                brooklyn.config:
+                  name: negate
+                  description: |
+                    Negate the input number
+                  parameters:
+                    k:
+                      description: |
+                        The number to negate
+                  input: k
+                  function:
+                    $brooklyn:object:
+                      type: org.apache.brooklyn.util.text.StringFunctions
+                      factoryMethod.name: "formatter"
+                      factoryMethod.args:
+                        - "-%s"
+              - type: org.apache.brooklyn.core.effector.composite.ComposeEffector
+                brooklyn.config:
+                  name: stopMachines
+                  description: |
+                    Stops the machines that were running the drained OpenShift
+                    nodes
+                  parameters:
+                    k:
+                      description: |
+                        The number of machines to stop
+                  compose:
+                    - negate:
+                        input: k
+                    - resizeByDelta:
+                        target: $brooklyn:entity("openshift-node-machines")
+                        input: delta
+              - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+                brooklyn.config:
+                  name: scaleOutNodes
+                  description: |
+                    Scale out the cluster onto the specified node entity IDs
+                  parameters:
+                    entities:
+                      description: |
+                        List of entity IDs to scale out onto
+                  shell.env:
+                    OPENSHIFT_DOMAIN: $brooklyn:entity("openshift-origin-cluster").config("openshift.domain")
+                    INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
+                    RUN_DIR: $brooklyn:attributeWhenReady("run.dir")
+                    ENTITY_ID: $brooklyn:attributeWhenReady("entity.id")
+                  command: |
+                    (
+                    flock 10
+                    cp ${INSTALL_DIR}/inventory ${RUN_DIR}/inventory
+                    ( echo ; echo "[new_nodes]" ) >> ${RUN_DIR}/inventory
+                    sed -i -e "s/^# new_nodes$/new_nodes/" ${RUN_DIR}/inventory
+                    nodes=$(echo ${entities} | jq -r '[.[] + " "] | add')
+                    for node in ${nodes}
+                    do
+                      echo "${node}.${OPENSHIFT_DOMAIN} openshift_node_labels=\"{'region': 'primary', 'zone': 'default'}\"" >> ${INSTALL_DIR}/inventory
+                      echo "${node}.${OPENSHIFT_DOMAIN} openshift_node_labels=\"{'region': 'primary', 'zone': 'default'}\"" >> ${RUN_DIR}/inventory
+                    done
+                    cd ${RUN_DIR}/openshift-ansible
+                    ansible-playbook ./playbooks/byo/openshift-node/scaleup.yml --inventory ${RUN_DIR}/inventory
+                    ) 10>> /tmp/scaleOutNodes.${ENTITY_ID}.lock
+
+    - id: openshift-origin-cluster
+      name: "OpenShift Origin Cluster"
+      itemType: entity
+      iconUrl: classpath://io.brooklyn.clocker.openshift:icons/openshift.png
+      version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+      publish:
+        license_code: Apache-2.0
+      item:
+        type: org.apache.brooklyn.entity.stock.BasicStartable
+
+        brooklyn.parameters:
+          - name: openshift.master.clusterSize
+            label: "Master Cluster Size"
+            description: |
+              Size of the OpenShift master cluster when created initially
+            type: integer
+            default: 2
+          - name: openshift.master.minCores
+            label: "Master Minimum CPU Cores"
+            description: |
+              Minimum CPU cores for provisioning OpenShift master machines
+            default: 2
+          - name: openshift.master.minRam
+            label: "Master Minimum RAM"
+            description: |
+              Minimum RAM for provisioning OpenShift master machines
+            default: 4000
+          - name: openshift.node.clusterSize
+            label: "Node Cluster Size"
+            description: |
+              Size of the OpenShift node cluster when created initially
+            type: integer
+            default: 5
+          - name: openshift.node.minCores
+            label: "Node Minimum CPU Cores"
+            description: |
+              Minimum CPU cores for provisioning OpenShift node machines
+            default: 4
+          - name: openshift.node.minRam
+            label: "Node Minimum RAM"
+            description: |
+              Minimum RAM for provisioning OpenShift node machines
+            default: 8000
+          - name: openshift.etcd.clusterSize
+            label: "Etcd Cluster Size"
+            type: integer
+            default: 3
+          - name: openshift.etcd.minCores
+            label: "Etcd Minimum CPU Cores"
+            description: |
+              Minimum CPU cores for provisioning OpenShift etcd machines
+            default: 2
+          - name: openshift.etcd.minRam
+            label: "Etcd Minimum RAM"
+            description: |
+              Minimum RAM for provisioning OpenShift etcd machines
+            default: 4000
+          - name: openshift.lb.minCores
+            label: "Load Balancer Minimum CPU Cores"
+            description: |
+              Minimum CPU cores for provisioning OpenShift etcd machines
+            default: 2
+          - name: openshift.lb.minRam
+            label: "Load Balancer Minimum RAM"
+            description: |
+              Minimum RAM for provisioning OpenShift etcd machines
+            default: 4000
+
+        brooklyn.children:
+          - type: openshift-machine-cluster
+            id: openshift-master-machines
+            name: "openshift-master-machines"
+            brooklyn.config:
+              openshift.machine.group: "master"
+              openshift.machine.clusterSize: $brooklyn:parent().config("openshift.master.clusterSize")
+              openshift.machine.minCores: $brooklyn:parent().config("openshift.master.minCores")
+              openshift.machine.minRam: $brooklyn:parent().config("openshift.master.minRam")
+              openshift.machine.spec:
+                $brooklyn:entitySpec:
+                  type: openshift-machine
+                  id: openshift-master
+                  name: "openshift-master"
+                  brooklyn.initializers:
+                    - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+                      brooklyn.config:
+                        name: disableScheduling
+                        description: |
+                          Disable scheduling on a node
+                        parameters:
+                          ip:
+                            description: |
+                              The IP address of the node
+                        command: |
+                          oc adm manage-node ${ip} --schedulable=false
+                    - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+                      brooklyn.config:
+                        name: evacuateNode
+                        description: |
+                          Evacuate a node
+                        parameters:
+                          ip:
+                            description: |
+                              The IP address of the node
+                        command: |
+                          oc adm manage-node ${ip} --evacuate --force
+                    - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+                      brooklyn.config:
+                        name: deleteNode
+                        description: |
+                          Delete a node
+                        parameters:
+                          ip:
+                            description: |
+                              The IP address of the node
+                        command: |
+                          oc delete node ${ip}
+                          ssh -o StrictHostKeyChecking=no ${ip} sudo systemctl stop origin-node
+                          sleep 15
+                    - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+                      brooklyn.config:
+                        name: selectOldestNodes
+                        description: |
+                          Get the K oldest nodes
+                        parameters:
+                          k:
+                            description: |
+                              The number of nodes to get
+                        command: |
+                          oc get nodes \
+                              --sort-by='.metadata.creationTimestamp' \
+                              --selector='region != infra' \
+                              --output='name' |
+                            cut -d/ -f2 |
+                            head -${k} |
+                            paste -s -d\  -
+                    - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+                      brooklyn.config:
+                        name: getHostname
+                        description: |
+                          Determine the hostname for a node based on its IP
+                          address, which may not be the one in the /etc/hosts
+                          file in environments using NAT. This should be the
+                          entity ID for the machine
+                        parameters:
+                          ip:
+                            description: |
+                              The IP address of the node
+                        command: |
+                          ssh -o StrictHostKeyChecking=no ${ip} hostname --short
+
+          - type: openshift-machine-cluster
+            id: openshift-etcd-machines
+            name: "openshift-etcd-machines"
+            brooklyn.config:
+              openshift.machine.group: "etcd"
+              openshift.machine.clusterSize: $brooklyn:parent().config("openshift.etcd.clusterSize")
+              openshift.machine.minCores: $brooklyn:parent().config("openshift.etcd.minCores")
+              openshift.machine.minRam: $brooklyn:parent().config("openshift.etcd.minRam")
+              openshift.machine.spec:
+                $brooklyn:entitySpec:
+                  type: openshift-machine
+                  id: openshift-etcd
+                  name: "openshift-etcd"
+          - type: openshift-machine-cluster
+            id: openshift-node-machines
+            name: "openshift-node-machines"
+            brooklyn.config:
+              openshift.machine.group: "node"
+              openshift.machine.clusterSize: $brooklyn:parent().config("openshift.node.clusterSize")
+              openshift.machine.minCores: $brooklyn:parent().config("openshift.node.minCores")
+              openshift.machine.minRam: $brooklyn:parent().config("openshift.node.minRam")
+              openshift.machine.spec:
+                $brooklyn:entitySpec:
+                  type: openshift-machine
+                  id: openshift-node
+                  name: "openshift-node"
+                  brooklyn.initializers:
+                    - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+                      brooklyn.config:
+                        name: openshift.status
+                        period: 10s
+                        command: |
+                          systemctl show origin-node |
+                            grep SubState |
+                            cut -d= -f2
+              dynamiccluster.removalstrategy:
+                $brooklyn:object:
+                  type: org.apache.brooklyn.entity.group.SensorMatchingRemovalStrategy
+                  brooklyn.config:
+                    sensor.matching.sensor: $brooklyn:sensor("openshift.status")
+                    sensor.matching.value: "dead"
+            brooklyn.initializers:
+              - type: org.apache.brooklyn.core.effector.composite.ReplaceEffector
+                brooklyn.config:
+                  name: stop
+                  description: |
+                    Stops the OpenShift node processes before stopping the cluster
+                  action: PRE
+                  replace: stopMemberNodes
+              - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+                brooklyn.config:
+                  name: stopMemberNodes
+                  description: |
+                    Stop the OpenShift process on all member nodes
+                  executionTarget: MEMBERS
+                  command: |
+                    if systemctl status origin-node ; then
+                      sudo systemctl stop origin-node
+                      sleep 15
+                    fi
+
+          - type: openshift-machine
+            id: openshift-lb
+            name: "openshift-lb"
+            brooklyn.parameters:
+              - name: openshift.console.port
+                label: "OpenShift Console Port"
+                description: |
+                  The external port the OpenShift console UI listens on
+                type: port
+                default: 8443
+            brooklyn.config:
+              openshift.machine.minCores: $brooklyn:parent().config("openshift.lb.minCores")
+              openshift.machine.minRam: $brooklyn:parent().config("openshift.lb.minRam")
+
+        brooklyn.enrichers:
+          - type: org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic$ComputeServiceIndicatorsFromChildrenAndMembers
+            brooklyn.config:
+              uniqueTag: service-lifecycle-indicators-from-children
+              enricher.aggregating.fromChildren: true
+              enricher.aggregating.fromMembers: false
+              enricher.suppressDuplicates: true
+              enricher.service_state.children_and_members.quorum.up: all
+
+    - id: openshift-machine-cluster
+      name: "OpenShift Machine Cluster"
+      itemType: entity
+      version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+      publish:
+        license_code: Apache-2.0
+      item:
+        type: org.apache.brooklyn.entity.group.DynamicCluster
+
+        brooklyn.parameters:
+          - name: openshift.machine.group
+            label: "Cluster Group Name"
+            description: |
+              Name of the group of machines in the cluster
+            type: string
+            default: "machine"
+          - name: openshift.machine.clusterSize
+            label: "Machine Cluster Size"
+            description: |
+              Size of the machine cluster when created initially
+            type: integer
+            default: 3
+          - name: openshift.machine.minCores
+            label: "Minimum CPU Cores"
+            description: |
+              Minimum CPU cores for provisioning machines
+            default: 2
+          - name: openshift.machine.minRam
+            label: "Minimum RAM"
+            description: |
+              Minimum RAM for provisioning machines
+            default: 4000
+          - name: openshift.machine.spec
+            label: "Machine Spec"
+            description: |
+              Spec for the machines in the cluster
+            type: org.apache.brooklyn.api.entity.EntitySpec
+            default:
+              $brooklyn:entitySpec:
+                type: openshift-machine
+                id: openshift-machine
+                name: "openshift-machine"
+
+        brooklyn.config:
+          displayName:
+            $brooklyn:formatString:
+              - "openshift-%s-cluster"
+              - $brooklyn:config("openshift.machine.group")
+          cluster.initial.size: $brooklyn:config("openshift.machine.clusterSize")
+          memberSpec: $brooklyn:config("openshift.machine.spec")
+
+        brooklyn.enrichers:
+          - type: org.apache.brooklyn.enricher.stock.Aggregator
+            brooklyn.config:
+              uniqueTag: openshift-host-aggregator
+              enricher.sourceSensor: $brooklyn:sensor("entity.id")
+              enricher.targetSensor: $brooklyn:sensor("hosts.list")
+              enricher.aggregating.fromMembers: true
+          - type: org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic$ComputeServiceIndicatorsFromChildrenAndMembers
+            brooklyn.config:
+              uniqueTag: service-lifecycle-indicators-from-members
+              enricher.aggregating.fromChildren: false
+              enricher.aggregating.fromMembers: true
+              enricher.suppressDuplicates: true
+              enricher.service_state.children_and_members.quorum.up: all
+
+    - id: openshift-machine
+      name: "OpenShift Machine"
+      itemType: entity
+      version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+      publish:
+        license_code: Apache-2.0
+      item:
+        type: empty-software-process
+
+        brooklyn.parameters:
+          - name: openshift.machine.minCores
+            label: "Minimum CPU Cores"
+            description: |
+              Minimum CPU cores for provisioning machines
+            default: 4
+          - name: openshift.machine.minRam
+            label: "Minimum RAM"
+            description: |
+              Minimum RAM for provisioning machines
+            default: 8000
+
+        brooklyn.config:
+          openshift.configureHostsFile: true
+          provisioning.properties:
+            minRam: $brooklyn:config("openshift.machine.minRam")
+            minCores: $brooklyn:config("openshift.machine.minCores")
+          files.preinstall:
+            $brooklyn:config("openshift.ssh.privateKeyFile"): openshift.pem
+          shell.env:
+            INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
+            RUN_DIR: $brooklyn:attributeWhenReady("run.dir")
+            ENTITY_ID: $brooklyn:attributeWhenReady("entity.id")
+            OPENSHIFT_DOMAIN: $brooklyn:entity("openshift-origin-cluster").config("openshift.domain")
+          post.customize.command: |
+            sudo yum install -y NetworkManager
+            sudo systemctl start NetworkManager
+            sudo yum install -y openssl
+            mv ${INSTALL_DIR}/openshift.pem ~/.ssh/
+            tee ~/.ssh/config <<-EOF
+            IdentityFile=~/.ssh/openshift.pem
+            EOF
+            chmod 600 ~/.ssh/openshift.pem ~/.ssh/config
+            ssh-keygen -y -f ~/.ssh/openshift.pem >> ~/.ssh/authorized_keys
+            sudo hostname "${ENTITY_ID}.${OPENSHIFT_DOMAIN}"
+            echo "${ENTITY_ID}.${OPENSHIFT_DOMAIN}" | sudo tee /etc/hostname
+          checkRunning.command: |
+            hostname | grep "${ENTITY_ID}"
+
+        brooklyn.initializers:
+          - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+            brooklyn.config:
+              name: hostsFile
+              description: |
+                The list of extra hosts generated by Brooklyn
+              command: |
+                sed -e '/# BEGIN_BROOKLYN_MANAGED_HOSTS/,/# END_BROOKLYN_MANAGED_HOSTS/!d;//d' /etc/hosts

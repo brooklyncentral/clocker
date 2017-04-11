@@ -1,0 +1,75 @@
+[#ftl]
+# Create an OSEv3 group that contains the master, nodes, etcd, and lb groups
+[OSEv3:children]
+masters
+nodes
+etcd
+lb
+# new_nodes
+
+# Set OSEv3 configuration common to all hosts
+[OSEv3:vars]
+ansible_user=${config['openshift.ssh.loginUser']}
+ansible_become=true
+ansible_ssh_private_key_file=/home/users/${config['openshift.ssh.loginUser']}/.ssh/openshift.pem
+
+# Level 2 is default
+debug_level=3
+
+# OpenShift install configuration
+# Deployment can be origin, online, atomic-enterprise, and openshift-enterprise
+deployment_type=origin
+product_type=openshift
+openshift_release=v${config['openshift.version']}
+openshift_image_tag=v${config['openshift.version']}
+openshift_pkg_version=-${config['openshift.version']}
+#docker_version="1.12.x"
+docker_upgrade=False
+#etcd_version="3.1.0"
+openshift_install_examples=true
+#openshift_hosted_registry_selector='region=infra'
+openshift_master_api_port=${attribute['openshift.console.port']?c}
+openshift_master_console_port=${attribute['openshift.console.port']?c}
+
+# TODO add configurable htpasswd authentication
+#openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider', 'filename': '/etc/origin/master/htpasswd'}]
+openshift_master_identity_providers=[{'name': 'allow_all', 'login': 'true', 'challenge': 'true', 'kind': 'AllowAllPasswordIdentityProvider'}]
+
+# HAProxy load balancer for master cluster
+openshift_master_cluster_method=native
+openshift_master_cluster_hostname=${attribute['lb.entity.id']}.${config['openshift.domain']}
+openshift_master_cluster_public_hostname=${attribute['lb.entity.id']}.${config['openshift.domain']}
+
+# Set underlying Kubernetes defaults for nodes
+openshift_node_kubelet_args={'pods-per-core': ['10'], 'max-pods': ['250'], 'image-gc-high-threshold': ['90'], 'image-gc-low-threshold': ['80']}
+
+# Enable NTP on masters to ensure proper failover
+openshift_clock_enabled=true
+
+# Host group for masters
+[masters]
+[#list attribute['master.hosts.list'] as hostname]
+${hostname}.${config['openshift.domain']}
+[/#list]
+
+# Host group for etcd
+[etcd]
+[#list attribute['etcd.hosts.list'] as hostname]
+${hostname}.${config['openshift.domain']}
+[/#list]
+
+# Load balancer host
+[lb]
+${attribute['lb.entity.id']}.${config['openshift.domain']}
+
+# Host group for nodes, includes region info
+[nodes]
+[#list attribute['master.hosts.list'] as hostname]
+${hostname}.${config['openshift.domain']} openshift_node_labels="{'region': 'infra', 'zone': 'default'}"
+[/#list]
+[#list attribute['etcd.hosts.list'] as hostname]
+${hostname}.${config['openshift.domain']} openshift_node_labels="{'region': 'infra', 'zone': 'default'}"
+[/#list]
+[#list attribute['node.hosts.list'] as hostname]
+${hostname}.${config['openshift.domain']} openshift_node_labels="{'region': 'primary', 'zone': 'default'}"
+[/#list]
