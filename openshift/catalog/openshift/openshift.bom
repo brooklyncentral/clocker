@@ -152,6 +152,19 @@ brooklyn.catalog:
         brooklyn.config:
           start.timeout: 30m
 
+        brooklyn.initializers:
+          - type: org.apache.brooklyn.core.effector.composite.RepeatEffector
+            brooklyn.config:
+              name: repaveCluster
+              description: |
+                Repave the whole cluster
+              count: $brooklyn:entity("openshift-node-machines").attributeWhenReady("group.members.count")
+              k: 1
+              repeat:
+                repaveNodes:
+                  input: k
+                  target: $brooklyn:entity("ansible-server")
+
         brooklyn.children:
           - type: openshift-hosts-file-generator
             id: brooklyn-dns-etc-hosts-generator
@@ -260,7 +273,7 @@ brooklyn.catalog:
             brooklyn.policies:
               - type: org.apache.brooklyn.policy.action.PeriodicEffectorPolicy
                 brooklyn.config:
-                  effector: repaveCluster
+                  effector: repaveNodes
                   args:
                     k: $brooklyn:entity("openshift-origin-cluster").config("openshift.repave.size")
                   period: $brooklyn:entity("openshift-origin-cluster").config("openshift.repave.period")
@@ -270,7 +283,7 @@ brooklyn.catalog:
             brooklyn.initializers:
               - type: org.apache.brooklyn.core.effector.composite.SequenceEffector
                 brooklyn.config:
-                  name: repaveCluster
+                  name: repaveNodes
                   description: |
                     Repave K nodes of the cluster
                   parameters:
@@ -684,6 +697,7 @@ brooklyn.catalog:
           - type: openshift-machine
             id: openshift-lb
             name: "openshift-lb"
+            iconUrl: classpath://io.brooklyn.clocker.common:icons/haproxy.png
             brooklyn.parameters:
               - name: openshift.console.port
                 label: "OpenShift Console Port"
@@ -776,6 +790,7 @@ brooklyn.catalog:
       version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
       publish:
         license_code: Apache-2.0
+      iconUrl: classpath://io.brooklyn.clocker.openshift:icons/openshift.png
       item:
         type: empty-software-process
 
