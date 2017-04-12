@@ -670,10 +670,26 @@ brooklyn.catalog:
                             cut -d= -f2
               dynamiccluster.removalstrategy:
                 $brooklyn:object:
-                  type: org.apache.brooklyn.entity.group.SensorMatchingRemovalStrategy
+                  type: org.apache.brooklyn.entity.group.EntityPredicateRemovalStrategy
                   brooklyn.config:
-                    sensor.matching.sensor: $brooklyn:sensor("openshift.status")
-                    sensor.matching.value: "dead"
+                    predicate:
+                      $brooklyn:object:
+                        type: com.google.common.base.Predicates
+                        factoryMethod.name: "or"
+                        factoryMethod.args:
+                          - $brooklyn:object:
+                              type: org.apache.brooklyn.core.entity.EntityPredicates
+                              factoryMethod.name: "attributeEqualTo"
+                              factoryMethod.args:
+                                - $brooklyn:sensor("openshift.status")
+                                - "dead"
+                          - $brooklyn:object:
+                              type: com.google.common.base.Predicates
+                              factoryMethod.name: "not"
+                              factoryMethod.args:
+                                - $brooklyn:object:
+                                    type: org.apache.brooklyn.core.entity.EntityPredicates
+                                    factoryMethod.name: "isServiceUp"
             brooklyn.initializers:
               - type: org.apache.brooklyn.core.effector.composite.ReplaceEffector
                 brooklyn.config:
@@ -839,6 +855,7 @@ brooklyn.catalog:
               period: 30s
               shell.env:
                 ENTITY_ID: $brooklyn:attributeWhenReady("entity.id")
+              targetType: boolean
               command: |
                 (hostname | grep --quiet "${ENTITY_ID}") \
                   && echo "true" || echo "false"
