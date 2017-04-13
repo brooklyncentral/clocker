@@ -562,77 +562,9 @@ brooklyn.catalog:
               openshift.machine.minRam: $brooklyn:parent().config("openshift.master.minRam")
               openshift.machine.spec:
                 $brooklyn:entitySpec:
-                  type: openshift-machine
+                  type: openshift-master
                   id: openshift-master
                   name: "openshift-master"
-                  brooklyn.initializers:
-                    - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
-                      brooklyn.config:
-                        name: disableScheduling
-                        description: |
-                          Disable scheduling on a node
-                        parameters:
-                          ip:
-                            description: |
-                              The IP address of the node
-                        command: |
-                          oc adm manage-node ${ip} --schedulable=false
-                    - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
-                      brooklyn.config:
-                        name: evacuateNode
-                        description: |
-                          Evacuate a node
-                        parameters:
-                          ip:
-                            description: |
-                              The IP address of the node
-                        command: |
-                          oc adm manage-node ${ip} --evacuate --force
-                    - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
-                      brooklyn.config:
-                        name: deleteNode
-                        description: |
-                          Delete a node
-                        parameters:
-                          ip:
-                            description: |
-                              The IP address of the node
-                        command: |
-                          oc delete node ${ip}
-                          ssh -o StrictHostKeyChecking=no ${ip} sudo systemctl stop origin-node
-                          sleep 15
-                    - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
-                      brooklyn.config:
-                        name: selectOldestNodes
-                        description: |
-                          Get the K oldest nodes
-                        parameters:
-                          k:
-                            description: |
-                              The number of nodes to get
-                        command: |
-                          oc get nodes \
-                              --sort-by='.metadata.creationTimestamp' \
-                              --selector='region != infra' \
-                              --output='name' |
-                            cut -d/ -f2 |
-                            head -${k} |
-                            paste -s -d\  -
-                    - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
-                      brooklyn.config:
-                        name: getHostname
-                        description: |
-                          Determine the hostname for a node based on its IP
-                          address, which may not be the one in the /etc/hosts
-                          file in environments using NAT. This should be the
-                          entity ID for the machine
-                        parameters:
-                          ip:
-                            description: |
-                              The IP address of the node
-                        command: |
-                          ssh -o StrictHostKeyChecking=no ${ip} hostname --short
-
           - type: openshift-machine-cluster
             id: openshift-etcd-machines
             name: "openshift-etcd-machines"
@@ -656,18 +588,9 @@ brooklyn.catalog:
               openshift.machine.minRam: $brooklyn:parent().config("openshift.node.minRam")
               openshift.machine.spec:
                 $brooklyn:entitySpec:
-                  type: openshift-machine
+                  type: openshift-node
                   id: openshift-node
                   name: "openshift-node"
-                  brooklyn.initializers:
-                    - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
-                      brooklyn.config:
-                        name: openshift.status
-                        period: 10s
-                        command: |
-                          systemctl show origin-node |
-                            grep SubState |
-                            cut -d= -f2
               dynamiccluster.removalstrategy:
                 $brooklyn:object:
                   type: org.apache.brooklyn.entity.group.EntityPredicateRemovalStrategy
@@ -859,3 +782,130 @@ brooklyn.catalog:
               command: |
                 (hostname | grep --quiet "${ENTITY_ID}") \
                   && echo "true" || echo "false"
+
+    - id: openshift-master
+      name: "OpenShift Master"
+      itemType: entity
+      version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+      publish:
+        license_code: Apache-2.0
+      iconUrl: classpath://io.brooklyn.clocker.openshift:icons/openshift.png
+      item:
+        type: openshift-machine
+
+        brooklyn.initializers:
+          - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+            brooklyn.config:
+              name: disableScheduling
+              description: |
+                Disable scheduling on a node
+              parameters:
+                ip:
+                  description: |
+                    The IP address of the node
+              command: |
+                oc adm manage-node ${ip} --schedulable=false
+          - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+            brooklyn.config:
+              name: evacuateNode
+              description: |
+                Evacuate a node
+              parameters:
+                ip:
+                  description: |
+                    The IP address of the node
+              command: |
+                oc adm manage-node ${ip} --evacuate --force
+          - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+            brooklyn.config:
+              name: deleteNode
+              description: |
+                Delete a node
+              parameters:
+                ip:
+                  description: |
+                    The IP address of the node
+              command: |
+                oc delete node ${ip}
+                ssh -o StrictHostKeyChecking=no ${ip} sudo systemctl stop origin-node
+                sleep 15
+          - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+            brooklyn.config:
+              name: selectOldestNodes
+              description: |
+                Get the K oldest nodes
+              parameters:
+                k:
+                  description: |
+                    The number of nodes to get
+              command: |
+                oc get nodes \
+                    --sort-by='.metadata.creationTimestamp' \
+                    --selector='region != infra' \
+                    --output='name' |
+                  cut -d/ -f2 |
+                  head -${k} |
+                  paste -s -d\  -
+          - type: org.apache.brooklyn.core.effector.ssh.SshCommandEffector
+            brooklyn.config:
+              name: getHostname
+              description: |
+                Determine the hostname for a node based on its IP
+                address, which may not be the one in the /etc/hosts
+                file in environments using NAT. This should be the
+                entity ID for the machine
+              parameters:
+                ip:
+                  description: |
+                    The IP address of the node
+              command: |
+                ssh -o StrictHostKeyChecking=no ${ip} hostname --short
+          - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+            brooklyn.config:
+              name: openshift.docker.version
+              period: 5m
+              shell.env:
+                NODE_ADDRESS: $brooklyn:attributeWhenReady("host.subnet.address")
+              command: |
+                oc get node ${NODE_ADDRESS} -o yaml |
+                  grep containerRuntimeVersion |
+                  cut -c30-
+          - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+            brooklyn.config:
+              name: openshift.kubelet.version
+              period: 5m
+              shell.env:
+                NODE_ADDRESS: $brooklyn:attributeWhenReady("host.subnet.address")
+              command: |
+                oc get node ${NODE_ADDRESS} -o yaml |
+                  grep kubeletVersion |
+                  cut -c21-
+
+    - id: openshift-node
+      name: "OpenShift Node"
+      itemType: entity
+      version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+      publish:
+        license_code: Apache-2.0
+      iconUrl: classpath://io.brooklyn.clocker.openshift:icons/openshift.png
+      item:
+        type: openshift-machine
+
+        brooklyn.initializers:
+          - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+            brooklyn.config:
+              name: openshift.status
+              period: 10s
+              command: |
+                systemctl show origin-node |
+                  grep SubState |
+                  cut -d= -f2
+          - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
+            brooklyn.config:
+              name: openshift.node.yaml
+              period: 5m
+              shell.env:
+                NODE_ADDRESS: $brooklyn:attributeWhenReady("host.subnet.address")
+              command: |
+                sudo oc --config /etc/origin/node/system:node:${NODE_ADDRESS}.kubeconfig \
+                  get node ${NODE_ADDRESS} -o yaml
