@@ -4,6 +4,7 @@ brooklyn.catalog:
     description: |
       Resources for working with Kubernetes from Apache Brooklyn
     license_code: Apache-2.0
+    icon_url: classpath://kubernetes/resources/icons/kubernetes.png
 
   items:
   - classpath://io.brooklyn.etcd.brooklyn-etcd:etcd/etcd.bom
