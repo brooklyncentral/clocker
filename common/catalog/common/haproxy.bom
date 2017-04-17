@@ -56,7 +56,7 @@ brooklyn.catalog:
             HAPROXY_BIND_OPTIONS: $brooklyn:config("haproxy.bind.options")
 
           install.command: |
-            sudo yum install kernel-headers --disableexcludes=all
+            sudo yum install -y kernel-headers --disableexcludes=all
             sudo yum install -y gcc make openssl-devel wget util-linux
             haproxy_major_minor=$(echo ${HAPROXY_VERSION} | cut -d. -f1,2)
             wget "http://www.haproxy.org/download/${haproxy_major_minor}/src/haproxy-${HAPROXY_VERSION}.tar.gz"
