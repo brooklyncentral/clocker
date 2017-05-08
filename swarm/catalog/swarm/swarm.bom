@@ -6,6 +6,7 @@ brooklyn.catalog:
     license_code: Apache-2.0
     overview: README.md
     qa: swarm/tests/swarm/swarm.tests.bom
+    icon_url: https://raw.githubusercontent.com/docker-library/docs/c350af05d3fac7b5c3f6327ac82fe4d990d8729c/docker/logo.png
 
   items:
   - classpath://io.brooklyn.etcd.brooklyn-etcd:etcd/etcd.bom
