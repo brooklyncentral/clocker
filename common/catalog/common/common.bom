@@ -49,3 +49,4 @@ brooklyn.catalog:
           provisioning.properties:
             osFamily: centos
             osVersionRegex: 7
+            loginUser: centos
