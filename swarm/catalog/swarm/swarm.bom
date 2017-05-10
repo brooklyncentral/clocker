@@ -6,7 +6,7 @@ brooklyn.catalog:
     license_code: Apache-2.0
     overview: README.md
     qa: swarm/tests/swarm/swarm.tests.bom
-    icon_url: 'https://github.com/brooklyncentral/clocker/raw/master/swarm/resources/icons/swarm.png'
+    icon_url: https://github.com/brooklyncentral/clocker/raw/master/swarm/resources/icons/swarm.png
 
   items:
   - classpath://io.brooklyn.etcd.brooklyn-etcd:etcd/etcd.bom
