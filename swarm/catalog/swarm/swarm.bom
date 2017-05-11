@@ -1,13 +1,5 @@
 brooklyn.catalog:
   version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
-  publish:
-    description: |
-      Resources for working with Docker Swarm from Apache Brooklyn
-    license_code: Apache-2.0
-    overview: README.md
-    qa: swarm/tests/swarm/swarm.tests.bom
-    icon_url: https://github.com/brooklyncentral/clocker/raw/master/swarm/resources/icons/swarm.png
-
   items:
   - classpath://io.brooklyn.etcd.brooklyn-etcd:etcd/etcd.bom
   - classpath://io.brooklyn.clocker.common:docker/docker.bom
@@ -32,7 +24,10 @@ brooklyn.catalog:
     version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
     publish:      
       license_code: Apache-2.0
-      overview: README.md
+      overview: README.md      
+      qa: swarm/tests/swarm/swarm.tests.bom
+      icon_url: https://github.com/brooklyncentral/clocker/raw/master/swarm/resources/icons/swarm.png
+      
     item:
       type: org.apache.brooklyn.entity.stock.BasicApplication
 
