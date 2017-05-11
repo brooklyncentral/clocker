@@ -121,15 +121,14 @@ brooklyn.catalog:
           name: "14. Check Prometheus UI is Reachable"
           brooklyn.config:
             targetId: prometheus     
-            timeout: 1m       
-            shell.env: 
-              URL: 
-               $brooklyn:formatString:
-                - "curl http://localhost:%s"              
-                - $brooklyn:entity("prometheus").attributeWhenReady("kubernetes.service.port")
+            timeout: 1m
+            shell.env:
+              K8S_SERVICE_PORT: $brooklyn:entity("prometheus").attributeWhenReady("kubernetes.service.port")
+              HOST_SUBNET_ADDRESS: $brooklyn:entity("prometheus").attributeWhenReady("host.subnet.address")
             command: |
+              set -e
               sudo yum install -y curl
-              curl $URL              
+              curl -I --max-time 60 "http://${HOST_SUBNET_ADDRESS}:${K8S_SERVICE_PORT}"
             assertStatus:
               equals: 0
         - type: org.apache.brooklyn.test.framework.TestSensor
