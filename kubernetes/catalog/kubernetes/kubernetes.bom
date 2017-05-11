@@ -22,6 +22,7 @@ brooklyn.catalog:
     publish:      
       license_code: Apache-2.0
       overview: README.md
+      icon_url: https://github.com/brooklyncentral/clocker/raw/master/kubernetes/resources/icons/kubernetes.png      
     item:
       type: org.apache.brooklyn.entity.stock.BasicApplication
 
