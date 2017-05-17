@@ -1,26 +1,21 @@
 brooklyn.catalog:
   items:
-    - https://github.com/brooklyncentral/common-catalog-utils/releases/download/v0.1.0/common.tests.bom
-
-    - id: kubernetes-cluster-tests
-      version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
-      itemType: template
-      iconUrl: https://twitter.com/kubernetesio/profile_image?size=original
-      name: Kubernetes Cluster Tests
-      item:
-        services:
-          - type: kubernetes-cluster-template
-            id: k8s-cluster
-          - type: kubernetes-smoke-tests
-            id: k8s-smoke-tests
-            brooklyn.config:
-              timeout: 1h
-              targetId: k8s-cluster
-
-    - id: kubernetes-smoke-tests
-      type: org.apache.brooklyn.test.framework.TestCase
-      name: K8S Smoke Tests
-      brooklyn.children:
+  - https://github.com/brooklyncentral/common-catalog-utils/releases/download/v0.1.0/common.tests.bom
+  - id: kubernetes-cluster-tests
+    version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
+    itemType: template
+    iconUrl: https://twitter.com/kubernetesio/profile_image?size=original
+    name: Kubernetes Cluster Tests
+    item:
+      services:
+      - type: kubernetes-cluster-template
+        id: k8s-cluster
+      - type: org.apache.brooklyn.test.framework.TestCase
+        name: K8S Smoke Tests
+        brooklyn.config:
+          timeout: 1h
+          targetId: k8s-cluster
+        brooklyn.children:
         - type: assert-up-and-running-initial
           name: "01. K8S cluster up and running"
         - type: assert-reachable
