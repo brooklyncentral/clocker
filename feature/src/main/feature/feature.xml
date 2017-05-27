@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<features xmlns="http://karaf.apache.org/xmlns/features/v1.3.0" name="brooklyn-elk-${project.version}">
+<features xmlns="http://karaf.apache.org/xmlns/features/v1.3.0" name="${project.artifactId}-${project.version}">
 
     <repository>mvn:io.brooklyn.etcd/brooklyn-etcd/${brooklyn-etcd.version}/xml/features</repository>
 
