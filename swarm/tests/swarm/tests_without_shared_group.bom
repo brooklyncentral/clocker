@@ -14,7 +14,7 @@ brooklyn.catalog:
       itemType: template
       item:
         brooklyn.config:
-          timeout: 1h
+          timeout: 90m
           timeout.initialStartup: 1h
           timeout.runtimeAssertion: 1h
           swarm.sharedsecuritygroup.create: false
