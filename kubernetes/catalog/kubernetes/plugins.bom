@@ -109,7 +109,7 @@ brooklyn.catalog:
             }
           }
           EOF
-          etcdctl --peers ${ETCD_ENDPOINTS} mk ${FLANNEL_ETCD_PREFIX}/config < flannel.json || etcdctl --peers ${ETCD_ENDPOINTS} get ${FLANNEL_ETCD_PREFIX}/config
+          etcdctl --endpoints ${ETCD_ENDPOINTS} mk ${FLANNEL_ETCD_PREFIX}/config < flannel.json || etcdctl --endpoints ${ETCD_ENDPOINTS} get ${FLANNEL_ETCD_PREFIX}/config
 
           sudo -E tee /etc/systemd/system/flannel.service <<-EOF
           [Unit]

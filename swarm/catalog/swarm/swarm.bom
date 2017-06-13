@@ -149,8 +149,8 @@ brooklyn.catalog:
           id: swarm-cluster
           name: "swarm-cluster"
           brooklyn.config:
-            swarm.discovery.url: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.authority")
-            docker.discovery.url: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.authority")
+            swarm.discovery.url: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.subnet.authority")
+            docker.discovery.url: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.subnet.authority")
             ca.cert: $brooklyn:entity("ca-server").attributeWhenReady("ca.cert")
             ca.request.root.url: $brooklyn:entity("ca-server").attributeWhenReady("main.uri")
             resources.preInstall.latch: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")

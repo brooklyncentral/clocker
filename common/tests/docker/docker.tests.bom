@@ -310,7 +310,7 @@ brooklyn.catalog:
           ca.request.root.url:
             $brooklyn:formatString:
             - "%s:%d"
-            - $brooklyn:entity("ca-server").attributeWhenReady("host.address")
+            - $brooklyn:entity("ca-server").attributeWhenReady("host.subnet.address")
             - $brooklyn:entity("ca-server").config("ca.server.port")
 
 

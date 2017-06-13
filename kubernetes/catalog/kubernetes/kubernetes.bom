@@ -249,6 +249,8 @@ brooklyn.catalog:
             propagating:
               - $brooklyn:sensor("kubernetes.url")
               - $brooklyn:sensor("kubernetes.endpoint")
+              - $brooklyn:sensor("kubernetes.subnet.url")
+              - $brooklyn:sensor("kubernetes.subnet.endpoint")
 
       brooklyn.children:
         - type: haproxy-load-balancer
@@ -277,6 +279,17 @@ brooklyn.catalog:
                     - $brooklyn:config("haproxy.port")
             - type: org.apache.brooklyn.enricher.stock.Transformer
               brooklyn.config:
+                uniqueTag: master-cluster-subnet-endpoint-publisher
+                enricher.triggerSensors:
+                  - $brooklyn:sensor("host.subnet.address")
+                enricher.targetSensor: $brooklyn:sensor("kubernetes.subnet.endpoint")
+                enricher.targetValue:
+                  $brooklyn:formatString:
+                    - "%s:%d"
+                    - $brooklyn:attributeWhenReady("host.subnet.address")
+                    - $brooklyn:config("haproxy.port")
+            - type: org.apache.brooklyn.enricher.stock.Transformer
+              brooklyn.config:
                 uniqueTag: master-cluster-kubernetes-url-publisher
                 enricher.triggerSensors:
                   - $brooklyn:sensor("kubernetes.endpoint")
@@ -285,6 +298,16 @@ brooklyn.catalog:
                   $brooklyn:formatString:
                     - "http://%s"
                     - $brooklyn:attributeWhenReady("kubernetes.endpoint")
+            - type: org.apache.brooklyn.enricher.stock.Transformer
+              brooklyn.config:
+                uniqueTag: master-cluster-kubernetes-subnet-url-publisher
+                enricher.triggerSensors:
+                  - $brooklyn:sensor("kubernetes.subnet.endpoint")
+                enricher.targetSensor: $brooklyn:sensor("kubernetes.subnet.url")
+                enricher.targetValue:
+                  $brooklyn:formatString:
+                    - "http://%s"
+                    - $brooklyn:attributeWhenReady("kubernetes.subnet.endpoint")
 
         - type: cluster
           id: kubernetes-master-cluster
@@ -476,7 +499,7 @@ brooklyn.catalog:
           KUBERNETES_PASSWORD: $brooklyn:entity("kubernetes-cluster").config("kubernetes.password")
           KUBECTL_DOWNLOAD_URL: $brooklyn:config("kubectl.download.url")
           KUBERNETES_URL: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
-          KUBERNETES_ENDPOINT: $brooklynentity("kubernetes-cluster").attributeWhenReady("kubernetes.endpoint")
+          KUBERNETES_ENDPOINT: $brooklynentity("kubernetes-cluster").attributeWhenReady("kubernetes.subnet.endpoint")
           HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
           HOST_SUBNET_ADDRESS: $brooklyn:attributeWhenReady("host.subnet.address")
           ENTITY_ID: $brooklyn:attributeWhenReady("entity.id")
@@ -684,12 +707,12 @@ brooklyn.catalog:
           brooklyn.config:
             uniqueTag: kubernetes-apiserver-endpoint-publisher
             enricher.triggerSensors:
-              - $brooklyn:sensor("host.address")
+              - $brooklyn:sensor("host.subnet.address")
             enricher.targetSensor: $brooklyn:sensor("kubernetes.endpoint")
             enricher.targetValue:
               $brooklyn:formatString:
                 - "%s:%d"
-                - $brooklyn:attributeWhenReady("host.address")
+                - $brooklyn:attributeWhenReady("host.subnet.address")
                 - $brooklyn:config("kubernetes.apiserver.port")
         - type: org.apache.brooklyn.enricher.stock.Transformer
           brooklyn.config:

@@ -151,7 +151,7 @@ brooklyn.catalog:
       name: "TEST-08-1 Swarm Etcd uses TLS"
       brooklyn.config:
         shell.env:
-          ETCD_ENDPOINT_LIST: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.endpoints")
+          ETCD_ENDPOINT_LIST: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.subnet.endpoints")
           CERT_PATH:
             $brooklyn:formatString:
             - "%s/.certs"

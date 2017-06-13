@@ -186,10 +186,10 @@ brooklyn.catalog:
         - type: org.apache.brooklyn.enricher.stock.Transformer
           brooklyn.config:
             enricher.triggerSensors:
-              - host.address
+              - host.subnet.address
             enricher.targetSensor: $brooklyn:sensor("main.uri")
             enricher.targetValue:
               $brooklyn:formatString:
                 - "http://%s:%d"
-                - $brooklyn:attributeWhenReady("host.address")
+                - $brooklyn:attributeWhenReady("host.subnet.address")
                 - $brooklyn:config("ca.server.port")
