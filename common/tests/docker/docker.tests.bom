@@ -23,7 +23,7 @@ brooklyn.catalog:
         name: Docker Entity
         id: docker-entity
         brooklyn.config:
-          # cloudsoft/centos:7 fails because it tries to bind to the already reserved (by the host) port 22
+          # brooklyncentral/centos:7 fails because it tries to bind to the already reserved (by the host) port 22
           docker.image: redis:latest
 
           my.server.port: 6379
@@ -281,7 +281,7 @@ brooklyn.catalog:
         name: Docker Engine with Centos Container
         brooklyn.children:
         - type: docker-engine-container
-          image.details: cloudsoft/centos:7
+          image.details: brooklyncentral/centos:7
 
       - type: docker-engine-and-container-test
         name: Test Docker with Container

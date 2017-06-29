@@ -52,7 +52,7 @@ brooklyn.catalog:
           description: |
             A docker hub image id to pull after installation
           type: string
-          default: cloudsoft/centos:7
+          default: brooklyncentral/centos:7
 
       brooklyn.initializers:
         - type: org.apache.brooklyn.entity.machine.AddMachineMetrics
@@ -73,7 +73,7 @@ brooklyn.catalog:
       brooklyn.config:
         defaultDisplayName: "docker-engine"
 
-        image.preinstall: cloudsoft/centos:7
+        image.preinstall: brooklyncentral/centos:7
 
         shell.env:
           DOCKER_ADDITIONAL_OPTIONS: $brooklyn:config("docker.additionaloptions")
