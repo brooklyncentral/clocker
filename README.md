@@ -74,3 +74,4 @@ and other links given contain more details:
 - [`kubernetes/resources/icons/flannel.png`](https://github.com/coreos/flannel/blob/master/logos/flannel-horizontal-color.png) APACHE 2.0 <https://github.com/coreos/flannel/blob/master/LICENSE> image
 - [`kubernetes/resources/icons/kubernetes.png`](https://raw.githubusercontent.com/kubernetes/kubernetes/master/logo/logo.png) APACHE 2.0 <https://github.com/kubernetes/kubernetes/blob/master/LICENSE> image
 - [`kubernetes/resources/icons/prometheus.png`](https://github.com/prometheus/docs/blob/master/static/prometheus_logo.png) APACHE 2.0 <https://github.com/prometheus/docs/blob/master/LICENSE> image
+- [`kubernetes/resources/icons/openshift.png`](https://github.com/openshift/origin-web-console/blob/e7a0c0a8f703d5429f70b78223abb31856a66670/app/images/openshift-logo.svg) APACHE 2.0 <https://github.com/openshift/origin-web-console/blob/master/LICENSE> image

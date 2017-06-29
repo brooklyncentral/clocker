@@ -54,7 +54,7 @@ brooklyn.catalog:
               NETWORK_NAME: $brooklyn:config("network.name")
             command: |
               echo "[TEST] Create container on ${NETWORK_NAME} network"
-              docker run -di --name workload_A --net ${NETWORK_NAME} cloudsoft/centos:7 /bin/bash
+              docker run -di --name workload_A --net ${NETWORK_NAME} brooklyncentral/centos:7 /bin/bash
               CONTAINER_NETWORK_ID=$(docker inspect --format "{{.NetworkSettings.Networks.${NETWORK_NAME}.NetworkID}}" workload_A)
               NETWORK_ID=$(docker network inspect --format "{{.ID}}" ${NETWORK_NAME})
               docker rm -f workload_A
@@ -70,8 +70,8 @@ brooklyn.catalog:
               NETWORK_NAME: $brooklyn:config("network.name")
             command: |
               echo "[TEST] Creating two containers on ${NETWORK_NAME} network"
-              docker run -di --name workload_B --net ${NETWORK_NAME} cloudsoft/centos:7 /bin/bash
-              docker run -di --name workload_C --net ${NETWORK_NAME} -e affinity:container!=workload_B cloudsoft/centos:7 /bin/bash
+              docker run -di --name workload_B --net ${NETWORK_NAME} brooklyncentral/centos:7 /bin/bash
+              docker run -di --name workload_C --net ${NETWORK_NAME} -e affinity:container!=workload_B brooklyncentral/centos:7 /bin/bash
               docker exec workload_B ping -W 10 -c 4 workload_C.${NETWORK_NAME}
               docker exec workload_C ping -W 10 -c 4 workload_B.${NETWORK_NAME}
               docker rm -f workload_B
@@ -94,8 +94,8 @@ brooklyn.catalog:
               NETWORK_NAME: $brooklyn:config("network.name")
             command: |
               echo "[TEST] Creating two containers on different networks"
-              docker run -di --name workload_D --net ${NETWORK_NAME} cloudsoft/centos:7 /bin/bash
-              docker run -di --name workload_E --net bridge -e affinity:container!=workload_D cloudsoft/centos:7 /bin/bash
+              docker run -di --name workload_D --net ${NETWORK_NAME} brooklyncentral/centos:7 /bin/bash
+              docker run -di --name workload_E --net bridge -e affinity:container!=workload_D brooklyncentral/centos:7 /bin/bash
               WORKLOAD_D_IP=$(docker inspect --format "{{.NetworkSettings.Networks.${NETWORK_NAME}.IPAddress}}" workload_D)
               docker exec workload_E ping -W 10 -c 4 workload_D.${NETWORK_NAME} || true
               docker exec workload_E ping -W 10 -c 4 ${WORKLOAD_D_IP} || true
@@ -126,8 +126,8 @@ brooklyn.catalog:
           brooklyn.config:
             command: |
               echo "[TEST] Creating load"
-              docker run -di --name TEST_7_2_LOAD_1 -e affinity:container!=TEST_7_2_LOAD_2  cloudsoft/centos:7 /bin/bash
-              docker run -di --name TEST_7_2_LOAD_2 -e affinity:container!=TEST_7_2_LOAD_1  cloudsoft/centos:7 /bin/bash
+              docker run -di --name TEST_7_2_LOAD_1 -e affinity:container!=TEST_7_2_LOAD_2  brooklyncentral/centos:7 /bin/bash
+              docker run -di --name TEST_7_2_LOAD_2 -e affinity:container!=TEST_7_2_LOAD_1  brooklyncentral/centos:7 /bin/bash
               docker exec -d TEST_7_2_LOAD_1 dd if=/dev/zero of=/dev/null
               docker exec -d TEST_7_2_LOAD_2 dd if=/dev/zero of=/dev/null
         - type: sensor-test

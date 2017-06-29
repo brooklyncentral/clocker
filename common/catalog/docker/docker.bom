@@ -52,7 +52,7 @@ brooklyn.catalog:
           description: |
             A docker hub image id to pull after installation
           type: string
-          default: cloudsoft/centos:7
+          default: brooklyncentral/centos:7
 
       brooklyn.initializers:
         - type: org.apache.brooklyn.entity.machine.AddMachineMetrics
@@ -73,7 +73,7 @@ brooklyn.catalog:
       brooklyn.config:
         defaultDisplayName: "docker-engine"
 
-        image.preinstall: cloudsoft/centos:7
+        image.preinstall: brooklyncentral/centos:7
 
         shell.env:
           DOCKER_ADDITIONAL_OPTIONS: $brooklyn:config("docker.additionaloptions")
@@ -546,3 +546,28 @@ brooklyn.catalog:
                 ( docker stats --no-stream $(cat pid.txt) |
                   tail -n +2 |
                   cut -c63-82 )
+
+  - id: docker-container-entity
+    name: "Docker Container"
+    description: |
+      An easy way to launch a Docker container
+    itemType: entity
+    iconUrl: classpath://io.brooklyn.clocker.common:icons/docker.png
+    item:
+      type: org.apache.brooklyn.container.entity.docker.DockerContainer
+      brooklyn.parameters:
+        - name: docker.container.imageName
+          label: "Docker Container Image Name"
+          description: |
+            The name of the image to use when starting the Docker container
+          type: string
+        - name: docker.container.inboundPorts
+          label: "Docker Container Inbound Ports"
+          description: |
+            A list of ports to be opened for inbound access to the container
+          type: java.util.List
+        - name: docker.container.environment
+          label: "Docker Container Environmrnt"
+          description: |
+            A map of the environment variables to be set when launching the Docker container
+          type: java.util.Map

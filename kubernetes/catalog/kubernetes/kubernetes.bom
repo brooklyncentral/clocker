@@ -14,10 +14,10 @@ brooklyn.catalog:
     iconUrl: classpath://io.brooklyn.clocker.kubernetes:icons/kubernetes.png
     itemType: entity
     version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
-    publish:      
+    publish:
       license_code: Apache-2.0
       overview: README.md
-      icon_url: https://github.com/brooklyncentral/clocker/raw/master/kubernetes/resources/icons/kubernetes.png      
+      iconUrl: classpath://io.brooklyn.clocker.kubernetes:icons/kubernetes.png
     item:
       type: org.apache.brooklyn.entity.stock.BasicApplication
 
@@ -991,3 +991,115 @@ brooklyn.catalog:
           [Install]
           WantedBy=multi-user.target
           EOF
+
+  - id: kubernetes-pod-entity
+    name: "Kubernetes Pod"
+    description: |
+      An easy way to launch a Kubernetes Pod
+    itemType: entity
+    iconUrl: classpath://io.brooklyn.clocker.kubernetes:icons/kubernetes.png
+    item:
+      type: org.apache.brooklyn.container.entity.kubernetes.KubernetesPod
+      brooklyn.parameters:
+        - name: docker.container.imageName
+          label: "Docker Container Image Name"
+          description: |
+            The name of the image to use when starting the Docker container
+          type: string
+        - name: docker.container.inboundPorts
+          label: "Docker Container Inbound Ports"
+          description: |
+            A list of ports to be opened for inbound access to the container
+          type: java.util.List
+        - name: docker.container.environment
+          label: "Docker Container Environmrnt"
+          description: |
+            A map of the environment variables to be set when launching the Docker container
+          type: java.util.Map
+        - name: deployment
+          label: "Deployment"
+          description: |
+            The name of the service the deployed pod will use
+          type: string
+        - name: metadata
+          label: "Metadata"
+          description: |
+            Metadata to set on the pod
+          type: java.util.Map
+        - name: replicas
+          label: "Replicas"
+          description: |
+            Number of replicas in the pod
+          type: integer
+          defaultValue: 1
+
+  - id: kubernetes-resource-entity
+    name: "Kubernetes resource"
+    description: |
+      An easy way to launch a Kubernetes resource defined by a YAML file
+    itemType: entity
+    iconUrl: classpath://io.brooklyn.clocker.kubernetes:icons/kubernetes.png
+    item:
+      type: org.apache.brooklyn.container.entity.kubernetes.KubernetesResource
+      brooklyn.parameters:
+        - name: resource
+          label: "Resource"
+          description: |
+            Kubernetes resource YAML file URI
+          type: string
+
+  - id: openshift-pod-entity
+    name: "OpenShift Pod"
+    description: |
+      An easy way to launch an OpenShift Pod
+    itemType: entity
+    iconUrl: classpath://io.brooklyn.clocker.kubernetes:icons/openshift.png
+    item:
+      type: org.apache.brooklyn.container.entity.openshift.OpenShiftPod
+      brooklyn.parameters:
+        - name: docker.container.imageName
+          label: "Docker Container Image Name"
+          description: |
+            The name of the image to use when starting the Docker container
+          type: string
+        - name: docker.container.inboundPorts
+          label: "Docker Container Inbound Ports"
+          description: |
+            A list of ports to be opened for inbound access to the container
+          type: java.util.List
+        - name: docker.container.environment
+          label: "Docker Container Environmrnt"
+          description: |
+            A map of the environment variables to be set when launching the Docker container
+          type: java.util.Map
+        - name: deployment
+          label: "Deployment"
+          description: |
+            The name of the service the deployed pod will use
+          type: string
+        - name: metadata
+          label: "Metadata"
+          description: |
+            Metadata to set on the pod
+          type: java.util.Map
+        - name: replicas
+          label: "Replicas"
+          description: |
+            Number of replicas in the pod
+          type: integer
+          defaultValue: 1
+
+  - id: openshift-resource-entity
+    name: "OpenShift resource"
+    description: |
+      An easy way to launch an OpenShift resource defined by a YAML file
+    itemType: entity
+    iconUrl: classpath://io.brooklyn.clocker.kubernetes:icons/openshift.png
+    item:
+      type: org.apache.brooklyn.container.entity.openshift.OpenShiftResource
+      brooklyn.parameters:
+        - name: resource
+          label: "Resource"
+          description: |
+            OpenShift resource YAML file URI
+          type: string

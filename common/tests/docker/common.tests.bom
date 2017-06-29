@@ -258,7 +258,7 @@ brooklyn.catalog:
           default: 15m
 
       brooklyn.config:
-        image.preinstall: cloudsoft/centos:7
+        image.preinstall: brooklyncentral/centos:7
 
       brooklyn.children:
         - type: ssh-test
@@ -490,4 +490,4 @@ brooklyn.catalog:
             command: |
               docker ps
             assert.out:
-              contains: cloudsoft/centos:7
+              contains: brooklyncentral/centos:7

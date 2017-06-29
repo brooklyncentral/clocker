@@ -28,14 +28,14 @@ brooklyn.catalog:
           target: $brooklyn:entity("kubernetes-master")
           effector: kubectl
           params:
-            args: 'run workload-a --image=cloudsoft/centos:7 --replicas=1 --port=22'
+            args: 'run workload-a --image=brooklyncentral/centos:7 --replicas=1 --port=22'
         - type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
           name: "04. kubectl create deployment [B]"
           target: $brooklyn:entity("kubernetes-master")
           assertStatus:
             equals: 0
           command: |
-            kubectl run workload-b --image=cloudsoft/centos:7 --replicas=1 --port=22
+            kubectl run workload-b --image=brooklyncentral/centos:7 --replicas=1 --port=22
         - type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
           name: "05. Assert [A] running"
           target: $brooklyn:entity("kubernetes-master")
