@@ -35,13 +35,11 @@ To use the Clocker blueprints you have two options:
 </div>
 <div id="brooklyn" class="tab-pane fade">
 
-*Clocker relies on some recent Brooklyn features that will be available in the next **0.10.0 release**. Before that release is available, you can either use a [pre-built early access release of Brooklyn](http://download.cloudsoft.io/brooklyn/0.10.0-20160930.1659/brooklyn-dist-0.10.0-20160930.1659-dist.tar.gz) or you can [download the code](http://brooklyn.apache.org/developers/code/) and [build Brooklyn master from source](http://brooklyn.apache.org/v/latest/dev/env/maven-build.html).*
-
 The instructions below assume you are using the Brooklyn in the "classic mode" (i.e. not using Karaf). They pick up from where you have the `.tgz` or `.zip` file).
 
 1. Install Apache Brooklyn. For more detailed instructions, see the [docs](http://brooklyn.apache.org/v/latest/start/running.html#install-apache-brooklyn).
 2. Download the required Clocker files, and add them to the Brooklyn `./lib/dropins/` folder (though these are jar files, the Clocker jars just package resources such as YAML files rather than Java code):
- * [brooklyn-etcd](https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.etcd&a=brooklyn-etcd&v=2.3.0-SNAPSHOT)
+ * [brooklyn-etcd](https://oss.sonatype.org/service/local/artifact/maven/redirect?r=releases&g=io.brooklyn.etcd&a=brooklyn-etcd&v=2.4.0)
  * [common](https://oss.sonatype.org/service/local/artifact/maven/redirect?r=releases&g=io.brooklyn.clocker&a=common&v=2.0.0)
  * [swarm](https://oss.sonatype.org/service/local/artifact/maven/redirect?r=releases&g=io.brooklyn.clocker&a=swarm&v=2.0.0)
  * [kubernetes](https://oss.sonatype.org/service/local/artifact/maven/redirect?r=releases&g=io.brooklyn.clocker&a=kubernetes&v=2.0.0)
