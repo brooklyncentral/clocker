@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<features xmlns="http://karaf.apache.org/xmlns/features/v1.3.0" name="${project.artifactId}-${project.version}">
+<features xmlns="http://karaf.apache.org/xmlns/features/v1.4.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://karaf.apache.org/xmlns/features/v1.4.0"
+          name="${project.groupId}-${project.version}">
 
     <repository>mvn:io.brooklyn.etcd/brooklyn-etcd/${brooklyn-etcd.version}/xml/features</repository>
 
@@ -21,6 +24,7 @@
     <feature name="clocker-swarm" version="${project.version}">
         <bundle>mvn:${project.groupId}/clocker-swarm/${project.version}</bundle>
     </feature>
+
     <feature name="clocker-dependencies" version="${project.version}">
         <feature>brooklyn-etcd</feature>
     </feature>

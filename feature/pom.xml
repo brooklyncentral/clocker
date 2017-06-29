@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>feature</artifactId>
+    <artifactId>clocker-feature</artifactId>
     <name>Clocker :: Feature</name>
     <packaging>feature</packaging>
 
