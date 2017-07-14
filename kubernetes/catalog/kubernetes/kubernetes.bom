@@ -90,6 +90,8 @@ brooklyn.catalog:
         - type: kubernetes-hosts-file-generator
           id: brooklyn-dns-etc-hosts-generator
           name: "brooklyn-dns-etc-hosts-generator"
+          brooklyn.config:
+            enricher.service_state.children_and_members.quorum.running: atLeastOneUnlessEmpty
         - type: ca-server
           id: ca-server
           name: "ca-server"

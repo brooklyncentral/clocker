@@ -5,7 +5,7 @@ brooklyn.catalog:
   dependsOn:
     - tests/kubernetes.tests.bom
   items:
-    - id: kubernetes-tests
+    - id: kubernetes-tests-no-shared-security-group
       name: "Clocker Kubernetes Tests (NO SHARED SECURITY GROUP)"
       description: |
         Tests on Kubernetes
