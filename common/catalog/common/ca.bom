@@ -54,7 +54,7 @@ brooklyn.catalog:
           sudo yum install -y openssl
 
           echo "[CLOCKER] Install Node.js webapp prerequisites"
-          curl --silent --location https://rpm.nodesource.com/setup | sudo bash -
+          curl --silent --location https://rpm.nodesource.com/setup_6.x | sudo bash -
           sudo yum install -y install nodejs
           npm config set prefix ${INSTALL_DIR}
           npm install express@4.13
