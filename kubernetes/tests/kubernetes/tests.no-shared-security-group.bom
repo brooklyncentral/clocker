@@ -26,5 +26,6 @@ brooklyn.catalog:
           kubernetes.sharedsecuritygroup.create: false
           kubernetes.minRam: 2000
           kubernetes.minCores: 1
+          autoscaler.resizeUpStabilizationDelay: 60s
         services:
           - type: kubernetes-cluster-tests
