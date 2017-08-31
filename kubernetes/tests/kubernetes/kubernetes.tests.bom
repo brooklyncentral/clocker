@@ -17,9 +17,9 @@ brooklyn.catalog:
           targetId: k8s-cluster
         brooklyn.children:
         - type: assert-up-and-running-initial
-          name: "01. K8S cluster up and running"
+          name: "1. K8S cluster up and running"
         - type: assert-reachable
-          name: "02. K8S UI Reachable"
+          name: "2. K8S UI Reachable"
           brooklyn.config:
             endpointSensor: main.uri
             timeout: 5m
