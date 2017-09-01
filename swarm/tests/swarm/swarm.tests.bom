@@ -434,26 +434,26 @@ brooklyn.catalog:
                 targetId: swarm-client
                 start.latch: $brooklyn:entity("swarm-client").attributeWhenReady("service.isUp")
               brooklyn.children:
+                - type: test-swarm-scale-up
+                  name: "TEST-03 Test Swarm scale up"
+                - type: swarm-node-replacement-test
+                  name: "TEST-04 Test Swarm node replace"
+                - type: test-swarm-manager-failover
+                  name: "TEST-05 Test Swarm failover"                                    
                 - type: test-connect-fails-without-tls
-                  name: "TEST-03 Test connect fails without TLS"
+                  name: "TEST-06 Test connect fails without TLS"
                 - type: docker-engine-test
-                  name: "TEST-04 Test Swarm over TLS"
+                  name: "TEST-07 Test Swarm over TLS"
                   description: |
                     Runs the docker tests against the swarm
                 - type: test-docker-run-pulls
-                  name: "TEST-05 Test docker run pulls"
+                  name: "TEST-08 Test docker run pulls"
                 - type: test-swarm-networking
-                  name: "TEST-06 Test Swarm networking"
+                  name: "TEST-09 Test Swarm networking"
                   brooklyn.config:
                     network.name: $brooklyn:component("swarm").config("swarm.defaultnetwork")
-                - type: test-swarm-scale-up
-                  name: "TEST-07 Test Swarm scale up"
                 - type: test-swarm-etcd-tls
-                  name: "TEST-08 Test Swarm etcd TLS"
+                  name: "TEST-10 Test Swarm etcd TLS"
                   brooklyn.config:
                     ca.url: $brooklyn:entity("ca-server").attributeWhenReady("main.uri")
-                
-                - type: swarm-node-replacement-test
-                  name: "TEST-10 Test Swarm node replace"
-                - type: test-swarm-manager-failover
-                  name: "TEST-11 Test Swarm failover"
+               
