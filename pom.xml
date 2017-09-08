@@ -30,6 +30,7 @@
 
     <modules>
         <module>common</module>
+        <module>ecs</module>
         <module>swarm</module>
         <module>kubernetes</module>
         <module>feature</module>

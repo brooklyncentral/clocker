@@ -2,8 +2,10 @@ brooklyn.catalog:
   brooklyn.libraries:
     - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.etcd&a=brooklyn-etcd&v=2.5.0-SNAPSHOT"
     - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=clocker-common&v=2.1.0-SNAPSHOT"
+    - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=clocker-ecs&v=2.1.0-SNAPSHOT"
     - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=clocker-swarm&v=2.1.0-SNAPSHOT"
     - "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.brooklyn.clocker&a=clocker-kubernetes&v=2.1.0-SNAPSHOT"
   items:
+    - classpath://io.brooklyn.clocker.ecs:ecs/catalog.bom
     - classpath://io.brooklyn.clocker.swarm:swarm/catalog.bom
     - classpath://io.brooklyn.clocker.kubernetes:kubernetes/catalog.bom

@@ -1,0 +1,4 @@
+brooklyn.catalog:
+  items:
+    - classpath://io.brooklyn.clocker.common:docker/catalog.bom
+    - classpath://io.brooklyn.clocker.ecs:ecs/ecs.bom
