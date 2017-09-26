@@ -1,8 +1,9 @@
 brooklyn.catalog:
   items:
-    - classpath://io.brooklyn.clocker.common:common/common.bom
-    - classpath://io.brooklyn.clocker.common:common/ca.bom
-    - classpath://io.brooklyn.clocker.common:common/haproxy.bom
+    - classpath://common/common.bom
+    - classpath://common/ca.bom
+    - classpath://common/haproxy.bom
+    - classpath://docker/docker.bom
 
     - id: ca-server-template
       name: "Certificate Authority Server"
@@ -23,3 +24,13 @@ brooklyn.catalog:
       item:
         services:
           - type: haproxy-load-balancer
+
+    - id: docker-engine-template
+      name: "Docker Engine"
+      description: |
+        Creates a single docker engine.
+      itemType: template
+      iconUrl: classpath://io.brooklyn.clocker.common:icons/docker.png
+      item:
+        services:
+          - type: docker-engine

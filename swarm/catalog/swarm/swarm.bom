@@ -1,10 +1,11 @@
 brooklyn.catalog:
   version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
-  items:
-  - classpath://io.brooklyn.etcd.brooklyn-etcd:etcd/etcd.bom
-  - classpath://io.brooklyn.clocker.common:docker/docker.bom
-  - classpath://io.brooklyn.clocker.common:common/haproxy.bom
 
+  brooklyn.libraries:
+  - mvn:io.brooklyn.clocker/clocker-common
+  - mvn:io.brooklyn.etcd/brooklyn-etcd
+
+  items:
   - id: docker-swarm-template
     name: "Docker Swarm with Discovery and CA"
     description: |

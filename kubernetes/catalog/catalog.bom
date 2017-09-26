@@ -1,8 +1,8 @@
 brooklyn.catalog:
   items:
-    - classpath://io.brooklyn.clocker.kubernetes:kubernetes/plugins.bom
-    - classpath://io.brooklyn.clocker.kubernetes:kubernetes/pods.bom
-    - classpath://io.brooklyn.clocker.kubernetes:kubernetes/kubernetes.bom
+    - classpath://kubernetes/plugins.bom
+    - classpath://kubernetes/pods.bom
+    - classpath://kubernetes/kubernetes.bom
 
     - id: kubernetes-cluster-template
       name: "Kubernetes Cluster"

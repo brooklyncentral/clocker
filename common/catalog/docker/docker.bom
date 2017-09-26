@@ -8,8 +8,8 @@ brooklyn.catalog:
     qa: tests/docker.tests.bom
 
   items:
-  - classpath://io.brooklyn.clocker.common:common/common.bom
-  - classpath://io.brooklyn.clocker.common:common/ca.bom
+  - classpath://common/common.bom
+  - classpath://common/ca.bom
 
   - id: docker-engine
     name: "Docker Engine"
