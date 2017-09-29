@@ -3,11 +3,10 @@ brooklyn.catalog:
 
   brooklyn.libraries:
   - mvn:io.brooklyn.clocker/clocker-common
+  - mvn:io.brooklyn.dns/brooklyn-dns
   - mvn:io.brooklyn.etcd/brooklyn-etcd
 
   items:
-  - classpath://kubernetes/brooklyn-dns-etc-hosts-generator.bom
-
   - id: kubernetes-cluster-application
     name: "Kubernetes Cluster"
     description: |
