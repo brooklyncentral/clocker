@@ -24,13 +24,3 @@ brooklyn.catalog:
       item:
         services:
           - type: haproxy-load-balancer
-
-    - id: docker-engine-template
-      name: "Docker Engine"
-      description: |
-        Creates a single docker engine.
-      itemType: template
-      iconUrl: classpath://io.brooklyn.clocker.common:icons/docker.png
-      item:
-        services:
-          - type: docker-engine
