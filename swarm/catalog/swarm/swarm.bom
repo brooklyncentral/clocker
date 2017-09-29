@@ -2,8 +2,8 @@ brooklyn.catalog:
   version: "2.1.0-SNAPSHOT" # CLOCKER_VERSION
 
   brooklyn.libraries:
-  - mvn:io.brooklyn.clocker/clocker-common
-  - mvn:io.brooklyn.etcd/brooklyn-etcd
+  - mvn:io.brooklyn.clocker/clocker-common/2.1.0-SNAPSHOT # CLOCKER_VERSION
+  - mvn:io.brooklyn.etcd/brooklyn-etcd/2.5.0-SNAPSHOT # BROOKLYN_ETCD_VERSION
 
   items:
   - id: docker-swarm-template
