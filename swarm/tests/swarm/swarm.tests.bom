@@ -411,7 +411,7 @@ brooklyn.catalog:
           description: |
             A client for talking to the swarm
           brooklyn.config:
-            customize.latch: $brooklyn:entity("swarm").attributeWhenReady("service.isUp")
+            latch.customize: $brooklyn:entity("swarm").attributeWhenReady("service.isUp")
             client.address: $brooklyn:attributeWhenReady("host.address")
             ca.url: $brooklyn:entity("ca-server").attributeWhenReady("main.uri")
             docker.url: $brooklyn:entity("swarm").attributeWhenReady("swarm.url")
@@ -432,7 +432,7 @@ brooklyn.catalog:
               name: "GROUP-2 Test Swarm client"
               brooklyn.config:
                 targetId: swarm-client
-                start.latch: $brooklyn:entity("swarm-client").attributeWhenReady("service.isUp")
+                latch.start: $brooklyn:entity("swarm-client").attributeWhenReady("service.isUp")
               brooklyn.children:
                 - type: test-swarm-scale-up
                   name: "TEST-03 Test Swarm scale up"

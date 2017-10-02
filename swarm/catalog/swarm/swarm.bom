@@ -100,7 +100,7 @@ brooklyn.catalog:
                 name: "etcd-node"
                 brooklyn.config:
                   ca.request.root.url: $brooklyn:entity("ca-server").attributeWhenReady("main.uri")
-                  resources.preInstall.latch: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
+                  latch.preInstall.resources: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
                   files.preinstall:
                     "classpath://io.brooklyn.clocker.common:common/certificate-functions.sh": certificate-functions.sh
                   shell.env:
@@ -153,8 +153,8 @@ brooklyn.catalog:
             docker.discovery.url: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.authority")
             ca.cert: $brooklyn:entity("ca-server").attributeWhenReady("ca.cert")
             ca.request.root.url: $brooklyn:entity("ca-server").attributeWhenReady("main.uri")
-            resources.preInstall.latch: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
-            launch.latch: $brooklyn:entity("etcd-cluster").attributeWhenReady("service.isUp")
+            latch.preInstall.resources: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
+            latch.launch: $brooklyn:entity("etcd-cluster").attributeWhenReady("service.isUp")
 
   - id:  docker-swarm-cluster
     name: "Docker Swarm Cluster"
@@ -236,7 +236,7 @@ brooklyn.catalog:
                 - $brooklyn:attributeWhenReady("run.dir")
             shell.env:
               CA_REQUEST_ROOT_URL: $brooklyn:config("ca.request.root.url")
-            resources.preInstall.latch: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
+            latch.preInstall.resources: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
             files.preinstall:
               "classpath://io.brooklyn.clocker.common:common/certificate-functions.sh": certificate-functions.sh
             pre.launch.command: |
@@ -307,7 +307,7 @@ brooklyn.catalog:
                 id: swarm-manager
                 name: "swarm-manager"
                 brooklyn.config:
-                    provision.latch: $brooklyn:entity("swarm-manager-load-balancer").attributeWhenReady("service.isUp")
+                    latch.provision: $brooklyn:entity("swarm-manager-load-balancer").attributeWhenReady("service.isUp")
 
         - type: cluster
           id: docker-swarm-nodes
