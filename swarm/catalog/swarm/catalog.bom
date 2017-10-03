@@ -1,3 +1,0 @@
-brooklyn.catalog:
-  items:
-    - classpath://io.brooklyn.clocker.swarm:swarm/swarm.bom

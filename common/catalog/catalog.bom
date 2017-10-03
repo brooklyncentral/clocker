@@ -1,8 +1,9 @@
 brooklyn.catalog:
   items:
-    - classpath://io.brooklyn.clocker.common:common/common.bom
-    - classpath://io.brooklyn.clocker.common:common/ca.bom
-    - classpath://io.brooklyn.clocker.common:common/haproxy.bom
+    - classpath://common/common.bom
+    - classpath://common/ca.bom
+    - classpath://common/haproxy.bom
+    - classpath://docker/docker.bom
 
     - id: ca-server-template
       name: "Certificate Authority Server"
