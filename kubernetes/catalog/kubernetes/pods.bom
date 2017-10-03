@@ -26,9 +26,6 @@ brooklyn.catalog:
         - name: kubernetes.pod.name
           label: "Kubernetes Pod Name"
           type: string
-        - name: template.substitutions
-          label: "Template Substitutions"
-          type: java.util.Map
 
       brooklyn.config:
         install.unique_label:
@@ -135,11 +132,10 @@ brooklyn.catalog:
         kubernetes.pod.file: "classpath://io.brooklyn.clocker.kubernetes:kubernetes/kube-dns.yaml"
         kubernetes.pod.namespace: "kube-system"
 
-        template.substitutions:
-          kubernetes_url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
-          replicas: $brooklyn:entity("kubernetes-cluster").config("kubernetes.initial.size")
-          dns_service_ip: $brooklyn:entity("kubernetes-cluster").config("kubernetes.dns.address")
-          dns_service_domain: $brooklyn:entity("kubernetes-cluster").config("kubernetes.dns.domain")
+        kubernetes.url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
+        dns.replicas: $brooklyn:entity("kubernetes-cluster").config("kubernetes.initial.size")
+        dns.service.ip: $brooklyn:entity("kubernetes-cluster").config("kubernetes.dns.address")
+        dns.service.domain: $brooklyn:entity("kubernetes-cluster").config("kubernetes.dns.domain")
 
   - id: kubernetes-dashboard-pod
     name: "Kubernetes Dashboard Pod"
@@ -155,8 +151,7 @@ brooklyn.catalog:
         kubernetes.pod.file: "classpath://io.brooklyn.clocker.kubernetes:kubernetes/kubernetes-dashboard.yaml"
         kubernetes.pod.namespace: "kube-system"
 
-        template.substitutions:
-          kubernetes_url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
+        kubernetes.url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
 
   - id: calico-policy-controller-pod
     name: "Calico Policy Controller Pod"
@@ -172,9 +167,8 @@ brooklyn.catalog:
         kubernetes.pod.file: "classpath://io.brooklyn.clocker.kubernetes:kubernetes/policy-controller.yaml"
         kubernetes.pod.namespace: "kube-system"
 
-        template.substitutions:
-          kubernetes_url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
-          etcd_endpoints: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
+        kubernetes.url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
+        etcd.endpoints: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
 
   - id: prometheus-pod
     name: "Prometheus Monitoring Pod"
@@ -191,5 +185,28 @@ brooklyn.catalog:
         kubernetes.pod.file: "classpath://io.brooklyn.clocker.kubernetes:kubernetes/prometheus.yaml"
         kubernetes.pod.namespace: "kube-system"
 
-        template.substitutions:
-          kubernetes_url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
+        kubernetes.url: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
+
+  - id: kubernetes-default-pods
+    name: "Kubernetes Default Pods"
+    description: |
+      Default set of Kubernetes pods to launch at startup
+    itemType: entity
+    item:
+      type: empty-software-process
+      id: kubernetes-default-pods
+      name: "kubernetes-default-pods"
+
+      brooklyn.children:
+        - type: calico-policy-controller-pod
+          id: calico-policy-controller
+          name: "calico-policy-controller"
+        - type: kube-dns-pod
+          id: kube-dns
+          name: "kube-dns"
+        - type: kubernetes-dashboard-pod
+          id: kubernetes-dashboard
+          name: "kubernetes-dashboard"
+        - type: prometheus-pod
+          id: prometheus
+          name: "prometheus"

@@ -28,7 +28,7 @@ spec:
         - containerPort: 9090
           protocol: TCP
         args:
-        - --apiserver-host=${config['template.substitutions']['kubernetes_url']}
+        - --apiserver-host=${config['kubernetes.url']}
         livenessProbe:
           httpGet:
             path: /

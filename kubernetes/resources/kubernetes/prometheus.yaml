@@ -83,7 +83,7 @@ data:
       - job_name: 'kubernetes-cluster'
         kubernetes_sd_configs:
           - api_servers:
-              - ${config['template.substitutions']['kubernetes_url']}
+              - ${config['kubernetes.url']}
             basic_auth:
               username: prometheus
               password: pr0m3th3us
@@ -91,7 +91,7 @@ data:
       - job_name: 'kubernetes-nodes'
         kubernetes_sd_configs:
           - api_servers:
-              - ${config['template.substitutions']['kubernetes_url']}
+              - ${config['kubernetes.url']}
             basic_auth:
               username: prometheus
               password: pr0m3th3us
@@ -109,7 +109,7 @@ data:
       - job_name: 'kubernetes-service-endpoints'
         kubernetes_sd_configs:
           - api_servers:
-              - ${config['template.substitutions']['kubernetes_url']}
+              - ${config['kubernetes.url']}
             basic_auth:
               username: prometheus
               password: pr0m3th3us

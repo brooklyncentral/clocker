@@ -42,7 +42,7 @@ brooklyn.catalog:
             The Flannel backend transport mechanism. Can be any of: 'udp',
             'vxlan', 'host-gw', 'aws-vpc', 'gce' or 'alloc'.
           type: string
-          default: "udp"
+          default: "vxlan"
         - name: flannel.interface
           label: "Flannel Interface"
           description: |
