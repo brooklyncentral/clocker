@@ -113,8 +113,8 @@ brooklyn.catalog:
           brooklyn.config:
             ca.cert: $brooklyn:entity("ca-server").attributeWhenReady("ca.cert")
             ca.request.root.url: $brooklyn:entity("ca-server").attributeWhenReady("main.uri")
-            resources.preInstall.latch: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
-            launch.latch: $brooklyn:entity("etcd-cluster").attributeWhenReady("service.isUp")
+            latch.preInstall.resources: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
+            latch.launch: $brooklyn:entity("etcd-cluster").attributeWhenReady("service.isUp")
 
   - id: kubernetes-hosts-file-generator
     name: "Kubernetes Hosts File Generator"
@@ -326,15 +326,15 @@ brooklyn.catalog:
                 id: kubernetes-master
                 name: "kubernetes-master"
                 brooklyn.config:
-                  install.latch: $brooklyn:entity("kubernetes-manager-load-balancer").attributeWhenReady("service.isUp")
-                  launch.latch: $brooklyn:entity("etcd-cluster").attributeWhenReady("service.isUp")
+                  latch.install: $brooklyn:entity("kubernetes-manager-load-balancer").attributeWhenReady("service.isUp")
+                  latch.launch: $brooklyn:entity("etcd-cluster").attributeWhenReady("service.isUp")
                   kubernetes.schedulable: false
                 brooklyn.children:
                   - type: child-software-process
                     id: add-calico-pool
                     name: "add-calico-pool"
                     brooklyn.config:
-                      start.latch: $brooklyn:sibling("calico-cni-plugin").attributeWhenReady("service.isUp")
+                      latch.start: $brooklyn:sibling("calico-cni-plugin").attributeWhenReady("service.isUp")
                       shell.env:
                         ETCD_ENDPOINTS: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
                         FLANNEL_NETWORK: $brooklyn:sibling("flannel-network-agent").config("flannel.network")
@@ -346,7 +346,7 @@ brooklyn.catalog:
                     id: kubernetes-pods
                     name: "kubernetes-pods"
                     brooklyn.config:
-                      start.latch: $brooklyn:entity("kubernetes-pods").sibling("kube-apiserver").attributeWhenReady("service.isUp")
+                      latch.start: $brooklyn:entity("kubernetes-pods").sibling("kube-apiserver").attributeWhenReady("service.isUp")
                     brooklyn.children:
                       - type: calico-policy-controller-pod
                         id: calico-policy-controller
@@ -366,8 +366,8 @@ brooklyn.catalog:
                 id: kubernetes-master
                 name: "kubernetes-master"
                 brooklyn.config:
-                  install.latch: $brooklyn:entity("kubernetes-manager-load-balancer").attributeWhenReady("service.isUp")
-                  launch.latch: $brooklyn:entity("etcd-cluster").attributeWhenReady("service.isUp")
+                  latch.install: $brooklyn:entity("kubernetes-manager-load-balancer").attributeWhenReady("service.isUp")
+                  latch.launch: $brooklyn:entity("etcd-cluster").attributeWhenReady("service.isUp")
                   kubernetes.schedulable: false
 
         - type: cluster
@@ -412,7 +412,7 @@ brooklyn.catalog:
                 id: kubernetes-worker
                 name: "kubernetes-worker"
                 brooklyn.config:
-                  launch.latch: $brooklyn:entity("kubernetes-master-cluster").attributeWhenReady("service.isUp")
+                  latch.launch: $brooklyn:entity("kubernetes-master-cluster").attributeWhenReady("service.isUp")
 
   - id: kubernetes-worker
     name: "Kubernetes Worker"
@@ -555,7 +555,7 @@ brooklyn.catalog:
           id: docker-engine
           name: "docker-engine"
           brooklyn.config:
-            start.latch: $brooklyn:sibling("flannel-network-agent").attributeWhenReady("service.isUp")
+            latch.start: $brooklyn:sibling("flannel-network-agent").attributeWhenReady("service.isUp")
             docker.additionaloptions:
               $brooklyn:formatString:
                 - >-
@@ -572,18 +572,18 @@ brooklyn.catalog:
           id: calico-cni-plugin
           name: "calico-cni-plugin"
           brooklyn.config:
-            start.latch: $brooklyn:sibling("docker-engine").attributeWhenReady("service.isUp")
+            latch.start: $brooklyn:sibling("docker-engine").attributeWhenReady("service.isUp")
             etcd.endpoints: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
         - type: kube-proxy-service
           id: kube-proxy
           name: "kube-proxy"
           brooklyn.config:
-            start.latch: $brooklyn:sibling("calico-cni-plugin").attributeWhenReady("service.isUp")
+            latch.start: $brooklyn:sibling("calico-cni-plugin").attributeWhenReady("service.isUp")
         - type: kubelet-service
           id: kubelet
           name: "kubelet"
           brooklyn.config:
-            start.latch: $brooklyn:sibling("calico-cni-plugin").attributeWhenReady("service.isUp")
+            latch.start: $brooklyn:sibling("calico-cni-plugin").attributeWhenReady("service.isUp")
 
       brooklyn.enrichers:
         - type: org.apache.brooklyn.core.entity.lifecycle.ServiceStateLogic$ComputeServiceIndicatorsFromChildrenAndMembers
@@ -669,17 +669,17 @@ brooklyn.catalog:
           id: kube-apiserver
           name: "kube-apiserver"
           brooklyn.config:
-            start.latch: $brooklyn:sibling("kubelet").attributeWhenReady("service.isUp")
+            latch.start: $brooklyn:sibling("kubelet").attributeWhenReady("service.isUp")
         - type: kube-controller-manager-service
           id: kube-controller-manager
           name: "kube-controller-manager"
           brooklyn.config:
-            start.latch: $brooklyn:sibling("kube-apiserver").attributeWhenReady("service.isUp")
+            latch.start: $brooklyn:sibling("kube-apiserver").attributeWhenReady("service.isUp")
         - type: kube-scheduler-service
           id: kube-scheduler
           name: "kube-scheduler"
           brooklyn.config:
-            start.latch: $brooklyn:sibling("kube-apiserver").attributeWhenReady("service.isUp")
+            latch.start: $brooklyn:sibling("kube-apiserver").attributeWhenReady("service.isUp")
 
       brooklyn.enrichers:
         - type: org.apache.brooklyn.enricher.stock.Transformer

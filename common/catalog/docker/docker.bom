@@ -291,7 +291,7 @@ brooklyn.catalog:
           DOCKER_HOST: $brooklyn:attributeWhenReady("docker.url")
           DOCKER_TLS_VERIFY: true
           DOCKER_CERT_PATH: $brooklyn:config("docker.cert.path")
-        resources.preInstall.latch: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
+        latch.preInstall.resources: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
         files.preinstall:
           "classpath://io.brooklyn.clocker.common:common/certificate-functions.sh": certificate-functions.sh
         customize.command: |

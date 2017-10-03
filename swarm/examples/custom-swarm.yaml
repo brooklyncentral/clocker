@@ -52,6 +52,6 @@ services:
           swarm.max.size: 3
           swarm.discovery.url: $brooklyn:entity("consul-cluster").attributeWhenReady("consul.url")
           docker.discovery.url: $brooklyn:entity("consul-cluster").attributeWhenReady("consul.url")
-          launch.latch: $brooklyn:entity("consul-cluster").attributeWhenReady("service.isUp")
-          customize.latch: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
+          latch.launch: $brooklyn:entity("consul-cluster").attributeWhenReady("service.isUp")
+          latch.customize: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
           ca.request.root.url: $brooklyn:entity("ca-server").attributeWhenReady("main.uri")

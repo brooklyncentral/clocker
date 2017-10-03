@@ -306,7 +306,7 @@ brooklyn.catalog:
         name: Docker Engine with TLS
         id: docker-engine-tls
         brooklyn.config:
-          customize.latch: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
+          latch.customize: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
           ca.request.root.url:
             $brooklyn:formatString:
             - "%s:%d"
@@ -319,7 +319,7 @@ brooklyn.catalog:
         name: Docker client with TLS
         id: tls-client
         brooklyn.config:
-          customize.latch: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
+          latch.customize: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
           client.address: $brooklyn:attributeWhenReady("host.address")
           ca.url: $brooklyn:entity("ca-server").attributeWhenReady("main.uri")
           docker.url:
