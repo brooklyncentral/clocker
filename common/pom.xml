@@ -60,6 +60,11 @@
                                     <classifier>haproxy</classifier>
                                 </artifact>
                                 <artifact>
+                                    <file>${project.basedir}/catalog/common/haproxy-template.bom</file>
+                                    <type>bom</type>
+                                    <classifier>haproxy-template</classifier>
+                                </artifact>
+                                <artifact>
                                     <file>${project.basedir}/catalog/common/common.bom</file>
                                     <type>bom</type>
                                     <classifier>common</classifier>
