@@ -12,16 +12,9 @@ To use the Clocker blueprints you have two options:
 * use them pre-packaged in Cloudsoft AMP (which is built on Brooklyn with additional enterprise features such as a rich UX, blueprint QA, and commercial support). This gives the simplest and fastest user-experience.
 * use Apache Brooklyn, manually adding the Clocker blueprints.
 
-{::options parse_block_html="true" /}
+{% tabs amp='AMP', brooklyn='Brooklyn' %}
 
-<ul class="nav nav-tabs">
-    <li class="active amp-tab"><a data-target="#amp, .amp-tab" data-toggle="tab" href="#">AMP</a></li>
-    <li class="brooklyn-tab"><a data-target="#brooklyn, .brooklyn-tab" data-toggle="tab" href="#">Brooklyn</a></li>
-</ul>
-
-<div class="tab-content">
-<div id="amp" class="tab-pane fade in active">
-
+{% tab id='amp', class='active' %}
 1. [Download AMP](http://www.cloudsoft.io/amp-container-service-early-access)
 2. Install AMP. For more detailed instructions, see the [docs](http://docs.cloudsoft.io/tutorials/tutorial-get-amp-running.html#install-cloudsoft-amp).
 3. Open the AMP UI in your favourite web browser (as per the detailed instructions within the link above) and [setup a location](http://docs.cloudsoft.io/tutorials/tutorial-get-amp-running.html#add-a-location) for where you want to deploy to (e.g. your preferred cloud, or a list of IPs for pre-existing machines). We came up with location's templates to add to your catalog, that you can use out of the box for [AWS](locations/aws-example-location.bom), [SoftLayer](locations/sl-example-location.bom), [Azure](locations/azure-example-location.bom), [GCE](locations/gce-example-location.bom) and [Blue Box](locations/bb-example-location.bom). For more information, head to the [tutorial section](swarm-cluster.html#setup-a-cloud-location).
@@ -31,10 +24,9 @@ To use the Clocker blueprints you have two options:
 4. AMP includes a set of quick launch applications, for point-and-click deployment to your favourite location. These include `Docker Swarm with Discovery and CA` and `Kubernetes Cluster`. Choose the desired application, then your location, and any custom configuration options such as the size of cluster. Then click Deploy.
   ![Quick-launch of a Kubernetes cluster]({{site.baseurl}}/assets/images/quick-launch-amp-kubernetes.png)
 5. View your application in the App Dashboard (for a high-level overview) or the App Inspector (for a more detailed view). Once the app is deployed, this will show important information such as the connection details.
+{% endtab %}
 
-</div>
-<div id="brooklyn" class="tab-pane fade">
-
+{% tab id='brooklyn' %}
 The instructions below assume you are using the Brooklyn in the "classic mode" (i.e. not using Karaf). They pick up from where you have the `.tgz` or `.zip` file).
 
 1. Install Apache Brooklyn. For more detailed instructions, see the [docs](http://brooklyn.apache.org/v/latest/start/running.html#install-apache-brooklyn).
@@ -54,5 +46,6 @@ The instructions below assume you are using the Brooklyn in the "classic mode" (
   ![Quick-launch of a Swarm or Kubernetes cluster]({{site.baseurl}}/assets/images/quick-launch-brooklyn.png)
 6. View your application in the "Applications" tab. Once the app is deployed, this will show important information such as the connection details. Click on the entity (i.e. component) in the tree view, and the "Sensors" tab to see details of that entity. For more details, the [docs](see http://brooklyn.apache.org/v/latest/ops/gui/managing.html).
 
-</div>
-</div>
+{% endtab %}
+
+{% endtabs %}
