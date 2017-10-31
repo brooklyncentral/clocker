@@ -3,6 +3,7 @@ Gemfile.lock
 
 # Jekyll local build
 _site
+_clone
 
 # IDE
 .idea
