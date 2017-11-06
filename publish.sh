@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-GIT_REPO=https://github.com/tbouron/clocker
+GIT_REPO=https://github.com/brooklyncentral/clocker
 GIT_BRANCH_TARGET=gh-pages
 GIT_CLONE=_clone
 
