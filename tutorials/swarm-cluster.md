@@ -31,7 +31,7 @@ This is used to provide TLS certificates for the swarm cluster. This component i
 #### Setup a cloud location
 Firstly, we need to setup a location to deploy the Swarm cluster to. We recommend the following settings:
 
-- use the `installDevUrandom` config to prevent installation speed being slowed by lack of entropy. See [Entropy Troubleshooting](https://brooklyn.apache.org/documentation/increase-entropy.html)
+- use the `installDevUrandom` config to prevent installation speed being slowed by lack of entropy. See [Entropy Troubleshooting](https://brooklyn.apache.org/v/latest/ops/troubleshooting/increase-entropy.html)
 - use at least 2GB RAM
 - use a CentOS 7 based image
 
@@ -39,69 +39,63 @@ Please note that we recommend the [official Centos 7 images](https://wiki.centos
 
 The following catalog items should enable you to quickly get started on some popular clouds. Download the `.bom` file of the relevant cloud, add your credentials, and then run:
 
-    br add-catalog <CLOUD-PROVIDER>-example-location.bom
+```bash
+br add-catalog <CLOUD-PROVIDER>-example-location.bom
+```
 
-{::options parse_block_html="true" /}
+{% tabs aws='AWS', sl='SoftLayer', azure='Azure', gce='GCE', bb='Blue Box' %}
 
-<ul class="nav nav-tabs">
-    <li class="active impl-1-tab"><a data-target="#impl-1, .impl-1-tab" data-toggle="tab" href="#">AWS</a></li>
-    <li class="impl-2-tab"><a data-target="#impl-2, .impl-2-tab" data-toggle="tab" href="#">SoftLayer</a></li>
-    <li class="impl-3-tab"><a data-target="#impl-3, .impl-3-tab" data-toggle="tab" href="#">Azure</a></li>
-    <li class="impl-4-tab"><a data-target="#impl-4, .impl-4-tab" data-toggle="tab" href="#">GCE</a></li>
-    <li class="impl-5-tab"><a data-target="#impl-5, .impl-5-tab" data-toggle="tab" href="#">Blue Box</a></li>
-</ul>
-
-<div class="tab-content">
-<div id="impl-1" class="tab-pane fade in active">
-{% highlight yaml %}
+{% tab id='aws', class='active' %}
+```yaml
 {% include_relative locations/aws-example-location.bom %}
-{% endhighlight %}
+```
 [Download aws-example-location.bom](locations/aws-example-location.bom){:target="blank" class="button download"}
-</div>
-<div id="impl-2" class="tab-pane fade">
-{% highlight yaml %}
+{% endtab %}
+
+{% tab id='sl' %}
+```yaml
 {% include_relative locations/sl-example-location.bom %}
-{% endhighlight %}
+```
 [Download sl-example-location.bom](locations/sl-example-location.bom){:target="blank" class="button download"}
-</div>
-<div id="impl-3" class="tab-pane fade">
-{% highlight yaml %}
+{% endtab %}
+
+{% tab id='azure' %}
+```yaml
 {% include_relative locations/azure-example-location.bom %}
-{% endhighlight %}
+```
 [Download azure-example-location.bom](locations/azure-example-location.bom){:target="blank" class="button download"}
-</div>
-<div id="impl-4" class="tab-pane fade">
-{% highlight yaml %}
+{% endtab %}
+
+{% tab id='gce' %}
+```yaml
 {% include_relative locations/gce-example-location.bom %}
-{% endhighlight %}
+```
 [Download gce-example-location.bom](locations/gce-example-location.bom){:target="blank" class="button download"}
-</div>
-<div id="impl-5" class="tab-pane fade">
-{% highlight yaml %}
+{% endtab %}
+
+{% tab id='bb' %}
+```yaml
 {% include_relative locations/bb-example-location.bom %}
-{% endhighlight %}
+```
 [Download bb-example-location.bom](locations/bb-example-location.bom){:target="blank" class="button download"}
-</div>
-</div>
+{% endtab %}
+
+{% endtabs %}
 
 #### Deploy a Swarm Cluster
 After the location is setup, it is time to deploy a Docker Swarm.
 
-{::options parse_block_html="true" /}
+{% tabs amp='AMP', brooklyn='Brooklyn' %}
 
-<ul class="nav nav-tabs">
-    <li class="active amp-tab"><a data-target="#amp, .amp-tab" data-toggle="tab" href="#">AMP</a></li>
-    <li class="brooklyn-tab"><a data-target="#brooklyn, .brooklyn-tab" data-toggle="tab" href="#">Brooklyn</a></li>
-</ul>
-
-<div class="tab-content">
-<div id="amp" class="tab-pane fade in active">
+{% tab id='amp', class='active' %}
 From your AMP Install, head to the AMP Welcome page. In the quick deploy section select "Docker Swarm with Discovery and CA" and select the location that that we setup in the previous step. You can also change some configuration options such as the minimum and maximum number of nodes. Once you are happy with the configuration press Deploy and your Swarm cluster will be created.
-</div>
-<div id="brooklyn" class="tab-pane fade">
+{% endtab %}
+
+{% tab id='brooklyn' %}
 From your Brooklyn Install, head to the Home tab. Click on "Add application" and select "Docker Swarm with Discovery and CA", then click on "Next". Select the location that that we setup in the previous step. You can also change some configuration options such as the minimum and maximum number of nodes. Once you are happy with the configuration, press "Deploy" and your Swarm cluster will be created.
-</div>
-</div>
+{% endtab %}
+
+{% endtabs %}
 
 To interact with the Swarm cluster, we first need to get certificates from the CA server. To do so, the following [script](getcert.sh){:target="blank"} can be used:
 {% highlight bash %}
