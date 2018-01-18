@@ -10,7 +10,7 @@ brooklyn.catalog:
     name: "Docker Swarm with Discovery and CA"
     description: |
       Creates a Swarm of Docker engines, of configurable initial size, using an Etcd cluster for discovery.
-    itemType: template
+    itemType: entity
     iconUrl: classpath://io.brooklyn.clocker.swarm:icons/swarm.png
     item:
       services:
