@@ -533,9 +533,8 @@ brooklyn.catalog:
             targetType: double
             command: |
               test -f pid.txt &&
-                ( docker stats --no-stream $(cat pid.txt) |
-                  tail -n +2 |
-                  cut -c21-40 )
+                ( docker stats --no-stream --format "table {{.CPUPerc}}" $(cat pid.txt) | 
+                  sed -n '2s/%//p' )
         - type: org.apache.brooklyn.core.sensor.ssh.SshCommandSensor
           brooklyn.config:
             name: container.stats.memory.percent
@@ -543,9 +542,8 @@ brooklyn.catalog:
             targetType: double
             command: |
               test -f pid.txt &&
-                ( docker stats --no-stream $(cat pid.txt) |
-                  tail -n +2 |
-                  cut -c63-82 )
+                 ( docker stats --no-stream --format "table {{.MemPerc}}" $(cat pid.txt) | 
+                   sed -n '2s/%//p' )
 
   - id: docker-container-entity
     name: "Docker Container"
