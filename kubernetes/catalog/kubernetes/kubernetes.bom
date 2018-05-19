@@ -363,7 +363,7 @@ brooklyn.catalog:
             dynamiccluster.memberspec:
               $brooklyn:entitySpec:
                 type: kubernetes-master
-                id: kubernetes-master
+                id: kubernetes-master-notfirst
                 name: "kubernetes-master"
                 brooklyn.config:
                   latch.install: $brooklyn:entity("kubernetes-manager-load-balancer").attributeWhenReady("service.isUp")
