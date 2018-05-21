@@ -31,7 +31,7 @@ brooklyn.catalog:
             equals: 3
         - type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
           name: "4. Kill a master node"
-          target: $brooklyn:entity("kubernetes-master")
+          target: $brooklyn:entity("kubernetes-master-notfirst")
           command: |
             nohup sudo bash -c 'sleep 10 && shutdown -h -t0 now' &
         - type: org.apache.brooklyn.test.framework.TestSensor
@@ -84,14 +84,14 @@ brooklyn.catalog:
             kubectl run workload-b --image=brooklyncentral/centos:7 --replicas=1 --port=22
         - type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
           name: "13. Assert [A] running"
-          target: $brooklyn:entity("kubernetes-master")
+          target: $brooklyn:entity("kubernetes-master-notfirst")
           command: |
             kubectl get pods | grep -i running
           assertOut:
             contains: 'workload-a'
         - type: org.apache.brooklyn.test.framework.SimpleShellCommandTest
           name: "14. Assert [B] running"
-          target: $brooklyn:entity("kubernetes-master")
+          target: $brooklyn:entity("kubernetes-master-notfirst")
           command: |
             kubectl get pods | grep -i running
           assertOut:
