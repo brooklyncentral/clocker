@@ -186,6 +186,13 @@ brooklyn.catalog:
             will automatically be added. The default is 0.95 or 95%
           type: double
           default: 0.95
+        - name: kubernetes.resizeUpStabilizationDelay
+          label: "Kubernetes Resize Stabilization Delay"
+          description: |
+            The time that the average cluster cpu must be above the threshold before another
+            node will automatically be added.
+          type: double
+          default: 30s
         - name: kubernetes.cluster.name
           label: "Kubernetes Cluster Name"
           type: string
@@ -390,7 +397,8 @@ brooklyn.catalog:
                   $brooklyn:entity("kubernetes-cluster").config("kubernetes.initial.size")
                 autoscaler.maxPoolSize:
                   $brooklyn:entity("kubernetes-cluster").config("kubernetes.max.size")
-                autoscaler.resizeUpStabilizationDelay: 30s
+                autoscaler.resizeUpStabilizationDelay:
+                  $brooklyn:entity("kubernetes-cluster").config("kubernetes.resizeUpStabilizationDelay")
                 autoscaler.resizeDownIterationMax: 0 # Disable scaling down
           brooklyn.enrichers:
             - type: org.apache.brooklyn.enricher.stock.Aggregator
