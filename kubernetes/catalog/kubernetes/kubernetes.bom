@@ -191,7 +191,7 @@ brooklyn.catalog:
           description: |
             The time that the average cluster cpu must be above the threshold before another
             node will automatically be added.
-          type: double
+          type: org.apache.brooklyn.util.time.Duration
           default: 30s
         - name: kubernetes.cluster.name
           label: "Kubernetes Cluster Name"
