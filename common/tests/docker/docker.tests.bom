@@ -40,8 +40,12 @@ brooklyn.catalog:
           name: "TEST-03 start process"
         - type: test-restart-process
           name: "TEST-04 restart process"
-        - type: test-restart-machine
-          name: "TEST-05 restart machine"
+        - type: test-case
+          name: "TEST-05 reboot machine"
+          brooklyn.children:
+            - type: ssh-cmd-restart
+            - type: assert-failed
+            - type: assert-up
         - type: test-reachable
           name: "TEST-06 check service is reachable"
           brooklyn.config:
