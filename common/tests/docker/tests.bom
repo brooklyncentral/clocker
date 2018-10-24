@@ -20,6 +20,10 @@ brooklyn.catalog:
 
         services:
           - type: docker-engine-tests
+            name: Docker Engine Tests
           - type: docker-engine-tls-tests
+            name: Docker Engine TLS Tests
           - type: docker-preinstall-tests
+            name: Docker Pre-install Tests
           - type: docker-vm-container-tests
+            name: Docker VM Container Tests

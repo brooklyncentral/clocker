@@ -239,6 +239,14 @@
                     </instructions>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <!-- Override version for maven-install-plugin because there is a bug in
+                3.0.0-M1 preventing installing of modules with packaging of feature
+                see: https://issues.apache.org/jira/browse/MINSTALL-151 -->
+                <version>2.5.2</version>
+            </plugin>
         </plugins>
     </build>
 
