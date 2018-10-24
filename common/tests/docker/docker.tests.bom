@@ -46,6 +46,7 @@ brooklyn.catalog:
             - type: ssh-cmd-restart
             - type: assert-failed
             - type: assert-up
+            - type: assert-running
         - type: test-reachable
           name: "TEST-06 check service is reachable"
           brooklyn.config:
