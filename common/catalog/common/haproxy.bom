@@ -41,6 +41,24 @@ brooklyn.catalog:
             description: |
               Extra bind configuration such as TLS certificate paths
             type: string
+          - name: haproxy.stats.enable
+            label: "Enable HAProxy Statistics"
+            description: |
+              Whether HAProxy should serve statistics information page
+            type: boolean
+            default: false
+          - name: haproxy.stats.port
+            label: "HAProxy Statistics Port"
+            description: |
+              Port that HAProxy should serve statistics on
+            type: integer
+            default: 7000
+          - name: haproxy.stats.password
+            label: "HAProxy Statistics Password"
+            description: |
+              Password for 'admin' user on HAProxy statistics service
+            type: string
+            default: "p4ssw0rd"
 
         brooklyn.config:
           haproxy.bind.options:
@@ -54,6 +72,9 @@ brooklyn.catalog:
             HAPROXY_PORT: $brooklyn:config("haproxy.port")
             HAPROXY_PROTOCOL: $brooklyn:config("haproxy.protocol")
             HAPROXY_BIND_OPTIONS: $brooklyn:config("haproxy.bind.options")
+            HAPROXY_STATS_ENABLE: $brooklyn:config("haproxy.stats.enable")
+            HAPROXY_STATS_PORT: $brooklyn:config("haproxy.stats.port")
+            HAPROXY_STATS_PASSWORD: $brooklyn:config("haproxy.stats.password")
 
           install.command: |
             sudo yum install -y kernel-headers --disableexcludes=all
@@ -66,10 +87,16 @@ brooklyn.catalog:
             sudo cp haproxy /usr/bin
 
           customize.command: |
+            if [ "${HAPROXY_PROTOCOL}" == "http" ]; then
+              mode="http"
+            else
+              mode="tcp"
+            fi
             cat > haproxy.conf <<-EOF
             global
               daemon
-              maxconn 256
+              quiet
+              maxconn 1024
               pidfile ${PID_FILE}
             defaults
               option http-server-close
@@ -80,10 +107,23 @@ brooklyn.catalog:
               bind *:${HAPROXY_PORT} ${HAPROXY_BIND_OPTIONS}
               reqadd X-Forwarded-Proto:\ ${HAPROXY_PROTOCOL}
               default_backend servers
-              mode tcp
-              option tcplog
-              log 127.0.0.1 syslog
+              mode ${mode}
             EOF
+            if [ "${HAPROXY_STATS_ENABLE}" == "true" ]; then
+              cat >> haproxy.conf <<-EOF
+            listen statistics
+              mode http
+              bind *:${HAPROXY_STATS_PORT}
+              log global
+              maxconn 16
+              stats enable
+              stats uri /
+              stats refresh 30s
+              stats show-node
+              stats realm HAProxy
+              stats auth admin:${HAPROXY_STATS_PASSWORD}
+            EOF
+            fi
             echo "backend servers" > servers.conf
 
           launch.command: |
