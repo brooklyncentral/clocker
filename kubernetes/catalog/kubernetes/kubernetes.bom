@@ -60,7 +60,11 @@ brooklyn.catalog:
         - name: kubernetes.apiserver.port
           label: "Kubernetes API Server Port"
           type: integer
-          default: 8080
+          default: 8443
+        - name: kubernetes.apiserver.protocol
+          label: "Kubernetes API Server Protocol"
+          type: string
+          default: "https"
         - name: kubernetes.sharedsecuritygroup.create
           label: "Create Kubernetes SharedSecurityGroup"
           description: |
@@ -204,18 +208,17 @@ brooklyn.catalog:
         - name: kubernetes.user
           label: "Kubernetes User"
           type: string
-          default: "guest"
-        - name: kubernetes.password
-          label: "Kubernetes Password"
+          default: "admin"
+        - name: kubernetes.servicetoken.file
+          label: "Kubernetes Service Token File"
           type: string
-          default: "guest"
-        - name: kubernetes.authentication.file
-          label: "Kubernetes Authentication File"
-          type: string
-          description: |
-            Usernames and passwords in a CSV file. Used for Kubernetes API server basic authentication
           default:
-            "classpath://io.brooklyn.clocker.kubernetes:kubernetes/basic_auth.csv"
+            "classpath://io.brooklyn.clocker.kubernetes:kubernetes/known_tokens.csv"
+        - name: kubernetes.authorization.file
+          label: "Kubernetes Authorization File"
+          type: string
+          default:
+            "classpath://io.brooklyn.clocker.kubernetes:kubernetes/policy.jsonl"
         - name: kubernetes.recovery.quarantineFailedEntities
           label: "Quarantine"
           description: |
@@ -265,7 +268,27 @@ brooklyn.catalog:
           name: "kubernetes-manager-load-balancer"
           brooklyn.config:
             haproxy.port: $brooklyn:parent().parent().config("kubernetes.apiserver.port")
-            haproxy.protocol: "http"
+            haproxy.protocol: $brooklyn:parent().parent().config("kubernetes.apiserver.protocol")
+            haproxy.bind.options:
+              $brooklyn:formatString:
+                - "ssl ca-file %1$s/ca.pem crt %1$s/cert.pem"
+                - $brooklyn:attributeWhenReady("run.dir")
+            shell.env:
+              CA_REQUEST_ROOT_URL: $brooklyn:config("ca.request.root.url")
+            resources.preInstall.latch: $brooklyn:entity("ca-server").attributeWhenReady("service.isUp")
+            files.preinstall:
+              "classpath://io.brooklyn.clocker.common:common/certificate-functions.sh": certificate-functions.sh
+            pre.launch.command: |
+              set -e
+              source ${INSTALL_DIR}/certificate-functions.sh
+
+              getcert ${CA_REQUEST_ROOT_URL}/cacert/ca.pem ${RUN_DIR}/ca.pem
+              generate_key ${RUN_DIR}/key.pem
+              generate_conf ${INSTALL_DIR}/csr.cnf ${HOST_ADDRESS} ${SUBNET_ADDRESS}
+              generate_csr ${INSTALL_DIR}/csr.cnf ${RUN_DIR}/key.pem ${INSTALL_DIR}/csr.pem
+
+              curl -X POST --data-binary @${INSTALL_DIR}/csr.pem  ${CA_REQUEST_ROOT_URL}/sign > ${RUN_DIR}/cert.pem
+              cat ${RUN_DIR}/key.pem >> ${RUN_DIR}/cert.pem
           brooklyn.enrichers:
             - type: org.apache.brooklyn.enricher.stock.Propagator
               brooklyn.config:
@@ -292,7 +315,8 @@ brooklyn.catalog:
                 enricher.targetSensor: $brooklyn:sensor("kubernetes.url")
                 enricher.targetValue:
                   $brooklyn:formatString:
-                    - "http://%s"
+                    - "%s://%s"
+                    - $brooklyn:config("haproxy.protocol")
                     - $brooklyn:attributeWhenReady("kubernetes.endpoint")
 
         - type: cluster
@@ -464,6 +488,21 @@ brooklyn.catalog:
           label: "Kubernetes Debug"
           type: boolean
           default: false
+        - name: ca.request.root.url
+          label: "CA Request Root URL"
+          description: |
+            Root URL for a CA server.
+          type: string
+        - name: ca.cert
+          label: CA Certificate
+          description: |
+            CA certificate data
+          type: string
+        - name: kubernetes.servicetoken.file
+          label: "Kubernetes Service Token File"
+          type: string
+          default:
+            "classpath://io.brooklyn.clocker.kubernetes:kubernetes/known_tokens.csv"
 
       brooklyn.config:
         childStartMode: foreground_late
@@ -479,18 +518,24 @@ brooklyn.catalog:
                   - "30000-32767"
                 enabled: $brooklyn:config("kubernetes.sharedsecuritygroup.create")
 
+        files.preinstall:
+          $brooklyn:config("kubernetes.servicetoken.file"): known_tokens.csv
+          "classpath://io.brooklyn.clocker.common:common/certificate-functions.sh": certificate-functions.sh
+
         shell.env:
+          CA_REQUEST_ROOT_URL: $brooklyn:config("ca.request.root.url")
+          CA_CERT: $brooklyn:config("ca.cert")
           KUBERNETES_VERSION: $brooklyn:entity("kubernetes-cluster").config("kubernetes.version")
           CLUSTER_NAME: $brooklyn:entity("kubernetes-cluster").config("kubernetes.cluster.name")
           KUBERNETES_USER: $brooklyn:entity("kubernetes-cluster").config("kubernetes.user")
-          KUBERNETES_PASSWORD: $brooklyn:entity("kubernetes-cluster").config("kubernetes.password")
           KUBECTL_DOWNLOAD_URL: $brooklyn:config("kubectl.download.url")
           KUBERNETES_URL: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
-          KUBERNETES_ENDPOINT: $brooklynentity("kubernetes-cluster").attributeWhenReady("kubernetes.endpoint")
+          KUBERNETES_ENDPOINT: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.endpoint")
           HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
           HOST_SUBNET_ADDRESS: $brooklyn:attributeWhenReady("host.subnet.address")
           ENTITY_ID: $brooklyn:attributeWhenReady("entity.id")
           KUBERNETES_DEBUG: $brooklyn:config("kubernetes.debug")
+          INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
 
         kubectl.download.url:
           $brooklyn:formatString:
@@ -518,32 +563,25 @@ brooklyn.catalog:
           wget ${KUBECTL_DOWNLOAD_URL}
           chmod +x kubectl
           sudo cp kubectl /usr/bin
+          sudo mkdir /etc/kubernetes
+
+        post.install.command: |
+          echo "[CLOCKER] Creating CA certificate directory"
+          sudo mkdir /etc/kubernetes/certs
+          sudo chown ${USER} /etc/kubernetes/certs
+          source ${INSTALL_DIR}/certificate-functions.sh
+          getcert ${CA_REQUEST_ROOT_URL}/cacert/ca.pem /etc/kubernetes/certs/ca.pem
 
         launch.command: |
-          sudo mkdir -p /etc/kubernetes
-          sudo -E tee /etc/kubernetes/kubeconfig <<-EOF
-          current-context: default
-          apiVersion: v1
-          clusters:
-            - name: ${CLUSTER_NAME}
-              cluster:
-                server: ${KUBERNETES_URL}
-          users:
-            - name: ${KUBERNETES_USER}
-              user:
-                username: ${KUBERNETES_USER}
-                password: ${KUBERNETES_PASSWORD}
-          contexts:
-            - name: default
-              context:
-                cluster: ${CLUSTER_NAME}
-                user: ${KUBERNETES_USER}
-                namespace: default
-          EOF
-          kubectl config set-cluster ${CLUSTER_NAME} --server=${KUBERNETES_URL}
-          kubectl config set-credentials ${KUBERNETES_USER} --username=${KUBERNETES_USER} --password=${KUBERNETES_PASSWORD}
-          kubectl config set-context default --cluster=${CLUSTER_NAME} --user=${KUBERNETES_USER} --namespace=default
+          sudo mv ${INSTALL_DIR}/known_tokens.csv /etc/kubernetes
+          KUBERNETES_TOKEN=$(sudo grep ${KUBERNETES_USER} /etc/kubernetes/known_tokens.csv | cut -d, -f1)
+
+          echo "[CLOCKER] Setup the kubeconfig file"
+          kubectl config set-cluster ${CLUSTER_NAME} --server=${KUBERNETES_URL} --certificate-authority=/etc/kubernetes/certs/ca.pem --embed-certs=true
+          kubectl config set-credentials ${KUBERNETES_USER} --token=${KUBERNETES_TOKEN}
+          kubectl config set-context default --cluster=${CLUSTER_NAME} --user=${KUBERNETES_USER}
           kubectl config use-context default
+          kubectl config view --flatten | sudo tee /etc/kubernetes/kubeconfig
 
         checkRunning.command: |
           which kubectl
@@ -670,7 +708,36 @@ brooklyn.catalog:
         - name: kubernetes.apiserver.port
           label: "Kubernetes API Server Port"
           type: integer
-          default: 8080
+          default: 8443
+        - name: kubernetes.apiserver.protocol
+          label: "Kubernetes API Server TLS Protocol"
+          type: string
+          default: "https"
+        - name: kubernetes.authorization.file
+          label: "Kubernetes Authorization File"
+          type: string
+          default:
+            "classpath://io.brooklyn.clocker.kubernetes:kubernetes/policy.jsonl"
+
+      brooklyn.config:
+        files.install:
+          $brooklyn:config("kubernetes.authorization.file"): policy.jsonl
+
+        post.install.command: |
+          echo "[CLOCKER] Creating CA certificate directory"
+          sudo mkdir /etc/kubernetes/certs
+          sudo chown ${USER} /etc/kubernetes/certs
+          source ${INSTALL_DIR}/certificate-functions.sh
+          getcert ${CA_REQUEST_ROOT_URL}/cacert/ca.pem /etc/kubernetes/certs/ca.pem
+
+          echo "[CLOCKER] Requesting certificates from ${CA_REQUEST_ROOT_URL}"
+          generate_key /etc/kubernetes/certs/key.pem
+          generate_conf /etc/kubernetes/certs/csr.cnf ${HOST_ADDRESS} ${SUBNET_ADDRESS}
+          generate_csr /etc/kubernetes/certs/csr.cnf /etc/kubernetes/certs/key.pem /etc/kubernetes/certs/csr.pem
+          curl -X POST --data-binary @/etc/kubernetes/certs/csr.pem  ${CA_REQUEST_ROOT_URL}/sign > /etc/kubernetes/certs/cert.pem
+          echo "[CLOCKER] Certifcate for ${HOST_ADDRESS} received"
+
+          sudo mv ${INSTALL_DIR}/policy.jsonl /etc/kubernetes
 
       brooklyn.children:
         - type: kube-apiserver-service
@@ -709,7 +776,8 @@ brooklyn.catalog:
             enricher.targetSensor: $brooklyn:sensor("kubernetes.url")
             enricher.targetValue:
               $brooklyn:formatString:
-                - "http://%s"
+                - "%s://%s"
+                - $brooklyn:config("kubernetes.apiserver.protocol")
                 - $brooklyn:attributeWhenReady("kubernetes.endpoint")
 
   - id: kubernetes-service
@@ -742,8 +810,6 @@ brooklyn.catalog:
           K8S_SERVICE: $brooklyn:config("kubernetes.service")
           HOST_ADDRESS: $brooklyn:attributeWhenReady("host.address")
           HOST_SUBNET_ADDRESS: $brooklyn:attributeWhenReady("host.subnet.address")
-          KUBERNETES_ENDPOINT: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.endpoint")
-          KUBERNETES_URL: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
           ETCD_ENDPOINTS: $brooklyn:entity("etcd-cluster").attributeWhenReady("etcd.urls")
           ENTITY_ID: $brooklyn:parent().attributeWhenReady("entity.id")
           APPLICATION_ID: $brooklyn:attributeWhenReady("application.id")
@@ -776,6 +842,10 @@ brooklyn.catalog:
       brooklyn.config:
         kubernetes.service: "kube-proxy"
 
+        shell.env:
+          FLANNEL_NETWORK: $brooklyn:sibling("flannel-network-agent").config("flannel.network")
+          KUBERNETES_ENDPOINT: $brooklyn:entity("kubernetes-master").attributeWhenReady("kubernetes.endpoint")
+
         customize.command: |
           sudo -E tee /etc/systemd/system/kube-proxy.service <<-EOF
           [Unit]
@@ -785,8 +855,9 @@ brooklyn.catalog:
           ExecStart=/usr/bin/kube-proxy \
             --logtostderr=true \
             --v=4 \
+            --cluster-cidr=${FLANNEL_NETWORK} \
             --masquerade-all=true \
-            --master=${KUBERNETES_URL}
+            --kubeconfig=/etc/kubernetes/kubeconfig \
           Restart=on-failure
           [Install]
           WantedBy=multi-user.target
@@ -812,11 +883,11 @@ brooklyn.catalog:
 
         shell.env:
           FLANNEL_SUBNET: $brooklyn:sibling("flannel-network-agent").attributeWhenReady("flannel.subnet")
-          KUBERNETES_URL: $brooklyn:entity("kubernetes-cluster").attributeWhenReady("kubernetes.url")
           DNS_SERVICE_IP: $brooklyn:entity("kubernetes-cluster").config("kubernetes.dns.address")
           DNS_LOCAL_DOMAIN: $brooklyn:entity("kubernetes-cluster").config("kubernetes.dns.domain")
           CADVISOR_PORT: $brooklyn:parent().config("kubernetes.cadvisor.port")
           SCHEDULABLE: $brooklyn:config("kubernetes.schedulable")
+          KUBERNETES_ENDPOINT: $brooklyn:entity("kubernetes-master").attributeWhenReady("kubernetes.endpoint")
           CLOCKER_VERSION: "2.1.0-SNAPSHOT"
 
         customize.command: |
@@ -831,8 +902,7 @@ brooklyn.catalog:
                   "log_level_stderr": "info",
                   "hostname": "${HOST_SUBNET_ADDRESS}",
                   "policy": {
-                      "type": "k8s",
-                      "k8s_api_root": "${KUBERNETES_URL}/api/v1/"
+                      "type": "k8s"
                   },
                   "kubernetes": {
                       "kubeconfig": "/etc/kubernetes/kubeconfig"
@@ -863,7 +933,7 @@ brooklyn.catalog:
             --cadvisor-port=${CADVISOR_PORT} \
             --node-ip=${HOST_SUBNET_ADDRESS} \
             --hostname-override=${HOST_SUBNET_ADDRESS} \
-            --api-servers=${KUBERNETES_URL} \
+            --require-kubeconfig \
             --kubeconfig=/etc/kubernetes/kubeconfig \
             --network-plugin-dir=/etc/cni/net.d \
             --network-plugin=cni \
@@ -892,33 +962,28 @@ brooklyn.catalog:
       type: kubernetes-service
 
       brooklyn.parameters:
-        - name: kubernetes.authentication.file
-          label: "Kubernetes Authentication File"
-          type: string
-          default:
-            "classpath://io.brooklyn.clocker.kubernetes:kubernetes/basic_auth.csv"
         - name: kubernetes.admission.control
           label: "Kubernetes Admission Control"
           type: string
           default:
-            NamespaceLifecycle,NamespaceExists,LimitRanger,ResourceQuota,AlwaysAdmit
+            NamespaceLifecycle,NamespaceExists,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota,AlwaysAdmit
 
       brooklyn.config:
         kubernetes.service: "kube-apiserver"
 
-        files.install:
-          $brooklyn:config("kubernetes.authentication.file"): basic_auth.csv
-
         shell.env:
           SERVICE_CLUSTER_IP_RANGE: $brooklyn:entity("kubernetes-cluster").config("kubernetes.service.cidr")
           APISERVER_PORT: $brooklyn:entity("kubernetes-master").config("kubernetes.apiserver.port")
+          APISERVER_PROTOCOL: $brooklyn:entity("kubernetes-master").config("kubernetes.apiserver.protocol")
           ADMISSION_CONTROL: $brooklyn:config("kubernetes.admission.control")
           INSTALL_DIR: $brooklyn:attributeWhenReady("install.dir")
 
-        post.install.command: |
-          sudo mv ${INSTALL_DIR}/basic_auth.csv /etc/kubernetes
-
         customize.command: |
+          if [ "${APISERVER_PROTOCOL}" == "https" ] ; then
+            PORT_CONFIG="--bind-address=0.0.0.0 --secure-port=${APISERVER_PORT}"
+          else
+            PORT_CONFIG="--insecure-bind-address=0.0.0.0 --insecure-port=${APISERVER_PORT}"
+          fi
           sudo -E tee /etc/systemd/system/kube-apiserver.service <<-EOF
           [Unit]
           Description=Kubernetes API Server
@@ -927,12 +992,19 @@ brooklyn.catalog:
             --logtostderr=true \
             --v=4 \
             --etcd-servers=${ETCD_ENDPOINTS} \
-            --insecure-bind-address=0.0.0.0 \
-            --insecure-port=${APISERVER_PORT} \
+            ${PORT_CONFIG} \
             --advertise-address=${HOST_SUBNET_ADDRESS} \
-            --basic-auth-file=/etc/kubernetes/basic_auth.csv \
+            --external-hostname=${HOST_ADDRESS} \
+            --client-ca-file=/etc/kubernetes/certs/ca.pem \
+            --tls-cert-file=/etc/kubernetes/certs/cert.pem \
+            --tls-private-key-file=/etc/kubernetes/certs/key.pem \
+            --service-account-key-file=/etc/kubernetes/certs/key.pem \
+            --authorization-mode=ABAC \
+            --authorization-policy-file=/etc/kubernetes/policy.jsonl \
+            --token-auth-file=/etc/kubernetes/known_tokens.csv \
             --allow-privileged=true \
             --service-cluster-ip-range=${SERVICE_CLUSTER_IP_RANGE} \
+            --service-node-port-range=30000-32767 \
             --runtime-config=extensions/v1beta1=true,extensions/v1beta1/networkpolicies=true \
             --admission-control=${ADMISSION_CONTROL}
           Restart=on-failure
@@ -963,8 +1035,9 @@ brooklyn.catalog:
           ExecStart=/usr/bin/kube-controller-manager \
             --logtostderr=true \
             --v=4 \
-            --master=${KUBERNETES_ENDPOINT} \
             --kubeconfig=/etc/kubernetes/kubeconfig \
+            --service-account-private-key-file=/etc/kubernetes/certs/key.pem \
+            --root-ca-file=/etc/kubernetes/certs/ca.pem \
             --allocate-node-cidrs=true \
             --configure-cloud-routes=true \
             --leader-elect=true \
@@ -996,7 +1069,7 @@ brooklyn.catalog:
             --logtostderr=true \
             --v=4 \
             --leader-elect=true \
-            --master=${KUBERNETES_ENDPOINT}
+            --kubeconfig=/etc/kubernetes/kubeconfig
           Restart=on-failure
           [Install]
           WantedBy=multi-user.target

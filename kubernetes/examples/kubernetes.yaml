@@ -10,7 +10,7 @@ location:
     region: ams01
     identity: xxxxxxxx
     credential: XXXXXXXX
-    privateKeyFile: ~/.ssh/softlayer.pem
+    privateKeyFile: "~/.ssh/softlayer.pem"
     customizers:
       - $brooklyn:object:
           type: org.apache.brooklyn.location.jclouds.softlayer.SoftLayerSameVlanLocationCustomizer
@@ -23,13 +23,14 @@ services:
     name: "kubernetes"
     brooklyn.config:
       kubernetes.debug: true
-      kubernetes.version: 1.4.3
+      kubernetes.version: 1.4.5
       start.timeout: 30m
       kubernetes.master.size: 2
       kubernetes.initial.size: 4
       kubernetes.max.size: 16
       etcd.initial.size: 3
-      kubernetes.apiserver.port: 8000
+      kubernetes.apiserver.port: 8443
+      kubernetes.apiserver.protocol: "https"
       kubernetes.scaling.cpu.limit: 0.80
       kubernetes.recovery.stabilizationDelay: 30s
       kubernetes.recovery.failOnRecurringFailuresInThisDuration: 300000
